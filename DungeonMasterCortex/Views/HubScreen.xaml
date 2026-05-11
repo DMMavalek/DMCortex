@@ -32,7 +32,7 @@
                                    Style="{StaticResource SubtitleText}"
                                    VerticalAlignment="Center"
                                    Margin="0,2,0,0"
-                                   Text="Version 1.0.26"/>
+                                   Text="Version 1.1.00"/>
                     </StackPanel>
                     <Button x:Name="BtnCheckUpdates"
                             Content="CHECK FOR UPDATES"

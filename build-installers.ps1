@@ -5,8 +5,8 @@ $project = Join-Path $root 'DungeonMasterCortex\DungeonMasterCortex.csproj'
 $iscc = 'C:\Users\kelava\AppData\Local\Programs\Inno Setup 6\ISCC.exe'
 $dmIss = Join-Path $root 'Installer\DMCortexSetup.iss'
 $playerIss = Join-Path $root 'Installer\PlayerCortexSetup.iss'
-$dmOut = 'C:\Users\kelava\Documents\Projects\DMC Updates\dmcortex'
-$playerOut = 'C:\Users\kelava\Documents\Projects\DMC Updates\playercortex'
+$dmOut = 'C:\Users\kelava\Documents\Projects\DMC Updates\DMCodex'
+$playerOut = 'C:\Users\kelava\Documents\Projects\DMC Updates\playercodex'
 $dotnet = Join-Path $env:ProgramFiles 'dotnet\dotnet.exe'
 
 function Clear-PublishOutput([string]$path)
@@ -67,5 +67,5 @@ Write-Host 'Building installers...'
 & $iscc $dmIss
 & $iscc $playerIss
 
-Get-ChildItem $dmOut -Filter 'DMCortex-Setup-1.0.26.exe' | Format-Table FullName, Length, LastWriteTime
-Get-ChildItem $playerOut -Filter 'PlayerCortex-Setup-1.0.26.exe' | Format-Table FullName, Length, LastWriteTime
+Get-ChildItem $dmOut -Filter 'DMCodex-Setup-1.1.00.exe' | Format-Table FullName, Length, LastWriteTime
+Get-ChildItem $playerOut -Filter 'PlayerCodex-Setup-1.1.00.exe' | Format-Table FullName, Length, LastWriteTime

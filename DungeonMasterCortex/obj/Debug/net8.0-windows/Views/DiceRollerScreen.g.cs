@@ -307,7 +307,7 @@ namespace DungeonMasterCortex.Views {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/DungeonMasterCortex;V1.0.18.0;component/views/dicerollerscreen.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/DungeonMasterCortex;V1.0.26.0;component/views/dicerollerscreen.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\..\Views\DiceRollerScreen.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);

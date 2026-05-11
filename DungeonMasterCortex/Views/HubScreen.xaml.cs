@@ -18,8 +18,8 @@ public partial class HubScreen : UserControl, IScreen
     public void OnEnter()
     {
         bool playerEdition = _app.License.Edition == AppEdition.Player;
-        _app.SetBanner(playerEdition ? "Player Cortex" : "AD&D 2nd Edition Toolkit");
-        TxtHubTitle.Text = playerEdition ? "PLAYER CORTEX" : "AD&D 2nd Edition Toolkit";
+        _app.SetBanner(playerEdition ? "Player Codex" : "Dungeon Master Codex");
+        TxtHubTitle.Text = playerEdition ? "PLAYER CODEX" : "DUNGEON MASTER CODEX";
         TxtActivationStatus.Text = _app.License.ActivationStatusLabel;
         TxtAppVersion.Text = $"Version {AppUpdateService.GetCurrentVersion().ToString(3)}";
 
@@ -82,7 +82,7 @@ public partial class HubScreen : UserControl, IScreen
 
         var window = new Window
         {
-            Title = "Activate Dungeon Master Cortex",
+            Title = "Activate Dungeon Master Codex",
             Width = 640,
             Height = 500,
             ResizeMode = ResizeMode.NoResize,

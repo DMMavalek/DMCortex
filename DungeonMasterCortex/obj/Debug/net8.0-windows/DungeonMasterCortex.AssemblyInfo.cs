@@ -12,11 +12,11 @@ using System.Reflection;
 
 [assembly: System.Reflection.AssemblyCompanyAttribute("DungeonMasterCortex")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
-[assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.26.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.26")]
+[assembly: System.Reflection.AssemblyFileVersionAttribute("1.1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.1.00+d36030288befab19c424589c39d38c0f5c4432a5")]
 [assembly: System.Reflection.AssemblyProductAttribute("DungeonMasterCortex")]
 [assembly: System.Reflection.AssemblyTitleAttribute("DungeonMasterCortex")]
-[assembly: System.Reflection.AssemblyVersionAttribute("1.0.26.0")]
+[assembly: System.Reflection.AssemblyVersionAttribute("1.1.0.0")]
 [assembly: System.Runtime.Versioning.TargetPlatformAttribute("Windows7.0")]
 [assembly: System.Runtime.Versioning.SupportedOSPlatformAttribute("Windows7.0")]
 

@@ -123,7 +123,7 @@ namespace DungeonMasterCortex.Views {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/DungeonMasterCortex;V1.0.26.0;component/views/chargensubracescreen.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/PlayerCortex;V1.1.0.0;component/views/chargensubracescreen.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\..\..\Views\CharGenSubraceScreen.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);

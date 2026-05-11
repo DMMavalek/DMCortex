@@ -5,7 +5,7 @@
   },
   "projects": {
     "C:\\Users\\kelava\\Documents\\Projects\\Dungeon Master Cortex\\DungeonMasterCortex.Tools\\DungeonMasterCortex.Tools.csproj": {
-      "version": "1.0.26",
+      "version": "1.1.0",
       "restore": {
         "projectUniqueName": "C:\\Users\\kelava\\Documents\\Projects\\Dungeon Master Cortex\\DungeonMasterCortex.Tools\\DungeonMasterCortex.Tools.csproj",
         "projectName": "DungeonMasterCortex.Tools",
@@ -97,7 +97,7 @@
       }
     },
     "C:\\Users\\kelava\\Documents\\Projects\\Dungeon Master Cortex\\DungeonMasterCortex\\DungeonMasterCortex.csproj": {
-      "version": "1.0.26",
+      "version": "1.1.0",
       "restore": {
         "projectUniqueName": "C:\\Users\\kelava\\Documents\\Projects\\Dungeon Master Cortex\\DungeonMasterCortex\\DungeonMasterCortex.csproj",
         "projectName": "DungeonMasterCortex",

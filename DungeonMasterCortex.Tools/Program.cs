@@ -123,7 +123,7 @@ static Window BuildSplashWindow()
 
     panel.Children.Add(new TextBlock
     {
-        Text = "DungeonMasterCortex",
+        Text = "Dungeon Master Codex",
         FontSize = 24,
         FontWeight = FontWeights.Bold,
         HorizontalAlignment = HorizontalAlignment.Center,
@@ -156,7 +156,7 @@ static Window BuildActivationWindow()
 
     var window = new Window
     {
-        Title = $"DungeonMasterCortex Activation Tool v{toolVersion}",
+        Title = $"Dungeon Master Codex Activation Tool v{toolVersion}",
         Width = 760,
         Height = 560,
         MinWidth = 680,
@@ -755,7 +755,7 @@ static bool TrySendActivationResponseBySmtp(
         return false;
     }
 
-    string subject = "DungeonMasterCortex Activation Response";
+    string subject = "Dungeon Master Codex Activation Response";
     string body = "Your activation response has been generated.\n\n"
         + $"Name: {name}\n"
         + $"Email: {recipientEmail}\n"

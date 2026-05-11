@@ -27,7 +27,7 @@ public partial class App : Application
 		_singleInstanceMutex = new Mutex(true, "Global\\DungeonMasterCortex.SingleInstance", out isPrimaryInstance);
 		if (!isPrimaryInstance)
 		{
-			MessageBox.Show("DungeonMaster Cortex is already running.", "Already Running", MessageBoxButton.OK, MessageBoxImage.Information);
+			MessageBox.Show("Dungeon Master Codex is already running.", "Already Running", MessageBoxButton.OK, MessageBoxImage.Information);
 			Current.Shutdown();
 			return;
 		}
@@ -100,8 +100,8 @@ public partial class App : Application
 			if (remote is null || remote.Version is null)
 			{
 				string expected = edition == AppEdition.DungeonMaster
-					? "DMCortex-Setup-x.y.z.exe"
-					: "PlayerCortex-Setup-x.y.z.exe";
+					? "DMCodex-Setup-x.y.z.exe"
+					: "PlayerCodex-Setup-x.y.z.exe";
 				ShowMessage(owner,
 					$"No valid update package was found.\n\nExpected file name format:\n{expected}",
 					"Check for Updates",

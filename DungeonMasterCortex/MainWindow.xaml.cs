@@ -59,7 +59,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        Title = License.Edition == AppEdition.Player ? "Player Cortex" : "Dungeon Master Cortex";
+        Title = License.Edition == AppEdition.Player ? "Player Codex" : "Dungeon Master Codex";
         BannerVersion.Text = $"v{AppUpdateService.GetCurrentVersion().ToString(3)}";
 
         _screens = new()

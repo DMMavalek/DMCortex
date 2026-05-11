@@ -25,7 +25,7 @@ public sealed class AppUpdateService
             Timeout = TimeSpan.FromSeconds(30),
         };
 
-        client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) DMCortexUpdater/1.0");
+        client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) DMCodexUpdater/1.0");
         client.DefaultRequestHeaders.TryAddWithoutValidation("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
         client.DefaultRequestHeaders.TryAddWithoutValidation("Accept-Language", "en-US,en;q=0.9");
         return client;
@@ -106,11 +106,13 @@ public sealed class AppUpdateService
             if (entries is null || entries.Count == 0)
                 return null;
 
-            string requiredPrefix = edition == AppEdition.DungeonMaster ? "DMCortex-Setup" : "PlayerCortex-Setup";
+            string[] requiredPrefixes = edition == AppEdition.DungeonMaster
+                ? new[] { "DMCodex-Setup", "DMCortex-Setup" }
+                : new[] { "PlayerCodex-Setup", "PlayerCortex-Setup" };
             var candidates = entries
                 .Where(e => !string.IsNullOrWhiteSpace(e.FileName))
                 .Where(e => e.FileName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
-                .Where(e => e.FileName.StartsWith(requiredPrefix, StringComparison.OrdinalIgnoreCase))
+                .Where(e => requiredPrefixes.Any(prefix => e.FileName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
                 .Select(e =>
                 {
                     Version? parsedVersion = ExtractVersionFromFileName(e.FileName);
@@ -162,7 +164,7 @@ public sealed class AppUpdateService
 
     public bool TryApplyUpdate(UpdatePackageInfo package, out string message)
     {
-        string tempDir = Path.Combine(Path.GetTempPath(), "DMCortexUpdater");
+        string tempDir = Path.Combine(Path.GetTempPath(), "DMCodexUpdater");
         Directory.CreateDirectory(tempDir);
         string localInstaller = Path.Combine(tempDir, package.FileName);
 
@@ -219,13 +221,15 @@ public sealed class AppUpdateService
         string startMenuPrograms = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs));
         string commonStartMenuPrograms = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonPrograms));
 
-        bool isPlayerEdition = packageFileName.StartsWith("PlayerCortex-Setup", StringComparison.OrdinalIgnoreCase);
+        bool isPlayerEdition = packageFileName.StartsWith("PlayerCodex-Setup", StringComparison.OrdinalIgnoreCase)
+            || packageFileName.StartsWith("PlayerCortex-Setup", StringComparison.OrdinalIgnoreCase);
 
         string[] shortcutNames;
         if (isPlayerEdition)
         {
             shortcutNames = new[]
             {
+                "PlayerCodex.lnk",
                 "PlayerCortex.lnk",
             };
         }
@@ -233,8 +237,11 @@ public sealed class AppUpdateService
         {
             shortcutNames = new[]
             {
+                "DMCodex.lnk",
+                "DungeonMasterCodex.lnk",
                 "DMCortex.lnk",
                 "DungeonMasterCortex.lnk",
+                "DungeonMasterCodex Activation Tool.lnk",
                 "DungeonMasterCortex Activation Tool.lnk",
             };
         }
@@ -453,7 +460,7 @@ public sealed class AppUpdateService
 
     private static Version? ExtractVersionFromFileName(string name)
     {
-        // Expected package examples: DMCortex-Setup-1.0.0.exe / PlayerCortex-Setup-1.0.0.exe
+        // Expected package examples: DMCodex-Setup-1.0.0.exe / PlayerCodex-Setup-1.0.0.exe
         var match = Regex.Match(name, @"(\d+)\.(\d+)\.(\d+)");
         if (!match.Success)
             return null;

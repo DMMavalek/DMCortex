@@ -1040,16 +1040,14 @@ C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\obj
 C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\obj\Release\net8.0-windows\win-x64\DungeonM.B357DD3B.Up2Date
 C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\obj\Release\net8.0-windows\win-x64\DungeonMasterCortex.genruntimeconfig.cache
 C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\bin\Release\net8.0-windows\win-x64\Assets\Class Abilities\Class Abilities.xlsx
-C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\bin\Release\net8.0-windows\win-x64\DungeonMasterCortex.exe
-C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\bin\Release\net8.0-windows\win-x64\DungeonMasterCortex.deps.json
-C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\bin\Release\net8.0-windows\win-x64\DungeonMasterCortex.runtimeconfig.json
-C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\bin\Release\net8.0-windows\win-x64\DungeonMasterCortex.dll
-C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\bin\Release\net8.0-windows\win-x64\DungeonMasterCortex.pdb
-C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\obj\Release\net8.0-windows\win-x64\DungeonMasterCortex_Content.g.cs
-C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\obj\Release\net8.0-windows\win-x64\DungeonMasterCortex_MarkupCompile.cache
-C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\obj\Release\net8.0-windows\win-x64\DungeonMasterCortex_MarkupCompile.lref
-C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\obj\Release\net8.0-windows\win-x64\DungeonMasterCortex.g.resources
-C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\obj\Release\net8.0-windows\win-x64\DungeonMasterCortex.dll
-C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\obj\Release\net8.0-windows\win-x64\refint\DungeonMasterCortex.dll
-C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\obj\Release\net8.0-windows\win-x64\DungeonMasterCortex.pdb
-C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\obj\Release\net8.0-windows\win-x64\ref\DungeonMasterCortex.dll
+C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\bin\Release\net8.0-windows\win-x64\PlayerCortex.exe
+C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\bin\Release\net8.0-windows\win-x64\PlayerCortex.deps.json
+C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\bin\Release\net8.0-windows\win-x64\PlayerCortex.runtimeconfig.json
+C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\bin\Release\net8.0-windows\win-x64\PlayerCortex.dll
+C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\obj\Release\net8.0-windows\win-x64\PlayerCortex_Content.g.cs
+C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\obj\Release\net8.0-windows\win-x64\PlayerCortex_MarkupCompile.cache
+C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\obj\Release\net8.0-windows\win-x64\PlayerCortex_MarkupCompile.lref
+C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\obj\Release\net8.0-windows\win-x64\PlayerCortex.g.resources
+C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\obj\Release\net8.0-windows\win-x64\PlayerCortex.dll
+C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\obj\Release\net8.0-windows\win-x64\refint\PlayerCortex.dll
+C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\obj\Release\net8.0-windows\win-x64\ref\PlayerCortex.dll

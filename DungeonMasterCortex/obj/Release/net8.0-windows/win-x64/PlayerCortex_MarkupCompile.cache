@@ -1,5 +1,5 @@
-﻿DungeonMasterCortex
-1.0.26.0
+﻿PlayerCortex
+1.1.0.0
 
 winexe
 C#
@@ -8,7 +8,7 @@ C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\obj
 DungeonMasterCortex
 none
 false
-TRACE;APP_EDITION_DM;RELEASE;NET;NET8_0;NETCOREAPP
+APP_EDITION_PLAYER
 C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\App.xaml
 271237936684
 508-225299367
