@@ -1,0 +1,170 @@
+<UserControl x:Class="DungeonMasterCortex.Views.CampaignScreen"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource BrushPanel}">
+    <Grid Margin="28,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Grid Grid.Row="0">
+            <TextBlock Text="CAMPAIGN TRACKER" Style="{StaticResource TitleText}"
+                       FontSize="20" VerticalAlignment="Center"/>
+            <Button Content="◀  BACK TO HUB" Style="{StaticResource GoldButton}"
+                    HorizontalAlignment="Right" Width="160" Click="BtnHub_Click"/>
+        </Grid>
+        <Rectangle Grid.Row="1" Height="1" Fill="{StaticResource BrushBorder}" Margin="0,10,0,12"/>
+
+        <!-- Tab strip -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,12">
+            <Button x:Name="CampTabBtnLog" Content="Session Log"
+                Style="{StaticResource GoldButton}" Width="140"
+                Click="CampTabLog_Click" Margin="0,0,8,0"/>
+            <Button x:Name="CampTabBtnNpcs" Content="NPCs"
+                Style="{StaticResource GoldButton}" Width="120"
+                Click="CampTabNpcs_Click" Margin="0,0,8,0"/>
+            <Button x:Name="CampTabBtnLocations" Content="Locations"
+                Style="{StaticResource GoldButton}" Width="120"
+                Click="CampTabLocations_Click"/>
+        </StackPanel>
+
+        <!-- ═══ SESSION LOG TAB ═══ -->
+        <Grid x:Name="CampTabLog" Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="280"/>
+                <ColumnDefinition Width="16"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- ── Left: add entry ── -->
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="Session ID:" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                <TextBox x:Name="TxtSessionId" Style="{StaticResource DarkTextBox}" Margin="0,0,0,10"/>
+                <TextBlock Text="Title:" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                <TextBox x:Name="TxtTitle" Style="{StaticResource DarkTextBox}" Margin="0,0,0,10"/>
+                <TextBlock Text="Notes:" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                <TextBox x:Name="TxtBody" Style="{StaticResource DarkTextBox}"
+                         AcceptsReturn="True" TextWrapping="Wrap"
+                         Height="140" VerticalScrollBarVisibility="Auto"
+                         Margin="0,0,0,12"/>
+                <Button Content="+  ADD ENTRY" Style="{StaticResource GoldButton}"
+                        Click="BtnAdd_Click"/>
+            </StackPanel>
+
+            <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource BrushBorder2}"
+                       VerticalAlignment="Stretch"/>
+
+            <!-- ── Right: entry list + detail ── -->
+            <Grid Grid.Column="2" Margin="16,0,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="200"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="Session Entries:"
+                           Style="{StaticResource LabelText}" Margin="0,0,0,6"/>
+                <ListBox Grid.Row="1" x:Name="EntryList"
+                         Style="{StaticResource DarkListBox}"
+                         ItemContainerStyle="{StaticResource DarkListBoxItem}"
+                         SelectionChanged="EntryList_SelectionChanged"/>
+
+                <TextBlock Grid.Row="2" Text="Entry Detail:"
+                           Style="{StaticResource LabelText}" Margin="0,12,0,6"/>
+                <Border Grid.Row="3"
+                        Background="{StaticResource BrushCard}"
+                        BorderBrush="{StaticResource BrushBorder2}"
+                        BorderThickness="1" CornerRadius="2" Padding="12">
+                    <TextBox x:Name="TxtDetail" Style="{StaticResource DarkTextBox}"
+                             Background="Transparent" BorderThickness="0"
+                             IsReadOnly="True" TextWrapping="Wrap"
+                             AcceptsReturn="True"
+                             VerticalScrollBarVisibility="Auto"/>
+                </Border>
+            </Grid>
+        </Grid>
+
+        <!-- ═══ NPCS TAB ═══ -->
+        <Grid x:Name="CampTabNpcs" Grid.Row="3" Visibility="Collapsed">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="280"/>
+                <ColumnDefinition Width="16"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- NPC list -->
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="NPCs" Style="{StaticResource LabelText}" Margin="0,0,0,6"/>
+                <ListBox x:Name="NpcList" Style="{StaticResource DarkListBox}"
+                         ItemContainerStyle="{StaticResource DarkListBoxItem}"
+                         Height="280" SelectionChanged="NpcList_SelectionChanged"/>
+                <Button Content="+  NEW NPC" Style="{StaticResource GoldButton}"
+                        Margin="0,8,0,0" Click="BtnNewNpc_Click"/>
+                <Button Content="🗑  DELETE" Style="{StaticResource DangerButton}"
+                        Margin="0,6,0,0" Click="BtnDeleteNpc_Click"/>
+            </StackPanel>
+
+            <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource BrushBorder2}"
+                       VerticalAlignment="Stretch"/>
+
+            <!-- NPC editor -->
+            <StackPanel Grid.Column="2" Margin="16,0,0,0">
+                <TextBlock Text="Name:" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                <TextBox x:Name="NpcName" Style="{StaticResource DarkTextBox}" Margin="0,0,0,10"/>
+                <TextBlock Text="Role / Race / Class:" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                <TextBox x:Name="NpcRole" Style="{StaticResource DarkTextBox}" Margin="0,0,0,10"/>
+                <TextBlock Text="Description &amp; Notes:" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                <TextBox x:Name="NpcNotes" Style="{StaticResource DarkTextBox}"
+                         AcceptsReturn="True" TextWrapping="Wrap"
+                         Height="200" VerticalScrollBarVisibility="Auto"
+                         Margin="0,0,0,10"/>
+                <Button Content="💾  SAVE NPC" Style="{StaticResource GoldButton}"
+                        HorizontalAlignment="Left" Click="BtnSaveNpc_Click"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- ═══ LOCATIONS TAB ═══ -->
+        <Grid x:Name="CampTabLocations" Grid.Row="3" Visibility="Collapsed">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="280"/>
+                <ColumnDefinition Width="16"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Location list -->
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="Locations" Style="{StaticResource LabelText}" Margin="0,0,0,6"/>
+                <ListBox x:Name="LocationList" Style="{StaticResource DarkListBox}"
+                         ItemContainerStyle="{StaticResource DarkListBoxItem}"
+                         Height="280" SelectionChanged="LocationList_SelectionChanged"/>
+                <Button Content="+  NEW LOCATION" Style="{StaticResource GoldButton}"
+                        Margin="0,8,0,0" Click="BtnNewLocation_Click"/>
+                <Button Content="🗑  DELETE" Style="{StaticResource DangerButton}"
+                        Margin="0,6,0,0" Click="BtnDeleteLocation_Click"/>
+            </StackPanel>
+
+            <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource BrushBorder2}"
+                       VerticalAlignment="Stretch"/>
+
+            <!-- Location editor -->
+            <StackPanel Grid.Column="2" Margin="16,0,0,0">
+                <TextBlock Text="Location Name:" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                <TextBox x:Name="LocName" Style="{StaticResource DarkTextBox}" Margin="0,0,0,10"/>
+                <TextBlock Text="Type (Town / Dungeon / Wilderness …):" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                <TextBox x:Name="LocType" Style="{StaticResource DarkTextBox}" Margin="0,0,0,10"/>
+                <TextBlock Text="Description &amp; Notes:" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                <TextBox x:Name="LocNotes" Style="{StaticResource DarkTextBox}"
+                         AcceptsReturn="True" TextWrapping="Wrap"
+                         Height="200" VerticalScrollBarVisibility="Auto"
+                         Margin="0,0,0,10"/>
+                <Button Content="💾  SAVE LOCATION" Style="{StaticResource GoldButton}"
+                        HorizontalAlignment="Left" Click="BtnSaveLocation_Click"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

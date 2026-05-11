@@ -1,0 +1,51 @@
+<UserControl x:Class="DungeonMasterCortex.Views.CharacterSheetsScreen"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource BrushPanel}">
+    <Grid Margin="40,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="12"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="12"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0">
+            <TextBlock Text="CHARACTER SHEET" Style="{StaticResource TitleText}" FontSize="22"/>
+            <TextBlock Text="Click any section header to expand or collapse it." Style="{StaticResource SubtitleText}" Margin="0,4,0,0"/>
+        </StackPanel>
+
+        <Border Grid.Row="2"
+                Background="{StaticResource BrushCard}"
+                BorderBrush="{StaticResource BrushBorder2}"
+                BorderThickness="1"
+                CornerRadius="2"
+                Padding="14">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="8"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Sheet sections — populated in code-behind as collapsible Expanders -->
+                <ScrollViewer Grid.Row="2"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled"
+                              Padding="0,0,4,0">
+                    <StackPanel x:Name="SheetPanel" Margin="0,0,0,4"/>
+                </ScrollViewer>
+
+                <TextBlock Grid.Row="4" x:Name="StatusText" Style="{StaticResource SubtitleText}" TextWrapping="Wrap"/>
+            </Grid>
+        </Border>
+
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="BtnBack" Content="◀ CLOSE SHEET" Style="{StaticResource GoldButton}" Margin="0,0,16,0" Click="BtnBack_Click"/>
+            <Button x:Name="BtnCopySummary" Content="COPY SHEET" Style="{StaticResource GoldButton}" Margin="0,0,8,0" Click="BtnCopySummary_Click"/>
+            <Button x:Name="BtnPrintSummary" Content="PRINT SHEET" Style="{StaticResource GoldButton}" Click="BtnPrintSummary_Click"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

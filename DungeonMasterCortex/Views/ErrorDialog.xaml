@@ -1,0 +1,34 @@
+<Window x:Class="DungeonMasterCortex.Views.ErrorDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Error" Width="700" Height="500" Background="#1E1E1E"
+    WindowStartupLocation="CenterScreen" ShowInTaskbar="True">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*" MinHeight="300"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="An error occurred:" FontSize="14" FontWeight="Bold"
+                   Foreground="#FFFFFF" Margin="0,0,0,10"/>
+
+        <TextBox Grid.Row="1" x:Name="ErrorTextBox" 
+                 IsReadOnly="True" TextWrapping="Wrap"
+                 Background="#2D2D2D" Foreground="#FFFFFF"
+                 VerticalScrollBarVisibility="Auto"
+                 FontFamily="Consolas" FontSize="11"
+                 Padding="10" Margin="0,0,0,10"/>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="BtnCopy" Content="📋 Copy to Clipboard" 
+                    Background="#0E639C" Foreground="White"
+                    Padding="12,8" Margin="0,0,10,0" Click="BtnCopy_Click"
+                    FontSize="12"/>
+            <Button x:Name="BtnClose" Content="Close" 
+                    Background="#C4302B" Foreground="White"
+                    Padding="20,8" Click="BtnClose_Click"
+                    FontSize="12" IsDefault="True"/>
+        </StackPanel>
+    </Grid>
+</Window>

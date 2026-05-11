@@ -1,0 +1,455 @@
+﻿<UserControl x:Class="DungeonMasterCortex.Views.CharGenCharacterOptionsScreen"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource BrushPanel}">
+    <Grid Margin="40,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="12"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="12"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0">
+            <TextBlock Text="CHARACTER OPTIONS" Style="{StaticResource TitleText}"
+                       FontSize="20" Margin="0,0,0,4"/>
+            <TextBlock Text="Nonweapon proficiencies, traits, disadvantages, and languages"
+                       Style="{StaticResource SubtitleText}" Margin="0,0,0,10"/>
+            <Rectangle Height="1" Fill="{StaticResource BrushBorder}" Margin="0,0,0,10"/>
+            <WrapPanel x:Name="UpdateQuickJumpBar" Visibility="Collapsed" Margin="0,0,0,4">
+                <Button Content="RACE" Style="{StaticResource GoldButton}" Margin="0,0,8,8" Click="BtnJumpRace_Click"/>
+                <Button Content="CLASS" Style="{StaticResource GoldButton}" Margin="0,0,8,8" Click="BtnJumpClass_Click"/>
+                <Button Content="CLASS ABILITIES" Style="{StaticResource GoldButton}" Margin="0,0,8,8" Click="BtnJumpClassAbilities_Click"/>
+                <Button Content="NWP / OPTIONS" Style="{StaticResource GoldButton}" Margin="0,0,8,8" Click="BtnJumpOptions_Click"/>
+                <Button Content="WEAPON PROF" Style="{StaticResource GoldButton}" Margin="0,0,8,8" Click="BtnJumpWeaponProf_Click"/>
+                <Button Content="EQUIPMENT" Style="{StaticResource GoldButton}" Margin="0,0,8,8" Click="BtnJumpEquipment_Click"/>
+                <Button Content="REVIEW" Style="{StaticResource GoldButton}" Margin="0,0,8,8" Click="BtnJumpReview_Click"/>
+            </WrapPanel>
+        </StackPanel>
+
+        <Border Grid.Row="2"
+                Background="{StaticResource BrushCard}"
+                BorderBrush="{StaticResource BrushBorder2}"
+                BorderThickness="1" CornerRadius="2" Padding="16,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="PROFICIENCIES" Style="{StaticResource SubtitleText}" FontSize="10"/>
+                    <TextBlock x:Name="OverallNwpSummary" Style="{StaticResource BodyText}" Margin="0,4,0,0" Foreground="{StaticResource BrushText}"/>
+                </StackPanel>
+
+                <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource BrushBorder2}" Margin="0,2"/>
+
+                <StackPanel Grid.Column="2">
+                    <TextBlock Text="TRAITS" Style="{StaticResource SubtitleText}" FontSize="10"/>
+                    <TextBlock x:Name="OverallTraitSummary" Style="{StaticResource BodyText}" Margin="0,4,0,0" Foreground="{StaticResource BrushText}"/>
+                </StackPanel>
+
+                <Rectangle Grid.Column="3" Width="1" Fill="{StaticResource BrushBorder2}" Margin="0,2"/>
+
+                <StackPanel Grid.Column="4">
+                    <TextBlock Text="DISADVANTAGES" Style="{StaticResource SubtitleText}" FontSize="10"/>
+                    <TextBlock x:Name="OverallDisadvantageSummary" Style="{StaticResource BodyText}" Margin="0,4,0,0" Foreground="{StaticResource BrushText}"/>
+                </StackPanel>
+
+                <Rectangle Grid.Column="5" Width="1" Fill="{StaticResource BrushBorder2}" Margin="0,2"/>
+
+                <StackPanel Grid.Column="6">
+                    <TextBlock Text="LANGUAGES" Style="{StaticResource SubtitleText}" FontSize="10"/>
+                    <TextBlock x:Name="OverallLanguageSummary" Style="{StaticResource BodyText}" Margin="0,4,0,0" Foreground="{StaticResource BrushText}"/>
+                </StackPanel>
+
+                <Rectangle Grid.Column="7" Width="1" Fill="{StaticResource BrushBorder2}" Margin="0,2"/>
+
+                <StackPanel Grid.Column="8">
+                    <TextBlock Text="REMAINING CP" Style="{StaticResource SubtitleText}" FontSize="10"/>
+                    <TextBlock x:Name="OverallCpSummary" Style="{StaticResource BodyText}" Margin="0,4,0,0" Foreground="{StaticResource BrushText}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="4"
+                Background="{StaticResource BrushCard}"
+                BorderBrush="{StaticResource BrushBorder2}"
+                BorderThickness="1" CornerRadius="2" Padding="14">
+            <TabControl Background="Transparent" BorderThickness="0">
+                <TabItem Header="Nonweapon Proficiencies">
+                    <Grid Margin="8">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="10"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock x:Name="NwpSummaryText" Style="{StaticResource BodyText}" Foreground="{StaticResource BrushText}"/>
+
+                        <Grid Grid.Row="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="108"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                                                        <Border Grid.Column="0" Background="{StaticResource BrushPanel}" BorderBrush="{StaticResource BrushBorder2}" BorderThickness="1" CornerRadius="2" Padding="10">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="8"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Grid.Row="0" Text="Available Proficiencies" Style="{StaticResource SubtitleText}"/>
+                                    <TextBox Grid.Row="1" x:Name="NwpSearchBox" Style="{StaticResource DarkTextBox}" Margin="0,8,0,0"
+                                             TextChanged="NwpSearchBox_TextChanged"/>
+                                    <ComboBox Grid.Row="2" x:Name="NwpGroupFilter"
+                                              Margin="0,8,0,0"
+                                              SelectionChanged="NwpGroupFilter_SelectionChanged"
+                                              Foreground="Black"
+                                              Background="#FFF7E8"
+                                              BorderBrush="{StaticResource BrushBorder2}">
+                                        <ComboBox.ItemContainerStyle>
+                                            <Style TargetType="ComboBoxItem">
+                                                <Setter Property="Foreground" Value="Black"/>
+                                            </Style>
+                                        </ComboBox.ItemContainerStyle>
+                                        <ComboBoxItem Content="All Groups" IsSelected="True"/>
+                                        <ComboBoxItem Content="General"/>
+                                        <ComboBoxItem Content="Priest"/>
+                                        <ComboBoxItem Content="Rogue"/>
+                                        <ComboBoxItem Content="Mage"/>
+                                        <ComboBoxItem Content="Warrior"/>
+                                    </ComboBox>
+                                    <ComboBox Grid.Row="3" x:Name="NwpSourceFilter"
+                                              Margin="0,4,0,0"
+                                              SelectionChanged="NwpSourceFilter_SelectionChanged"
+                                              Foreground="Black"
+                                              Background="#FFF7E8"
+                                              BorderBrush="{StaticResource BrushBorder2}">
+                                        <ComboBox.ItemContainerStyle>
+                                            <Style TargetType="ComboBoxItem">
+                                                <Setter Property="Foreground" Value="Black"/>
+                                            </Style>
+                                        </ComboBox.ItemContainerStyle>
+                                        <ComboBoxItem Content="All Sources" IsSelected="True"/>
+                                        <ComboBoxItem Content="Core"/>
+                                        <ComboBoxItem Content="Supplement"/>
+                                        <ComboBoxItem Content="Player's Option"/>
+                                    </ComboBox>
+                                    <ListBox Grid.Row="5" x:Name="AvailableNwpList"
+                                             Style="{StaticResource DarkListBox}"
+                                             ItemContainerStyle="{StaticResource DarkListBoxItem}"
+                                             SelectionChanged="AvailableNwpList_SelectionChanged"
+                                             MouseDoubleClick="AvailableNwpList_MouseDoubleClick"
+                                             MouseRightButtonUp="AvailableNwpList_MouseRightButtonUp">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Label}" TextWrapping="Wrap" Foreground="{StaticResource BrushText}">
+                                                    <TextBlock.ToolTip>
+                                                        <ToolTip MaxWidth="460" MaxHeight="220" Background="#FFF7E8" Foreground="Black">
+                                                            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                                                <TextBlock Text="{Binding Description}" TextWrapping="Wrap" MaxWidth="430"/>
+                                                            </ScrollViewer>
+                                                        </ToolTip>
+                                                    </TextBlock.ToolTip>
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </Grid>
+                            </Border>
+
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="8,0">
+                                <Button x:Name="BtnAddNwp" Content="&#x276F;" Style="{StaticResource GoldButton}" Height="36" Margin="0,0,0,8" Click="BtnAddNwp_Click"/>
+                                <Button x:Name="BtnRemoveNwp" Content="&#x276E;" Style="{StaticResource GoldButton}" Height="36" Margin="0,0,0,18" Click="BtnRemoveNwp_Click"/>
+                                <Button x:Name="BtnIncreaseNwp" Content="+1 CP" Style="{StaticResource GoldButton}" Height="32" Margin="0,0,0,8" Click="BtnIncreaseNwp_Click"/>
+                                <Button x:Name="BtnDecreaseNwp" Content="-1 CP" Style="{StaticResource GoldButton}" Height="32" Click="BtnDecreaseNwp_Click"/>
+                            </StackPanel>
+
+                            <Border Grid.Column="2" Background="{StaticResource BrushPanel}" BorderBrush="{StaticResource BrushBorder2}" BorderThickness="1" CornerRadius="2" Padding="10">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="8"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Grid.Row="0" Text="Selected Proficiencies" Style="{StaticResource SubtitleText}"/>
+                                    <ListBox Grid.Row="2" x:Name="SelectedNwpList"
+                                             Style="{StaticResource DarkListBox}"
+                                             ItemContainerStyle="{StaticResource DarkListBoxItem}"
+                                             SelectionChanged="SelectedNwpList_SelectionChanged"
+                                             MouseDoubleClick="SelectedNwpList_MouseDoubleClick"
+                                             MouseRightButtonUp="SelectedNwpList_MouseRightButtonUp">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Label}" TextWrapping="Wrap" Foreground="{StaticResource BrushText}">
+                                                    <TextBlock.ToolTip>
+                                                        <ToolTip MaxWidth="460" MaxHeight="220" Background="#FFF7E8" Foreground="Black">
+                                                            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                                                <TextBlock Text="{Binding Description}" TextWrapping="Wrap" MaxWidth="430"/>
+                                                            </ScrollViewer>
+                                                        </ToolTip>
+                                                    </TextBlock.ToolTip>
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </Grid>
+                            </Border>
+                        </Grid>
+
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="Traits">
+                    <Grid Margin="8">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="10"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock x:Name="TraitSummaryText" Style="{StaticResource BodyText}" Foreground="{StaticResource BrushText}"/>
+
+                        <Grid Grid.Row="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Border Grid.Column="0" Background="{StaticResource BrushPanel}" BorderBrush="{StaticResource BrushBorder2}" BorderThickness="1" CornerRadius="2" Padding="10">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="8"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Grid.Row="0" Text="Available Traits" Style="{StaticResource SubtitleText}"/>
+                                    <ListBox Grid.Row="2" x:Name="AvailableTraitList"
+                                             Style="{StaticResource DarkListBox}"
+                                             ItemContainerStyle="{StaticResource DarkListBoxItem}"
+                                             SelectionChanged="AvailableTraitList_SelectionChanged"
+                                             MouseDoubleClick="AvailableTraitList_MouseDoubleClick"
+                                             MouseRightButtonUp="AvailableTraitList_MouseRightButtonUp">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Label}" ToolTip="{Binding Description}" TextWrapping="Wrap" Foreground="{StaticResource BrushText}"/>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </Grid>
+                            </Border>
+
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="8,0">
+                                <Button Content="&#x276F;" Style="{StaticResource GoldButton}" Height="36" Margin="0,0,0,8" Click="BtnAddTrait_Click"/>
+                                <Button Content="&#x276E;" Style="{StaticResource GoldButton}" Height="36" Click="BtnRemoveTrait_Click"/>
+                            </StackPanel>
+
+                            <Border Grid.Column="2" Background="{StaticResource BrushPanel}" BorderBrush="{StaticResource BrushBorder2}" BorderThickness="1" CornerRadius="2" Padding="10">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="8"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Grid.Row="0" Text="Selected Traits" Style="{StaticResource SubtitleText}"/>
+                                    <ListBox Grid.Row="2" x:Name="SelectedTraitList"
+                                             Style="{StaticResource DarkListBox}"
+                                             ItemContainerStyle="{StaticResource DarkListBoxItem}"
+                                             SelectionChanged="SelectedTraitList_SelectionChanged"
+                                             MouseDoubleClick="SelectedTraitList_MouseDoubleClick"
+                                             MouseRightButtonUp="SelectedTraitList_MouseRightButtonUp">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Label}" ToolTip="{Binding Description}" TextWrapping="Wrap" Foreground="{StaticResource BrushText}"/>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </Grid>
+                            </Border>
+                        </Grid>
+
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="Disadvantages">
+                    <Grid Margin="8">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="10"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock x:Name="DisadvantageSummaryText" Style="{StaticResource BodyText}" Foreground="{StaticResource BrushText}"/>
+
+                        <Grid Grid.Row="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="108"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Border Grid.Column="0" Background="{StaticResource BrushPanel}" BorderBrush="{StaticResource BrushBorder2}" BorderThickness="1" CornerRadius="2" Padding="10">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="8"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Grid.Row="0" Text="Available Disadvantages" Style="{StaticResource SubtitleText}"/>
+                                    <ListBox Grid.Row="2" x:Name="AvailableDisadvantageList"
+                                             Style="{StaticResource DarkListBox}"
+                                             ItemContainerStyle="{StaticResource DarkListBoxItem}"
+                                             SelectionChanged="AvailableDisadvantageList_SelectionChanged"
+                                             MouseDoubleClick="AvailableDisadvantageList_MouseDoubleClick"
+                                             MouseRightButtonUp="AvailableDisadvantageList_MouseRightButtonUp">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Label}" ToolTip="{Binding Description}" TextWrapping="Wrap" Foreground="{StaticResource BrushText}"/>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </Grid>
+                            </Border>
+
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="8,0">
+                                <ComboBox x:Name="SeverityDropdown" Style="{StaticResource DarkComboBox}" Margin="0,0,0,8">
+                                    <ComboBoxItem Content="Moderate" IsSelected="True"/>
+                                    <ComboBoxItem Content="Severe"/>
+                                </ComboBox>
+                                <Button Content="&#x276F;" Style="{StaticResource GoldButton}" Height="36" Margin="0,0,0,8" Click="BtnAddDisadvantage_Click"/>
+                                <Button Content="&#x276E;" Style="{StaticResource GoldButton}" Height="36" Click="BtnRemoveDisadvantage_Click"/>
+                            </StackPanel>
+
+                            <Border Grid.Column="2" Background="{StaticResource BrushPanel}" BorderBrush="{StaticResource BrushBorder2}" BorderThickness="1" CornerRadius="2" Padding="10">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="8"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Grid.Row="0" Text="Selected Disadvantages" Style="{StaticResource SubtitleText}"/>
+                                    <ListBox Grid.Row="2" x:Name="SelectedDisadvantageList"
+                                             Style="{StaticResource DarkListBox}"
+                                             ItemContainerStyle="{StaticResource DarkListBoxItem}"
+                                             SelectionChanged="SelectedDisadvantageList_SelectionChanged"
+                                             MouseDoubleClick="SelectedDisadvantageList_MouseDoubleClick"
+                                             MouseRightButtonUp="SelectedDisadvantageList_MouseRightButtonUp">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Label}" ToolTip="{Binding Description}" TextWrapping="Wrap" Foreground="{StaticResource BrushText}"/>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </Grid>
+                            </Border>
+                        </Grid>
+
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="Languages">
+                    <Grid Margin="8">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="6"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="10"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock x:Name="LanguageSummaryText" Style="{StaticResource BodyText}" Foreground="{StaticResource BrushText}" TextWrapping="Wrap"/>
+                        <TextBlock Grid.Row="2" x:Name="LanguageSourceSummaryText" Style="{StaticResource SubtitleText}" Foreground="{StaticResource BrushDim}" TextWrapping="Wrap"/>
+
+                        <Grid Grid.Row="4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="108"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Border Grid.Column="0" Background="{StaticResource BrushPanel}" BorderBrush="{StaticResource BrushBorder2}" BorderThickness="1" CornerRadius="2" Padding="10">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="8"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="8"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="8"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Grid.Row="0" Text="Record Language" Style="{StaticResource SubtitleText}"/>
+                                    <ComboBox Grid.Row="2" x:Name="LanguageSourceCombo"
+                                              Style="{StaticResource DarkComboBox}"
+                                              SelectionChanged="LanguageSourceCombo_SelectionChanged">
+                                        <ComboBoxItem Content="Free Spoken Language" Tag="free_spoken" IsSelected="True"/>
+                                        <ComboBoxItem Content="Modern Languages" Tag="modern_languages"/>
+                                        <ComboBoxItem Content="Ancient Languages" Tag="ancient_languages"/>
+                                        <ComboBoxItem Content="Reading/Writing" Tag="reading_writing"/>
+                                    </ComboBox>
+                                    <TextBox Grid.Row="4" x:Name="LanguageNameTextBox" Style="{StaticResource DarkTextBox}"/>
+                                    <TextBlock Grid.Row="6" x:Name="LanguageEditorHelpText" Style="{StaticResource BodyText}" Foreground="{StaticResource BrushDim}" TextWrapping="Wrap"
+                                               Text="Use the source dropdown to assign each known language to the free spoken slot or to one of the language proficiencies."/>
+                                </Grid>
+                            </Border>
+
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="8,0">
+                                <Button x:Name="BtnNewLanguage" Content="&#x276E;" Style="{StaticResource GoldButton}" Height="32" Margin="0,0,0,8" Click="BtnNewLanguage_Click"/>
+                                <Button x:Name="BtnSaveLanguage" Content="&#x276F;" Style="{StaticResource GoldButton}" Height="32" Margin="0,0,0,8" Click="BtnSaveLanguage_Click"/>
+                                <Button x:Name="BtnRemoveLanguage" Content="REMOVE" Style="{StaticResource GoldButton}" Height="32" Click="BtnRemoveLanguage_Click"/>
+                            </StackPanel>
+
+                            <Border Grid.Column="2" Background="{StaticResource BrushPanel}" BorderBrush="{StaticResource BrushBorder2}" BorderThickness="1" CornerRadius="2" Padding="10">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="8"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="10"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="8"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Grid.Row="0" Text="Spoken Languages" Style="{StaticResource SubtitleText}"/>
+                                    <ListBox Grid.Row="2" x:Name="SpokenLanguageList"
+                                             Style="{StaticResource DarkListBox}"
+                                             ItemContainerStyle="{StaticResource DarkListBoxItem}"
+                                             SelectionChanged="SpokenLanguageList_SelectionChanged">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Label}" ToolTip="{Binding Description}" TextWrapping="Wrap" Foreground="{StaticResource BrushText}"/>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                    <TextBlock Grid.Row="4" Text="Literate Languages" Style="{StaticResource SubtitleText}"/>
+                                    <ListBox Grid.Row="6" x:Name="LiterateLanguageList"
+                                             Style="{StaticResource DarkListBox}"
+                                             ItemContainerStyle="{StaticResource DarkListBoxItem}"
+                                             SelectionChanged="LiterateLanguageList_SelectionChanged">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Label}" ToolTip="{Binding Description}" TextWrapping="Wrap" Foreground="{StaticResource BrushText}"/>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </TabItem>
+            </TabControl>
+        </Border>
+    </Grid>
+</UserControl>

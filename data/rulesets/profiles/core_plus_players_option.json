@@ -1,0 +1,8 @@
+{
+  "profile_id": "core_plus_players_option",
+  "name": "Core + Player's Option",
+  "base_ruleset": "core_2e.json",
+  "overlays": [
+    "overlays/players_option.json"
+  ]
+}

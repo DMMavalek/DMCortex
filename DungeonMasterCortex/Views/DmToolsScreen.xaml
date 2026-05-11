@@ -1,0 +1,84 @@
+<UserControl x:Class="DungeonMasterCortex.Views.DmToolsScreen"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource BrushPanel}">
+    <Grid>
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="820">
+
+            <!-- Ornament -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,4">
+                <Ellipse Width="8"  Height="8"  Fill="{StaticResource BrushBorder}"  Margin="6,0"/>
+                <Ellipse Width="12" Height="12" Fill="{StaticResource BrushTitle}"   Margin="6,0"/>
+                <Ellipse Width="8"  Height="8"  Fill="{StaticResource BrushBorder}"  Margin="6,0"/>
+            </StackPanel>
+
+            <TextBlock Text="DM TOOLS"
+                       Style="{StaticResource TitleText}" FontSize="26"
+                       HorizontalAlignment="Center"/>
+            <TextBlock Text="Combat tracker and rules editor"
+                       Style="{StaticResource SubtitleText}" FontSize="13"
+                       HorizontalAlignment="Center" Margin="0,4,0,24"/>
+
+            <Rectangle Height="1" Fill="{StaticResource BrushBorder}" Margin="0,0,0,28"/>
+
+            <!-- Three tool cards -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+
+                <!-- Combat Tracker -->
+                <Border Style="{StaticResource GoldCard}" Margin="14,0" Width="220">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="⚔" FontSize="34" HorizontalAlignment="Center"
+                                   Foreground="{StaticResource BrushTitle}" Margin="0,0,0,8"/>
+                        <TextBlock Grid.Row="1" Text="COMBAT TRACKER"
+                                   Style="{StaticResource TitleText}" FontSize="14"
+                                   HorizontalAlignment="Center" TextWrapping="Wrap"
+                                   TextAlignment="Center" Margin="0,0,0,8"/>
+                        <TextBlock Grid.Row="2" Text="Initiative order, HP, rounds and damage"
+                                   Style="{StaticResource SubtitleText}"
+                                   TextWrapping="Wrap" TextAlignment="Center"
+                                   Margin="0,0,0,16" VerticalAlignment="Top"/>
+                        <Button Grid.Row="3" Content="OPEN" Style="{StaticResource GoldButton}"
+                                Click="BtnCombat_Click"/>
+                    </Grid>
+                </Border>
+
+                <!-- Edit Information -->
+                <Border Style="{StaticResource GoldCard}" Margin="14,0" Width="220">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="✏" FontSize="34" HorizontalAlignment="Center"
+                                   Foreground="{StaticResource BrushTitle}" Margin="0,0,0,8"/>
+                        <TextBlock Grid.Row="1" Text="EDIT INFORMATION"
+                                   Style="{StaticResource TitleText}" FontSize="14"
+                                   HorizontalAlignment="Center" TextWrapping="Wrap"
+                                   TextAlignment="Center" Margin="0,0,0,8"/>
+                        <TextBlock Grid.Row="2" Text="Characters, NPCs, locations and lore"
+                                   Style="{StaticResource SubtitleText}"
+                                   TextWrapping="Wrap" TextAlignment="Center"
+                                   Margin="0,0,0,16" VerticalAlignment="Top"/>
+                        <Button x:Name="BtnEdit" Grid.Row="3" Content="OPEN" Style="{StaticResource GoldButton}"
+                                Click="BtnEdit_Click"/>
+                    </Grid>
+                </Border>
+
+            </StackPanel>
+
+            <Rectangle Height="1" Fill="{StaticResource BrushBorder}" Margin="0,28,0,20"/>
+
+            <Button Content="◀  BACK TO HUB" Style="{StaticResource GoldButton}"
+                    HorizontalAlignment="Center" Width="180"
+                    Click="BtnHub_Click"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

@@ -1,0 +1,6 @@
+{
+  "profile_id": "core_only",
+  "name": "Core Rules Only",
+  "base_ruleset": "core_2e.json",
+  "overlays": []
+}

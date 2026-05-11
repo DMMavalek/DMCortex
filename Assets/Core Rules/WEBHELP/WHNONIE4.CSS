@@ -1,0 +1,37 @@
+body 		
+{font-size: 10pt;
+color: Black;
+font-family: Verdana, Arial, MS Sans Serif;
+background-color: White;}
+
+p	
+{font-size: 10pt;
+color: Black;
+font-family: Verdana, Arial, MS Sans Serif;
+background-color: White;}
+
+H1
+{font-family: Verdana, Arial, MS Sans Serif;
+font-size: 10pt;
+font-weight: bold;}
+
+H2
+{font-family: Verdana, Arial, MS Sans Serif;
+font-size: 10pt;
+font-weight: bold;}
+
+H3
+{font-family: Verdana, Arial, MS Sans Serif;
+font-size: 10pt;
+font-weight: bold;}
+
+H4
+{font-family: Verdana, Arial, MS Sans Serif;
+font-size: 10pt;
+font-weight: bold;}
+
+a:link
+{color: Blue;} 
+
+a:visited
+{color: Maroon;}

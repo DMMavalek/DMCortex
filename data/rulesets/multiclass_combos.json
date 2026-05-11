@@ -1,0 +1,71 @@
+{
+  "multiclass_combos": {
+    "elf": {
+      "source": "PHB 2e",
+      "combos": [
+        ["cleric", "fighter"],
+        ["cleric", "ranger"],
+        ["cleric", "wizard"],
+        ["fighter", "wizard"],
+        ["fighter", "thief"],
+        ["wizard", "thief"],
+        ["fighter", "wizard", "thief"]
+      ]
+    },
+    "gnome": {
+      "source": "PHB 2e",
+      "combos": [
+        ["fighter", "wizard"],
+        ["fighter", "thief"],
+        ["fighter", "cleric"],
+        ["wizard", "thief"],
+        ["cleric", "wizard"]
+      ]
+    },
+    "half-elf": {
+      "source": "PHB 2e + Dragon Magazine",
+      "combos": [
+        ["cleric", "fighter"],
+        ["cleric", "ranger"],
+        ["cleric", "wizard"],
+        ["fighter", "wizard"],
+        ["fighter", "thief"],
+        ["wizard", "thief"],
+        ["fighter", "wizard", "cleric"],
+        ["fighter", "wizard", "thief"],
+        ["druid", "fighter"],
+        ["druid", "ranger"]
+      ]
+    },
+    "halfling": {
+      "source": "PHB 2e",
+      "combos": [
+        ["fighter", "thief"]
+      ]
+    },
+    "dwarf": {
+      "source": "PHB 2e",
+      "combos": [
+        ["fighter", "cleric"],
+        ["fighter", "thief"],
+        ["cleric", "thief"],
+        ["fighter", "cleric", "thief"]
+      ]
+    },
+    "half-orc": {
+      "source": "PHB 2e",
+      "combos": [
+        ["cleric", "fighter"],
+        ["cleric", "thief"],
+        ["fighter", "thief"],
+        ["cleric", "fighter", "thief"]
+      ]
+    },
+    "half-ogre": {
+      "source": "PHB 2e",
+      "combos": [
+        ["fighter", "thief"]
+      ]
+    }
+  }
+}

@@ -1,0 +1,33 @@
+<UserControl x:Class="DungeonMasterCortex.Views.CharGenNameScreen"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource BrushPanel}">
+    <Grid>
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="560">
+
+            <TextBlock Text="CREATE YOUR CHARACTER"
+                       Style="{StaticResource TitleText}" FontSize="22"
+                       HorizontalAlignment="Center"/>
+            <TextBlock Text="Step 1  ·  Name"
+                       Style="{StaticResource SubtitleText}"
+                       HorizontalAlignment="Center" Margin="0,4,0,16"/>
+            <Rectangle Height="1" Fill="{StaticResource BrushBorder}" Margin="0,0,0,24"/>
+
+            <!-- Name -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,16"
+                        HorizontalAlignment="Center">
+                <TextBlock Text="Character Name:" Style="{StaticResource LabelText}"
+                           VerticalAlignment="Center" Width="160"/>
+                <TextBox x:Name="TxtName" Style="{StaticResource DarkTextBox}"
+                         Width="280"/>
+            </StackPanel>
+
+            <TextBlock x:Name="MethodSummary"
+                       Style="{StaticResource SubtitleText}"
+                       TextWrapping="Wrap"
+                       HorizontalAlignment="Center" Margin="0,0,0,2"/>
+
+            <Rectangle Height="1" Fill="{StaticResource BrushBorder}" Margin="0,28,0,0"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

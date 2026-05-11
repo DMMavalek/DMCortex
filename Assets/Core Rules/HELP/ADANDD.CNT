@@ -1,0 +1,106 @@
+:Base ADandD.hlp
+:Title Advanced Dungeons and Dragons
+:Index Arms and Equipment Guide =arms.hlp
+:Index Dungeon Master Guide =dungeon.hlp
+:Index Players Handbook =players.hlp
+:Index Monstrous Manual =Monster.hlp
+:Index DM Option: High-level Campaigns =Dmohlc.hlp
+:Index Player's Option: Combat and Tactics =Poct.hlp
+:Index Player's Option: Skills and Powers =Posp.hlp
+:Index Player's Option: Spells and Magic =Posm.hlp
+:Index Tome of Magic =Tome.hlp
+:Index Complete Book of Dwarves =CBDwrv.hlp
+:Index Complete Book of Elves =CBElv.hlp
+:Index Complete Book of Gnomes and Halflings =CBGnmHlf.hlp
+:Index Complete Book of Humanoids=CBHuman.hlp
+:Index Race1 = Race1.hlp
+:Index Race2 = Race2.hlp
+:Index Race3 = Race3.hlp
+:Index Complete Bard's Handbook  =HBBard.hlp
+:Index Complete Barbarian's Handbook  =HBBarb.hlp
+:Index Complete Book of Necromancers =HBNecro.hlp
+:Index Complete Druid's Handbook  =HBDruid.hlp
+:Index Complete Fighter's Handbook  =Hbfightr.hlp
+:Index Complete Ninja's Handbook =HBNinja.hlp
+:Index Complete Paladin's Handbook  =HBPaladn.hlp
+:Index Complete Priest's Handbook  =Hbpriest.hlp
+:Index Complete Psionics Handbook =HBPsion.hlp
+:Index Complete Ranger's Handbook  =HBRanger.hlp
+:Index Complete Thief's Handbook  =HBThief.hlp
+:Index Complete Wizard's Handbook  =HBWizard.hlp
+:Index Class1 = Class1.hlp
+:Index Class2 = Class2.hlp
+:Index Class3 = Class3.hlp
+:Index Sup1 = Sup1.hlp
+:Index Sup2 = Sup2.hlp
+:Index Sup3 = Sup3.hlp
+:Link arms.hlp
+:Link dungeon.hlp
+:Link players.hlp
+:Link Monster.hlp
+:Link Dmohlc.hlp
+:Link Poct.hlp
+:Link Posp.hlp
+:Link Posm.hlp
+:Link Tome.hlp
+:Link CBDwrv.hlp
+:Link CBElv.hlp
+:Link CBGnmHlf.hlp
+:Link CBHuman.hlp
+:Link HBBard.hlp
+:Link HBBarb.hlp
+:Link HBNecro.hlp
+:Link HBDruid.hlp
+:Link Hbfightr.hlp
+:Link HBNinja.hlp
+:Link HBPaladn.hlp
+:Link Hbpriest.hlp
+:Link HBPsion.hlp
+:Link HBRanger.hlp
+:Link HBThief.hlp
+:Link HBWizard.hlp
+:Link Class1.hlp
+:Link Class2.hlp
+:Link Class3.hlp
+:Link Race1.hlp
+:Link Race2.hlp
+:Link Race3.hlp
+:Link Sup1.hlp
+:Link Sup2.hlp
+:Link Sup3.hlp
+1 Advanced Dungeons and Dragons®
+2 Welcome=First_Page@ADandD.hlp
+:include Arms.CNT
+:include Dmohlc.CNT
+:include Dungeon.CNT
+:include Monster.CNT
+:include Players.CNT
+:include Poct.CNT
+:include Posp.CNT
+:include Posm.CNT
+:include HBBarb.CNT
+:include HBBard.CNT
+:include CBDwrv.CNT
+:include CBElv.CNT
+:include Race1.CNT
+:include Race2.CNT
+:include Race3.CNT
+:include CBGnmHlf.CNT
+:include CBHuman.CNT
+:include HBNecro.CNT
+:include HBDruid.CNT
+:include HBFightr.CNT
+:include HBNinja.CNT
+:include HBPaladn.CNT
+:include HBPriest.CNT
+:include HBPsion.CNT
+:include HBRanger.CNT
+:include HBThief.CNT
+:include HBWizard.CNT
+:include Class1.CNT
+:include Class2.CNT
+:include Class3.CNT
+:include Tome.CNT
+:include Sup1.CNT
+:include Sup2.CNT
+:include Sup3.CNT

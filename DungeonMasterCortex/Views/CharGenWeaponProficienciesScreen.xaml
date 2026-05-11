@@ -1,0 +1,319 @@
+<UserControl x:Class="DungeonMasterCortex.Views.CharGenWeaponProficienciesScreen"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource BrushPanel}">
+    <Grid Margin="40,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="12"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="12"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title -->
+        <StackPanel Grid.Row="0">
+            <TextBlock Text="WEAPON PROFICIENCIES" Style="{StaticResource TitleText}"
+                       FontSize="20" Margin="0,0,0,4"/>
+            <TextBlock Text="Select weapons, tight groups, or broad groups your character is trained with"
+                       Style="{StaticResource SubtitleText}" Margin="0,0,0,10"/>
+            <Rectangle Height="1" Fill="{StaticResource BrushBorder}" Margin="0,0,0,10"/>
+        </StackPanel>
+
+        <!-- Budget summary bar -->
+        <Border Grid.Row="2"
+                Background="{StaticResource BrushCard}"
+                BorderBrush="{StaticResource BrushBorder2}"
+                BorderThickness="1" CornerRadius="2" Padding="16,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <TextBlock x:Name="BudgetUsedHeaderText" Text="SLOTS USED" Style="{StaticResource SubtitleText}" FontSize="10"/>
+                    <TextBlock x:Name="BudgetUsedSummaryText" Style="{StaticResource BodyText}" Margin="0,4,0,0"/>
+                </StackPanel>
+                <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource BrushBorder2}" Margin="0,2"/>
+                <StackPanel Grid.Column="2">
+                    <TextBlock x:Name="RemainingBudgetHeaderText" Text="SLOTS REMAINING" Style="{StaticResource SubtitleText}" FontSize="10"/>
+                    <TextBlock x:Name="RemainingBudgetText" Style="{StaticResource BodyText}" Margin="0,4,0,0"/>
+                </StackPanel>
+                <Rectangle Grid.Column="3" Width="1" Fill="{StaticResource BrushBorder2}" Margin="0,2"/>
+                <StackPanel Grid.Column="4">
+                    <TextBlock Text="PROFICIENCY COST" Style="{StaticResource SubtitleText}" FontSize="10"/>
+                    <TextBlock x:Name="CostInfoText" Style="{StaticResource BodyText}" Margin="0,4,0,0"/>
+                </StackPanel>
+                <Rectangle Grid.Column="5" Width="1" Fill="{StaticResource BrushBorder2}" Margin="0,2"/>
+                <StackPanel Grid.Column="6">
+                    <TextBlock Text="SPECIALIZATION" Style="{StaticResource SubtitleText}" FontSize="10"/>
+                    <TextBlock x:Name="SpecializationInfoText" Style="{StaticResource BodyText}" Margin="0,4,0,0"/>
+                </StackPanel>
+                <Rectangle Grid.Column="7" Width="1" Fill="{StaticResource BrushBorder2}" Margin="0,2"/>
+                <StackPanel Grid.Column="8">
+                    <TextBlock Text="SELECTED" Style="{StaticResource SubtitleText}" FontSize="10"/>
+                    <TextBlock x:Name="SelectedCountText" Style="{StaticResource BodyText}" Margin="0,4,0,0"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Main content area -->
+        <Grid Grid.Row="4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="230"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="16"/>
+                <ColumnDefinition Width="260"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Left: Available list -->
+            <Border Grid.Column="0" Background="{StaticResource BrushCard}"
+                    BorderBrush="{StaticResource BrushBorder2}" BorderThickness="1"
+                    CornerRadius="2" Padding="10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="Available Weapons &amp; Groups"
+                               Style="{StaticResource SubtitleText}"/>
+
+                    <!-- Search -->
+                    <TextBox Grid.Row="1" x:Name="WeaponSearchBox"
+                             Style="{StaticResource DarkTextBox}" Margin="0,8,0,0"
+                             TextChanged="WeaponSearchBox_TextChanged"/>
+
+                    <!-- Group filter -->
+                    <ComboBox Grid.Row="2" x:Name="GroupFilter" Margin="0,6,0,0"
+                              SelectionChanged="GroupFilter_SelectionChanged">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" Padding="4,2"/>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+
+                    <!-- Proficiency type filter -->
+                    <StackPanel Grid.Row="3" Orientation="Vertical" Margin="0,6,0,0">
+                        <TextBlock Text="Show:" VerticalAlignment="Center"
+                                   Style="{StaticResource BodyText}" Margin="0,0,0,4"/>
+                        <WrapPanel>
+                            <RadioButton x:Name="ShowAll" Content="All" GroupName="ShowType"
+                                         IsChecked="True" Checked="ShowType_Changed"
+                                         Foreground="{StaticResource BrushText}" Margin="0,0,10,0"/>
+                            <RadioButton x:Name="ShowIndividual" Content="Individual" GroupName="ShowType"
+                                         Checked="ShowType_Changed"
+                                         Foreground="{StaticResource BrushText}" Margin="0,0,10,0"/>
+                            <RadioButton x:Name="ShowTight" Content="Tight Groups" GroupName="ShowType"
+                                         Checked="ShowType_Changed"
+                                         Foreground="{StaticResource BrushText}" Margin="0,0,10,0"/>
+                            <RadioButton x:Name="ShowBroad" Content="Broad Groups" GroupName="ShowType"
+                                         Checked="ShowType_Changed"
+                                         Foreground="{StaticResource BrushText}" Margin="0,0,10,0"/>
+                            <RadioButton x:Name="ShowTraining" Content="Fighting Styles" GroupName="ShowType"
+                                         Checked="ShowType_Changed"
+                                         Foreground="{StaticResource BrushText}"/>
+                        </WrapPanel>
+                    </StackPanel>
+
+                    <!-- Available list -->
+                    <ListBox Grid.Row="5" x:Name="AvailableList"
+                             Background="Transparent" BorderThickness="0"
+                             SelectionChanged="AvailableList_SelectionChanged"
+                             MouseDoubleClick="AvailableList_MouseDoubleClick">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="2,1">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{Binding Label}"
+                                               Style="{StaticResource BodyText}" TextWrapping="NoWrap"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding Badge}"
+                                               Style="{StaticResource SubtitleText}"
+                                               FontSize="9" Margin="6,0,0,0"
+                                               VerticalAlignment="Center"
+                                               Foreground="{StaticResource BrushDim}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+
+            <!-- Middle: Add/Remove buttons -->
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12,0">
+                <Button x:Name="BtnAdd" Content="ADD  ▶" Style="{StaticResource GoldButton}"
+                        Margin="0,0,0,10" Click="BtnAdd_Click"/>
+                <Button x:Name="BtnSpecialize" Content="★ SPECIALIZE" Style="{StaticResource GoldButton}"
+                        Margin="0,0,0,10" Click="BtnSpecialize_Click"/>
+                <Button x:Name="BtnWeaponChoice" Content="WEAPON OF CHOICE" Style="{StaticResource GoldButton}"
+                    Margin="0,0,0,10" Click="BtnWeaponChoice_Click"
+                    ToolTip="Weapon of Choice grants a focused bonus with one selected weapon. Pick it on the specific weapon entry, not globally. Right-click for details."
+                    PreviewMouseRightButtonUp="WeaponOptionButton_MouseRightButtonUp"/>
+                <Button x:Name="BtnWeaponExpertise" Content="WEAPON EXPERTISE" Style="{StaticResource GoldButton}"
+                    Margin="0,0,0,10" Click="BtnWeaponExpertise_Click"
+                    ToolTip="Weapon Expertise improves advanced mastery with one selected weapon after choosing that weapon. Right-click for details."
+                    PreviewMouseRightButtonUp="WeaponOptionButton_MouseRightButtonUp"/>
+                <Button x:Name="BtnRemove" Content="◀  REMOVE" Style="{StaticResource DarkButton}"
+                        Click="BtnRemove_Click"/>
+            </StackPanel>
+
+            <!-- Right: Selected list -->
+            <Border Grid.Column="2" Background="{StaticResource BrushCard}"
+                    BorderBrush="{StaticResource BrushBorder2}" BorderThickness="1"
+                    CornerRadius="2" Padding="10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="Selected Proficiencies"
+                               Style="{StaticResource SubtitleText}"/>
+
+                    <ListBox Grid.Row="2" x:Name="SelectedList"
+                             Background="Transparent" BorderThickness="0"
+                             SelectionChanged="SelectedList_SelectionChanged"
+                             MouseDoubleClick="SelectedList_MouseDoubleClick">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="2,1">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{Binding Label}"
+                                               Style="{StaticResource BodyText}" TextWrapping="NoWrap"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding SpecBadge}"
+                                               Foreground="#E8C050" FontSize="10"
+                                               VerticalAlignment="Center" Margin="4,0"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding SlotCost}"
+                                               Style="{StaticResource SubtitleText}"
+                                               FontSize="9" Margin="4,0,0,0"
+                                               VerticalAlignment="Center"
+                                               Foreground="{StaticResource BrushDim}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+
+            <!-- Far right: Detail panel -->
+            <Border Grid.Column="4" Background="{StaticResource BrushCard}"
+                    BorderBrush="{StaticResource BrushBorder2}" BorderThickness="1"
+                    CornerRadius="2" Padding="14">
+                <StackPanel>
+                    <TextBlock x:Name="DetailTitle" Style="{StaticResource TitleText}"
+                               FontSize="14" TextWrapping="Wrap"/>
+                    <TextBlock x:Name="DetailType" Style="{StaticResource SubtitleText}"
+                               Margin="0,4,0,8" Foreground="{StaticResource BrushDim}"/>
+                    <Rectangle Height="1" Fill="{StaticResource BrushBorder2}" Margin="0,0,0,10"/>
+
+                    <!-- Weapon stats grid (only visible for individual weapons) -->
+                    <Grid x:Name="WeaponStatsPanel">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="6"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="6"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="6"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="6"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="6"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="DMG vs S/M"
+                                   Style="{StaticResource SubtitleText}" FontSize="10"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" x:Name="StatDamageSm"
+                                   Style="{StaticResource BodyText}" FontWeight="Bold"/>
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="DMG vs L"
+                                   Style="{StaticResource SubtitleText}" FontSize="10"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1" x:Name="StatDamageL"
+                                   Style="{StaticResource BodyText}" FontWeight="Bold"/>
+
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Speed Factor"
+                                   Style="{StaticResource SubtitleText}" FontSize="10"/>
+                        <TextBlock Grid.Row="4" Grid.Column="1" x:Name="StatSpeed"
+                                   Style="{StaticResource BodyText}" FontWeight="Bold"/>
+
+                        <TextBlock Grid.Row="6" Grid.Column="0" Text="Type"
+                                   Style="{StaticResource SubtitleText}" FontSize="10"/>
+                        <TextBlock Grid.Row="6" Grid.Column="1" x:Name="StatType"
+                                   Style="{StaticResource BodyText}" FontWeight="Bold"/>
+
+                        <TextBlock Grid.Row="8" Grid.Column="0" Text="Size"
+                                   Style="{StaticResource SubtitleText}" FontSize="10"/>
+                        <TextBlock Grid.Row="8" Grid.Column="1" x:Name="StatSize"
+                                   Style="{StaticResource BodyText}" FontWeight="Bold"/>
+
+                        <TextBlock Grid.Row="10" Grid.Column="0" Text="Attacks/Round"
+                                   Style="{StaticResource SubtitleText}" FontSize="10"/>
+                        <TextBlock Grid.Row="10" Grid.Column="1" x:Name="StatApr"
+                                   Style="{StaticResource BodyText}" FontWeight="Bold"/>
+                    </Grid>
+
+                    <Rectangle Height="1" Fill="{StaticResource BrushBorder2}" Margin="0,10"/>
+
+                    <!-- Specialization stats (shown when item is specialized or can be) -->
+                    <StackPanel x:Name="SpecializationStatsPanel">
+                        <TextBlock Text="SPECIALIZATION BONUS" Style="{StaticResource SubtitleText}"
+                                   FontSize="10"/>
+                        <TextBlock Text="+1 to hit  |  +2 damage" Style="{StaticResource BodyText}"
+                                   Margin="0,4,0,2"/>
+                        <TextBlock Text="Warriors: 3/2 attacks at 1st level, 2/1 at 7th level"
+                                   Style="{StaticResource BodyText}" Foreground="{StaticResource BrushDim}"
+                                   FontSize="11" TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                    <Rectangle Height="1" Fill="{StaticResource BrushBorder2}" Margin="0,10"/>
+
+                    <!-- Notes -->
+                    <TextBlock x:Name="DetailNotes" Style="{StaticResource BodyText}"
+                               TextWrapping="Wrap" Foreground="{StaticResource BrushDim}"
+                               FontSize="11"/>
+
+                    <!-- Group members list -->
+                    <StackPanel x:Name="GroupMembersPanel" Margin="0,8,0,0">
+                        <TextBlock Text="WEAPONS IN GROUP" Style="{StaticResource SubtitleText}"
+                                   FontSize="10" Margin="0,0,0,4"/>
+                        <ItemsControl x:Name="GroupMembersList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" Style="{StaticResource BodyText}"
+                                               FontSize="11" Margin="0,1"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

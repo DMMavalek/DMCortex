@@ -1,0 +1,119 @@
+﻿<Window x:Class="DungeonMasterCortex.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Dungeon Master Cortex"
+        Width="980" Height="700"
+        MinWidth="980" MinHeight="700"
+        ResizeMode="CanMinimize"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource BrushBg}">
+
+    <Window.Resources>
+        <Storyboard x:Key="SlideInRight">
+            <DoubleAnimation Storyboard.TargetName="PageHost"
+                             Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)"
+                             From="980" To="0" Duration="0:0:0.22">
+                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+        <Storyboard x:Key="SlideInLeft">
+            <DoubleAnimation Storyboard.TargetName="PageHost"
+                             Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)"
+                             From="-980" To="0" Duration="0:0:0.22">
+                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="72"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ═══ TOP BANNER ═══════════════════════════════════════ -->
+        <Border Grid.Row="0" Background="{StaticResource BrushBg}">
+            <Grid>
+                <Rectangle VerticalAlignment="Bottom" Height="3"
+                           Fill="{StaticResource BrushBorder}"/>
+                <StackPanel Orientation="Vertical" VerticalAlignment="Center"
+                            Margin="28,0,20,0">
+                    <TextBlock Text="DUNGEON MASTER CORTEX"
+                               Style="{StaticResource TitleText}" FontSize="24"/>
+                    <TextBlock x:Name="BannerSubtitle"
+                               Text="AD&amp;D 2nd Edition Toolkit"
+                               Style="{StaticResource SubtitleText}"
+                               Margin="2,2,0,0"/>
+                </StackPanel>
+
+                <TextBlock x:Name="BannerVersion"
+                           HorizontalAlignment="Right"
+                           VerticalAlignment="Center"
+                           Margin="0,0,28,0"
+                           Style="{StaticResource SubtitleText}"
+                           FontSize="13"
+                           Text="v1.0.26"/>
+            </Grid>
+        </Border>
+
+        <!-- ═══ PAGE HOST ════════════════════════════════════════ -->
+        <Border Grid.Row="1" ClipToBounds="True"
+                Background="{StaticResource BrushPanel}">
+            <ContentControl x:Name="PageHost"
+                            HorizontalContentAlignment="Stretch"
+                            VerticalContentAlignment="Stretch">
+                <ContentControl.RenderTransform>
+                    <TranslateTransform X="0"/>
+                </ContentControl.RenderTransform>
+            </ContentControl>
+        </Border>
+
+        <!-- ═══ CHARGEN NAV BAR ══════════════════════════════════ -->
+        <Border x:Name="NavBar" Grid.Row="2"
+                Background="{StaticResource BrushBg}"
+                Visibility="Collapsed">
+            <Grid Margin="24,4,24,8">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Rectangle Grid.Row="0" VerticalAlignment="Top" Height="2"
+                           Fill="{StaticResource BrushBorder}"/>
+                <WrapPanel x:Name="LevelUpQuickJumpBar" Grid.Row="1" Visibility="Collapsed"
+                           Margin="0,8,0,0" HorizontalAlignment="Center">
+                    <Button Content="RACE" Style="{StaticResource GoldButton}" Margin="0,0,8,8" Click="BtnJumpRace_Click"/>
+                    <Button Content="CLASS" Style="{StaticResource GoldButton}" Margin="0,0,8,8" Click="BtnJumpClass_Click"/>
+                    <Button Content="CLASS ABILITIES" Style="{StaticResource GoldButton}" Margin="0,0,8,8" Click="BtnJumpClassAbilities_Click"/>
+                    <Button Content="NWP / OPTIONS" Style="{StaticResource GoldButton}" Margin="0,0,8,8" Click="BtnJumpOptions_Click"/>
+                    <Button Content="WEAPON PROF" Style="{StaticResource GoldButton}" Margin="0,0,8,8" Click="BtnJumpWeaponProf_Click"/>
+                    <Button Content="EQUIPMENT" Style="{StaticResource GoldButton}" Margin="0,0,8,8" Click="BtnJumpEquipment_Click"/>
+                    <Button x:Name="BtnJumpSpells" Content="SPELLS" Style="{StaticResource GoldButton}" Margin="0,0,8,8" Click="BtnJumpSpells_Click"/>
+                    <Button Content="REVIEW" Style="{StaticResource GoldButton}" Margin="0,0,8,8" Click="BtnJumpReview_Click"/>
+                </WrapPanel>
+                <Grid Grid.Row="2" Margin="0,8,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Button x:Name="BtnBack" Grid.Column="0"
+                            Content="◀  BACK" Style="{StaticResource GoldButton}"
+                            Width="130" Click="BtnBack_Click"/>
+                    <StackPanel Grid.Column="1" Orientation="Vertical"
+                                HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <StackPanel x:Name="StepDots" Orientation="Horizontal"
+                                    HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="StepLabel" Text=""
+                                   Style="{StaticResource SubtitleText}"
+                                   HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                    </StackPanel>
+                    <Button x:Name="BtnNext" Grid.Column="2"
+                            Content="NEXT  ▶" Style="{StaticResource GoldButton}"
+                            Width="130" Click="BtnNext_Click"/>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

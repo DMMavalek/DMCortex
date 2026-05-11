@@ -1,0 +1,54 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <Version>1.0.26</Version>
+    <AssemblyVersion>1.0.26.0</AssemblyVersion>
+    <FileVersion>1.0.26.0</FileVersion>
+    <InformationalVersion>1.0.26</InformationalVersion>
+    <DefineConstants>$(DefineConstants);APP_EDITION_DM</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="bin\**\*.cs;obj\**\*.cs;artifacts\**\*.cs" />
+    <EmbeddedResource Remove="bin\**\*;obj\**\*;artifacts\**\*" />
+    <None Remove="bin\**\*;obj\**\*;artifacts\**\*" />
+    <Page Remove="artifacts\**\*.xaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Remove="Views\CharacterRosterScreen.xaml" />
+    <None Include="Views\CharacterRosterScreen.xaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\Assets\Nonweapon Proficiencies\**\*">
+      <Link>Assets\Nonweapon Proficiencies\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Assets\Core Rules\WEBHELP\SP\**\*">
+      <Link>Assets\Core Rules\WEBHELP\SP\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Assets\Class Abilities\**\*">
+      <Link>Assets\Class Abilities\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Resource Include="..\Assets\Icons\DM Codex Icon.png">
+      <Link>Resources\DmSplash.png</Link>
+    </Resource>
+    <Resource Include="..\Assets\Icons\Player Codex Icon.png">
+      <Link>Resources\PlayerSplash.png</Link>
+    </Resource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ClosedXML" Version="0.104.1" />
+    <PackageReference Include="UglyToad.PdfPig" Version="1.7.0-custom-5" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,99 @@
+# Dungeon Master Cortex
+
+A fresh-start toolkit for **Advanced Dungeons and Dragons 2nd Edition**:
+- Character Generator (Core + Player's Option ready)
+- Dungeon Master Tools (combat tracker and campaign notes)
+- Rules-driven architecture so you can edit character generation logic without rewriting the app
+
+## Current State
+
+This is the new foundation build. It includes:
+- A modular Python project scaffold
+- Ruleset loading from JSON
+- Starter character generation engine
+- Starter campaign and combat tracking modules
+- Asset ingestion for Core Rules HELP/WEBHELP files
+
+## Quick Start
+
+1. Open a terminal in this folder.
+2. Install in editable mode:
+
+```powershell
+python -m pip install -e .
+```
+
+3. Run the CLI:
+
+```powershell
+dmcortex
+```
+
+4. Build the local asset index from your included Core Rules files:
+
+```powershell
+dmcortex index-assets
+```
+
+5. Build structured entities for race/class/kit/proficiency extraction:
+
+```powershell
+dmcortex extract-rules
+```
+
+6. Build third-pass numeric constraints (ability bounds, kit minima, proficiency slot progressions):
+
+```powershell
+dmcortex extract-numeric-rules
+```
+
+7. Preview a rules profile (campaign-level) with optional character overlays:
+
+```powershell
+dmcortex preview-profile --profile core_plus_players_option.json
+```
+
+With character-level override overlays:
+
+```powershell
+dmcortex preview-profile --profile core_only.json --character-overlay overlays/players_option.json
+```
+
+With explicit extracted-constraints file:
+
+```powershell
+dmcortex preview-profile --profile core_only.json --constraints data/import/adnd2e_numeric_rules.json
+```
+
+## Project Structure
+
+- `docs/` product and architecture planning
+- `data/rulesets/` editable rules data
+- `data/import/` generated indexes from local assets
+- `src/dmcortex/` application modules
+- `tests/` starter tests
+
+## Next Milestones
+
+- Import and normalize Core Rules and Player's Option data
+- Add complete race/class/kit restrictions and proficiency rules
+- Build GUI layer after core engine stabilizes
+- Add encounter timeline and initiative automation
+
+## Asset Sources
+
+Your included files under `Assets/Core Rules/` are now part of the pipeline.
+
+- `HELP/*.CNT` is used as the top-level source map
+- `WEBHELP/**/*.HTM` is used as linked topic content
+- `BOOKS/*.RTF` is a deeper source for later structured extraction passes
+
+For details, see `docs/ASSET_INGESTION.md`.
+
+## Rule Profiles and Overlays
+
+- Campaign-level profiles are in `data/rulesets/profiles/`
+- Optional overlays are in `data/rulesets/overlays/`
+- Character-level overlays can be layered on top of campaign profile selections
+
+This supports running Core-only campaigns while selectively enabling Player's Option features for specific builds.

@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Version>1.0.26</Version>
+    <AssemblyVersion>1.0.26.0</AssemblyVersion>
+    <FileVersion>1.0.26.0</FileVersion>
+    <ApplicationIcon>..\Assets\Icons\License Activation Icon.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DungeonMasterCortex\DungeonMasterCortex.csproj" />
+    <Content Include="..\Assets\Icons\License Activation Icon.ico">
+      <Link>Assets\Icons\License Activation Icon.ico</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="..\Assets\Icons\License Activation Icon.png">
+      <Link>Assets\Icons\License Activation Icon.png</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Resource Include="..\Assets\Icons\License Activation Icon.png">
+      <Link>Resources\LicenseActivationIcon.png</Link>
+    </Resource>
+  </ItemGroup>
+</Project>

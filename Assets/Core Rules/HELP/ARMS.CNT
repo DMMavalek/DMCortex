@@ -1,0 +1,207 @@
+:Base Arms.HLP
+1 Arms & Equipment Guide
+2 Table of Contents=Arms_and_Equipment_Guide
+2 Introduction=Introduction_AG
+2 References=References_AG
+2 Chapter 1: Armor
+3 Armor
+4 Padded Armor (AC 8) PG=Chapter_1_Armor_AG
+4 Leather Armor (AC 8)=Leather_Armor_AC_8_AG
+4 Studded Leather Armor (AC 7)=Studded_Leather_Armor_AC_7_AG
+4 Spiked Leather=Spiked_Leather_AG
+4 Hide Armor (AC 6)=Hide_Armor_AC_6_AG
+4 Scale Mail (AC 6)=Scale_Mail_AC_6_AG
+4 Sea Elf Scale Mail=Sea_Elf_Scale_Mail_AG
+4 Coin Armor=Coin_Armor_AG
+4 Brigandine Armor (AC 6)=Brigandine_Armor_AC_6_AG
+4 Chain Mail (AC 5)=Chain_Mail_AC_5_AG
+4 Ring Mail=Ring_Mail_AG
+4 Banded Mail (AC 4)=Banded_Mail_AC_4_AG
+4 Splint Mail=Splint_Mail_AG
+4 Bronze Plate Mail (AC 4)=Bronze_Plate_Mail_AC_4_AG
+4 Plate Mail (AC 3)=Plate_Mail_AC_3_AG
+4 Field Plate Armor (AC 2)=Field_Plate_Armor_AC_2_AG
+4 Full Plate Armor (AC 1)=Full_Plate_Armor_AC_1_AG
+4 Gnomish Workman's Leather Armor (AC 7)=Gnomish_Workman_s_Leather_Armor_AC_7_AG
+4 Elven Chain Mail (AC 5)=Elven_Chain_Mail_AC_5_AG
+4 Magical Elven Chain Mail=Magical_Elven_Chain_Mail_AG
+4 Drow Chain Mail (AC 4)=Drow_Chain_Mail_AC_4_AG
+4 Dwarven Plate Mail (AC 2)=Dwarven_Plate_Mail_AC_2_AG
+4 Magical Dwarven Plate Mail=Magical_Dwarven_Plate_Mail_AG
+3 Shields
+4 Shields (+1 AC)=Shields_1_AC_AG
+4 Buckler or Target Shield=Buckler_or_Target_Shield_AG
+4 Small Shield=Small_Shield_AG
+4 Medium Shield=Medium_Shield_AG
+4 Body Shield=Body_Shield_AG
+3 Helms
+4 Helms=Helms_AG
+4 Cap=Cap_AG
+4 Coif=Coif_AG
+4 Open-Face Helmet=Open_Face_Helmet_AG
+4 Closed-Face Helmet=Closed_Face_Helmet_AG
+4 Great Helm=Great_Helm_AG
+2 Chapter 2: Equipment for Mounts
+3 Equipment for Mounts=Chapter_2_Equipment_for_Mounts_AG
+3 Barding=Barding_AG
+3 Medieval Barding=Medieval_Barding_AG
+3 Barding in Campaigns=Barding_in_Campaigns_AG
+3 Types of Barding=Types_of_Barding_AG
+3 Pieces of Horse Armor=Pieces_of_Horse_Armor_AG
+3 Light Barding
+4 Padded Barding (AC6)=Light_Barding_AG
+4 Leather Barding (AC 6)=Leather_Barding_AC_6_AG
+3 Medium Barding
+4 Brigandine Barding (AC 5)=Brigandine_Barding_AC_5_AG
+4 Scale Barding (AC 5)=Medium_Barding_AG
+4 Ring Barding (AC 5)=Ring_Barding_AC_5_AG
+4 Studded Leather Barding (AC 5)=Studded_Leather_Barding_AC_5_AG
+4 Chain Barding (AC 4)=Chain_Barding_AC_4_AG
+3 Heavy Barding
+4 Banded Barding (AC 3)=Heavy_Barding_AG
+4 Splint Barding (AC 3)=Splint_Barding_AC_3_AG
+4 Plate Barding (AC 2)=Plate_Barding_AC_2_AG
+4 Field Plate Barding (AC 1)=Field_Plate_Barding_AC_1_AG
+4 Full Plate Barding (AC 0)=Full_Plate_Barding_AC_0_AG
+3 Horse Tack and Harness
+4 Bit=Horse_Tack_and_Harness_AG
+4 Bridle=Bridle_AG
+4 Horsehoes=Horsehoes_AG
+4 Saddle=Saddle_AG
+4 Saddlebags=Saddlebags_AG
+4 Saddle Blanket=Saddle_Blanket_AG
+4 Spur=Spur_AG
+4 Stirrup=Stirrup_AG
+4 Bridle Cutter=Bridle_Cutter_AG
+4 Table 1: Bridle Cutter Wielded as Weapon=Table_1_Bridle_Cutter_Wielded_as_Weapon_AG
+4 Table 2: Horse Barding=Table_2_Horse_Barding_AG
+4 Table 3: Optional Barding Armor Class=Table_3_Optional_Barding_Armor_Class_AG
+4 Table 4: optional Partial Barding=Table_4_optional_Partial_Barding_AG
+4 Table 5: Additional Barding Types (Combined Table )=Table_5_Additional_Barding_Types_Combined_Table_AG
+2 Chapter 3: Weapons
+3 Weapons=Chapter_3_Weapons_AG
+3 Table 6: Master Weapons Chart=Table_6_Master_Weapons_Chart_AG
+3 Miscellaneous Weapons
+4 Arquebus=Arquebus_AG
+4 Battle Axe=Battle_Axe_AG
+4 Belaying Pin=Belaying_Pin_AG
+4 Blowgun=Blowgun_AG
+4 Bola=Bola_AG
+4 Caltrop=Caltrop_AG
+4 Cestus=Cestus_AG
+4 Club=Club_AG
+4 Dagger=Dagger_AG
+4 Dagger, Dirk=Dagger_Dirk_AG
+4 Dagger, Parrying=Dagger_Parrying_AG
+4 Dart=Dart_AG
+4 Gaff/Hook=Gaff_Hook_AG
+4 Hand or Throwing Axe=Hand_or_Throwing_Axe_AG
+4 Harpoon=Harpoon_AG
+4 Javelin=Javelin_AG
+4 Knife=Knife_AG
+4 Lasso=Lasso_AG
+4 Main-Gauche=Main_Gauche_AG
+4 Mancatcher=Mancatcher_AG
+4 Morning Star=Morning_Star_AG
+4 Net=Net_AG
+4 Quarterstaff=Quarterstaff_AG
+4 Sap=Sap_AG
+4 Scourge=Scourge_AG
+4 Sickle=Sickle_AG
+4 Sling=Sling_AG
+4 Staff-Sling=Staff_Sling_AG
+4 Stiletto=Stiletto_AG
+4 Trident=Trident_AG
+4 War Hammer=War_Hammer_AG
+4 Whip=Whip_AG
+3 Bow
+4 Bow=Bow_Ag
+4 Short Bow=Short_Bow_AG
+4 Long Bow=Long_Bow_AG
+4 Composite Bows=Composite_Bows_AG
+4 Arrows
+5 Arrows=Arrows_AG
+5 Flight Arrow=Flight_Arrow_AG
+5 Incendiary Arrow=Incendiary_Arrow_AG
+5 Sheaf Arrow=Sheaf_Arrow_AG
+5 Stone Arrow=Stone_Arrow_AG
+3 Crossbow
+4 Crossbow, Light and Heavy=Crossbow_Light_and_Heavy_AG
+4 Crossbow, Hand=Crossbow_Hand_AG
+4 Quarrels=Quarrels_AG
+3 Flail
+4 Flail=Flail_AG
+4 Footman'a Flail=Footman_a_Flail_AG
+4 Horseman's Flail=Horseman_s_Flail_AG
+3 Lance
+4 Lance=Lance_AG
+4 Jousting Lance=Jousting_Lance_AG
+3 Mace
+4 Mace=Mace_AG
+4 Footman's Mace=Footman_s_Mace_AG
+4 Horseman's Mace=Horseman_s_Mace_AG
+3 Pick
+4 Pick, Military=Pick_Military_AG
+4 Horseman's Pick=Horseman_s_Pick_AG
+4 Footman's Pick=Footman_s_Pick_AG
+3 Polearms
+4 Awl Pike=Awl_Pike_AG
+4 Bardiche=Bardiche_AG
+4 Bec de Corbin=Bec_de_Corbin_AG
+4 Bill-Guisarme=Bill_Guisarme_AG
+4 Fauchard=Fauchard_AG
+4 Fauchard-Fork=Fauchard_Fork_AG
+4 Glaive=Glaive_AG
+4 Glaive-Guisarme=Glaive_Guisarme_AG
+4 Guisarme=Guisarme_AG
+4 Guisarme-Voulge=Guisarme_Voulge_AG
+4 Halberd=Halberd_AG
+4 Hook-Fauchard=Hook_Fauchard_AG
+4 Lucern Hammer=Lucern_Hammer_AG
+4 Military Fork=Military_Fork_AG
+4 Partisan=Partisan_AG
+4 Ranseur=Ranseur_AG
+4 Spetum=Spetum_AG
+4 Voulge=Voulge_AG
+3 Swords
+4 General Information (Sword)=Sword_AG
+4 Bastard Sword=Bastard_Sword_AG
+4 Broad Sword=Broad_Sword_AG
+4 Claymore=Claymore_AG
+4 Cutlass=Cutlass_AG
+4 Falchion=Falchion_AG
+4 Gladius=Gladius_AG
+4 Khopesh=Khopesh_AG
+4 Long Sword=Long_Sword_AG
+4 Rapier=Rapier_AG
+4 Sabre/Scimitar=Sabre_Scimitar_AG
+4 Short Sword=Short_Sword_AG
+4 Two-Handed Sword=Two_Handed_Sword_AG
+3 Spear
+4 Spear=Spear_AG
+4 Long Spear=Long_Spear_AG
+2 Chapter 4: Equipment
+3 Adventurer's Equipment=Chapter_4_Adventurer_s_Equipment_AG
+3 Backpacks=Backpacks_AG
+3 Block & Tackle=Block_Tackle_AG
+3 Crampons=Crampons_AG
+3 Clawed Gloves and Shoes=Clawed_Gloves_and_Shoes_AG
+3 Flint and Steel=Flint_and_Steel_AG
+3 Grappling Hook=Grappling_Hook_AG
+3 Healer's Bag=Healer_s_Bag_AG
+3 Housebreaker Harness or Spider=Housebreaker_Harness_or_Spider_AG
+3 Lantern=Lantern_AG
+3 Locks=Locks_AG
+3 Provisions=Provisions_AG
+3 Rope=Rope_AG
+3 Thieves' Pick and Tools=Thieves_Pick_and_Tools_AG
+3 Waterskin/Wineskin=Waterskin_Wineskin_AG
+3 Weaponblack=Weaponblack_AG
+2 Chapter 5: Clothing
+3 Introduction (Clothing)=Chapter_5_Clothing_AG
+3 Academical Dress=Academical_Dress_AG
+3 Sumptuary Laws=Sumptuary_Laws_AG
+3 Materials Used in Medieval Clothing=Materials_Used_in_Medieval_Clothing_AG
+3 Articles of Clothing=Articles_of_Clothing_AG
+3 Peasant Clothing=General_Styles_and_Trends_AG
+

@@ -1,0 +1,36 @@
+Here's how the six fields work together:
+
+Damage — The base damage at its minimum — the starting dice expression.
+
+Format: XdY or XdY+Z or XdY-Z
+Example: 1d6
+Damage Step — How much to add each time the caster reaches the next scaling threshold.
+
+Same format as Damage: XdY or a flat number
+Example: 1d6 (add one more d6 per increment)
+Start Level — The caster level at which scaling begins. Below this level, you always get the base Damage.
+
+Example: 1 (scaling starts immediately at level 1)
+Every Levels — How many levels must pass between each increment of Damage Step.
+
+Example: 1 = add a step every level; 2 = add a step every 2 levels
+Max At Level — The caster level at which the damage stops growing. Above this level, you always get either the base + all increments up to this level, or the explicit Max Damage if provided.
+
+Example: 10
+Max Damage — An explicit override expression used once the caster hits Max At Level. Optional — if blank, the system just calculates the natural cap.
+
+Example: 10d6
+Worked example — Fireball:
+
+Field	Value
+Damage	1d6
+Damage Step	1d6
+Start Level	1
+Every Levels	1
+Max At Level	10
+Max Damage	10d6
+Level 3 → 3 increments from level 1, every 1 level → 1d6 + 3×1d6 = 4d6
+(actually: base + (level − startLevel) / everyLevels steps = 1d6 + 2 steps = 3d6)
+Level 7 → 1d6 + 6 steps = 7d6
+Level 12 → capped at level 10 → 10d6 (uses Max Damage override)
+Minimum viable entry — if a spell just does flat damage with no scaling, fill only Damage and leave everything else blank.

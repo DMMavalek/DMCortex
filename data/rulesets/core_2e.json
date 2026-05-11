@@ -1,0 +1,143 @@
+{
+  "ruleset_id": "core_2e",
+  "name": "AD&D 2e Core",
+  "ability_generation_methods": [
+    "4d6_drop_lowest",
+    "standard_array"
+  ],
+  "standard_array": [15, 14, 13, 12, 10, 8],
+  "races": {
+    "human": {
+      "name": "Human",
+      "character_mode": "all",
+      "ability_minimums": {},
+      "ability_maximums": {},
+      "racial_abilities": []
+    },
+    "elf": {
+      "name": "Elf",
+      "character_mode": "all",
+      "ability_minimums": {"dex": 7},
+      "ability_maximums": {"con": 17},
+      "racial_abilities": [
+        { "id": "elf_charm_resist",  "description": "90% resistance to sleep and charm magic.",
+          "mechanics": { "magic_resist_percent": 90 } },
+        { "id": "elf_infravision",   "description": "Infravision 60 feet.",
+          "mechanics": { "infravision_feet": 60 } },
+        { "id": "elf_secret_doors",  "description": "Detect secret and concealed doors with a careful search.",
+          "mechanics": { "detect_secret_doors": true } }
+      ]
+    },
+    "dwarf": {
+      "name": "Dwarf",
+      "character_mode": "all",
+      "ability_minimums": {"con": 11},
+      "ability_maximums": {"cha": 17},
+      "racial_abilities": [
+        { "id": "dwarf_infravision",    "description": "Infravision 60 feet.",
+          "mechanics": { "infravision_feet": 60 } },
+        { "id": "dwarf_stonework",      "description": "Notice unusual stonework and grade or depth changes.",
+          "mechanics": { "detect_stonework": true } },
+        { "id": "dwarf_goblinoid_atk",  "description": "+1 attack bonus versus goblinoids.",
+          "mechanics": { "enemy_attack_bonuses": { "goblinoids": 1 } } },
+        { "id": "dwarf_giant_ac",       "description": "-4 AC bonus versus giants (giants have -4 to hit dwarves).",
+          "mechanics": { "enemy_attack_bonuses": { "giants": -4 } } },
+        { "id": "dwarf_poison_save",    "description": "Saving throw bonus versus poison (+4 per 3.5 CON).",
+          "mechanics": { "save_bonuses": { "poison": 4 } } },
+        { "id": "dwarf_magic_save",     "description": "Saving throw bonus versus magic (+4 per 3.5 CON).",
+          "mechanics": { "save_bonuses": { "magic": 4 } } }
+      ]
+    },
+    "gnome": {
+      "name": "Gnome",
+      "character_mode": "all",
+      "ability_minimums": {"int": 6, "con": 8},
+      "ability_maximums": {},
+      "racial_abilities": [
+        { "id": "gnome_infravision",  "description": "Infravision 60 feet.",
+          "mechanics": { "infravision_feet": 60 } },
+        { "id": "gnome_stonework",    "description": "Notice grade, depth, and unsafe stonework underground.",
+          "mechanics": { "detect_stonework": true } },
+        { "id": "gnome_kobold_atk",   "description": "+1 attack bonus versus kobolds and goblins.",
+          "mechanics": { "enemy_attack_bonuses": { "kobolds": 1, "goblins": 1 } } },
+        { "id": "gnome_gnoll_ac",     "description": "-4 AC versus gnolls, bugbears, ogres, trolls, and giants.",
+          "mechanics": { "enemy_attack_bonuses": { "gnolls": -4, "bugbears": -4, "ogres": -4, "trolls": -4, "giants": -4 } } },
+        { "id": "gnome_magic_save",   "description": "Saving throw bonus versus magic.",
+          "mechanics": { "save_bonuses": { "magic": 4 } } }
+      ]
+    },
+    "halfling": {
+      "name": "Halfling",
+      "character_mode": "all",
+      "ability_minimums": {"dex": 7, "con": 10},
+      "ability_maximums": {},
+      "racial_abilities": [
+        { "id": "halfling_thrown_bonus", "description": "+1 attack bonus with thrown weapons and slings.",
+          "mechanics": { "weapon_attack_bonuses": { "thrown": 1, "slings": 1 } } },
+        { "id": "halfling_stealth",      "description": "Stealth advantages outdoors and in natural cover.",
+          "mechanics": { "grants_stealth": true } },
+        { "id": "halfling_poison_save",  "description": "Saving throw bonus versus poison.",
+          "mechanics": { "save_bonuses": { "poison": 4 } } },
+        { "id": "halfling_magic_save",   "description": "Saving throw bonus versus magic.",
+          "mechanics": { "save_bonuses": { "magic": 4 } } }
+      ]
+    },
+    "half-elf": {
+      "name": "Half-Elf",
+      "character_mode": "all",
+      "ability_minimums": {},
+      "ability_maximums": {},
+      "racial_abilities": [
+        { "id": "half_elf_charm_resist", "description": "30% resistance to sleep and charm magic.",
+          "mechanics": { "magic_resist_percent": 30 } },
+        { "id": "half_elf_infravision",  "description": "Infravision 60 feet.",
+          "mechanics": { "infravision_feet": 60 } },
+        { "id": "half_elf_secret_doors", "description": "Detect secret and concealed doors with a careful search.",
+          "mechanics": { "detect_secret_doors": true } }
+      ]
+    }
+  },
+  "classes": {
+    "fighter": {
+      "name": "Fighter",
+      "ability_minimums": {"str": 9},
+      "allowed_races": ["human", "elf", "dwarf", "gnome", "halfling", "half-elf", "half-orc", "half-ogre"],
+      "class_abilities": [
+        {
+          "id": "fighter_hit_die_upgrade_d12",
+          "description": "Hit Die Upgrade: Roll 1d12 for hit points at level 1 instead of 1d10.",
+          "point_cost": 10,
+          "auto_granted": false,
+          "mechanics": {
+            "hp_dice_expression": "1d12"
+          }
+        }
+      ]
+    },
+    "wizard": {
+      "name": "Wizard",
+      "ability_minimums": {"int": 9},
+      "allowed_races": ["human", "elf", "gnome", "half-elf"]
+    },
+    "cleric": {
+      "name": "Cleric",
+      "ability_minimums": {"wis": 9},
+      "allowed_races": ["human", "elf", "dwarf", "gnome", "halfling", "half-elf", "half-orc", "half-ogre"]
+    },
+    "thief": {
+      "name": "Thief",
+      "ability_minimums": {"dex": 9},
+      "allowed_races": ["human", "elf", "dwarf", "gnome", "halfling", "half-elf", "half-orc"]
+    },
+    "ranger": {
+      "name": "Ranger",
+      "ability_minimums": {"str": 13, "dex": 13, "con": 14, "wis": 14},
+      "allowed_races": ["human", "elf", "half-elf"]
+    },
+    "paladin": {
+      "name": "Paladin",
+      "ability_minimums": {"str": 12, "con": 9, "wis": 13, "cha": 17},
+      "allowed_races": ["human"]
+    }
+  }
+}

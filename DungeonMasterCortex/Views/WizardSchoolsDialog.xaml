@@ -1,0 +1,120 @@
+<Window x:Class="DungeonMasterCortex.Views.WizardSchoolsDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Wizard Configuration" Width="460" Height="560"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource BrushPanel}"
+        Foreground="{StaticResource BrushText}">
+    <Grid Margin="24,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,16">
+            <TextBlock Text="WIZARD CONFIGURATION" Style="{StaticResource TitleText}" FontSize="18" Margin="0,0,0,4"/>
+            <TextBlock Text="Choose a specialty, then select the schools of magic you want to purchase."
+                       Style="{StaticResource SubtitleText}"/>
+        </StackPanel>
+
+        <!-- Specialty row -->
+        <Grid Grid.Row="1" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="110"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="Specialization"
+                       Style="{StaticResource LabelText}" VerticalAlignment="Center"/>
+            <ComboBox x:Name="SpecialtyCombo" Grid.Column="1"
+                      Style="{StaticResource DarkComboBox}" Height="32"
+                      SelectionChanged="SpecialtyCombo_SelectionChanged"/>
+        </Grid>
+
+        <Rectangle Grid.Row="2" Height="1" Fill="{StaticResource BrushBorder}" Margin="0,0,0,10"/>
+
+        <!-- Schools list -->
+        <Border Grid.Row="3"
+                Background="{StaticResource BrushCard}"
+                BorderBrush="{StaticResource BrushBorder2}"
+                BorderThickness="1" CornerRadius="2" Padding="14,10">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Column headers -->
+                <Grid Grid.Row="0" Margin="0,0,0,6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="56"/>
+                        <ColumnDefinition Width="70"/>
+                        <ColumnDefinition Width="80"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="School of Magic" Style="{StaticResource LabelText}"/>
+                    <TextBlock Grid.Column="1" Text="Cost"
+                               Style="{StaticResource SubtitleText}" HorizontalAlignment="Center"/>
+                    <TextBlock Grid.Column="2" Text="Access"
+                               Style="{StaticResource SubtitleText}" HorizontalAlignment="Center"/>
+                    <TextBlock Grid.Column="3" Text="Status"
+                               Style="{StaticResource SubtitleText}" HorizontalAlignment="Center"/>
+                </Grid>
+
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl x:Name="SchoolItemsControl">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,5" MinHeight="24">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="56"/>
+                                        <ColumnDefinition Width="70"/>
+                                        <ColumnDefinition Width="80"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{Binding SchoolLabel}"
+                                               Style="{StaticResource BodyText}"
+                                               VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding CostLabel}"
+                                               Style="{StaticResource BodyText}" FontSize="11"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               Foreground="{StaticResource BrushText}"/>
+                                    <CheckBox Grid.Column="2"
+                                              IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                              IsEnabled="{Binding IsEnabled}"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="3" Text="{Binding StatusLabel}"
+                                               Style="{StaticResource BodyText}" FontSize="11"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               Foreground="{StaticResource BrushText}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+
+        <!-- Footer -->
+        <Grid Grid.Row="4" Margin="0,16,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="TotalCostLabel" Grid.Column="0"
+                       Text="Total CP Cost: 0"
+                       Style="{StaticResource SubtitleText}" VerticalAlignment="Center"/>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="BtnOK" Click="BtnOK_Click"
+                        Padding="20,8" Margin="0,0,8,0"
+                        Style="{StaticResource GoldButton}">Confirm</Button>
+                <Button x:Name="BtnCancel" Click="BtnCancel_Click"
+                        Padding="20,8"
+                        Style="{StaticResource DarkButton}">Cancel</Button>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

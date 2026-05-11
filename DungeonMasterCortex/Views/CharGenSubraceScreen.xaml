@@ -1,0 +1,133 @@
+<UserControl x:Class="DungeonMasterCortex.Views.CharGenSubraceScreen"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource BrushPanel}">
+    <Grid Margin="40,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" MaxHeight="300"/>
+            <RowDefinition Height="14"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="20"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0">
+            <TextBlock Text="CHOOSE SUBRACE" Style="{StaticResource TitleText}"
+                       FontSize="20" Margin="0,0,0,4"/>
+            <TextBlock Text="Step 4  ·  Select subrace and racial abilities"
+                       Style="{StaticResource SubtitleText}" Margin="0,0,0,16"/>
+            <Rectangle Height="1" Fill="{StaticResource BrushBorder}" Margin="0,0,0,12"/>
+
+            <TextBlock Text="Subrace" Style="{StaticResource LabelText}" Margin="0,0,0,6"/>
+            <ListBox x:Name="SubraceList" Style="{StaticResource DarkListBox}"
+                     ItemContainerStyle="{StaticResource DarkListBoxItem}"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     SelectionChanged="SubraceList_SelectionChanged"
+                     MouseRightButtonUp="SubraceList_MouseRightButtonUp"
+                     Height="150"/>
+            </StackPanel>
+
+            <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource BrushBorder2}"
+                       VerticalAlignment="Stretch" Margin="0,20"/>
+
+            <StackPanel Grid.Column="2" Margin="20,0,0,0">
+                <TextBlock Text="CP Summary" Style="{StaticResource TitleText}"
+                           FontSize="20" Margin="0,0,0,4"/>
+                <TextBlock Text="Points remaining after defaults and selections"
+                           Style="{StaticResource SubtitleText}" Margin="0,0,0,16"/>
+                <Rectangle Height="1" Fill="{StaticResource BrushBorder}" Margin="0,0,0,12"/>
+
+                <Border Background="{StaticResource BrushCard}"
+                        BorderBrush="{StaticResource BrushBorder2}"
+                        BorderThickness="1" CornerRadius="2" Padding="16" Height="88" Margin="0,0,0,10">
+                    <StackPanel>
+                        <TextBlock Text="Remaining CP" Style="{StaticResource SubtitleText}" Margin="0,0,0,4"/>
+                        <TextBlock x:Name="BudgetSummary" Text=""
+                                   Style="{StaticResource TitleText}" FontSize="20" Margin="0,0,0,4"/>
+                        <TextBlock x:Name="BudgetDetail" Text=""
+                                   Style="{StaticResource BodyText}"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Background="{StaticResource BrushCard}"
+                        BorderBrush="{StaticResource BrushBorder2}"
+                        BorderThickness="1" CornerRadius="2" Padding="16">
+                    <StackPanel>
+                        <TextBlock x:Name="SubraceTitle" Text="Select a subrace..."
+                                   Style="{StaticResource TitleText}" FontSize="16"/>
+                        <TextBlock x:Name="SubraceInfo" Text=""
+                                   Style="{StaticResource BodyText}"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+
+        <Border Grid.Row="2"
+                Background="{StaticResource BrushCard}"
+                BorderBrush="{StaticResource BrushBorder2}"
+                BorderThickness="1" CornerRadius="2" Padding="14">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="8"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Text="Racial Ability Selection" Style="{StaticResource LabelText}"/>
+
+                <Grid Grid.Row="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="70"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <DockPanel Grid.Column="0" LastChildFill="True">
+                        <TextBlock DockPanel.Dock="Top" Text="Available" Style="{StaticResource SubtitleText}" Margin="0,0,0,6"/>
+                        <ListBox x:Name="AvailableAbilityList"
+                                 Style="{StaticResource DarkListBox}"
+                                 ItemContainerStyle="{StaticResource DarkListBoxItem}"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                 MouseDoubleClick="AvailableAbilityList_MouseDoubleClick"
+                                 MouseRightButtonUp="AvailableAbilityList_MouseRightButtonUp">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Label}" ToolTip="{Binding Description}" TextWrapping="Wrap"/>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
+
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="8,0">
+                        <Button x:Name="BtnAddAbility" Content=">>" Style="{StaticResource GoldButton}" Height="34" Margin="0,0,0,8" Click="BtnAddAbility_Click"/>
+                        <Button x:Name="BtnRemoveAbility" Content="&lt;&lt;" Style="{StaticResource GoldButton}" Height="34" Click="BtnRemoveAbility_Click"/>
+                    </StackPanel>
+
+                    <DockPanel Grid.Column="2" LastChildFill="True">
+                        <TextBlock DockPanel.Dock="Top" Text="Selected" Style="{StaticResource SubtitleText}" Margin="0,0,0,6"/>
+                        <ListBox x:Name="SelectedAbilityList"
+                                 Style="{StaticResource DarkListBox}"
+                                 ItemContainerStyle="{StaticResource DarkListBoxItem}"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                 MouseDoubleClick="SelectedAbilityList_MouseDoubleClick"
+                                 MouseRightButtonUp="SelectedAbilityList_MouseRightButtonUp">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Label}" ToolTip="{Binding Description}" TextWrapping="Wrap"/>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

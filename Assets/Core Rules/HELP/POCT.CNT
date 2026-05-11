@@ -1,0 +1,615 @@
+:Base Poct.HLP
+1 Player's Option: Combat & Tactics
+2 Table of Contents=Player_s_Option_Combat_Tactics
+2 Foreword=Foreword_ct
+2 Credits=Credits_ct
+2 Chapter One: Player's Option Combat System
+3 Player's Option Combat System=Chapter_01_Player_s_Option_Combat_System
+3 Does This Belong in My Campaign?
+4 Does This Belong in My Campaign? Ch 01=Does_This_Belong_in_My_Campaign_Ch_01
+3 The Battle Map
+4 The Battle Map=The_Battle_Map
+4 Figures and Facing=Figures_and_Facing
+3 Scale
+4 Scale=Scale
+4 Melee Scale=Melee_Scale
+4 Range=Range
+4 Weapons=Weapons_Ch1
+4 Monsters=Monsters_Ch1
+4 Missile Scale=Missile_Scale
+4 Switching Scale=Switching_Scale
+4 Combined Scale=Combined_Scale
+3 The Combat Round
+4 The Combat Round=The_Combat_Round
+4 Combat Rounds and Game Time=Combat_Rounds_and_Game_Time
+4 Spell Durations=Spell_Durations
+3 Combat Status
+4 Combat Status=Combat_Status
+4 Clear=Clear
+4 Threatened=Threatened
+4 Unusual Monsters and Threatening=Unusual_Monsters_and_Threatening_CH1
+4 Grappled=Grappled
+4 Attacks of Opportunity=Attacks_of_Opportunity
+3 Movement
+4 Movement=Movement
+4 Base Movement=Base_Movement
+4 Exceptional Abilities and Movement=Exceptional_Abilities_and_Movement
+4 Strength, movement=Strength_movement
+4 Dexterity, movement=Dexterity_movement
+4 Encumbrance=Encumbrance
+4 Simplified Encumbrance=Simplified_Encumbrance_ct
+4 Diagram 5: Movement=Diagram_5:_Movement
+3 Opening the Battle
+4 Opening the Battle=Opening_the_Battle
+4 Surprise=Surprise
+4 Encounter Distance=Encounter_Distance
+4 Set-up=Set_up
+3 The Five Basic Steps of Every Combat Round
+4 The Five Basic Steps of Every Combat Round=The_Five_Basic_Steps_of_Every_Combat_Round
+4 Step One: Monster Action Determination=Step_One_Monster_Action_Determination
+4 Step Two: Player Action Declaration=Step_Two_Player_Action_Declartion
+4 Step Three: Initiative=Step_Three_Initiative
+4 Step Four Resolution of Actions=Step_Four_Resolution_of_Actions
+4 Step Five: End-of-Round Resolution=Step_Five_End_of_Round_Resolution
+3 Initiative
+4 Initiative=Initiative
+4 The Initiative Roll=The_Initiative_Roll
+4 Base Initiative=Base_Initiative
+4 Weapon Speeds=Weapon_Speeds
+4 Critical Events=Critical_Events
+3 Combat Actions
+4 Combat Actions=Combat_Actions
+4 Combat Actions and Movement=Combat_Actiona_and_Movement
+4 No-Move Actions=No_Move_Actions
+4 Half-Move Actions=Half_Move_Actions
+4 Full-move Actions=Full_move_Actions
+4 Movement and Initiative=Movement_and_Initiative
+4 Combat Movement on the Battle Map=Combat_Movement_on_the_Battle_Map
+4 Moving Through Other Figures in Combat=Moving_Through_Other_Figures_in_Combat
+4 Overruns=Overrruns
+4 Choosing an Action=Choosing_an_Action
+4 The Actions
+5 The Actions=The_Actions
+5 Attack=Attack_Ch1
+5 Cast a Spell=Cast_a_Spell
+5 Charge=Charge
+5 Cover=Cover
+5 Fire/Throw Missiles=Fire_Throw_Missiles
+5 Guard=Guard
+5 Move=Move
+5 Parry=Parry
+5 Run=Run
+5 Sprint=Sprint
+5 Unarmed Combat=Unarmed_Combat
+5 Use a Magical Item=Use_a_Magical_Item
+5 Withdraw=Withdraw
+3 Ending the Combat Round
+4 Ending the Combat Round=Ending_the_Combat_Round
+4 Retreats
+5 Retreats=Retreats
+4 Fatigue
+5 Fatigue=Fatigue
+5 Keeping Track of Fatigue=Keeping_Track_of_Fatigue
+5 Effects of Fatigue=Effects_of_Fatigue_ct
+5 Recovering from Fatigue=Recovering_from_fatigue
+5 Effects of Force Marching on Fatigue=Effects_of_Force_Marching_on_Fatigue
+4 Morale
+5 Morale=Morale
+5 Informal Morale Checks=Informal_Morale_Checks
+5 Formal Morale Checks=Formal_Morale_Checks
+5 Failing a Morale Check=Failing_a_Morale_Check
+5 Status=Status
+3 Special Combat Conditions
+4 Special Combat Conditions=Special_Combat_Conditions
+4 Standard and Optional AD&D Rules
+5 Standard and Optional AD&D Rules=Standard_and_Optional_AD_D_Rules
+5 Movement and Footing=Movement_and_Footing
+5 Cover and Concealment=Cover_and_Concealment
+5 Mounts=Mounts
+5 Rear or Flank Attacks=Rear_or_Flank_Attacks
+5 Sitting, Kneeling, and Lying Prone=Sitting_Kneeling_and_Lying_Prone
+5 Damage and Dying=Damage_and_Dying
+5 Weapon Type vs. Armor Type=Weapon_Type_vs_Armor_Type
+5 Firing Into a Melee=Firing_Into_a_Melee
+4 Additional Rules
+5 Additional Rules=Additional_Rules
+5 Higher Ground=Higher_Ground
+5 Knockdowns=Knockdowns
+5 Critical Hits=Critical_Hits
+4 The Gray Areas
+5 The Gray Areas=The_Gray_Areas
+3 Example of Combat
+4 Example of Combat=Example_of_Combat
+4 Round One=Round_One
+4 Round Two=Round_Two
+4 Round Three=Round_Three
+4 Round Four=Round_Four
+2 Chapter Two: Combat Options
+3 Combat Options=Chapter_02_Combat_Options
+3 Does This Belong in My Campaign?
+4 Does This Belong in My Campaign? Ch 02=Does_This_Belong_in_My_Campaign_Ch_02
+3 Battle Tactics
+4 Battle Tactics=Battle_tactics
+4 Shield Wall=Shield_Wall
+4 Versus Missiles=Versus_Missiles
+4 Versus Melee=Versus_Melee
+4 Spear Hedges=Spear_Hedges
+4 Mounted Charge=Mounted_Charge
+4 Archery from Horseback=Archery_from_Horseback
+3 Attack Options
+4 Attack Options=Attack_Options
+4 The Opposed Roll=The_Opposed_Roll
+4 Block=Block
+4 Called Shot=Called_Shot
+4 Disarm=Disarm
+4 Grab=Grab
+4 Overbear=Overbear
+4 Pull/Trip=Pull_Trip
+4 Sap=Sap
+4 Shield-Punch=Shield_Punch
+4 Shield-Rush=Shield_Rush
+4 Special Weapon Manuever=Special_Weapon_Manuever
+4 Trap=Trap
+4 Trap and Break=Trap_and_Break
+4 Unarmed Attack=Unarmed_Attack
+4 Unhorse=Unhorse
+3 Fighting Styles
+4 Fighting Styles=Fighting_Styles
+4 Single Weapon=Single_Weapon
+4 Two-handed Weapon=Two_handed_Weapon
+4 Size and Two-handed Weapons=Size_and_Two_handed_Weapons
+4 One- or Two-handed Weapons=One_or_Two_handed_Weapons
+4 One-handed Weapons used Two-handed=One_handed_Weapons_used_Two_handed
+4 Weapon and Shield=Weapon_and_Shield_ct
+4 Two Weapon=Two_Weapon
+4 Unarmed=Unarmed_Ch2
+4 Missile or Thrown Weapon=Missile_or_Thrown_Weapon
+4 Multiple Loaded Weapons=Multiple_Loaded_Weapons
+4 Thrown Weapons=Thrown_Weapons
+4 Weapon-Specific Styles=Weapon_Specific_Styles
+3 Dueling
+4 Dueling=Dueling
+4 What's a Duel?=What_s_a_Duel
+4 Initiative=Initiative_Ch2
+4 The Dueling Plot=The_Dueling_Plot
+4 Attacking in the Right Spot=Attacking_in_the_Right_Spot
+4 Reading an Opponent's Move=Reading_an_Opponent_s_Move
+4 Moving the Figures=Moving_the_Figures
+4 Choice of Defense=Choice_of_Defense
+4 Choice of Attack=Choice_of_Attack
+4 Ending a Duel=Ending_a_Duel
+3 Heroic Frays
+4 Heroic Frays=Heroic_Frays
+2 Chapter Three: The Battlefield
+3 The Battlefield=Chapter_03_The_Battlefield
+3 Does This Belong in My Campaign?
+4 Does This Belong in My Campaign Ch 03=Does_This_Belong_in_My_Campaign_Ch_03
+3 Battlefields
+4 Battlefields=Battlefields_Ch_03
+4 The Four Basic Battlefields
+5 The Four Basic Battlefields=The_Four_Basic_Battlefields
+5 Dungeons or Caves=Dungeons_or_Caves
+5 Town or Building=Town_or_Building
+5 Outside=Outside
+5 Castles or Fortifications=Castles_or_Fortifications
+4 Battlefield Characteristics
+5 Battlefield Characteristics=Battlefield_Characteristics
+5 Encounter Range=Encounter_Range
+5 Lines of Fire=Lines_of_Fire
+5 Cover and Concealment=Cover_and_Concealment_ch3
+5 Footing=Footing
+5 Obstacles=Obstacles_ch3
+5 Unsusal Material or Hazards=Unsusal_Material_or_Hazards
+3 Terrain Types
+4 Terrain Types=Terrain_Types
+4 Badlands=Badlands
+4 Caves=Caves
+4 Desert=Desert
+4 Fields or Farmland=Fields_or_Farmland
+4 Forest, Heavy or Jungle=Forest_Heavy_or_Jungle
+4 Forest, Light=Forest,_Light
+4 Hills=Hills_ch3
+4 marsh=marsh
+4 mountains=mountains
+4 Plains=Plains
+4 Ships=Ships
+4 Swamp=Swamp
+4 Taverns=Taverns
+4 Town Streets=Town_Streets
+3 Generating a Battlefield
+4 Generating a Battlefield=Generating_a_Battlefield
+4 Step One: Scale
+5 Step One: Scale=Step_One:_Scale
+4 Step Two: Topography
+5 Step Two: Topography=Step_Two:_Topography
+5 Flat=Flat_ch3
+5 Hilly=Hilly_ch3
+5 Broken=Broken_ch3
+5 Slopes and Escarpments=Slopes_and_Escarpments
+4 Step Three: Ground Cover and Water
+5 Step Three: Ground cover and Water=Step_Three_Ground_cover_and_Water
+5 Clear=Clear_ch3
+5 Thickets=Thickets_ch3
+5 Light Woods=Light_Woods_CH3
+5 Heavy Woods=Heavy_Woods_Ch3
+5 Clear, bog=Clear_bog
+5 Bog=Bog_Ch3
+5 Stream, bog=Stream_bog
+5 Pond, bog=Pond_bog
+4 Step Four: Obstacles
+5 Step Four: Obstacles=Step_Four_Obstacles
+4 Step Five: Putting It All Together
+5 Step Five: Putting It All Together=Step_Five_Putting_It_All_Together
+3 Fighting in Unusual Conditions
+4 Fighting in Unusual Conditions=Fighting_in_Unusual_Conditions
+4 Limited Visibility
+5 Limited Visibility=Limited_Visibility
+5 Moonlight or Moderate Fog or Rain=Moonlight_or_Moderate_Fog_or_Rain
+5 Starlight or Dense Fog or Heavy Rain=Starlight_or_Dense_Fog_or_Heavy_Rain
+5 Total Darkness=Total_Darkness
+4 Water
+5 Water=Water
+5 Weapon Restrictions, water=Weapon_Restrictions_water
+5 Vision, water=Vision_water
+5 Movement, water=Movement_ch3_water
+5 Fighting Underwater Monsters From the Surface=Fighting_Underwater_Monsters_From_the_Surface
+4 Climbing
+5 Climbing=Climbing_ch3
+5 Movement, climbing=Movement_ch3_climbing
+5 Fighting, climbing=Fighting_Ch3_climbing
+5 Fighting Flying Creatures, climbing=Fighting_Flying_Creatures_ch3_climbing
+4 Aerial Combat
+5 Aerial Combat=Aerial_Combat
+5 Initiative, Aerial combat=Initiative_ch3_Aerial_combat
+5 Threatening, Aerial Combat=Threatening_ch3_Aerial_Combat
+5 Movement, Aerial combat=Movement_ch3_Aerial_combat
+5 Attacks from Below=Attacks_from_Below
+5 Attacks from Above=Attacks_from_Above
+5 Unseating a Rider=Unseating_a_Rider
+4 Combat on Other Planes
+5 Combat on Other Planes=Combat_on_Other_Planes
+5 Astral Combat=Astral_Combat
+5 Ethereal Combat=Ethereal_Combat
+3 The Effects of Magic on the Battlefield
+4 The Effects of Magic on the Battlefield=The_Effects_of_Magic_on_the_Battlefield
+4 Wizard Spells
+5 Wizard Spells=Wizard_Spells
+5 Blink=Blink_ct
+5 Darkness 15' Radius=Darkness_15_Radius
+5 Enlarge=Enlarge
+5 Fog Cloud=Fog_Cloud
+5 Hallucinatory Terrain=Hallucinatory_Terrain
+5 Haste=Haste
+5 Invisibility=Invisibility_ct
+5 Jump=Jump
+5 Pyrotechnics=Pyrotechnics
+5 Shocking Grasp=Shocking_Grasp
+5 Slow=Slow
+4 Priest Spells
+5 Priest Spells=Priest_Spells
+5 Air Walk=Air_Walk
+5 Obscurement=Obscurement
+4 Magical Items
+5 Magical Items=Magical_Items
+5 Potion of Growth=Potion_of_Growth
+5 Potion of Invulnerability=Potion_of_Invulnerability
+5 Apparatus of Kwalish=Apparatus_of_Kwalish
+5 Boots of Speed=Boots_of_Speed
+5 Boots of Striding and Springing=Boots_of_Striding_and_Springing
+5 Crossbow of Accuracy=Crossbow_of_Accuracy
+5 Scimitar of Speed=Scimitar_of_Speed
+5 Short Sword of Quickness=Short_Sword_of_Quickness
+5 Sword of Sharpness=Sword_of_Sharpness
+5 Vorpal Sword=Vorpal_Sword
+2 Chapter Four: Weapon Specialization & Mastery
+3 Weapon Specialization & Mastery=Chapter_04_Weapon_Specialization_Mastery
+3 Weapon Proficiencies
+4 Weapon Proficiencies=Weapon_Proficiencies
+4 Intelligence and Proficiencies=Intelligence_and_Proficiencies
+4 Proficiencies and the Skills and Powers Book=Proficiencies_and_the_Skills_and_Powers_Book
+4 Weapon Groups=Weapon_Groups
+4 Specialization and Weapon Groups=Specialization_and_Weapon_Groups
+4 Character Class and Weapon Proficiencies=Character_Class_and_Weapon_Proficiencies
+4 Kits and Barred Weapons=Kits_and_Barred_Weapons
+4 New Weapons=New_Weapons
+4 Shield Proficiency=Shield_Proficiency_ct
+4 Armor Proficiency=Armor_Proficiency_ct
+3 Weapon Mastery
+4 Weapon Mastery=Weapon_Mastery
+4 Nonproficiency=Nonproficiency
+4 Familiarity=Familiarity
+4 Proficiency=Proficiency
+4 Expertise=Expertise
+4 Specialization
+5 Specialization=Specialization
+5 Melee Weapons=Melee_Weapons_ch4
+5 Missile Weapons=Missile_Weapons
+5 Bows=Bows
+5 Crossbows=Crossbows
+5 Firearms=Firearms
+4 Weapon Mastery
+5 Weapon Mastery=Weapon_Mastery_ch4
+5 Effects of Mastery=Effects_of_Mastery
+5 High Mastery=High_Mastery
+5 Grand Mastery=Grand_Mastery
+5 Special DM Note=Special_DM_Note
+3 Fighting Style Specializations
+4 Fighting Style Specialization=Fighting_Style_Specialization
+4 Weapon and Shield Style=Weapon_and_Shield_Style
+4 One-handed Weapon Style=One_handed_Weapon_Style
+4 Two-handed Weapon Style=Two_handed_Weapon_Style
+4 Two-Weapon Style=Two_Weapon_Style_ch4
+4 Missile or Thrown Weapon Style=Missile_or_Thrown_Weapon_Style_ch4
+4 Horse Archers=Horse_Archers_ch4
+4 Local Fighting Styles=Local_Fighting_Styles_ch4
+3 Special Talents
+4 Special Talents=Special_Talents
+4 Alertness, Special Talent=Alertness_Special_Talent
+4 Ambidexterity, Special Talent=Ambidexterity_Special_Talent
+4 Ambush, Special Talent=Ambush_Special_Talent
+4 Camoflage, Special Talent=Camoflage_Special_Talent
+4 Dirty Fighting, Special Talent=Dirty_Fighting_Special_Talent
+4 Endurance, Special Talent=Endurance_Special_Talent
+4 Fine Balance, Special Talent=Fine_Balance_Special_Talent
+4 Iron Will, Special Talent=Iron_Will_Special_Talent
+4 Leadership, Special Talent=Leadership_Special_Talent
+4 Quickness, Special Talent=Quickness_Special_Talent
+4 Steady Hand, Special Talent=Steady_Hand_Special_Talent
+4 Trouble Sense=Trouble_Sense
+2 Chapter Five: Unarmed Combat
+3 Unarmed Combat=Chapter_05_Unarmed_Combat
+3 Does This Belong in My Campaign?
+4 Does This Belong in My Campaign? Ch 05=Does_This_Belong_in_My_Campaign_Ch_05
+3 Brawling
+4 Brawling=Brawling
+4 Brawling Attacks Against Armed Opponents=Brawling_Attacks_Against_Armed_Opponents
+4 Temporary Damage=Temporary_Damage
+4 Opposed Rolls=Opposed_Rolls
+3 Pummeling
+4 Pummeling=Pummeling
+4 Pummeling Procedures=Pummeling_Procedures
+4 Pummeling Skill Levels=Pummeling_Skill_Levels
+4 An Example of Pummeling=An_Example_of_Pummeling
+4 Special Pummeling Maneuvers=Special_Pummeling_Maneuvers
+4 Sapping=Sapping_ch5
+4 Kicking=Kicking_ch5
+3 Wrestling
+4 Wrestling=Wrestling
+4 Wrestling Skill Levels=Wrestling_Skill_Levels
+4 An Example of Wrestling=An_Example_of_Wrestling
+4 Wrestling Procedures
+5 Wrestling Procedures=Wrestling_Procedures
+5 Holds=Holds
+5 Previously Established Holds and Locks=Previously_Established_Holds_and_Locks
+5 Breaking Free=Breaking_Free
+5 Assistance=Assistance
+5 Locks=Locks
+5 Wrestler Versus Wrestler=Wrestler_Versus_Wrestler
+3 Overbearing
+4 Overbearing=Overbearing
+4 Overbearing Procedures=Overbearing_Procedures
+4 Overbearing Skill Levels=Overbearing_Skill_Levels
+4 An Example of Overbearing=An_Example_of_Overbearing
+4 Pins
+5 Pins=Pins_Overbearing
+5 Effects of Pins=Effects_of_Pins_overbearing
+5 Maintaining and Breaking Pins=Maintaining_and_Breaking_Pins
+5 Assistance=Assistance_overbearing
+3 Attack Options and Unarmed Attacks
+4 Attack Options and Unarmed Attacks=Attack_Options_and_Unarmed_Attacks
+3 Subdual Attacks
+4 Subual Attacks=Subual_Attacks
+4 An Example of Subduing=An_Example_of_Subduing
+3 Martial Arts
+4 Martial Arts=Martial_Arts
+4 Martial Arts Procedures=Martial_Arts_Procedures
+4 Martial Arts Skill Levels=Martial_Arts_Skill_Levels
+4 Martial Arts Weapons=Martial_Arts_Weapons
+4 An Example of Martial Arts Combat=An_Example_of_Martial_Arts_Combat
+3 Martial Arts Talents
+4 Martial Arts Talents=Martial_Arts_Talents
+4 Flying Kick=Flying_Kick_Martial_Art_Talent
+4 Backward Kick, Martial Art Talent=Backward_Kick_Martial_Art_Talent
+4 Spring, Martial Art Talent=Spring_Martial_Art_Talent
+4 Crushing Blow, Martial Art Talent=Crushing_Blow_Martial_Art_Talent
+4 Instant Stand, Martial Art Talent=Instant_Stand_Martial_Art_Talent
+4 Missile Deflection, Martial Art Talent=Missile_Deflection_Martial_Art_Talent
+2 Chapter Six: Critical Hits
+3 Critical Hits=Chapter_06_Critical_Hits
+3 Does This Belong in My Campaign?
+4 Does This Belong in My Campiagn? Ch 06=Does_This_Belong_in_My_Campiagn_Ch_06
+3 Critical Hits: System I
+4 Critical Hits: System I=Critical_Hits_System_I
+3 Critical Hits: System II
+4 Critical Hits: System II=Critical_Hits_System_II
+4 Critical Hits Charts=Critical_Hit_Charts
+4 Location=Location
+4 Severity=Severity_ct
+4 Resistance=Resistance
+3 Reading the Critical Hits Table
+4 Reading the Critical Hit Tables=Reading_the_Critical_Hit_Tables
+3 Specific Injuries
+4 Specific Injuries=Specific_Injuries
+4 Critical Hit Effects=Critical_Hit_Effects
+3 Critical Hits Tables
+4 Critical Hit Tables=Critical_Hit_Tables
+4 Bludgeoning vs. Humanoids, critical hit table=Bludgeoning_vs_Humanoids_critical_hit_table
+4 Bludgeoning vs. Animals, critical hit table=Bludgeoning_vs_Animals_critical_hit_table
+4 Bludgeoning vs. Monsters, critical hit table=Bludgeoning_vs_Monsters_critical_hit_table
+4 Slashing vs. Humanoids, critical hit table=Slashing_vs_Humanoids_critical_hit_table
+4 Slashing vs. Animals, critical hit table=Slashing_vs_Animals_critical_hit_table
+4 Slashing vs. Monsters, critical hit table=Slashing_vs_Monsters_critical_hit_table
+4 Piercing vs. Humanoids, critical hit table=Piercing_vs_Humanoids_critical_hit_table
+4 Piercing vs. Animals, critical hit table=Piercing_vs_Animals_critical_hit_table
+4 Piercing vs. Monsters, critical hit table=Piercing_vs_Monsters_critical_hit_table
+2 Chapter Seven: Weapons & Armor
+3 Weapons & Armor=Chapter_07_Weapons_Armor
+3 Equipment Groups
+4 Equipment Groups=Equipment_Groups
+4 Reading the Equipment Lists=Reading_the_Equipment_Lists
+4 Stone Age or Savage Cultures=Stone_Age_or_Savage_Cultures
+4 Tools/Common=Tools_Common
+4 The Bronze Age and Ancient Cultures=The_Bronze_Age_and_Ancient_Cultures
+4 Roman=Roman
+4 Dark Ages=Dark_Ages
+4 The Crusades=The_Crusades
+4 Hundred Years' War=Hundred_Years_War
+4 The Renaissance=The_Renaissance
+4 Middle Eastern=Middle_Eastern
+4 Oriental=Oriental
+4 Firearms=Firearms_Ch7
+4 Armor=Armor
+3 Master Weapon List
+4 Master Weapon List=Master_Weapon_List
+4 Weapon Descriptions=Weapon_Descriptions
+3 Weapons Tables
+4 Master Weapons Table=Master_Weapons_Table
+3 Weapon Groups
+4 Weapon Groups=Weapon_Groups_Ch_7
+3 Weapon and Ability Bonuses
+4 Weapons and Ability Bonuses=Weapons_and_Ability_Bonuses_ch7
+3 Armor Description
+4 Armor Descriptions=Armor_Descriptions
+2 Chapter Eight: Siege Warfare
+3 Siege Warfare=Chapter_08_Siege_Warfare
+3 Does This Belong in My Campaign?
+4 Does This Belong in My Campaign?=Does_This_Belong_in_My_Campaign_Ch_08
+3 War Machines
+4 War Machines=War_Machines
+4 Bombardment Engines
+5 Bombardment Engines=Bombardment_Engines
+5 Ballista=Ballista
+5 Bombard=Bombard
+5 Cannon=Cannon
+5 Catapult=Catapult
+5 Trebuchet=Trebuchet
+4 Bombardment Engine Procedures
+5 Bombardment Engine Procedures=Bombardment_Engine_Procedures
+5 Indirect Fire Engines=Indirect_Fire_Engines
+4 An Example of Indirect Bombardment
+5 An Example of Indirect Bombardment=An_Example_of_Indirect_Bombardment
+5 Direct Fire Engines=Direct_Fire_Engines
+4 An Example of Direct Bombardment
+5 An Example of Direct Bombardment=An_Example_of_Direct_Bombardment
+3 Vehicles
+4 Vehicles=Vehicles
+4 Chariot=Chariot
+4 Howdah=Howdah
+4 Carrying Capacities For Beasts=Carrying_Capacities_For_Beasts
+4 Wagon=Wagon
+4 Driving Checks and Fliping Over=Driving_Checks_and_Fliping_Over
+4 Ramming=Ramming
+3 Miscellaneous War Machines
+4 Miscellaneous War Machines=Miscellaneous_War_Machines
+4 Battering Ram=Battering_Ram
+4 Bore=Bore
+4 Cauldron=Cauldron
+4 Gallery Shed=Gallery_Shed
+4 Greek Fire Projector=Greek_Fire_Projector
+4 Mantlet/Abatis=Mantlet_Abatis
+4 Ram Catcher=Ram_Catcher
+4 Rocks=Rocks
+4 Critical Hits and Knockdown Dice, Siege=Critical_Hits_and_Knockdown_Dice_Siege
+4 Multiple Targets=Multiple_Targets
+4 Siege Tower=Siege_Tower
+4 Miscellaneous War Machine Costs and Weights=Miscellaneous_War_Machine_Costs_and_Weights
+3 Escalades
+4 Escalades=Escalades
+4 The Approach of a Castle
+5 The Approach of a Castle=The_Approach_of_a_Castle
+4 Walls
+5 Walls=Walls
+5 Wall Defenses=Wall_Defenses
+5 Scaling Walls=Scaling_Walls
+5 Ladders=Ladders
+5 Grappling Hooks=Grappling_Hooks
+4 War Machine vs. War Machine
+5 War Machine vs. War Machine=War_Machine_vs_War_Machine
+5 Fires=Fires
+5 War Engine Attack and Defense Values=War_Engine_Attack_and_Defense_Values
+4 Sapping
+5 Sapping=Sapping
+4 Petards
+5 Petards=Petards
+4 Creatures Inside Destroyed Targets
+5 Creatures Inside Destroyed Targets=Creatures_Inside_Destroyed_Targets
+4 Magical Attacks
+5 Magical Attacks=Magical_Attacks
+5 Bigby's Clenched Fist=Bigby_s_Clenched_Fist
+5 Dig=Dig
+5 Disintegrate=Disintegrate
+5 Earthquake=Earthquake
+5 Fireball=Fireball
+5 Horn of Blasting=Horn_of_Blasting
+5 Incendiary Cloud=Incendiary_Cloud
+5 Lightning Bolt=Lightning_Bolt
+5 Potion of Fire Breath=Potion_of_Fire_Breath
+5 Mattock of the Titans=Mattock_of_the_Titans
+5 Maul of the Titans=Maul_of_the_Titans
+5 Move Earth=Move_Earth
+5 Ring of the Ram=Ring_of_the_Ram
+5 Ring of shooting Stars=Ring_of_shooting_Stars
+5 Transmute Rock to Mud=Transmute_Rock_to_Mud
+5 Wall of Fire=Wall_of_Fire
+5 Wall of Iron=Wall_of_Iron
+5 Wall of Stone=Wall_of_Stone
+5 Warp Wood=Warp_Wood
+3 Sieges
+4 Sieges=Sieges
+4 Reduction
+5 Reduction=Reduction
+5 Reduction Procedures=Reduction_Procedures
+5 Saving Throw Failure=Saving_Throw_Failure
+4 Mines
+5 Mines=Mines
+5 Counter Mining=Counter_Mining
+4 Investment
+5 Investment=Investment
+3 Mass Combat
+4 Mass Combat=Mass_Combat
+4 Mass Combat Procedures=Mass_Combat_Procedures
+4 An Example of Mass Combat=An_Example_of_Mass_Combat
+3 Proficiencies
+4 Proficiencies=Proficiencies_Sieges
+2 Chapter Nine: Monsters
+3 Monsters=Chapter_09_Monsters
+3 Does This Belong in My Campaign?
+4 Does This Belong in My Campaign?=Does_This_Belong_in_My_Campaign_Ch_09
+3 Creatures in Battle
+4 Creatures in Battle=Creatures_in_Battle
+4 Intelligence=Intelligence
+4 Alignment=Alignment
+4 Morale=Morale_Creatures_in_Battle
+3 Creature Types
+4 Creature Types=Creature_Types
+4 Humanoid=Humanoid
+4 Animal=Animal
+4 Monster=Monster_creature_types
+3 Attack and Armor Types
+4 Attack and Armor Types=Attack_and_Armor_Types
+4 Attacks=Attacks
+4 Armor=Armor_creature
+2 Index
+3 A=Index_ct
+3 B=B_ct
+3 C=C_ct
+3 D=D_ct
+3 E=E_ct
+3 F=F_ct
+3 G=G_ct
+3 H=H_ct
+3 I=I_ct
+3 J=J_ct
+3 K=K_ct
+3 L=L_ct
+3 M=M_ct
+3 N=N_ct
+3 O=O_ct
+3 P=P_ct
+3 Q=Q_ct
+3 R=R_ct
+3 S=S_ct
+3 T=T_ct
+3 U=U_ct
+3 V=V_ct
+3 W-Z=W_ct

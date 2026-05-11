@@ -1,0 +1,57 @@
+<UserControl x:Class="DungeonMasterCortex.Views.CharGenRaceScreen"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource BrushPanel}">
+    <Grid Margin="40,20">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="20"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Left: list -->
+        <DockPanel Grid.Column="0" LastChildFill="True">
+            <TextBlock DockPanel.Dock="Top" Text="CHOOSE YOUR RACE" Style="{StaticResource TitleText}"
+                       FontSize="20" Margin="0,0,0,4"/>
+            <TextBlock DockPanel.Dock="Top" Text="Step 3  ·  Select a race for your character"
+                       Style="{StaticResource SubtitleText}" Margin="0,0,0,16"/>
+            <Rectangle DockPanel.Dock="Top" Height="1" Fill="{StaticResource BrushBorder}" Margin="0,0,0,12"/>
+            <ListBox x:Name="RaceList" Style="{StaticResource DarkListBox}"
+                     ItemContainerStyle="{StaticResource DarkListBoxItem}"
+                     SelectionChanged="RaceList_SelectionChanged"
+                     MouseRightButtonUp="RaceList_MouseRightButtonUp"/>
+        </DockPanel>
+
+        <!-- Divider -->
+        <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource BrushBorder2}"
+                   VerticalAlignment="Stretch" Margin="0,20"/>
+
+        <!-- Right: info -->
+        <DockPanel Grid.Column="2" Margin="20,0,0,0" LastChildFill="True">
+            <TextBlock DockPanel.Dock="Top" Text="Race Details" Style="{StaticResource TitleText}"
+                       FontSize="20" Margin="0,0,0,4"/>
+            <TextBlock DockPanel.Dock="Top" Text="Ability restrictions, mode, and racial abilities"
+                       Style="{StaticResource SubtitleText}" Margin="0,0,0,16"/>
+            <Rectangle DockPanel.Dock="Top" Height="1" Fill="{StaticResource BrushBorder}" Margin="0,0,0,12"/>
+
+            <Border Background="{StaticResource BrushCard}"
+                    BorderBrush="{StaticResource BrushBorder2}"
+                    BorderThickness="1" CornerRadius="2" Padding="20">
+                <DockPanel LastChildFill="True">
+                    <TextBlock DockPanel.Dock="Top" x:Name="RaceTitle" Text="Select a race…"
+                               Style="{StaticResource TitleText}" FontSize="16"
+                               Margin="0,0,0,8"/>
+                    <TextBlock DockPanel.Dock="Top" x:Name="CpSummary" Text=""
+                               Style="{StaticResource LabelText}"
+                               Margin="0,0,0,12"/>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled">
+                        <TextBlock x:Name="RaceInfo" Text=""
+                                   Style="{StaticResource BodyText}"
+                                   TextWrapping="Wrap" LineHeight="22"/>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+        </DockPanel>
+    </Grid>
+</UserControl>

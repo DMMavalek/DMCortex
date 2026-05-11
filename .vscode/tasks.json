@@ -1,0 +1,147 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "build-release",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"DungeonMasterCortex.csproj",
+				"-c",
+				"Release"
+			],
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build-solution",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"Dungeon Master Cortex.sln",
+				"-c",
+				"Release"
+			],
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build-solution-verify",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"Dungeon Master Cortex.sln",
+				"-c",
+				"Release"
+			],
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build-solution-post-audit",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"Dungeon Master Cortex.sln",
+				"-c",
+				"Release"
+			],
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build-after-all-updates",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"Dungeon Master Cortex.sln",
+				"-c",
+				"Release"
+			],
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Build PlayerCortex Installer",
+			"type": "shell",
+			"command": "\"C:\\Users\\kelava\\AppData\\Local\\Programs\\Inno Setup 6\\ISCC.exe\"",
+			"args": [
+				"\"C:\\Users\\kelava\\Documents\\Projects\\Dungeon Master Cortex\\Installer\\PlayerCortexSetup.iss\""
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Build PlayerCortex Installer 2",
+			"type": "shell",
+			"command": "powershell.exe",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"& 'C:\\Users\\kelava\\AppData\\Local\\Programs\\Inno Setup 6\\ISCC.exe' 'C:\\Users\\kelava\\Documents\\Projects\\Dungeon Master Cortex\\Installer\\PlayerCortexSetup.iss'"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Build PlayerCortex Installer 3",
+			"type": "shell",
+			"command": "powershell.exe",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"$p='C:\\Users\\kelava\\AppData\\Local\\Programs\\Inno Setup 6\\ISCC.exe'; $i='C:\\Users\\kelava\\Documents\\Projects\\Dungeon Master Cortex\\Installer\\PlayerCortexSetup.iss'; Start-Process -FilePath $p -ArgumentList @($i) -Wait -NoNewWindow"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild DM and Player Installers",
+			"type": "shell",
+			"command": "powershell.exe",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"C:\\Users\\kelava\\Documents\\Projects\\Dungeon Master Cortex\\build-installers.ps1"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Rebuild Installers 1.0.12",
+			"type": "shell",
+			"command": "powershell.exe",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"C:\\Users\\kelava\\Documents\\Projects\\Dungeon Master Cortex\\build-installers.ps1"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		}
+	]
+}

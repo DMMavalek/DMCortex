@@ -1,0 +1,379 @@
+{
+  "weapon_groups": [
+    {
+      "id": "axes",
+      "name": "Axes",
+      "description": "All axe-type weapons, from handaxes to great axes.",
+      "tight_groups": [
+        {
+          "id": "light_axes",
+          "name": "Light Axes",
+          "weapon_ids": [ "hand_axe", "throwing_axe" ]
+        },
+        {
+          "id": "heavy_axes",
+          "name": "Heavy Axes",
+          "weapon_ids": [ "battle_axe", "great_axe" ]
+        }
+      ]
+    },
+    {
+      "id": "bows",
+      "name": "Bows",
+      "description": "All self-bows. Does not include crossbows.",
+      "tight_groups": [
+        {
+          "id": "short_bows",
+          "name": "Short Bows",
+          "weapon_ids": [ "short_bow", "composite_short_bow" ]
+        },
+        {
+          "id": "long_bows",
+          "name": "Long Bows",
+          "weapon_ids": [ "long_bow", "composite_long_bow" ]
+        }
+      ]
+    },
+    {
+      "id": "clubbing_weapons",
+      "name": "Clubbing Weapons",
+      "description": "Clubs, maces, and similar bludgeoning weapons.",
+      "tight_groups": [
+        {
+          "id": "light_clubs",
+          "name": "Light Clubs",
+          "weapon_ids": [ "club", "jo_stick" ]
+        },
+        {
+          "id": "heavy_clubs",
+          "name": "Heavy Clubs",
+          "weapon_ids": [ "footmans_mace", "horsemans_mace", "morning_star" ]
+        }
+      ]
+    },
+    {
+      "id": "crossbows",
+      "name": "Crossbows",
+      "description": "All crossbow types.",
+      "tight_groups": [
+        {
+          "id": "hand_crossbows",
+          "name": "Hand Crossbows",
+          "weapon_ids": [ "hand_crossbow" ]
+        },
+        {
+          "id": "standard_crossbows",
+          "name": "Standard Crossbows",
+          "weapon_ids": [ "light_crossbow", "heavy_crossbow", "repeating_crossbow" ]
+        }
+      ]
+    },
+    {
+      "id": "flails_chains",
+      "name": "Flails/Chains",
+      "description": "Flails, chains, nunchaku, and similar flexible bludgeoning weapons.",
+      "tight_groups": [
+        {
+          "id": "light_flails",
+          "name": "Light Flails",
+          "weapon_ids": [ "horsemans_flail", "nunchaku" ]
+        },
+        {
+          "id": "heavy_flails",
+          "name": "Heavy Flails",
+          "weapon_ids": [ "footmans_flail", "chain" ]
+        }
+      ]
+    },
+    {
+      "id": "hammers",
+      "name": "Hammers",
+      "description": "War hammers, mauls, and similar bludgeoning weapons.",
+      "tight_groups": [
+        {
+          "id": "war_hammers",
+          "name": "War Hammers",
+          "weapon_ids": [ "warhammer", "maul" ]
+        }
+      ]
+    },
+    {
+      "id": "lances",
+      "name": "Lances",
+      "description": "Mounted lance weapons.",
+      "tight_groups": [
+        {
+          "id": "mounted_lances",
+          "name": "Mounted Lances",
+          "weapon_ids": [ "light_lance", "medium_lance", "heavy_lance" ]
+        }
+      ]
+    },
+    {
+      "id": "blades",
+      "name": "Blades (All Swords & Daggers)",
+      "description": "All cutting and stabbing blades: daggers, short swords, medium swords, heavy swords, and rapiers.",
+      "tight_groups": [
+        {
+          "id": "daggers_knives",
+          "name": "Daggers/Knives",
+          "weapon_ids": [ "dagger", "knife", "main_gauche" ]
+        },
+        {
+          "id": "short_swords",
+          "name": "Short Swords",
+          "weapon_ids": [ "short_sword", "cutlass" ]
+        },
+        {
+          "id": "swords_medium",
+          "name": "Medium Swords",
+          "weapon_ids": [ "long_sword", "broad_sword", "scimitar" ]
+        },
+        {
+          "id": "swords_heavy",
+          "name": "Heavy Swords",
+          "weapon_ids": [ "bastard_sword", "two_handed_sword", "flamberge" ]
+        },
+        {
+          "id": "rapiers_group",
+          "name": "Rapiers",
+          "weapon_ids": [ "rapier", "saber" ]
+        }
+      ]
+    },
+    {
+      "id": "picks",
+      "name": "Picks",
+      "description": "Picks and similar piercing weapons.",
+      "tight_groups": [
+        {
+          "id": "light_picks",
+          "name": "Light Picks",
+          "weapon_ids": [ "horsemans_pick_light", "horsemans_pick_heavy" ]
+        },
+        {
+          "id": "heavy_picks",
+          "name": "Heavy Picks",
+          "weapon_ids": [ "footmans_pick_light", "footmans_pick_heavy" ]
+        }
+      ]
+    },
+    {
+      "id": "polearms",
+      "name": "Polearms",
+      "description": "Long pole-mounted weapons of all kinds.",
+      "tight_groups": [
+        {
+          "id": "glaive_group",
+          "name": "Glaives",
+          "weapon_ids": [ "glaive", "glaive_guisarme", "bardiche" ]
+        },
+        {
+          "id": "guisarme_group",
+          "name": "Guisarmes",
+          "weapon_ids": [ "guisarme", "guisarme_voulge", "voulge" ]
+        },
+        {
+          "id": "halberd_group",
+          "name": "Halberds",
+          "weapon_ids": [ "halberd", "ranseur", "lucerne_hammer" ]
+        },
+        {
+          "id": "spear_polearms",
+          "name": "Spear Polearms",
+          "weapon_ids": [ "bill_guisarme", "bill_hook" ]
+        }
+      ]
+    },
+    {
+      "id": "slings",
+      "name": "Slings",
+      "description": "Slings and staff slings.",
+      "tight_groups": [
+        {
+          "id": "slings_group",
+          "name": "Slings",
+          "weapon_ids": [ "sling", "staff_sling" ]
+        }
+      ]
+    },
+    {
+      "id": "spears_javelins",
+      "name": "Spears/Javelins",
+      "description": "Spears, javelins, and short spears.",
+      "tight_groups": [
+        {
+          "id": "light_spears",
+          "name": "Light Spears",
+          "weapon_ids": [ "javelin", "short_spear" ]
+        },
+        {
+          "id": "heavy_spears",
+          "name": "Heavy Spears",
+          "weapon_ids": [ "spear", "trident" ]
+        }
+      ]
+    },
+    {
+      "id": "staffs",
+      "name": "Staves",
+      "description": "Staves and bo/jo sticks.",
+      "tight_groups": [
+        {
+          "id": "staves_group",
+          "name": "Staves",
+          "weapon_ids": [ "quarterstaff", "bo_stick", "jo_stick" ]
+        }
+      ]
+    },
+    {
+      "id": "thrown_weapons",
+      "name": "Thrown Weapons",
+      "description": "Weapons primarily used by throwing: darts, rocks, shuriken.",
+      "tight_groups": [
+        {
+          "id": "darts_group",
+          "name": "Darts/Shuriken",
+          "weapon_ids": [ "dart", "shuriken" ]
+        }
+      ]
+    },
+    {
+      "id": "whips_lashes",
+      "name": "Whips/Lashes",
+      "description": "Whips, lashes, and similar flexible weapons.",
+      "tight_groups": [
+        {
+          "id": "whips_group",
+          "name": "Whips",
+          "weapon_ids": [ "whip", "scourge" ]
+        }
+      ]
+    }
+  ],
+  "damage_type_filters": [
+    {
+      "id": "B",
+      "name": "Bludgeoning (B)",
+      "description": "Filter weapons by bludgeoning damage type"
+    },
+    {
+      "id": "P",
+      "name": "Piercing (P)",
+      "description": "Filter weapons by piercing damage type"
+    },
+    {
+      "id": "S",
+      "name": "Slashing (S)",
+      "description": "Filter weapons by slashing damage type"
+    }
+  ],
+  "weapons": [
+    { "id": "battle_axe",           "name": "Axe, Battle",              "group_id": "axes",           "tight_group_id": "heavy_axes",         "damage_sm": "1d8",    "damage_l": "1d8",    "speed": 7,  "type": "S",   "size": "M", "attacks_per_round": "1",   "notes": "" },
+    { "id": "great_axe",            "name": "Axe, Great",               "group_id": "axes",           "tight_group_id": "heavy_axes",         "damage_sm": "1d10",   "damage_l": "1d10",   "speed": 9,  "type": "S",   "size": "L", "attacks_per_round": "1",   "notes": "Two-handed weapon." },
+    { "id": "hand_axe",             "name": "Axe, Hand",                "group_id": "axes",           "tight_group_id": "light_axes",         "damage_sm": "1d4",    "damage_l": "1d6",    "speed": 4,  "type": "S",   "size": "M", "attacks_per_round": "1",   "notes": "Can also be thrown (range 10/20/30)." },
+    { "id": "throwing_axe",         "name": "Axe, Throwing",            "group_id": "axes",           "tight_group_id": "light_axes",         "damage_sm": "1d4",    "damage_l": "1d6",    "speed": 4,  "type": "S",   "size": "M", "attacks_per_round": "1",   "notes": "Designed for throwing." },
+
+    { "id": "short_bow",            "name": "Bow, Short",               "group_id": "bows",           "tight_group_id": "short_bows",         "damage_sm": "1d6",    "damage_l": "1d6",    "speed": 7,  "type": "P",   "size": "M", "attacks_per_round": "2",   "notes": "Range 50/100/150. Uses arrows." },
+    { "id": "composite_short_bow",  "name": "Bow, Composite Short",     "group_id": "bows",           "tight_group_id": "short_bows",         "damage_sm": "1d6",    "damage_l": "1d6",    "speed": 6,  "type": "P",   "size": "M", "attacks_per_round": "2",   "notes": "Range 50/100/150. STR bonus applies to damage." },
+    { "id": "long_bow",             "name": "Bow, Long",                "group_id": "bows",           "tight_group_id": "long_bows",          "damage_sm": "1d6",    "damage_l": "1d6",    "speed": 8,  "type": "P",   "size": "L", "attacks_per_round": "2",   "notes": "Range 70/140/210. Uses arrows." },
+    { "id": "composite_long_bow",   "name": "Bow, Composite Long",      "group_id": "bows",           "tight_group_id": "long_bows",          "damage_sm": "1d6",    "damage_l": "1d6",    "speed": 7,  "type": "P",   "size": "L", "attacks_per_round": "2",   "notes": "Range 60/120/180. STR bonus applies to damage." },
+
+    { "id": "club",                 "name": "Club",                     "group_id": "clubbing_weapons","tight_group_id": "light_clubs",        "damage_sm": "1d3",    "damage_l": "1d6",    "speed": 4,  "type": "B",   "size": "M", "attacks_per_round": "1",   "notes": "Can also be thrown (range 10/20/30)." },
+    { "id": "jo_stick",             "name": "Jo Stick",                 "group_id": "clubbing_weapons","tight_group_id": "light_clubs",        "damage_sm": "1d3",    "damage_l": "1d6",    "speed": 2,  "type": "B",   "size": "M", "attacks_per_round": "1",   "notes": "" },
+    { "id": "footmans_mace",        "name": "Footman's Mace",           "group_id": "clubbing_weapons","tight_group_id": "heavy_clubs",        "damage_sm": "1d6+1",  "damage_l": "2d4",  "speed": 7,  "type": "B",   "size": "M", "attacks_per_round": "1",   "notes": "" },
+    { "id": "horsemans_mace",       "name": "Horseman's Mace",          "group_id": "clubbing_weapons","tight_group_id": "heavy_clubs",        "damage_sm": "1d4",    "damage_l": "1d6",    "speed": 5,  "type": "B",   "size": "M", "attacks_per_round": "1",   "notes": "Designed for mounted use." },
+    { "id": "morning_star",         "name": "Morning Star",             "group_id": "clubbing_weapons","tight_group_id": "heavy_clubs",        "damage_sm": "1d6+1",  "damage_l": "2d4",  "speed": 7,  "type": "B/P", "size": "M", "attacks_per_round": "1",   "notes": "" },
+
+    { "id": "hand_crossbow",        "name": "Crossbow, Hand",           "group_id": "crossbows",      "tight_group_id": "hand_crossbows",     "damage_sm": "1d2",    "damage_l": "1d3",    "speed": 5,  "type": "P",   "size": "S", "attacks_per_round": "1",   "notes": "Range 20/40/60. 1 round to reload." },
+    { "id": "light_crossbow",       "name": "Crossbow, Light",          "group_id": "crossbows",      "tight_group_id": "standard_crossbows", "damage_sm": "1d4",    "damage_l": "1d4",    "speed": 7,  "type": "P",   "size": "M", "attacks_per_round": "1",   "notes": "Range 60/120/180. 1 round to reload." },
+    { "id": "heavy_crossbow",       "name": "Crossbow, Heavy",          "group_id": "crossbows",      "tight_group_id": "standard_crossbows", "damage_sm": "1d4+1",  "damage_l": "1d6+1",  "speed": 10, "type": "P",   "size": "M", "attacks_per_round": "1/2", "notes": "Range 80/160/240. 2 rounds to reload." },
+    { "id": "repeating_crossbow",   "name": "Crossbow, Repeating",      "group_id": "crossbows",      "tight_group_id": "standard_crossbows", "damage_sm": "1d4+1",  "damage_l": "1d6+1",  "speed": 10, "type": "P",   "size": "M", "attacks_per_round": "1",   "notes": "Range 80/160/240. Magazine holds 6 bolts. C&T." },
+
+    { "id": "dagger",               "name": "Dagger",                   "group_id": "light_blades",   "tight_group_id": "daggers_knives",     "damage_sm": "1d3",    "damage_l": "1d4",    "speed": 2,  "type": "P/S", "size": "S", "attacks_per_round": "1",   "notes": "Can be thrown (range 10/20/30)." },
+    { "id": "knife",                "name": "Knife",                    "group_id": "light_blades",   "tight_group_id": "daggers_knives",     "damage_sm": "1d2",    "damage_l": "1d3",    "speed": 2,  "type": "P/S", "size": "S", "attacks_per_round": "1",   "notes": "Can be thrown (range 10/20/30)." },
+    { "id": "main_gauche",          "name": "Main-Gauche",              "group_id": "light_blades",   "tight_group_id": "daggers_knives",     "damage_sm": "1d3",    "damage_l": "1d4",    "speed": 2,  "type": "P/S", "size": "S", "attacks_per_round": "1",   "notes": "Parrying bonus +2 AC when used as off-hand weapon." },
+    { "id": "short_sword",          "name": "Sword, Short",             "group_id": "light_blades",   "tight_group_id": "short_swords",       "damage_sm": "1d6",    "damage_l": "1d8",    "speed": 3,  "type": "P",   "size": "S", "attacks_per_round": "1",   "notes": "" },
+    { "id": "cutlass",              "name": "Cutlass",                  "group_id": "light_blades",   "tight_group_id": "short_swords",       "damage_sm": "1d6+1",  "damage_l": "1d8",    "speed": 4,  "type": "S",   "size": "M", "attacks_per_round": "1",   "notes": "A&EG. Counts as short sword for proficiency." },
+
+    { "id": "long_sword",           "name": "Sword, Long",              "group_id": "medium_blades",  "tight_group_id": "swords_medium",      "damage_sm": "1d8",    "damage_l": "1d12",   "speed": 5,  "type": "S",   "size": "M", "attacks_per_round": "1",   "notes": "" },
+    { "id": "broad_sword",          "name": "Sword, Broad",             "group_id": "medium_blades",  "tight_group_id": "swords_medium",      "damage_sm": "2d4",    "damage_l": "1d6+1",  "speed": 5,  "type": "S",   "size": "M", "attacks_per_round": "1",   "notes": "" },
+    { "id": "scimitar",             "name": "Scimitar",                 "group_id": "medium_blades",  "tight_group_id": "swords_medium",      "damage_sm": "1d8",    "damage_l": "1d8",    "speed": 5,  "type": "S",   "size": "M", "attacks_per_round": "1",   "notes": "" },
+
+    { "id": "bastard_sword",        "name": "Sword, Bastard",           "group_id": "heavy_blades",   "tight_group_id": "swords_heavy",       "damage_sm": "1d8",    "damage_l": "1d12",   "speed": 6,  "type": "S",   "size": "M", "attacks_per_round": "1",   "notes": "1d8/1d12 one-handed; 2d4/2d8 two-handed." },
+    { "id": "two_handed_sword",     "name": "Sword, Two-handed",        "group_id": "heavy_blades",   "tight_group_id": "swords_heavy",       "damage_sm": "1d10",   "damage_l": "3d6",    "speed": 10, "type": "S",   "size": "L", "attacks_per_round": "1",   "notes": "Two-handed weapon." },
+    { "id": "flamberge",            "name": "Flamberge",                "group_id": "heavy_blades",   "tight_group_id": "swords_heavy",       "damage_sm": "1d10",   "damage_l": "3d6",    "speed": 10, "type": "S",   "size": "L", "attacks_per_round": "1",   "notes": "Wavy-bladed two-handed sword. A&EG." },
+
+    { "id": "rapier",               "name": "Rapier",                   "group_id": "fencing_blades", "tight_group_id": "rapiers_group",      "damage_sm": "1d6+1",  "damage_l": "1d8+1",  "speed": 4,  "type": "P",   "size": "M", "attacks_per_round": "1",   "notes": "C&T fencing blade." },
+    { "id": "saber",                "name": "Saber",                    "group_id": "fencing_blades", "tight_group_id": "rapiers_group",      "damage_sm": "1d8",    "damage_l": "1d8",    "speed": 5,  "type": "S/P", "size": "M", "attacks_per_round": "1",   "notes": "A&EG." },
+
+    { "id": "horsemans_pick_light", "name": "Pick, Horseman's (lt)",    "group_id": "picks",          "tight_group_id": "light_picks",        "damage_sm": "1d4",    "damage_l": "1d4",    "speed": 5,  "type": "P",   "size": "M", "attacks_per_round": "1",   "notes": "Mounted use." },
+    { "id": "horsemans_pick_heavy", "name": "Pick, Horseman's (hvy)",   "group_id": "picks",          "tight_group_id": "light_picks",        "damage_sm": "1d6",    "damage_l": "1d6",    "speed": 6,  "type": "P",   "size": "M", "attacks_per_round": "1",   "notes": "Mounted use." },
+    { "id": "footmans_pick_light",  "name": "Pick, Footman's (lt)",     "group_id": "picks",          "tight_group_id": "heavy_picks",        "damage_sm": "1d4",    "damage_l": "1d4+1",    "speed": 5,  "type": "P",   "size": "M", "attacks_per_round": "1",   "notes": "" },
+    { "id": "footmans_pick_heavy",  "name": "Pick, Footman's (hvy)",    "group_id": "picks",          "tight_group_id": "heavy_picks",        "damage_sm": "1d6+1",  "damage_l": "2d4",    "speed": 7,  "type": "P",   "size": "M", "attacks_per_round": "1",   "notes": "" },
+
+    { "id": "warhammer",            "name": "Hammer, War",              "group_id": "hammers",        "tight_group_id": "war_hammers",        "damage_sm": "1d4",    "damage_l": "1d4+1",    "speed": 4,  "type": "B",   "size": "M", "attacks_per_round": "1",   "notes": "Can be thrown (range 10/20/30)." },
+    { "id": "maul",                 "name": "Maul",                     "group_id": "hammers",        "tight_group_id": "war_hammers",        "damage_sm": "2d6",    "damage_l": "2d6",    "speed": 8,  "type": "B",   "size": "L", "attacks_per_round": "1",   "notes": "Two-handed bludgeoning weapon. C&T." },
+
+    { "id": "horsemans_flail",      "name": "Flail, Horseman's",        "group_id": "flails_chains",  "tight_group_id": "light_flails",       "damage_sm": "1d4+1",  "damage_l": "1d4+1",  "speed": 5,  "type": "B",   "size": "M", "attacks_per_round": "1",   "notes": "Mounted use." },
+    { "id": "nunchaku",             "name": "Nunchaku",                 "group_id": "flails_chains",  "tight_group_id": "light_flails",       "damage_sm": "1d6",    "damage_l": "1d6",    "speed": 3,  "type": "B",   "size": "M", "attacks_per_round": "1",   "notes": "" },
+    { "id": "footmans_flail",       "name": "Flail, Footman's",         "group_id": "flails_chains",  "tight_group_id": "heavy_flails",       "damage_sm": "1d6+1",  "damage_l": "2d4",    "speed": 7,  "type": "B",   "size": "M", "attacks_per_round": "1",   "notes": "" },
+    { "id": "chain",                "name": "Chain",                    "group_id": "flails_chains",  "tight_group_id": "heavy_flails",       "damage_sm": "1d4+1",  "damage_l": "1d6",  "speed": 5,  "type": "B",   "size": "M", "attacks_per_round": "1",   "notes": "" },
+
+    { "id": "light_lance",          "name": "Lance, Light",             "group_id": "lances",         "tight_group_id": "mounted_lances",     "damage_sm": "1d6",    "damage_l": "1d8",    "speed": 6,  "type": "P",   "size": "M", "attacks_per_round": "1",   "notes": "Requires mounted use." },
+    { "id": "medium_lance",         "name": "Lance, Medium",            "group_id": "lances",         "tight_group_id": "mounted_lances",     "damage_sm": "1d6+1",  "damage_l": "2d6",    "speed": 7,  "type": "P",   "size": "L", "attacks_per_round": "1",   "notes": "Requires mounted use." },
+    { "id": "heavy_lance",          "name": "Lance, Heavy",             "group_id": "lances",         "tight_group_id": "mounted_lances",     "damage_sm": "1d8+1",  "damage_l": "3d6",    "speed": 8,  "type": "P",   "size": "L", "attacks_per_round": "1",   "notes": "Requires mounted use." },
+
+    { "id": "bardiche",             "name": "Bardiche",                 "group_id": "polearms",       "tight_group_id": "glaive_group",       "damage_sm": "2d4",    "damage_l": "2d6",    "speed": 9,  "type": "S",   "size": "L", "attacks_per_round": "1",   "notes": "Two-handed pole arm." },
+    { "id": "glaive",               "name": "Glaive",                   "group_id": "polearms",       "tight_group_id": "glaive_group",       "damage_sm": "1d6",    "damage_l": "1d10",   "speed": 8,  "type": "S",   "size": "L", "attacks_per_round": "1",   "notes": "Two-handed pole arm." },
+    { "id": "glaive_guisarme",      "name": "Glaive-Guisarme",          "group_id": "polearms",       "tight_group_id": "glaive_group",       "damage_sm": "2d4",    "damage_l": "2d6",    "speed": 9,  "type": "S",   "size": "L", "attacks_per_round": "1",   "notes": "Two-handed pole arm." },
+    { "id": "guisarme",             "name": "Guisarme",                 "group_id": "polearms",       "tight_group_id": "guisarme_group",     "damage_sm": "1d8",    "damage_l": "2d4",    "speed": 6,  "type": "S",   "size": "L", "attacks_per_round": "1",   "notes": "Two-handed pole arm." },
+    { "id": "guisarme_voulge",      "name": "Guisarme-Voulge",          "group_id": "polearms",       "tight_group_id": "guisarme_group",     "damage_sm": "2d4",    "damage_l": "2d4",    "speed": 10, "type": "S/P", "size": "L", "attacks_per_round": "1",   "notes": "Two-handed pole arm." },
+    { "id": "voulge",               "name": "Voulge",                   "group_id": "polearms",       "tight_group_id": "guisarme_group",     "damage_sm": "2d4",    "damage_l": "2d4",    "speed": 10, "type": "S",   "size": "L", "attacks_per_round": "1",   "notes": "Two-handed pole arm." },
+    { "id": "halberd",              "name": "Halberd",                  "group_id": "polearms",       "tight_group_id": "halberd_group",      "damage_sm": "1d10",   "damage_l": "2d6",    "speed": 9,  "type": "S/P", "size": "L", "attacks_per_round": "1",   "notes": "Two-handed pole arm." },
+    { "id": "ranseur",              "name": "Ranseur",                  "group_id": "polearms",       "tight_group_id": "halberd_group",      "damage_sm": "2d4",    "damage_l": "2d4",    "speed": 8,  "type": "P",   "size": "L", "attacks_per_round": "1",   "notes": "Two-handed pole arm." },
+    { "id": "lucerne_hammer",       "name": "Lucerne Hammer",           "group_id": "polearms",       "tight_group_id": "halberd_group",      "damage_sm": "1d6",    "damage_l": "2d4",    "speed": 9,  "type": "P/B", "size": "L", "attacks_per_round": "1",   "notes": "Two-handed pole arm." },
+    { "id": "bill_guisarme",        "name": "Bill-Guisarme",            "group_id": "polearms",       "tight_group_id": "spear_polearms",     "damage_sm": "2d4",    "damage_l": "1d10",   "speed": 10, "type": "S/P", "size": "L", "attacks_per_round": "1",   "notes": "Two-handed pole arm." },
+    { "id": "bill_hook",            "name": "Bill",                     "group_id": "polearms",       "tight_group_id": "spear_polearms",     "damage_sm": "1d4+1",  "damage_l": "1d6+1",  "speed": 7,  "type": "S/P", "size": "L", "attacks_per_round": "1",   "notes": "Two-handed pole arm." },
+
+    { "id": "sling",                "name": "Sling",                    "group_id": "slings",         "tight_group_id": "slings_group",       "damage_sm": "1d4+1",  "damage_l": "1d6+1",  "speed": 6,  "type": "B",   "size": "S", "attacks_per_round": "1",   "notes": "Range 50/100/200. Uses bullets or stones." },
+    { "id": "staff_sling",          "name": "Staff Sling",              "group_id": "slings",         "tight_group_id": "slings_group",       "damage_sm": "1d4+1",  "damage_l": "1d6+1",  "speed": 11, "type": "B",   "size": "M", "attacks_per_round": "1",   "notes": "Range 30/60/120. C&T." },
+
+    { "id": "javelin",              "name": "Javelin",                  "group_id": "spears_javelins","tight_group_id": "light_spears",       "damage_sm": "1d6",    "damage_l": "1d6",    "speed": 4,  "type": "P",   "size": "M", "attacks_per_round": "1",   "notes": "Can be thrown (range 20/40/60)." },
+    { "id": "short_spear",          "name": "Spear, Short",             "group_id": "spears_javelins","tight_group_id": "light_spears",       "damage_sm": "1d6",    "damage_l": "1d8",    "speed": 5,  "type": "P",   "size": "S", "attacks_per_round": "1",   "notes": "Can be thrown (range 10/20/30)." },
+    { "id": "spear",                "name": "Spear",                    "group_id": "spears_javelins","tight_group_id": "heavy_spears",       "damage_sm": "1d6",    "damage_l": "1d8",    "speed": 6,  "type": "P",   "size": "M", "attacks_per_round": "1",   "notes": "Can set vs. charge." },
+    { "id": "trident",              "name": "Trident",                  "group_id": "spears_javelins","tight_group_id": "heavy_spears",       "damage_sm": "1d6+1",  "damage_l": "3d4",    "speed": 7,  "type": "P",   "size": "L", "attacks_per_round": "1",   "notes": "" },
+
+    { "id": "quarterstaff",         "name": "Quarterstaff",             "group_id": "staffs",         "tight_group_id": "staves_group",       "damage_sm": "1d6",    "damage_l": "1d6",    "speed": 4,  "type": "B",   "size": "L", "attacks_per_round": "1",   "notes": "Two-handed weapon." },
+    { "id": "bo_stick",             "name": "Bo Stick",                 "group_id": "staffs",         "tight_group_id": "staves_group",       "damage_sm": "1d3",    "damage_l": "1d6",    "speed": 3,  "type": "B",   "size": "L", "attacks_per_round": "1",   "notes": "Two-handed weapon." },
+
+    { "id": "dart",                 "name": "Dart",                     "group_id": "thrown_weapons", "tight_group_id": "darts_group",        "damage_sm": "1d2",    "damage_l": "1d3",    "speed": 2,  "type": "P",   "size": "S", "attacks_per_round": "3",   "notes": "Range 10/20/40. 3 per round." },
+    { "id": "shuriken",             "name": "Shuriken",                 "group_id": "thrown_weapons", "tight_group_id": "darts_group",        "damage_sm": "1d4",    "damage_l": "1d4",    "speed": 2,  "type": "P",   "size": "S", "attacks_per_round": "2",   "notes": "Range 10/20/30. Oriental Adventures." },
+
+    { "id": "whip",                 "name": "Whip",                     "group_id": "whips_lashes",   "tight_group_id": "whips_group",        "damage_sm": "1d2",    "damage_l": "1",      "speed": 8,  "type": "B",   "size": "L", "attacks_per_round": "1",   "notes": "Does not damage heavily armored foes (AC 5 or better). Range up to 10 ft." },
+    { "id": "scourge",              "name": "Scourge",                  "group_id": "whips_lashes",   "tight_group_id": "whips_group",        "damage_sm": "1d2",    "damage_l": "1d4",    "speed": 5,  "type": "B",   "size": "M", "attacks_per_round": "1",   "notes": "" }
+  ],
+  "weapon_proficiency_slots_by_class": {
+    "fighter":    { "initial": 4, "per_levels": 3 },
+    "paladin":    { "initial": 3, "per_levels": 3 },
+    "ranger":     { "initial": 3, "per_levels": 3 },
+    "warrior":    { "initial": 4, "per_levels": 3 },
+    "cleric":     { "initial": 2, "per_levels": 4 },
+    "druid":      { "initial": 2, "per_levels": 4 },
+    "priest":     { "initial": 2, "per_levels": 4 },
+    "thief":      { "initial": 2, "per_levels": 4 },
+    "bard":       { "initial": 2, "per_levels": 4 },
+    "rogue":      { "initial": 2, "per_levels": 4 },
+    "wizard":     { "initial": 1, "per_levels": 6 },
+    "illusionist":{ "initial": 1, "per_levels": 6 },
+    "mage":       { "initial": 1, "per_levels": 6 }
+  },
+  "specialization_rules": {
+    "classes_that_can_specialize": [ "fighter", "paladin", "ranger", "warrior" ],
+    "players_option_classes_that_can_specialize": [ "fighter", "paladin", "ranger", "warrior", "thief", "bard" ],
+    "slot_cost": 1,
+    "attack_bonus": 1,
+    "damage_bonus": 2,
+    "extra_attacks_note": "Warriors: 3/2 at 1st level, 2/1 at 7th. Others: see C&T."
+  }
+}

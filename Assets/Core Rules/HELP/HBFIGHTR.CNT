@@ -1,0 +1,317 @@
+:Base HBFightr.HLP
+1 The Complete Fighter's Handbook
+2 Table of Contents=The_Complete_Fighter_s_Handbook_HF@HBFightr.hlp
+2 Credits=Credits_HF@HBFightr.hlp
+2 Introduction=Introduction_HF@HBFightr.hlp
+2 Character Creation
+3 Character Creation=Character_Creation_HF@HBFightr.hlp
+3 Ability Scores=Ability_Scores_HF@HBFightr.hlp
+3 Races=Races_HF@HBFightr.hlp
+3 Classes=Classes_HF@HBFightr.hlp
+3 Alignment=Alignment_HF@HBFightr.hlp
+3 Warrior Kits=Warrior_Kits_HF@HBFightr.hlp
+3 Proficiencies=Proficiencies_HF@HBFightr.hlp
+3 Bower/Fletcher=Bower_Fletcher_HF@HBFightr.hlp
+3 Money and Equipment=Money_and_Equipment_HF@HBFightr.hlp
+3 Magic=Magic_HF@HBFightr.hlp
+3 Experience=Experience_HF@HBFightr.hlp
+3 Armorer
+4 Armorer=Armorer_HF@HBFightr.hlp
+4 The Workshop=The_Workshop_HF@HBFightr.hlp
+4 Apprentices and Overseers=Apprentices_and_Overseers_HF@HBFightr.hlp
+4 Time to Craft Armor=Time_to_Craft_Armor_HF@HBFightr.hlp
+4 Cost to Craft Armor=Cost_to_Craft_Armor_HF@HBFightr.hlp
+4 Chance of Failure=Chance_of_Failure_HF@HBFightr.hlp
+4 Added Expenses=Added_Expenses_HF@HBFightr.hlp
+4 Player-Character Workshops=Player_Character_Workshops_HF@HBFightr.hlp
+4 Repairing Armor=Repairing_Armor_HF@HBFightr.hlp
+4 Repairing Magical Armor=Repairing_Magical_Armor_HF@HBFightr.hlp
+3 Weaponsmithing
+4 Weaponsmithing=Weaponsmithing_HF@HBFightr.hlp
+4 Weaponsmithing Failure=Weaponsmithing_Failure_HF@HBFightr.hlp
+4 Weapon Quality=Weapon_Quality_HF@HBFightr.hlp
+4 Weapons Not Shown=Weapons_Not_Shown_HF@HBFightr.hlp
+2 Warrior Kits
+3 Warrior Kits=CH_Warrior_Kits_HF@HBFightr.hlp
+3 Kits and Warriors=Kits_and_Warriors_HF@HBFightr.hlp
+3 Kits and the Warrior Classes=Kits_and_the_Warrior_Classes_HF@HBFightr.hlp
+3 Kits and Character Creation=Kits_and_Character_Creation_HF@HBFightr.hlp
+3 Recording Kits on the Character Sheet=Recording_Kits_on_the_Character_Sheet_HF@HBFightr.hlp
+3 Warrior Kits and Multi-Class Characters=Warrior_Kits_and_Multi_Class_Characters_HF@HBFightr.hlp
+3 Warrior Kits and Dual-Classed Characters=Warrior_Kits_and_Dual_Classed_Characters_HF@HBFightr.hlp
+3 Abandoning a Kit=Abandoning_a_Kit_HF@HBFightr.hlp
+3 Modifying the Kits=Modifying_the_Kits_HF@HBFightr.hlp
+3 Creating New Kits=Creating_New_Kits_HF@HBFightr.hlp
+3 The Warrior Kits
+4 The Warrior Kits=The_Warrior_Kits_list_HF@HBFightr.hlp
+4 Amazon=Amazon_HF@HBFightr.hlp
+4 Barbarian=Barbarian_HF@HBFightr.hlp
+4 Beast Rider=Beast_Rider_HF@HBFightr.hlp
+4 Berserker=Berserker_HF@HBFightr.hlp
+4 Cavalier=Cavalier_HF@HBFightr.hlp
+4 Gladiator=Gladiator_HF@HBFightr.hlp
+4 Myrmidon=Myrmidon_HF@HBFightr.hlp
+4 Noble Warrior=Noble_Warrior_HF@HBFightr.hlp
+4 Peasant Hero=Peasant_Hero_HF@HBFightr.hlp
+4 Pirate/Outlaw=Pirate_Outlaw_HF@HBFightr.hlp
+4 Samurai=Samurai_HF@HBFightr.hlp
+4 Savage=Savage_HF@HBFightr.hlp
+4 Swashbuckler=Swashbuckler_HF@HBFightr.hlp
+4 Wilderness Warrior=Wilderness_Warrior_HF@HBFightr.hlp
+2 Role-Playing
+3 Role Playing=Ch_Role_Playing_HF@HBFightr.hlp
+3 Changing Personality Types=Changing_Personality_Types_HF@HBFightr.hlp
+3 The Military Campaign=The_Military_Campaign_HF@HBFightr.hlp
+3 Campaign vs. Mini-Series=Campaign_vs_Mini_Series_HF@HBFightr.hlp
+3 Warrior Personalities
+4 Warrior Personalities=Warrior_Personalities_HF@HBFightr.hlp
+4 The Brash Youth=The_Brash_Youth_HF@HBFightr.hlp
+4 The Crude Crusher=The_Crude_Crusher_HF@HBFightr.hlp
+4 The Dangerous Antagonist=The_Dangerous_Antagonist_HF@HBFightr.hlp
+4 The Doomed Champion=The_Doomed_Champion_HF@HBFightr.hlp
+4 The Fated Philosopher=The_Fated_Philosopher_HF@HBFightr.hlp
+4 The Merry Showoff=The_Merry_Showoff_HF@HBFightr.hlp
+4 The Natural Leader=The_Natural_Leader@HBFightr.hlp
+4 The Sneaky Thinker=The_Sneaky_Thinker_HF@HBFightr.hlp
+3 The Warrior Campaign
+4 The Warrior Campaign=The_Warrior_Campaign_HF@HBFightr.hlp
+4 Magical World vs. Non-Magical World=Magical_World_vs_Non_Magical_World_HF@HBFightr.hlp
+4 Magical World=Magical_World_HF@HBFightr.hlp
+4 Mostly Non-Magical World=Mostly_Non_Magical_World_HF@HBFightr.hlp
+4 Strictly Non-Magical World=Strictly_Non_Magical_World_HF@HBFightr.hlp
+3 The Mixed-Warrior-Type Campaign
+4 The Mixed-Warrior-Type Campaign=The_Mixed_Warrior_Type_Campaign_HF@HBFightr.hlp
+3 The One-Warrior-Type Campaign
+4 The One-Warrior-Type Campaign=The_One_Warrior_Type_Campaign_HF@HBFightr.hlp
+4 Amazons=Amazons_HF@HBFightr.hlp
+4 Barbarians and Berserkers=Barbarians_and_Berserkers_HF@HBFightr.hlp
+4 Beast-Riders=Beast_Riders_HF@HBFightr.hlp
+4 Cavaliers=Cavaliers_HF@HBFightr.hlp
+4 Gladiators=Gladiators_HF@HBFightr.hlp
+4 Myrmidons=Myrmidons_HF@HBFightr.hlp
+4 Noble Warriors=Noble_Warriors_MF@HBFightr.hlp
+4 Peasant Heroes=Peasant_Heroes_HF@HBFightr.hlp
+4 Pirates and Outlaws=Pirates_and_Outlaws_HF@HBFightr.hlp
+4 Good-Guy Outlaws and Pirates=Good_Guy_Outlaws_and_Pirates_HF@HBFightr.hlp
+4 Bad-Guy Outlaws and Pirates=Bad_Guy_Outlaws_and_Pirates_HF@HBFightr.hlp
+4 Samurai=Samurai_RP_HF@HBFightr.hlp
+4 Savages=Savages_HF@HBFightr.hlp
+4 Swashbucklers=Swashbucklers_HF@HBFightr.hlp
+4 Wilderness Warriors=Wilderness_Warriors_HF@HBFightr.hlp
+2 Combat Rules
+3 Combat Rules=Combat_Rules_HF@HBFightr.hlp
+3 New Combat Rules
+4 Off-Hand Weapons Use=New_Combat_Rules_HF@HBFightr.hlp
+4 Kneeling and Sitting=Kneeling_and_Sitting_HF@HBFightr.hlp
+4 Range and Initiative=Range_and_Initiative_HF@HBFightr.hlp
+3 Weapon Proficiency Slots
+4 Weapon Proficiency Slots=Weapon_Proficiency_Slots_HF@HBFightr.hlp
+4 Intelligence and Proficiencies=Intelligence_and_Proficiencies_HF@HBFightr.hlp
+4 Single-Weapon Proficiency, Weapon Specialization=Single_Weapon_Proficiency_Weapon_Specialization_HF@HBFightr.hlp
+4 Weapon-Group Proficiency=Weapon_Group_Proficiency_HF@HBFightr.hlp
+4 Tight Groups=Tight_Groups_HF@HBFightr.hlp
+4 Broad Groups=Broad_Groups_HF@HBFightr.hlp
+4 Non-Groups=Non_Groups_HF@HBFightr.hlp
+4 Weapon Specialization and Weapon Groups=Weapon_Specialization_and_Weapon_Groups_HF@HBFightr.hlp
+3 Ambidexterity
+4 Ambidexterity=Ambidexterity_HF@HBFightr.hlp
+3 Style Specialization
+4 Style Specialization=Style_Specialization_HF@HBFightr.hlp
+3 Punching and Wrestling Specialization
+4 Punching and Wrestling Specialization=Punching_and_Wrestling_Specialization_HF@HBFightr.hlp
+3 Martial Arts
+4 Martial Arts=Martial_Arts_HF@HBFightr.hlp
+3 Fighting Styles
+4 Fighting Styles=Fighting_Styles_HF@HBFightr.hlp
+4 The Four Fighting Styles=The_Four_Fighting_Styles_HF@HBFightr.hlp
+4 Specializing In the Styles=Specializing_In_the_Styles_HF@HBFightr.hlp
+4 Guidelines=Guidelines_HF@HBFightr.hlp
+4 Multiple Style Specializations=Multiple_Style_Specializations_HF@HBFightr.hlp
+4 Limitations on Style Specialization=Limitations_on_Style_Specialization_HF@HBFightr.hlp
+4 Single-Weapon Style=Single_Weapon_Style_HF@HBFightr.hlp
+4 Two-Hander Style=Two_Hander_Style_HF@HBFightr.hlp
+4 Weapon and Shield Style=Weapon_and_Shield_Style_HF@HBFightr.hlp
+4 Two-Weapon Style=Two_Weapon_Style_HF@HBFightr.hlp
+4 Sample Style Specialization=Sample_Style_Specialization_HF@HBFightr.hlp
+3 Melee Maneuvers
+4 Melee Maneuvers=Melee_Maneuvers_HF@HBFightr.hlp
+3 Called Shots
+4 Called Shots=Called_Shots_HF@HBFightr.hlp
+4 Striking A Specific Body Part=Striking_A_Specific_Body_Part_HF@HBFightr.hlp
+4 Smashing Something Being Held=Smashing_Something_Being_Held_HF@HBFightr.hlp
+4 Bypassing Armor=Bypassing_Armor_HF@HBFightr.hlp
+4 Special Results=Special_Results_HF@HBFightr.hlp
+4 Disarm=Disarm_HF@HBFightr.hlp
+4 Thrown-Weapon and Missile Disarms=Thrown_Weapon_and_Missile_Disarms_HF@HBFightr.hlp
+4 Expert Disarms=Expert_Disarms_HF@HBFightr.hlp
+4 Grab=Grab_HF@HBFightr.hlp
+4 Grabbing A Person=Grabbing_A_Person_HF@HBFightr.hlp
+4 Grabbing a Monster=Grabbing_a_Monster_HF@HBFightr.hlp
+3 Hold Attack
+4 Hold Attack=Hold_Attack_HF@HBFightr.hlp
+4 Characters With Multiple Attacks=Characters_With_Multiple_Attacks_HF@HBFightr.hlp
+3 Parry
+4 Parry=Parry_HF@HBFightr.hlp
+4 Choice of Parries=Choice_of_Parries_HF@HBFightr.hlp
+4 Polearm Parries=Polearm_Parries_HF@HBFightr.hlp
+4 Missile Weapon Parries=Missile_Weapon_Parries_HF@HBFightr.hlp
+4 Parrying from the DMG=Parrying_from_the_DMG_HF@HBFightr.hlp
+3 PIn
+4 Pin=Pin_HF@HBFightr.hlp
+3 Pull/Trip
+4 Pull/Trip=Pull_Trip_HF@HBFightr.hlp
+3 Use of Polearms
+4 Use of Polearms=Use_of_Polearms_HF@HBFightr.hlp
+3 Sap
+4 Sap=Sap_HF@HBFightr.hlp
+3 Shield-Punch
+4 Shield-Punch=Shield_Punch_HF@HBFightr.hlp
+3 Shield-Rush
+4 Shield-Rush=Shield_Rush_HF@HBFightr.hlp
+3 Shield/Thrust
+4 Strike/Thrust=Strike_Thrust_HF@HBFightr.hlp
+3 Surprise and Flash Maneuvers
+4 Surprise and Flash Maneuvers=Surprise_and_Flash_Maneuvers_HF@HBFightr.hlp
+3 Don't Say No-Determine Difficulty
+4 Don't Say No
+3 Maneuvers in the Campaign
+4 Maneuvers In the Campaign=Maneuvers_In_the_Campaign_HF@HBFightr.hlp
+3 Punching, Wrestling and Martial Arts
+4 Punching, Wrestling, and Martial Arts=Punching_Wrestling_and_Martial_Arts_HF@HBFightr.hlp
+4 Specializing With Punching and Wrestling=Specializing_With_Punching_and_Wrestling_HF@HBFightr.hlp
+4 Normal Punching Attacks=Normal_Punching_Attacks_HF@HBFightr.hlp
+4 Punching Specialization=Punching_Specialization_HF@HBFightr.hlp
+4 Normal Wrestling Attacks=Normal_Wrestling_Attacks_HF@HBFightr.hlp
+4 Wrestling Specialization=Wrestling_Specialization_HF@HBFightr.hlp
+4 Martial Arts=Martial_Arts_CR_HF@HBFightr.hlp
+4 Martial Arts Results=Martial_Arts_Results_HF@HBFightr.hlp
+4 Descriptions of the Maneuvers=Descriptions_of_the_Maneuvers_HF@HBFightr.hlp
+4 Specializing in Martial Arts=Specializing_in_Martial_Arts_HF@HBFightr.hlp
+4 More Than One Style=More_Than_One_Style_HF@HBFightr.hlp
+4 Continuing Specialization=Continuing_Specialization_HF@HBFightr.hlp
+4 The Complete Martial Artist=The_Complete_Martial_Artist_HF@HBFightr.hlp
+4 In Oriental Campaigns=In_Oriental_Campaigns_HF@HBFightr.hlp
+4 Barehanded Maneuvers=Barehanded_Maneuvers_HF@HBFightr.hlp
+4 Called Shots: Punching and Martial Arts=Called_Shots_Punching_and_Martial_Arts_HF@HBFightr.hlp
+4 Called Shots: Wrestling=Called_Shots_Wrestling_HF@HBFightr.hlp
+4 Disarm=Disarm_CR_HF@HBFightr.hlp
+4 Grab=Grab_CR_HF@HBFightr.hlp
+4 Hold Attack=Hold_Attack_HR@HBFightr.hlp
+4 Parry=Parry_CR_HF@HBFightr.hlp
+4 Pin=Pin_CR_HF@HBFightr.hlp
+4 Pull/Trip=Pull_Trip_CR_HF@HBFightr.hlp
+4 Sap=Sap_CR_HF@HBFightr.hlp
+4 Shield-Punch=Shield_Punch_CR_HF@HBFightr.hlp
+4 Shield-Rush=Shield_Rush_CR_HF@HBFightr.hlp
+4 Strike/Thrust=Strike_Thrust_CR_HF@HBFightr.hlp
+3 Hit Locations
+4 Hit Locations=Hit_Locations_HF@HBFightr.hlp
+4 The "Numbed" and "Useless" Numbers=The_Numbed_and_Useless_Numbers_HF@HBFightr.hlp
+4 Body Locations=Body_Locations_HF@HBFightr.hlp
+4 The Locations=The_Locations_HF@HBFightr.hlp
+4 General Effects of Called Shots=General_Effects_of_Called_Shots_HF@HBFightr.hlp
+4 Specific Effects of Called Shots=Specific_Effects_of_Called_Shots_HF@HBFightr.hlp
+4 Recording These Injuries=Recording_These_Injuries_HF@HBFightr.hlp
+4 Individual Injuries and Healing Magic=Individual_Injuries_and_Healing_Magic_HF@HBFightr.hlp
+4 Permanent and Crippling Effects=Permanent_and_Crippling_Effects_HF@HBFightr.hlp
+4 Monsters and Hit Locations=Monsters_and_Hit_Locations_HF@HBFightr.hlp
+4 This System and Low-Level Characters=This_System_and_Low_Level_Characters_HF@HBFightr.hlp
+4 Recovery=Recovery_HF@HBFightr.hlp
+4 Recovery Of Temporary Damage=Recovery_Of_Temporary_Damage_HF@HBFightr.hlp
+4 Recording Temporary Damage=Recording_Temporary_Damage_HF@HBFightr.hlp
+4 Recovering From Temporary Damage=Recovering_From_Temporary_Damage_HF@HBFightr.hlp
+4 Magical Healing and Temporary Damage=Magical_Healing_and_Temporary_Damage_HF@HBFightr.hlp
+4 Recovery From Knockout=Recovery_From_Knockout_HF@HBFightr.hlp
+4 Temporary Damage and Knockout=Temporary_Damage_and_Knockout_HF@HBFightr.hlp
+4 Magical Healing and Knockout=Magical_Healing_and_Knockout_HF@HBFightr.hlp
+3 Combat Conditions
+4 Combat Conditions=Combat_Conditions_HF@HBFightr.hlp
+4 Darkness and Blindness=Darkness_and_Blindness_HF@HBFightr.hlp
+4 Unstable Ground=Unstable_Ground_HF@HBFightr.hlp
+3 Mounted Combat
+4 Mounted Combat=Mounted_Combat_HF@HBFightr.hlp
+4 Jousting=Jousting_HF@HBFightr.hlp
+4 Lance Specialization=Lance_Specialization_HF@HBFightr.hlp
+4 Horseback Archery=Horseback_Archery_HF@HBFightr.hlp
+3 Tournaments
+4 Tournaments=Tournaments_HF@HBFightr.hlp
+4 The Basic Tournament=The_Basic_Tournament_HF@HBFightr.hlp
+4 The Joust List=The_Joust_List_HF@HBFightr.hlp
+4 The Jousting Competition=The_Jousting_Competition_HF@HBFightr.hlp
+4 Blunted Lances=Blunted_Lances_HF@HBFightr.hlp
+4 Queen of Love and Beauty=Queen_of_Love_and_Beauty_HF@HBFightr.hlp
+4 Other Events=Other_Events_HF@HBFightr.hlp
+4 Archery Competitions=Archery_Competitions_HF@HBFightr.hlp
+4 Prizes=Prizes_HF@HBFightr.hlp
+4 Foot-Lists=Foot_Lists_HF@HBFightr.hlp
+4 Merchants' Stalls=Merchants_Stalls_HF@HBFightr.hlp
+4 Dancing, Socializing=Dancing_Socializing_HF@HBFightr.hlp
+3 When to End Combat
+4 When to End Combat=When_to_End_Combat_HF@HBFightr.hlp
+3 When Characters Don't Accept Surrender
+4 When Characters Don't Accept Surrender=When_Characters_Don_t_Accept_Surrender_HF@HBFightr.hlp
+3 When Characters Always Chase Escapees
+4 When Characters Always Chase Escapees=When_Characters_Always_Chase_Escapees_HF@HBFightr.hlp
+3 When Characters Never Negotiate
+4 When Characters Never Negotiate=When_Characters_Never_Negotiate_HF@HBFightr.hlp
+3 Notes on Combat Sequence
+4 Notes On the Combat Sequence=Notes_On_the_Combat_Sequence_HF@HBFightr.hlp
+3 Tactics
+4 Tactics=Tactics_HF@HBFightr.hlp
+4 Shield-Walls and Polearms=Shield_Walls_and_Polearms_HF@HBFightr.hlp
+4 Wolf-Pack Tactics=Wolf_Pack_Tactics_HF@HBFightr.hlp
+4 Tactical Mix=Tactical_Mix_HF@HBFightr.hlp
+4 Rotation=Rotation_HF@HBFightr.hlp
+4 Spear-Carriers=Spear_Carriers_HF@HBFightr.hlp
+4 Directing Traffic=Directing_Traffic_HF@HBFightr.hlp
+3 Campaign Tactics
+4 Campaign Tactics=Campaign_Tactics_HF@HBFightr.hlp
+3 Just Arriving in Town
+4 Just Arriving In Town=Just_Arriving_In_Town_HF@HBFightr.hlp
+3 The Combat Sheet
+4 The Combat Sheet=The_Combat_Sheet_HF@HBFightr.hlp
+2 Equipment
+3 Equipment=Equipment_HF@HBFightr.hlp
+3 Old Weapons=Old_Weapons_HF@HBFightr.hlp
+3 One-Hand, Two-Hand=Old_Weapons_HF@HBFightr.hlp
+3 New Weapons=New_Weapons_HF@HBFightr.hlp
+3 Gladiator Weapons=Gladiator_Weapons_HF@HBFightr.hlp
+3 Pirate Weapons=Pirate_Weapons_HF@HBFightr.hlp
+3 Samurai Weapons=Samurai_Weapons_HF@HBFightr.hlp
+3 Savage Weapons=Savage_Weapons_HF@HBFightr.hlp
+3 Swashbuckler Weapons=Swashbuckler_Weapons_HF@HBFightr.hlp
+3 New Armor=New_Armor_HF@HBFightr.hlp
+3 Gladiator Armor=Gladiator_Armor_HF@HBFightr.hlp
+3 Samurai Armor=Samurai_Armor_HF@HBFightr.hlp
+3 Damage to Armor=Damage_to_Armor_HF@HBFightr.hlp
+3 Piecemeal Armor=Piecemeal_Armor_2_HF@HBFightr.hlp
+3 Repairing Armor=Repairing_Armor_2_HF@HBFightr.hlp
+3 Effects on the Campaign=Effects_on_the_Campaign_HF@HBFightr.hlp
+3 Magical Items=Magical_Items_HF@HBFightr.hlp
+3 Miscellaneous Equipment=Miscellaneous_Equipment_HF@HBFightr.hlp
+3 Effects of Armor
+4 Effects of Armor=Effects_of_Armor_HF@HBFightr.hlp
+4 Effects On AC=Effects_On_AC_HF@HBFightr.hlp
+4 Effects On Speed=Effects_On_Speed_HF@HBFightr.hlp
+4 Effects On Dexterity Checks=Effects_On_Dexterity_Checks_HF@HBFightr.hlp
+4 Effects On Vision and Hearing=Effects_On_Vision_and_Hearing_HF@HBFightr.hlp
+4 Other Helms and Helmets=Other_Helms_and_Helmets_HF@HBFightr.hlp
+4 What Head Protection Doesn't Do=What_Head_Protection_Doesn_t_Do_HF@HBFightr.hlp
+4 Vision and Hearing Checks=Vision_and_Hearing_Checks_HF@HBFightr.hlp
+4 No Head Protection=No_Head_Protection_HF@HBFightr.hlp
+3 Varriant Armor
+4 Variant Armor=Variant_Armor_HF@HBFightr.hlp
+4 Racial Armor=Racial_Armor_HF@HBFightr.hlp
+4 Armor Fitting=Armor_Fitting_HF@HBFightr.hlp
+4 High-Quality Racial Armor=High_Quality_Racial_Armor_HF@HBFightr.hlp
+4 Piecemeal Armor=Piecemeal_Armor_HF@HBFightr.hlp
+4 Weight of Piecemeal Suits=Weight_of_Piecemeal_Suits_HF@HBFightr.hlp
+4 Magical Armor=Magical_Armor_HF@HBFightr.hlp
+4 Gladiator Armor=Gladiator_Armor_2_HF@HBFightr.hlp
+2 Tables
+3 Martial Arts Results Table=Martial_Arts_Results_Table_HF@HBFightr.hlp
+3 Combat Modifiers for Darkness and Blindness=Combat_Modifiers_for_Darkness_and_Blindness_Table_HF@HBFightr.hlp
+3 One-Handed or Two-Handed Weapons=One_Handed_or_Two_Handed_Weapons_Table_HF@HBFightr.hlp
+3 Armor Fitting=Armor_Fitting_Table_HF@HBFightr.hlp
+3 Piecemeal Armor=Piecemeal_Armor_Table_HF@HBFightr.hlp
+3 New Weapons List=New_Weapons_List_Table_HF@HBFightr.hlp

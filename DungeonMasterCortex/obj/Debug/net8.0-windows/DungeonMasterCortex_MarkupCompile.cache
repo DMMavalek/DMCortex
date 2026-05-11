@@ -1,0 +1,20 @@
+﻿DungeonMasterCortex
+1.0.18.0
+
+winexe
+C#
+.cs
+C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\obj\Debug\net8.0-windows\
+DungeonMasterCortex
+none
+false
+TRACE;APP_EDITION_DM;DEBUG;NET;NET8_0;NETCOREAPP
+C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\App.xaml
+271237936684
+508-225299367
+481770273262
+2101384673605
+MainWindow.xaml;Themes\DarkGold.xaml;Views\CampaignScreen.xaml;Views\CharacterSheetsScreen.xaml;Views\CharGenAbilitiesScreen.xaml;Views\CharGenCharacterOptionsScreen.xaml;Views\CharGenClassAbilitiesScreen.xaml;Views\CharGenClassScreen.xaml;Views\CharGenEquipmentScreen.xaml;Views\CharGenNameScreen.xaml;Views\CharGenRaceScreen.xaml;Views\CharGenReviewScreen.xaml;Views\CharGenSubAbilitiesScreen.xaml;Views\CharGenSubraceScreen.xaml;Views\CharGenWeaponProficienciesScreen.xaml;Views\CharGenWizardSpecScreen.xaml;Views\CharGenWizardSpellsScreen.xaml;Views\CombatTrackerScreen.xaml;Views\DiceRollerScreen.xaml;Views\DmToolsScreen.xaml;Views\EditInfoScreen.xaml;Views\ErrorDialog.xaml;Views\HubScreen.xaml;Views\RogueSkillsDialog.xaml;Views\SpellDetailPopup.xaml;Views\SphereSelectionDialog.xaml;Views\WizardSchoolsDialog.xaml;
+
+False
+

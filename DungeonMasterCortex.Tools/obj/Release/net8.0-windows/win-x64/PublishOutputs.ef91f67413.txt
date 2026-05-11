@@ -1,0 +1,2 @@
+C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex.Tools\bin\Release\net8.0-windows\win-x64\DungeonMasterCortex.Tools.pdb
+C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex.Tools\bin\Release\net8.0-windows\win-x64\DungeonMasterCortex.Tools.exe

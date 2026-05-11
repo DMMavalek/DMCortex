@@ -1,0 +1,1954 @@
+{
+  "Red": [
+    {
+      "stage": 1,
+      "category": "Hatchling",
+      "hit_dice": 9,
+      "combat_modifier": 1,
+      "thac0": 13,
+      "breath_weapon": "2d10+1",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 2,
+      "category": "Very young",
+      "hit_dice": 11,
+      "combat_modifier": 2,
+      "thac0": 11,
+      "breath_weapon": "4d10+2",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 3,
+      "category": "Young",
+      "hit_dice": 13,
+      "combat_modifier": 3,
+      "thac0": 9,
+      "breath_weapon": "6d10+3",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 4,
+      "category": "Juvenile",
+      "hit_dice": 15,
+      "combat_modifier": 4,
+      "thac0": 7,
+      "breath_weapon": "8d10+4",
+      "spell_level": "1st",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 5,
+      "category": "Young adult",
+      "hit_dice": 16,
+      "combat_modifier": 5,
+      "thac0": 6,
+      "breath_weapon": "10d10+5",
+      "spell_level": "2nd",
+      "magic_resistance": "30%"
+    },
+    {
+      "stage": 6,
+      "category": "Adult",
+      "hit_dice": 17,
+      "combat_modifier": 6,
+      "thac0": 5,
+      "breath_weapon": "12d10+6",
+      "spell_level": "2nd",
+      "magic_resistance": "35%"
+    },
+    {
+      "stage": 7,
+      "category": "Mature adult",
+      "hit_dice": 18,
+      "combat_modifier": 7,
+      "thac0": 4,
+      "breath_weapon": "14d10+7",
+      "spell_level": "2nd",
+      "magic_resistance": "40%"
+    },
+    {
+      "stage": 8,
+      "category": "Old",
+      "hit_dice": 19,
+      "combat_modifier": 8,
+      "thac0": 3,
+      "breath_weapon": "16d10+8",
+      "spell_level": "3rd",
+      "magic_resistance": "45%"
+    },
+    {
+      "stage": 9,
+      "category": "Very old",
+      "hit_dice": 20,
+      "combat_modifier": 9,
+      "thac0": 2,
+      "breath_weapon": "18d10+9",
+      "spell_level": "3rd",
+      "magic_resistance": "50%"
+    },
+    {
+      "stage": 10,
+      "category": "Venerable",
+      "hit_dice": 21,
+      "combat_modifier": 10,
+      "thac0": 1,
+      "breath_weapon": "20d10+10",
+      "spell_level": "4th",
+      "magic_resistance": "55%"
+    },
+    {
+      "stage": 11,
+      "category": "Wyrm",
+      "hit_dice": 22,
+      "combat_modifier": 11,
+      "thac0": 0,
+      "breath_weapon": "22d10+11",
+      "spell_level": "5th",
+      "magic_resistance": "60%"
+    },
+    {
+      "stage": 12,
+      "category": "Great Wyrm",
+      "hit_dice": 23,
+      "combat_modifier": 12,
+      "thac0": -1,
+      "breath_weapon": "24d10+12",
+      "spell_level": "6th",
+      "magic_resistance": "65%"
+    }
+  ],
+  "Blue": [
+    {
+      "stage": 1,
+      "category": "Hatchling",
+      "hit_dice": 8,
+      "combat_modifier": 1,
+      "thac0": 13,
+      "breath_weapon": "2d8+1",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 2,
+      "category": "Very young",
+      "hit_dice": 10,
+      "combat_modifier": 2,
+      "thac0": 11,
+      "breath_weapon": "4d8+2",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 3,
+      "category": "Young",
+      "hit_dice": 12,
+      "combat_modifier": 3,
+      "thac0": 9,
+      "breath_weapon": "6d8+3",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 4,
+      "category": "Juvenile",
+      "hit_dice": 14,
+      "combat_modifier": 4,
+      "thac0": 7,
+      "breath_weapon": "8d8+4",
+      "spell_level": "1st",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 5,
+      "category": "Young adult",
+      "hit_dice": 15,
+      "combat_modifier": 5,
+      "thac0": 6,
+      "breath_weapon": "10d8+5",
+      "spell_level": "2nd",
+      "magic_resistance": "20%"
+    },
+    {
+      "stage": 6,
+      "category": "Adult",
+      "hit_dice": 16,
+      "combat_modifier": 6,
+      "thac0": 5,
+      "breath_weapon": "12d8+6",
+      "spell_level": "3rd",
+      "magic_resistance": "25%"
+    },
+    {
+      "stage": 7,
+      "category": "Mature adult",
+      "hit_dice": 17,
+      "combat_modifier": 7,
+      "thac0": 4,
+      "breath_weapon": "14d8+7",
+      "spell_level": "2nd",
+      "magic_resistance": "30%"
+    },
+    {
+      "stage": 8,
+      "category": "Old",
+      "hit_dice": 18,
+      "combat_modifier": 8,
+      "thac0": 3,
+      "breath_weapon": "16d8+8",
+      "spell_level": "2nd",
+      "magic_resistance": "35%"
+    },
+    {
+      "stage": 9,
+      "category": "Very old",
+      "hit_dice": 19,
+      "combat_modifier": 9,
+      "thac0": 2,
+      "breath_weapon": "18d8+9",
+      "spell_level": "2nd",
+      "magic_resistance": "40%"
+    },
+    {
+      "stage": 10,
+      "category": "Venerable",
+      "hit_dice": 20,
+      "combat_modifier": 10,
+      "thac0": 1,
+      "breath_weapon": "20d8+10",
+      "spell_level": "4th",
+      "magic_resistance": "45%"
+    },
+    {
+      "stage": 11,
+      "category": "Wyrm",
+      "hit_dice": 21,
+      "combat_modifier": 11,
+      "thac0": 0,
+      "breath_weapon": "22d8+11",
+      "spell_level": "4th",
+      "magic_resistance": "50%"
+    },
+    {
+      "stage": 12,
+      "category": "Great Wyrm",
+      "hit_dice": 22,
+      "combat_modifier": 12,
+      "thac0": -1,
+      "breath_weapon": "24d8+12",
+      "spell_level": "4th",
+      "magic_resistance": "55%"
+    }
+  ],
+  "Green": [
+    {
+      "stage": 1,
+      "category": "Hatchling",
+      "hit_dice": 7,
+      "combat_modifier": 1,
+      "thac0": 13,
+      "breath_weapon": "2d6+1",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 2,
+      "category": "Very young",
+      "hit_dice": 9,
+      "combat_modifier": 2,
+      "thac0": 11,
+      "breath_weapon": "4d6+2",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 3,
+      "category": "Young",
+      "hit_dice": 11,
+      "combat_modifier": 3,
+      "thac0": 9,
+      "breath_weapon": "6d6+3",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 4,
+      "category": "Juvenile",
+      "hit_dice": 13,
+      "combat_modifier": 4,
+      "thac0": 7,
+      "breath_weapon": "8d6+4",
+      "spell_level": "1st",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 5,
+      "category": "Young adult",
+      "hit_dice": 14,
+      "combat_modifier": 5,
+      "thac0": 6,
+      "breath_weapon": "10d6+5",
+      "spell_level": "2nd",
+      "magic_resistance": "15%"
+    },
+    {
+      "stage": 6,
+      "category": "Adult",
+      "hit_dice": 15,
+      "combat_modifier": 6,
+      "thac0": 5,
+      "breath_weapon": "12d6+6",
+      "spell_level": "3rd",
+      "magic_resistance": "20%"
+    },
+    {
+      "stage": 7,
+      "category": "Mature adult",
+      "hit_dice": 16,
+      "combat_modifier": 7,
+      "thac0": 4,
+      "breath_weapon": "14d6+7",
+      "spell_level": "4th",
+      "magic_resistance": "25%"
+    },
+    {
+      "stage": 8,
+      "category": "Old",
+      "hit_dice": 17,
+      "combat_modifier": 8,
+      "thac0": 3,
+      "breath_weapon": "16d6+8",
+      "spell_level": "2nd",
+      "magic_resistance": "30%"
+    },
+    {
+      "stage": 9,
+      "category": "Very old",
+      "hit_dice": 18,
+      "combat_modifier": 9,
+      "thac0": 2,
+      "breath_weapon": "18d6+9",
+      "spell_level": "2nd",
+      "magic_resistance": "40%"
+    },
+    {
+      "stage": 10,
+      "category": "Venerable",
+      "hit_dice": 19,
+      "combat_modifier": 10,
+      "thac0": 1,
+      "breath_weapon": "20d6+10",
+      "spell_level": "2nd",
+      "magic_resistance": "45%"
+    },
+    {
+      "stage": 11,
+      "category": "Wyrm",
+      "hit_dice": 20,
+      "combat_modifier": 11,
+      "thac0": 0,
+      "breath_weapon": "22d6+11",
+      "spell_level": "2nd",
+      "magic_resistance": "50%"
+    },
+    {
+      "stage": 12,
+      "category": "Great Wyrm",
+      "hit_dice": 21,
+      "combat_modifier": 12,
+      "thac0": -1,
+      "breath_weapon": "24d6+12",
+      "spell_level": "2nd",
+      "magic_resistance": "55%"
+    }
+  ],
+  "Black": [
+    {
+      "stage": 1,
+      "category": "Hatchling",
+      "hit_dice": 6,
+      "combat_modifier": 1,
+      "thac0": 15,
+      "breath_weapon": "2d4+1",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 2,
+      "category": "Very young",
+      "hit_dice": 8,
+      "combat_modifier": 2,
+      "thac0": 13,
+      "breath_weapon": "4d4+2",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 3,
+      "category": "Young",
+      "hit_dice": 10,
+      "combat_modifier": 3,
+      "thac0": 11,
+      "breath_weapon": "6d4+3",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 4,
+      "category": "Juvenile",
+      "hit_dice": 12,
+      "combat_modifier": 4,
+      "thac0": 9,
+      "breath_weapon": "8d4+4",
+      "spell_level": "1st",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 5,
+      "category": "Young adult",
+      "hit_dice": 13,
+      "combat_modifier": 5,
+      "thac0": 8,
+      "breath_weapon": "10d4+5",
+      "spell_level": "2nd",
+      "magic_resistance": "10%"
+    },
+    {
+      "stage": 6,
+      "category": "Adult",
+      "hit_dice": 14,
+      "combat_modifier": 6,
+      "thac0": 7,
+      "breath_weapon": "12d4+6",
+      "spell_level": "3rd",
+      "magic_resistance": "15%"
+    },
+    {
+      "stage": 7,
+      "category": "Mature adult",
+      "hit_dice": 15,
+      "combat_modifier": 7,
+      "thac0": 6,
+      "breath_weapon": "14d4+7",
+      "spell_level": "4th",
+      "magic_resistance": "20%"
+    },
+    {
+      "stage": 8,
+      "category": "Old",
+      "hit_dice": 16,
+      "combat_modifier": 8,
+      "thac0": 5,
+      "breath_weapon": "16d4+8",
+      "spell_level": "5th",
+      "magic_resistance": "25%"
+    },
+    {
+      "stage": 9,
+      "category": "Very old",
+      "hit_dice": 17,
+      "combat_modifier": 9,
+      "thac0": 4,
+      "breath_weapon": "18d4+9",
+      "spell_level": "6th",
+      "magic_resistance": "30%"
+    },
+    {
+      "stage": 10,
+      "category": "Venerable",
+      "hit_dice": 18,
+      "combat_modifier": 10,
+      "thac0": 3,
+      "breath_weapon": "20d4+10",
+      "spell_level": "7th",
+      "magic_resistance": "35%"
+    },
+    {
+      "stage": 11,
+      "category": "Wyrm",
+      "hit_dice": 19,
+      "combat_modifier": 11,
+      "thac0": 2,
+      "breath_weapon": "22d4+11",
+      "spell_level": "8th",
+      "magic_resistance": "40%"
+    },
+    {
+      "stage": 12,
+      "category": "Great Wyrm",
+      "hit_dice": 20,
+      "combat_modifier": 12,
+      "thac0": 1,
+      "breath_weapon": "24d4+12",
+      "spell_level": "9th",
+      "magic_resistance": "45%"
+    }
+  ],
+  "White": [
+    {
+      "stage": 1,
+      "category": "Hatchling",
+      "hit_dice": 5,
+      "combat_modifier": 1,
+      "thac0": 15,
+      "breath_weapon": "1d6+1",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 2,
+      "category": "Very young",
+      "hit_dice": 7,
+      "combat_modifier": 2,
+      "thac0": 13,
+      "breath_weapon": "2d6+2",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 3,
+      "category": "Young",
+      "hit_dice": 9,
+      "combat_modifier": 3,
+      "thac0": 11,
+      "breath_weapon": "3d6+3",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 4,
+      "category": "Juvenile",
+      "hit_dice": 11,
+      "combat_modifier": 4,
+      "thac0": 9,
+      "breath_weapon": "4d6+4",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 5,
+      "category": "Young adult",
+      "hit_dice": 12,
+      "combat_modifier": 5,
+      "thac0": 8,
+      "breath_weapon": "5d6+5",
+      "spell_level": "None",
+      "magic_resistance": "5%"
+    },
+    {
+      "stage": 6,
+      "category": "Adult",
+      "hit_dice": 13,
+      "combat_modifier": 6,
+      "thac0": 7,
+      "breath_weapon": "6d6+6",
+      "spell_level": "1st",
+      "magic_resistance": "10%"
+    },
+    {
+      "stage": 7,
+      "category": "Mature adult",
+      "hit_dice": 14,
+      "combat_modifier": 7,
+      "thac0": 6,
+      "breath_weapon": "7d6+7",
+      "spell_level": "1st",
+      "magic_resistance": "15%"
+    },
+    {
+      "stage": 8,
+      "category": "Old",
+      "hit_dice": 15,
+      "combat_modifier": 8,
+      "thac0": 5,
+      "breath_weapon": "8d6+8",
+      "spell_level": "2nd",
+      "magic_resistance": "20%"
+    },
+    {
+      "stage": 9,
+      "category": "Very old",
+      "hit_dice": 16,
+      "combat_modifier": 9,
+      "thac0": 4,
+      "breath_weapon": "9d6+9",
+      "spell_level": "2nd",
+      "magic_resistance": "25%"
+    },
+    {
+      "stage": 10,
+      "category": "Venerable",
+      "hit_dice": 17,
+      "combat_modifier": 10,
+      "thac0": 3,
+      "breath_weapon": "10d6+10",
+      "spell_level": "3rd",
+      "magic_resistance": "30%"
+    },
+    {
+      "stage": 11,
+      "category": "Wyrm",
+      "hit_dice": 18,
+      "combat_modifier": 11,
+      "thac0": 2,
+      "breath_weapon": "11d6+11",
+      "spell_level": "3rd",
+      "magic_resistance": "35%"
+    },
+    {
+      "stage": 12,
+      "category": "Great Wyrm",
+      "hit_dice": 19,
+      "combat_modifier": 12,
+      "thac0": 1,
+      "breath_weapon": "12d6+12",
+      "spell_level": "4th",
+      "magic_resistance": "40%"
+    }
+  ],
+  "Brass": [
+    {
+      "stage": 1,
+      "category": "Hatchling",
+      "hit_dice": 6,
+      "combat_modifier": 1,
+      "thac0": 15,
+      "breath_weapon": "2d4+1",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 2,
+      "category": "Very young",
+      "hit_dice": 8,
+      "combat_modifier": 2,
+      "thac0": 13,
+      "breath_weapon": "4d4+2",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 3,
+      "category": "Young",
+      "hit_dice": 10,
+      "combat_modifier": 3,
+      "thac0": 11,
+      "breath_weapon": "6d4+3",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 4,
+      "category": "Juvenile",
+      "hit_dice": 12,
+      "combat_modifier": 4,
+      "thac0": 9,
+      "breath_weapon": "8d4+4",
+      "spell_level": "1st",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 5,
+      "category": "Young adult",
+      "hit_dice": 13,
+      "combat_modifier": 5,
+      "thac0": 8,
+      "breath_weapon": "10d4+5",
+      "spell_level": "1st",
+      "magic_resistance": "15%"
+    },
+    {
+      "stage": 6,
+      "category": "Adult",
+      "hit_dice": 14,
+      "combat_modifier": 6,
+      "thac0": 7,
+      "breath_weapon": "12d4+6",
+      "spell_level": "2nd",
+      "magic_resistance": "20%"
+    },
+    {
+      "stage": 7,
+      "category": "Mature adult",
+      "hit_dice": 15,
+      "combat_modifier": 7,
+      "thac0": 6,
+      "breath_weapon": "14d4+7",
+      "spell_level": "2nd",
+      "magic_resistance": "25%"
+    },
+    {
+      "stage": 8,
+      "category": "Old",
+      "hit_dice": 16,
+      "combat_modifier": 8,
+      "thac0": 5,
+      "breath_weapon": "16d4+8",
+      "spell_level": "3rd",
+      "magic_resistance": "30%"
+    },
+    {
+      "stage": 9,
+      "category": "Very old",
+      "hit_dice": 17,
+      "combat_modifier": 9,
+      "thac0": 4,
+      "breath_weapon": "18d4+9",
+      "spell_level": "4th",
+      "magic_resistance": "35%"
+    },
+    {
+      "stage": 10,
+      "category": "Venerable",
+      "hit_dice": 18,
+      "combat_modifier": 10,
+      "thac0": 3,
+      "breath_weapon": "20d4+10",
+      "spell_level": "4th",
+      "magic_resistance": "40%"
+    },
+    {
+      "stage": 11,
+      "category": "Wyrm",
+      "hit_dice": 19,
+      "combat_modifier": 11,
+      "thac0": 2,
+      "breath_weapon": "22d4+11",
+      "spell_level": "4th",
+      "magic_resistance": "45%"
+    },
+    {
+      "stage": 12,
+      "category": "Great Wyrm",
+      "hit_dice": 20,
+      "combat_modifier": 12,
+      "thac0": 1,
+      "breath_weapon": "24d4+12",
+      "spell_level": "4th",
+      "magic_resistance": "50%"
+    }
+  ],
+  "Bronze": [
+    {
+      "stage": 1,
+      "category": "Hatchling",
+      "hit_dice": 8,
+      "combat_modifier": 1,
+      "thac0": 14,
+      "breath_weapon": "2d8+1",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 2,
+      "category": "Very young",
+      "hit_dice": 10,
+      "combat_modifier": 2,
+      "thac0": 12,
+      "breath_weapon": "4d8+2",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 3,
+      "category": "Young",
+      "hit_dice": 12,
+      "combat_modifier": 3,
+      "thac0": 10,
+      "breath_weapon": "6d8+3",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 4,
+      "category": "Juvenile",
+      "hit_dice": 14,
+      "combat_modifier": 4,
+      "thac0": 8,
+      "breath_weapon": "8d8+4",
+      "spell_level": "1st",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 5,
+      "category": "Young adult",
+      "hit_dice": 15,
+      "combat_modifier": 5,
+      "thac0": 7,
+      "breath_weapon": "10d8+5",
+      "spell_level": "2nd",
+      "magic_resistance": "20%"
+    },
+    {
+      "stage": 6,
+      "category": "Adult",
+      "hit_dice": 16,
+      "combat_modifier": 6,
+      "thac0": 6,
+      "breath_weapon": "12d8+6",
+      "spell_level": "2nd",
+      "magic_resistance": "25%"
+    },
+    {
+      "stage": 7,
+      "category": "Mature adult",
+      "hit_dice": 17,
+      "combat_modifier": 7,
+      "thac0": 5,
+      "breath_weapon": "14d8+7",
+      "spell_level": "2nd",
+      "magic_resistance": "30%"
+    },
+    {
+      "stage": 8,
+      "category": "Old",
+      "hit_dice": 18,
+      "combat_modifier": 8,
+      "thac0": 4,
+      "breath_weapon": "16d8+8",
+      "spell_level": "4th",
+      "magic_resistance": "35%"
+    },
+    {
+      "stage": 9,
+      "category": "Very old",
+      "hit_dice": 19,
+      "combat_modifier": 9,
+      "thac0": 3,
+      "breath_weapon": "18d8+9",
+      "spell_level": "5th",
+      "magic_resistance": "40%"
+    },
+    {
+      "stage": 10,
+      "category": "Venerable",
+      "hit_dice": 20,
+      "combat_modifier": 10,
+      "thac0": 2,
+      "breath_weapon": "20d8+10",
+      "spell_level": "6th",
+      "magic_resistance": "45%"
+    },
+    {
+      "stage": 11,
+      "category": "Wyrm",
+      "hit_dice": 21,
+      "combat_modifier": 11,
+      "thac0": 1,
+      "breath_weapon": "22d8+11",
+      "spell_level": "6th",
+      "magic_resistance": "50%"
+    },
+    {
+      "stage": 12,
+      "category": "Great Wyrm",
+      "hit_dice": 22,
+      "combat_modifier": 12,
+      "thac0": 0,
+      "breath_weapon": "24d8+12",
+      "spell_level": "8th",
+      "magic_resistance": "55%"
+    }
+  ],
+  "Copper": [
+    {
+      "stage": 1,
+      "category": "Hatchling",
+      "hit_dice": 7,
+      "combat_modifier": 1,
+      "thac0": 15,
+      "breath_weapon": "2d6+1",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 2,
+      "category": "Very young",
+      "hit_dice": 9,
+      "combat_modifier": 2,
+      "thac0": 13,
+      "breath_weapon": "4d6+2",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 3,
+      "category": "Young",
+      "hit_dice": 11,
+      "combat_modifier": 3,
+      "thac0": 11,
+      "breath_weapon": "6d6+3",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 4,
+      "category": "Juvenile",
+      "hit_dice": 13,
+      "combat_modifier": 4,
+      "thac0": 9,
+      "breath_weapon": "8d6+4",
+      "spell_level": "1st",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 5,
+      "category": "Young adult",
+      "hit_dice": 14,
+      "combat_modifier": 5,
+      "thac0": 8,
+      "breath_weapon": "10d6+5",
+      "spell_level": "2nd",
+      "magic_resistance": "10%"
+    },
+    {
+      "stage": 6,
+      "category": "Adult",
+      "hit_dice": 15,
+      "combat_modifier": 6,
+      "thac0": 7,
+      "breath_weapon": "12d6+6",
+      "spell_level": "3rd",
+      "magic_resistance": "15%"
+    },
+    {
+      "stage": 7,
+      "category": "Mature adult",
+      "hit_dice": 16,
+      "combat_modifier": 7,
+      "thac0": 6,
+      "breath_weapon": "14d6+7",
+      "spell_level": "2nd",
+      "magic_resistance": "20%"
+    },
+    {
+      "stage": 8,
+      "category": "Old",
+      "hit_dice": 17,
+      "combat_modifier": 8,
+      "thac0": 5,
+      "breath_weapon": "16d6+8",
+      "spell_level": "3rd",
+      "magic_resistance": "25%"
+    },
+    {
+      "stage": 9,
+      "category": "Very old",
+      "hit_dice": 18,
+      "combat_modifier": 9,
+      "thac0": 4,
+      "breath_weapon": "18d6+9",
+      "spell_level": "3rd",
+      "magic_resistance": "30%"
+    },
+    {
+      "stage": 10,
+      "category": "Venerable",
+      "hit_dice": 19,
+      "combat_modifier": 10,
+      "thac0": 3,
+      "breath_weapon": "20d6+10",
+      "spell_level": "4th",
+      "magic_resistance": "35%"
+    },
+    {
+      "stage": 11,
+      "category": "Wyrm",
+      "hit_dice": 20,
+      "combat_modifier": 11,
+      "thac0": 2,
+      "breath_weapon": "22d6+11",
+      "spell_level": "5th",
+      "magic_resistance": "40%"
+    },
+    {
+      "stage": 12,
+      "category": "Great Wyrm",
+      "hit_dice": 21,
+      "combat_modifier": 12,
+      "thac0": 1,
+      "breath_weapon": "24d6+12",
+      "spell_level": "6th",
+      "magic_resistance": "45%"
+    }
+  ],
+  "Gold": [
+    {
+      "stage": 1,
+      "category": "Hatchling",
+      "hit_dice": 10,
+      "combat_modifier": 1,
+      "thac0": 11,
+      "breath_weapon": "2d12+1",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 2,
+      "category": "Very young",
+      "hit_dice": 12,
+      "combat_modifier": 2,
+      "thac0": 9,
+      "breath_weapon": "4d12+2",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 3,
+      "category": "Young",
+      "hit_dice": 14,
+      "combat_modifier": 3,
+      "thac0": 7,
+      "breath_weapon": "6d12+3",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 4,
+      "category": "Juvenile",
+      "hit_dice": 16,
+      "combat_modifier": 4,
+      "thac0": 5,
+      "breath_weapon": "8d12+4",
+      "spell_level": "1st",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 5,
+      "category": "Young adult",
+      "hit_dice": 17,
+      "combat_modifier": 5,
+      "thac0": 4,
+      "breath_weapon": "10d12+5",
+      "spell_level": "2nd",
+      "magic_resistance": "35%"
+    },
+    {
+      "stage": 6,
+      "category": "Adult",
+      "hit_dice": 18,
+      "combat_modifier": 6,
+      "thac0": 3,
+      "breath_weapon": "12d12+6",
+      "spell_level": "2nd",
+      "magic_resistance": "40%"
+    },
+    {
+      "stage": 7,
+      "category": "Mature adult",
+      "hit_dice": 19,
+      "combat_modifier": 7,
+      "thac0": 2,
+      "breath_weapon": "14d12+7",
+      "spell_level": "3rd",
+      "magic_resistance": "45%"
+    },
+    {
+      "stage": 8,
+      "category": "Old",
+      "hit_dice": 20,
+      "combat_modifier": 8,
+      "thac0": 1,
+      "breath_weapon": "16d12+8",
+      "spell_level": "5th",
+      "magic_resistance": "50%"
+    },
+    {
+      "stage": 9,
+      "category": "Very old",
+      "hit_dice": 21,
+      "combat_modifier": 9,
+      "thac0": 0,
+      "breath_weapon": "18d12+9",
+      "spell_level": "6th",
+      "magic_resistance": "55%"
+    },
+    {
+      "stage": 10,
+      "category": "Venerable",
+      "hit_dice": 22,
+      "combat_modifier": 10,
+      "thac0": -1,
+      "breath_weapon": "20d12+102",
+      "spell_level": "7th",
+      "magic_resistance": "60%"
+    },
+    {
+      "stage": 11,
+      "category": "Wyrm",
+      "hit_dice": 23,
+      "combat_modifier": 11,
+      "thac0": -2,
+      "breath_weapon": "22d12+112",
+      "spell_level": "9th",
+      "magic_resistance": "65%"
+    },
+    {
+      "stage": 12,
+      "category": "Great Wyrm",
+      "hit_dice": 24,
+      "combat_modifier": 12,
+      "thac0": -3,
+      "breath_weapon": "24d12+122",
+      "spell_level": "11th",
+      "magic_resistance": "70%"
+    }
+  ],
+  "Silver": [
+    {
+      "stage": 1,
+      "category": "Hatchling",
+      "hit_dice": 9,
+      "combat_modifier": 1,
+      "thac0": 11,
+      "breath_weapon": "2d10+1",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 2,
+      "category": "Very young",
+      "hit_dice": 11,
+      "combat_modifier": 2,
+      "thac0": 9,
+      "breath_weapon": "4d10+2",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 3,
+      "category": "Young",
+      "hit_dice": 13,
+      "combat_modifier": 3,
+      "thac0": 7,
+      "breath_weapon": "6d10+3",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 4,
+      "category": "Juvenile",
+      "hit_dice": 15,
+      "combat_modifier": 4,
+      "thac0": 5,
+      "breath_weapon": "8d10+4",
+      "spell_level": "2nd",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 5,
+      "category": "Young adult",
+      "hit_dice": 16,
+      "combat_modifier": 5,
+      "thac0": 4,
+      "breath_weapon": "10d10+5",
+      "spell_level": "2nd",
+      "magic_resistance": "25%"
+    },
+    {
+      "stage": 6,
+      "category": "Adult",
+      "hit_dice": 17,
+      "combat_modifier": 6,
+      "thac0": 3,
+      "breath_weapon": "12d10+6",
+      "spell_level": "3rd",
+      "magic_resistance": "30%"
+    },
+    {
+      "stage": 7,
+      "category": "Mature adult",
+      "hit_dice": 18,
+      "combat_modifier": 7,
+      "thac0": 2,
+      "breath_weapon": "14d10+7",
+      "spell_level": "3rd",
+      "magic_resistance": "35%"
+    },
+    {
+      "stage": 8,
+      "category": "Old",
+      "hit_dice": 19,
+      "combat_modifier": 8,
+      "thac0": 1,
+      "breath_weapon": "16d10+8",
+      "spell_level": "5th",
+      "magic_resistance": "40%"
+    },
+    {
+      "stage": 9,
+      "category": "Very old",
+      "hit_dice": 20,
+      "combat_modifier": 9,
+      "thac0": 0,
+      "breath_weapon": "18d10+9",
+      "spell_level": "5th",
+      "magic_resistance": "45%"
+    },
+    {
+      "stage": 10,
+      "category": "Venerable",
+      "hit_dice": 21,
+      "combat_modifier": 10,
+      "thac0": -1,
+      "breath_weapon": "20d10+102",
+      "spell_level": "7th",
+      "magic_resistance": "50%"
+    },
+    {
+      "stage": 11,
+      "category": "Wyrm",
+      "hit_dice": 22,
+      "combat_modifier": 11,
+      "thac0": -2,
+      "breath_weapon": "22d10+112",
+      "spell_level": "7th",
+      "magic_resistance": "55%"
+    },
+    {
+      "stage": 12,
+      "category": "Great Wyrm",
+      "hit_dice": 23,
+      "combat_modifier": 12,
+      "thac0": -3,
+      "breath_weapon": "24d10+122",
+      "spell_level": "9th",
+      "magic_resistance": "60%"
+    }
+  ],
+  "Amethyst": [
+    {
+      "stage": 1,
+      "category": "Hatchling",
+      "hit_dice": 8,
+      "combat_modifier": 1,
+      "thac0": 13,
+      "breath_weapon": "2d8+1",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 2,
+      "category": "Very young",
+      "hit_dice": 10,
+      "combat_modifier": 2,
+      "thac0": 11,
+      "breath_weapon": "4d8+2",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 3,
+      "category": "Young",
+      "hit_dice": 12,
+      "combat_modifier": 3,
+      "thac0": 9,
+      "breath_weapon": "6d8+3",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 4,
+      "category": "Juvenile",
+      "hit_dice": 14,
+      "combat_modifier": 4,
+      "thac0": 7,
+      "breath_weapon": "8d8+4",
+      "spell_level": "1st",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 5,
+      "category": "Young adult",
+      "hit_dice": 15,
+      "combat_modifier": 5,
+      "thac0": 6,
+      "breath_weapon": "10d8+5",
+      "spell_level": "2nd",
+      "magic_resistance": "25%"
+    },
+    {
+      "stage": 6,
+      "category": "Adult",
+      "hit_dice": 16,
+      "combat_modifier": 6,
+      "thac0": 5,
+      "breath_weapon": "12d8+6",
+      "spell_level": "3rd",
+      "magic_resistance": "30%"
+    },
+    {
+      "stage": 7,
+      "category": "Mature adult",
+      "hit_dice": 17,
+      "combat_modifier": 7,
+      "thac0": 4,
+      "breath_weapon": "14d8+7",
+      "spell_level": "5th",
+      "magic_resistance": "35%"
+    },
+    {
+      "stage": 8,
+      "category": "Old",
+      "hit_dice": 18,
+      "combat_modifier": 8,
+      "thac0": 3,
+      "breath_weapon": "16d8+8",
+      "spell_level": "6th",
+      "magic_resistance": "40%"
+    },
+    {
+      "stage": 9,
+      "category": "Very old",
+      "hit_dice": 19,
+      "combat_modifier": 9,
+      "thac0": 2,
+      "breath_weapon": "18d8+9",
+      "spell_level": "8th",
+      "magic_resistance": "45%"
+    },
+    {
+      "stage": 10,
+      "category": "Venerable",
+      "hit_dice": 20,
+      "combat_modifier": 10,
+      "thac0": 1,
+      "breath_weapon": "20d8+10",
+      "spell_level": "10th",
+      "magic_resistance": "50%"
+    },
+    {
+      "stage": 11,
+      "category": "Wyrm",
+      "hit_dice": 21,
+      "combat_modifier": 11,
+      "thac0": 0,
+      "breath_weapon": "22d8+11",
+      "spell_level": "11th",
+      "magic_resistance": "55%"
+    },
+    {
+      "stage": 12,
+      "category": "Great Wyrm",
+      "hit_dice": 22,
+      "combat_modifier": 12,
+      "thac0": -1,
+      "breath_weapon": "24d8+12",
+      "spell_level": "12th",
+      "magic_resistance": "60%"
+    }
+  ],
+  "Crystal": [
+    {
+      "stage": 1,
+      "category": "Hatchling",
+      "hit_dice": 4,
+      "combat_modifier": 1,
+      "thac0": 17,
+      "breath_weapon": "1d4+1",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 2,
+      "category": "Very young",
+      "hit_dice": 6,
+      "combat_modifier": 2,
+      "thac0": 15,
+      "breath_weapon": "2d4+2",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 3,
+      "category": "Young",
+      "hit_dice": 8,
+      "combat_modifier": 3,
+      "thac0": 13,
+      "breath_weapon": "3d4+3",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 4,
+      "category": "Juvenile",
+      "hit_dice": 10,
+      "combat_modifier": 4,
+      "thac0": 11,
+      "breath_weapon": "4d4+4",
+      "spell_level": "1st",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 5,
+      "category": "Young adult",
+      "hit_dice": 11,
+      "combat_modifier": 5,
+      "thac0": 10,
+      "breath_weapon": "5d4+5",
+      "spell_level": "2nd",
+      "magic_resistance": "5%"
+    },
+    {
+      "stage": 6,
+      "category": "Adult",
+      "hit_dice": 12,
+      "combat_modifier": 6,
+      "thac0": 9,
+      "breath_weapon": "6d4+6",
+      "spell_level": "3rd",
+      "magic_resistance": "10%"
+    },
+    {
+      "stage": 7,
+      "category": "Mature adult",
+      "hit_dice": 13,
+      "combat_modifier": 7,
+      "thac0": 8,
+      "breath_weapon": "7d4+7",
+      "spell_level": "4th",
+      "magic_resistance": "15%"
+    },
+    {
+      "stage": 8,
+      "category": "Old",
+      "hit_dice": 14,
+      "combat_modifier": 8,
+      "thac0": 7,
+      "breath_weapon": "8d4+8",
+      "spell_level": "5th",
+      "magic_resistance": "20%"
+    },
+    {
+      "stage": 9,
+      "category": "Very old",
+      "hit_dice": 15,
+      "combat_modifier": 9,
+      "thac0": 6,
+      "breath_weapon": "9d4+9",
+      "spell_level": "6th",
+      "magic_resistance": "25%"
+    },
+    {
+      "stage": 10,
+      "category": "Venerable",
+      "hit_dice": 16,
+      "combat_modifier": 10,
+      "thac0": 5,
+      "breath_weapon": "10d4+10",
+      "spell_level": "7th",
+      "magic_resistance": "30%"
+    },
+    {
+      "stage": 11,
+      "category": "Wyrm",
+      "hit_dice": 17,
+      "combat_modifier": 11,
+      "thac0": 4,
+      "breath_weapon": "11d4+11",
+      "spell_level": "7th",
+      "magic_resistance": "35%"
+    },
+    {
+      "stage": 12,
+      "category": "Great Wyrm",
+      "hit_dice": 18,
+      "combat_modifier": 12,
+      "thac0": 3,
+      "breath_weapon": "12d4+12",
+      "spell_level": "7th",
+      "magic_resistance": "40%"
+    }
+  ],
+  "Emerald": [
+    {
+      "stage": 1,
+      "category": "Hatchling",
+      "hit_dice": 6,
+      "combat_modifier": 1,
+      "thac0": 15,
+      "breath_weapon": "2d4+1",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 2,
+      "category": "Very young",
+      "hit_dice": 8,
+      "combat_modifier": 2,
+      "thac0": 13,
+      "breath_weapon": "4d4+2",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 3,
+      "category": "Young",
+      "hit_dice": 10,
+      "combat_modifier": 3,
+      "thac0": 11,
+      "breath_weapon": "6d4+3",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 4,
+      "category": "Juvenile",
+      "hit_dice": 12,
+      "combat_modifier": 4,
+      "thac0": 9,
+      "breath_weapon": "8d4+4",
+      "spell_level": "1st",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 5,
+      "category": "Young adult",
+      "hit_dice": 13,
+      "combat_modifier": 5,
+      "thac0": 8,
+      "breath_weapon": "10d4+5",
+      "spell_level": "2nd",
+      "magic_resistance": "15%"
+    },
+    {
+      "stage": 6,
+      "category": "Adult",
+      "hit_dice": 14,
+      "combat_modifier": 6,
+      "thac0": 7,
+      "breath_weapon": "12d4+6",
+      "spell_level": "3rd",
+      "magic_resistance": "20%"
+    },
+    {
+      "stage": 7,
+      "category": "Mature adult",
+      "hit_dice": 15,
+      "combat_modifier": 7,
+      "thac0": 6,
+      "breath_weapon": "14d4+7",
+      "spell_level": "4th",
+      "magic_resistance": "25%"
+    },
+    {
+      "stage": 8,
+      "category": "Old",
+      "hit_dice": 16,
+      "combat_modifier": 8,
+      "thac0": 5,
+      "breath_weapon": "16d4+8",
+      "spell_level": "5th",
+      "magic_resistance": "30%"
+    },
+    {
+      "stage": 9,
+      "category": "Very old",
+      "hit_dice": 17,
+      "combat_modifier": 9,
+      "thac0": 4,
+      "breath_weapon": "18d4+9",
+      "spell_level": "6th",
+      "magic_resistance": "35%"
+    },
+    {
+      "stage": 10,
+      "category": "Venerable",
+      "hit_dice": 18,
+      "combat_modifier": 10,
+      "thac0": 3,
+      "breath_weapon": "20d4+10",
+      "spell_level": "6th",
+      "magic_resistance": "40%"
+    },
+    {
+      "stage": 11,
+      "category": "Wyrm",
+      "hit_dice": 19,
+      "combat_modifier": 11,
+      "thac0": 2,
+      "breath_weapon": "22d4+11",
+      "spell_level": "8th",
+      "magic_resistance": "45%"
+    },
+    {
+      "stage": 12,
+      "category": "Great Wyrm",
+      "hit_dice": 20,
+      "combat_modifier": 12,
+      "thac0": 1,
+      "breath_weapon": "24d4+12",
+      "spell_level": "9th",
+      "magic_resistance": "50%"
+    }
+  ],
+  "Sapphire": [
+    {
+      "stage": 1,
+      "category": "Hatchling",
+      "hit_dice": 7,
+      "combat_modifier": 1,
+      "thac0": 13,
+      "breath_weapon": "2d6+1",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 2,
+      "category": "Very young",
+      "hit_dice": 9,
+      "combat_modifier": 2,
+      "thac0": 11,
+      "breath_weapon": "4d6+2",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 3,
+      "category": "Young",
+      "hit_dice": 11,
+      "combat_modifier": 3,
+      "thac0": 9,
+      "breath_weapon": "6d6+3",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 4,
+      "category": "Juvenile",
+      "hit_dice": 13,
+      "combat_modifier": 4,
+      "thac0": 7,
+      "breath_weapon": "8d6+4",
+      "spell_level": "1st",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 5,
+      "category": "Young adult",
+      "hit_dice": 14,
+      "combat_modifier": 5,
+      "thac0": 6,
+      "breath_weapon": "10d6+5",
+      "spell_level": "2nd",
+      "magic_resistance": "20%"
+    },
+    {
+      "stage": 6,
+      "category": "Adult",
+      "hit_dice": 15,
+      "combat_modifier": 6,
+      "thac0": 5,
+      "breath_weapon": "12d6+6",
+      "spell_level": "3rd",
+      "magic_resistance": "25%"
+    },
+    {
+      "stage": 7,
+      "category": "Mature adult",
+      "hit_dice": 16,
+      "combat_modifier": 7,
+      "thac0": 4,
+      "breath_weapon": "14d6+7",
+      "spell_level": "4th",
+      "magic_resistance": "30%"
+    },
+    {
+      "stage": 8,
+      "category": "Old",
+      "hit_dice": 17,
+      "combat_modifier": 8,
+      "thac0": 3,
+      "breath_weapon": "16d6+8",
+      "spell_level": "4th",
+      "magic_resistance": "35%"
+    },
+    {
+      "stage": 9,
+      "category": "Very old",
+      "hit_dice": 18,
+      "combat_modifier": 9,
+      "thac0": 2,
+      "breath_weapon": "18d6+9",
+      "spell_level": "6th",
+      "magic_resistance": "40%"
+    },
+    {
+      "stage": 10,
+      "category": "Venerable",
+      "hit_dice": 19,
+      "combat_modifier": 10,
+      "thac0": 1,
+      "breath_weapon": "20d6+10",
+      "spell_level": "7th",
+      "magic_resistance": "45%"
+    },
+    {
+      "stage": 11,
+      "category": "Wyrm",
+      "hit_dice": 20,
+      "combat_modifier": 11,
+      "thac0": 0,
+      "breath_weapon": "22d6+11",
+      "spell_level": "9th",
+      "magic_resistance": "50%"
+    },
+    {
+      "stage": 12,
+      "category": "Great Wyrm",
+      "hit_dice": 21,
+      "combat_modifier": 12,
+      "thac0": -1,
+      "breath_weapon": "24d6+12",
+      "spell_level": "9th",
+      "magic_resistance": "55%"
+    }
+  ],
+  "Topaz": [
+    {
+      "stage": 1,
+      "category": "Hatchling",
+      "hit_dice": 5,
+      "combat_modifier": 1,
+      "thac0": 15,
+      "breath_weapon": "1d6+1",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 2,
+      "category": "Very young",
+      "hit_dice": 7,
+      "combat_modifier": 2,
+      "thac0": 13,
+      "breath_weapon": "2d6+2",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 3,
+      "category": "Young",
+      "hit_dice": 9,
+      "combat_modifier": 3,
+      "thac0": 11,
+      "breath_weapon": "3d6+3",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 4,
+      "category": "Juvenile",
+      "hit_dice": 11,
+      "combat_modifier": 4,
+      "thac0": 9,
+      "breath_weapon": "4d6+4",
+      "spell_level": "1st",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 5,
+      "category": "Young adult",
+      "hit_dice": 12,
+      "combat_modifier": 5,
+      "thac0": 8,
+      "breath_weapon": "5d6+5",
+      "spell_level": "2nd",
+      "magic_resistance": "10%"
+    },
+    {
+      "stage": 6,
+      "category": "Adult",
+      "hit_dice": 13,
+      "combat_modifier": 6,
+      "thac0": 7,
+      "breath_weapon": "6d6+6",
+      "spell_level": "3rd",
+      "magic_resistance": "15%"
+    },
+    {
+      "stage": 7,
+      "category": "Mature adult",
+      "hit_dice": 14,
+      "combat_modifier": 7,
+      "thac0": 6,
+      "breath_weapon": "7d6+7",
+      "spell_level": "3rd",
+      "magic_resistance": "20%"
+    },
+    {
+      "stage": 8,
+      "category": "Old",
+      "hit_dice": 15,
+      "combat_modifier": 8,
+      "thac0": 5,
+      "breath_weapon": "8d6+8",
+      "spell_level": "5th",
+      "magic_resistance": "25%"
+    },
+    {
+      "stage": 9,
+      "category": "Very old",
+      "hit_dice": 16,
+      "combat_modifier": 9,
+      "thac0": 4,
+      "breath_weapon": "9d6+9",
+      "spell_level": "6th",
+      "magic_resistance": "30%"
+    },
+    {
+      "stage": 10,
+      "category": "Venerable",
+      "hit_dice": 17,
+      "combat_modifier": 10,
+      "thac0": 3,
+      "breath_weapon": "10d6+10",
+      "spell_level": "7th",
+      "magic_resistance": "35%"
+    },
+    {
+      "stage": 11,
+      "category": "Wyrm",
+      "hit_dice": 18,
+      "combat_modifier": 11,
+      "thac0": 2,
+      "breath_weapon": "11d6+11",
+      "spell_level": "7th",
+      "magic_resistance": "40%"
+    },
+    {
+      "stage": 12,
+      "category": "Great Wyrm",
+      "hit_dice": 19,
+      "combat_modifier": 12,
+      "thac0": 1,
+      "breath_weapon": "12d6+12",
+      "spell_level": "8th",
+      "magic_resistance": "45%"
+    }
+  ],
+  "Brassic [Brass]": [
+    {
+      "stage": 1,
+      "category": "Hatchling",
+      "hit_dice": 6,
+      "combat_modifier": 1,
+      "thac0": 15,
+      "breath_weapon": "2d4+1",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 2,
+      "category": "Very young",
+      "hit_dice": 8,
+      "combat_modifier": 2,
+      "thac0": 13,
+      "breath_weapon": "4d4+2",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 3,
+      "category": "Young",
+      "hit_dice": 10,
+      "combat_modifier": 3,
+      "thac0": 11,
+      "breath_weapon": "6d4+3",
+      "spell_level": "None",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 4,
+      "category": "Juvenile",
+      "hit_dice": 12,
+      "combat_modifier": 4,
+      "thac0": 9,
+      "breath_weapon": "8d4+4",
+      "spell_level": "1st",
+      "magic_resistance": "Nil"
+    },
+    {
+      "stage": 5,
+      "category": "Young adult",
+      "hit_dice": 13,
+      "combat_modifier": 5,
+      "thac0": 8,
+      "breath_weapon": "10d4+5",
+      "spell_level": "1st",
+      "magic_resistance": "15%"
+    },
+    {
+      "stage": 6,
+      "category": "Adult",
+      "hit_dice": 14,
+      "combat_modifier": 6,
+      "thac0": 7,
+      "breath_weapon": "12d4+6",
+      "spell_level": "2nd",
+      "magic_resistance": "20%"
+    },
+    {
+      "stage": 7,
+      "category": "Mature adult",
+      "hit_dice": 15,
+      "combat_modifier": 7,
+      "thac0": 6,
+      "breath_weapon": "14d4+7",
+      "spell_level": "2nd",
+      "magic_resistance": "25%"
+    },
+    {
+      "stage": 8,
+      "category": "Old",
+      "hit_dice": 16,
+      "combat_modifier": 8,
+      "thac0": 5,
+      "breath_weapon": "16d4+8",
+      "spell_level": "3rd",
+      "magic_resistance": "30%"
+    },
+    {
+      "stage": 9,
+      "category": "Very old",
+      "hit_dice": 17,
+      "combat_modifier": 9,
+      "thac0": 4,
+      "breath_weapon": "18d4+9",
+      "spell_level": "4th",
+      "magic_resistance": "35%"
+    },
+    {
+      "stage": 10,
+      "category": "Venerable",
+      "hit_dice": 18,
+      "combat_modifier": 10,
+      "thac0": 3,
+      "breath_weapon": "20d4+10",
+      "spell_level": "4th",
+      "magic_resistance": "40%"
+    },
+    {
+      "stage": 11,
+      "category": "Wyrm",
+      "hit_dice": 19,
+      "combat_modifier": 11,
+      "thac0": 2,
+      "breath_weapon": "22d4+11",
+      "spell_level": "4th",
+      "magic_resistance": "45%"
+    },
+    {
+      "stage": 12,
+      "category": "Great Wyrm",
+      "hit_dice": 20,
+      "combat_modifier": 12,
+      "thac0": 1,
+      "breath_weapon": "24d4+12",
+      "spell_level": "4th",
+      "magic_resistance": "50%"
+    }
+  ]
+}

@@ -1,0 +1,2185 @@
+{
+  "general": [
+    {
+      "stage": 1,
+      "age_name": "Hatchling",
+      "hd_mod": "-6",
+      "combat_mod": "+1"
+    },
+    {
+      "stage": 2,
+      "age_name": "Very young",
+      "hd_mod": "-4",
+      "combat_mod": "+2"
+    },
+    {
+      "stage": 3,
+      "age_name": "Young",
+      "hd_mod": "-2",
+      "combat_mod": "+3"
+    },
+    {
+      "stage": 4,
+      "age_name": "Juvenile",
+      "hd_mod": "Nil",
+      "combat_mod": "+4"
+    },
+    {
+      "stage": 5,
+      "age_name": "Young adult",
+      "hd_mod": "+1",
+      "combat_mod": "+5"
+    },
+    {
+      "stage": 6,
+      "age_name": "Adult",
+      "hd_mod": "+2",
+      "combat_mod": "+6"
+    },
+    {
+      "stage": 7,
+      "age_name": "Mature adult",
+      "hd_mod": "+3",
+      "combat_mod": "+7"
+    },
+    {
+      "stage": 8,
+      "age_name": "Old",
+      "hd_mod": "+4",
+      "combat_mod": "+8"
+    },
+    {
+      "stage": 9,
+      "age_name": "Very old",
+      "hd_mod": "+5",
+      "combat_mod": "+9"
+    },
+    {
+      "stage": 10,
+      "age_name": "Venerable",
+      "hd_mod": "+6",
+      "combat_mod": "+10"
+    },
+    {
+      "stage": 11,
+      "age_name": "Wyrm",
+      "hd_mod": "+7",
+      "combat_mod": "+11"
+    },
+    {
+      "stage": 12,
+      "age_name": "Great Wyrm",
+      "hd_mod": "+8",
+      "combat_mod": "+12"
+    }
+  ],
+  "dragons": {
+    "Red": {
+      "file": "DD03846.HTM",
+      "base_hd": "15 (base)",
+      "base_thac0": "7 (at 9 HD)",
+      "stages": [
+        {
+          "stage": 1,
+          "body_length": "1-12",
+          "tail_length": "3-12",
+          "ac": "0",
+          "breath": "2d10+1",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "7,000"
+        },
+        {
+          "stage": 2,
+          "body_length": "12-23",
+          "tail_length": "12-21",
+          "ac": "-1",
+          "breath": "4d10+2",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "8,000"
+        },
+        {
+          "stage": 3,
+          "body_length": "23-42",
+          "tail_length": "21-30",
+          "ac": "-2",
+          "breath": "6d10+3",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "10,000"
+        },
+        {
+          "stage": 4,
+          "body_length": "42-61",
+          "tail_length": "30-49",
+          "ac": "-3",
+          "breath": "8d10+4",
+          "spell_level": "1",
+          "mr": "Nil",
+          "treasure": "E, S, T",
+          "xp": "12,000"
+        },
+        {
+          "stage": 5,
+          "body_length": "61-80",
+          "tail_length": "49-68",
+          "ac": "-4",
+          "breath": "10d10+5",
+          "spell_level": "2",
+          "mr": "30%",
+          "treasure": "H, S, T",
+          "xp": "14,000"
+        },
+        {
+          "stage": 6,
+          "body_length": "80-99",
+          "tail_length": "68-87",
+          "ac": "-5",
+          "breath": "12d10+6",
+          "spell_level": "2 1",
+          "mr": "35%",
+          "treasure": "H, S, T",
+          "xp": "15,000"
+        },
+        {
+          "stage": 7,
+          "body_length": "99-118",
+          "tail_length": "87-106",
+          "ac": "-6",
+          "breath": "14d10+7",
+          "spell_level": "2 2",
+          "mr": "40%",
+          "treasure": "H, S, T",
+          "xp": "16,000"
+        },
+        {
+          "stage": 8,
+          "body_length": "118-137",
+          "tail_length": "106-125",
+          "ac": "-7",
+          "breath": "16d10+8",
+          "spell_level": "2 2 1",
+          "mr": "45%",
+          "treasure": "H, S, Tx2",
+          "xp": "19,000"
+        },
+        {
+          "stage": 9,
+          "body_length": "137-156",
+          "tail_length": "125-144",
+          "ac": "-8",
+          "breath": "18d10+9",
+          "spell_level": "2 2 2",
+          "mr": "50%",
+          "treasure": "H, S, Tx2",
+          "xp": "21,000"
+        },
+        {
+          "stage": 10,
+          "body_length": "156-165",
+          "tail_length": "144-153",
+          "ac": "-9",
+          "breath": "20d10+10",
+          "spell_level": "2 2 2/1",
+          "mr": "55%",
+          "treasure": "H, S, Tx2",
+          "xp": "22,000"
+        },
+        {
+          "stage": 11,
+          "body_length": "165-174",
+          "tail_length": "153-162",
+          "ac": "-10",
+          "breath": "22d10+11",
+          "spell_level": "2 2 2 2/2",
+          "mr": "60%",
+          "treasure": "H, S, Tx3",
+          "xp": "23,000"
+        },
+        {
+          "stage": 12,
+          "body_length": "174-183",
+          "tail_length": "162-171",
+          "ac": "-11",
+          "breath": "24d10+12",
+          "spell_level": "2 2 2 2 /2 1",
+          "mr": "65%",
+          "treasure": "H, S, Tx3",
+          "xp": "24,000"
+        }
+      ],
+      "specials_text": ""
+    },
+    "Blue": {
+      "file": "DD03844.HTM",
+      "base_hd": "14 (base)",
+      "base_thac0": "7 (base)",
+      "stages": [
+        {
+          "stage": 1,
+          "body_length": "3-9",
+          "tail_length": "2-7",
+          "ac": "3",
+          "breath": "2d8+1",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "6,000"
+        },
+        {
+          "stage": 2,
+          "body_length": "9-20",
+          "tail_length": "7-16",
+          "ac": "2",
+          "breath": "4d8+2",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "8,000"
+        },
+        {
+          "stage": 3,
+          "body_length": "20-31",
+          "tail_length": "16-25",
+          "ac": "1",
+          "breath": "6d8+3",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "10,000"
+        },
+        {
+          "stage": 4,
+          "body_length": "31-50",
+          "tail_length": "25-34",
+          "ac": "0",
+          "breath": "8d8+4",
+          "spell_level": "1",
+          "mr": "Nil",
+          "treasure": "\u00bdH, S",
+          "xp": "13,000"
+        },
+        {
+          "stage": 5,
+          "body_length": "50-69",
+          "tail_length": "34-43",
+          "ac": "-1",
+          "breath": "10d8+5",
+          "spell_level": "2",
+          "mr": "20%",
+          "treasure": "H, S",
+          "xp": "15,000"
+        },
+        {
+          "stage": 6,
+          "body_length": "69-88",
+          "tail_length": "43-52",
+          "ac": "-2",
+          "breath": "12d8+6",
+          "spell_level": "3",
+          "mr": "25%",
+          "treasure": "H, S",
+          "xp": "16,000"
+        },
+        {
+          "stage": 7,
+          "body_length": "88-97",
+          "tail_length": "52-61",
+          "ac": "-3",
+          "breath": "14d8+7",
+          "spell_level": "3 1",
+          "mr": "30%",
+          "treasure": "H, S",
+          "xp": "17,000"
+        },
+        {
+          "stage": 8,
+          "body_length": "97-106",
+          "tail_length": "61-70",
+          "ac": "-4",
+          "breath": "16d8+8",
+          "spell_level": "3 2",
+          "mr": "35%",
+          "treasure": "H, Sx2",
+          "xp": "18,000"
+        },
+        {
+          "stage": 9,
+          "body_length": "106-115",
+          "tail_length": "70-79",
+          "ac": "-5",
+          "breath": "18d8+9",
+          "spell_level": "3 3",
+          "mr": "40%",
+          "treasure": "H, Sx2",
+          "xp": "20,000"
+        },
+        {
+          "stage": 10,
+          "body_length": "115-124",
+          "tail_length": "79-88",
+          "ac": "-6",
+          "breath": "20d8+10",
+          "spell_level": "3 3 1/1",
+          "mr": "45%",
+          "treasure": "H, Sx2",
+          "xp": "21,000"
+        },
+        {
+          "stage": 11,
+          "body_length": "124-133",
+          "tail_length": "88-97",
+          "ac": "-7",
+          "breath": "22d8+11",
+          "spell_level": "3 3 2/2",
+          "mr": "50%",
+          "treasure": "H, Sx3",
+          "xp": "22,000"
+        },
+        {
+          "stage": 12,
+          "body_length": "133-142",
+          "tail_length": "97-106",
+          "ac": "-8",
+          "breath": "24d8+12",
+          "spell_level": "3 3 3/3",
+          "mr": "55%",
+          "treasure": "H, Sx3",
+          "xp": "23,000"
+        }
+      ],
+      "specials_text": "Blue dragons are born with an immunity to electricity. As they age, they gain the following additional powers: Young: create or destroy water three times per day. Juvenile: sound imitation at will. Adult: dust devil once a day. Old: ventriloquism once a day. Venerable: hallucinatory terrain once a day."
+    },
+    "Green": {
+      "file": "DD03845.HTM",
+      "base_hd": "13 (base)",
+      "base_thac0": "7 (at 13 HD)",
+      "stages": [
+        {
+          "stage": 1,
+          "body_length": "2-7",
+          "tail_length": "2-5",
+          "ac": "3",
+          "breath": "2d6+1",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "5,000"
+        },
+        {
+          "stage": 2,
+          "body_length": "7-16",
+          "tail_length": "5-15",
+          "ac": "2",
+          "breath": "4d6+2",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "7,000"
+        },
+        {
+          "stage": 3,
+          "body_length": "16-35",
+          "tail_length": "15-31",
+          "ac": "1",
+          "breath": "6d6+3",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "8,000"
+        },
+        {
+          "stage": 4,
+          "body_length": "35-44",
+          "tail_length": "31-40",
+          "ac": "0",
+          "breath": "8d6+4",
+          "spell_level": "1",
+          "mr": "Nil",
+          "treasure": "\u00bdH",
+          "xp": "11,000"
+        },
+        {
+          "stage": 5,
+          "body_length": "44-53",
+          "tail_length": "40-48",
+          "ac": "-1",
+          "breath": "10d6+5",
+          "spell_level": "2",
+          "mr": "15%",
+          "treasure": "H",
+          "xp": "13,000"
+        },
+        {
+          "stage": 6,
+          "body_length": "53-62",
+          "tail_length": "48-56",
+          "ac": "-2",
+          "breath": "12d6+6",
+          "spell_level": "3",
+          "mr": "20%",
+          "treasure": "H",
+          "xp": "14,000"
+        },
+        {
+          "stage": 7,
+          "body_length": "62-71",
+          "tail_length": "56-64",
+          "ac": "-3",
+          "breath": "14d6+7",
+          "spell_level": "4",
+          "mr": "25%",
+          "treasure": "H",
+          "xp": "15,000"
+        },
+        {
+          "stage": 8,
+          "body_length": "71-80",
+          "tail_length": "64-72",
+          "ac": "-4",
+          "breath": "16d6+8",
+          "spell_level": "4 1",
+          "mr": "30%",
+          "treasure": "Hx2",
+          "xp": "16,000"
+        },
+        {
+          "stage": 9,
+          "body_length": "80-89",
+          "tail_length": "72-80",
+          "ac": "-5",
+          "breath": "18d6+9",
+          "spell_level": "4 2",
+          "mr": "40%",
+          "treasure": "Hx2",
+          "xp": "18,000"
+        },
+        {
+          "stage": 10,
+          "body_length": "89-98",
+          "tail_length": "80-86",
+          "ac": "-6",
+          "breath": "20d6+10",
+          "spell_level": "4 3",
+          "mr": "45%",
+          "treasure": "Hx2",
+          "xp": "19,000"
+        },
+        {
+          "stage": 11,
+          "body_length": "98-107",
+          "tail_length": "86-96",
+          "ac": "-7",
+          "breath": "22d6+11",
+          "spell_level": "4 4",
+          "mr": "50%",
+          "treasure": "Hx3",
+          "xp": "21,000"
+        },
+        {
+          "stage": 12,
+          "body_length": "107-116",
+          "tail_length": "96-104",
+          "ac": "-8",
+          "breath": "24d6+12",
+          "spell_level": "5 4",
+          "mr": "55%",
+          "treasure": "Hx3",
+          "xp": "22,000"
+        }
+      ],
+      "specials_text": ""
+    },
+    "Black": {
+      "file": "DD03843.HTM",
+      "base_hd": "12 (base)",
+      "base_thac0": "9 (base)",
+      "stages": [
+        {
+          "stage": 1,
+          "body_length": "3-6",
+          "tail_length": "2-5",
+          "ac": "4",
+          "breath": "2d4+1",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "4,000"
+        },
+        {
+          "stage": 2,
+          "body_length": "6-15",
+          "tail_length": "5-12",
+          "ac": "3",
+          "breath": "4d4+2",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "5,000"
+        },
+        {
+          "stage": 3,
+          "body_length": "15-24",
+          "tail_length": "12-19",
+          "ac": "2",
+          "breath": "6d4+3",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "7,000"
+        },
+        {
+          "stage": 4,
+          "body_length": "24-33",
+          "tail_length": "19-27",
+          "ac": "1",
+          "breath": "8d4+4",
+          "spell_level": "1",
+          "mr": "Nil",
+          "treasure": "\u00bdH",
+          "xp": "10,000"
+        },
+        {
+          "stage": 5,
+          "body_length": "33-42",
+          "tail_length": "27-35",
+          "ac": "0",
+          "breath": "10d4+5",
+          "spell_level": "2",
+          "mr": "10%",
+          "treasure": "H",
+          "xp": "12,000"
+        },
+        {
+          "stage": 6,
+          "body_length": "42-51",
+          "tail_length": "35-43",
+          "ac": "-1",
+          "breath": "12d4+6",
+          "spell_level": "3",
+          "mr": "15%",
+          "treasure": "H",
+          "xp": "13,000"
+        },
+        {
+          "stage": 7,
+          "body_length": "51-60",
+          "tail_length": "43-50",
+          "ac": "-2",
+          "breath": "14d4+7",
+          "spell_level": "4",
+          "mr": "20%",
+          "treasure": "H",
+          "xp": "14,000"
+        },
+        {
+          "stage": 8,
+          "body_length": "60-69",
+          "tail_length": "50-57",
+          "ac": "-3",
+          "breath": "16d4+8",
+          "spell_level": "5",
+          "mr": "25%",
+          "treasure": "Hx2",
+          "xp": "15,000"
+        },
+        {
+          "stage": 9,
+          "body_length": "69-78",
+          "tail_length": "57-64",
+          "ac": "-4",
+          "breath": "18d4+9",
+          "spell_level": "6",
+          "mr": "30%",
+          "treasure": "Hx2",
+          "xp": "17,000"
+        },
+        {
+          "stage": 10,
+          "body_length": "78-87",
+          "tail_length": "64-73",
+          "ac": "-5",
+          "breath": "20d4+10",
+          "spell_level": "7",
+          "mr": "35%",
+          "treasure": "Hx2",
+          "xp": "18,000"
+        },
+        {
+          "stage": 11,
+          "body_length": "87-96",
+          "tail_length": "73-80",
+          "ac": "-6",
+          "breath": "22d4+11",
+          "spell_level": "8",
+          "mr": "40%",
+          "treasure": "Hx3",
+          "xp": "19,000"
+        },
+        {
+          "stage": 12,
+          "body_length": "96-105",
+          "tail_length": "80-87",
+          "ac": "-7",
+          "breath": "24d4+12",
+          "spell_level": "9",
+          "mr": "45%",
+          "treasure": "Hx3",
+          "xp": "20,000"
+        }
+      ],
+      "specials_text": "Black dragons are born with an innate water breathing ability and an immunity to acid. As they age, they gain the following additional powers: Juvenile: darkness three times a day in a 10' radius per age category of the dragon. Adult: corrupt water once a day. For every age category a dragon attains, it can stagnate 10 cubic feet of water, making it become still, foul, inert, and unable to support animal life. When this ability is used against potions and elixirs, they become useless if they roll a 15 or better on 1d20. Old: plant growth once a day. Venerable: summon insects once a day. Great wyrm: charm reptiles three times a day. This operates as a charm mammals spell, but is applicable only to reptiles."
+    },
+    "White": {
+      "file": "DD03847.HTM",
+      "base_hd": "11 (base)",
+      "base_thac0": "9 (at 11 HD)",
+      "stages": [
+        {
+          "stage": 1,
+          "body_length": "1-5",
+          "tail_length": "1-4",
+          "ac": "4",
+          "breath": "1d6+1",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "3,000"
+        },
+        {
+          "stage": 2,
+          "body_length": "5-14",
+          "tail_length": "4-12",
+          "ac": "3",
+          "breath": "2d6+2",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "4,000"
+        },
+        {
+          "stage": 3,
+          "body_length": "14-23",
+          "tail_length": "12-21",
+          "ac": "2",
+          "breath": "3d6+3",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "6,000"
+        },
+        {
+          "stage": 4,
+          "body_length": "23-32",
+          "tail_length": "21-28",
+          "ac": "1",
+          "breath": "4d6+4",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "E",
+          "xp": "8,000"
+        },
+        {
+          "stage": 5,
+          "body_length": "32-41",
+          "tail_length": "28-36",
+          "ac": "0",
+          "breath": "5d6+5",
+          "spell_level": "Nil",
+          "mr": "5%",
+          "treasure": "E, O, S",
+          "xp": "10,000"
+        },
+        {
+          "stage": 6,
+          "body_length": "41-50",
+          "tail_length": "36-45",
+          "ac": "-1",
+          "breath": "6d6+6",
+          "spell_level": "1",
+          "mr": "10%",
+          "treasure": "E, 0, S",
+          "xp": "12,000"
+        },
+        {
+          "stage": 7,
+          "body_length": "50-59",
+          "tail_length": "45-54",
+          "ac": "-2",
+          "breath": "7d6+7",
+          "spell_level": "1",
+          "mr": "15%",
+          "treasure": "E, O, S",
+          "xp": "13,000"
+        },
+        {
+          "stage": 8,
+          "body_length": "59-68",
+          "tail_length": "54-62",
+          "ac": "-3",
+          "breath": "8d6+8",
+          "spell_level": "2",
+          "mr": "20%",
+          "treasure": "E, O, Sx2",
+          "xp": "14,000"
+        },
+        {
+          "stage": 9,
+          "body_length": "68-77",
+          "tail_length": "62-70",
+          "ac": "-4",
+          "breath": "9d6+9",
+          "spell_level": "2",
+          "mr": "25%",
+          "treasure": "E, O, Sx2",
+          "xp": "16,000"
+        },
+        {
+          "stage": 10,
+          "body_length": "77-86",
+          "tail_length": "70-78",
+          "ac": "-5",
+          "breath": "10d6+10",
+          "spell_level": "3",
+          "mr": "30%",
+          "treasure": "E, O, Sx2",
+          "xp": "17,000"
+        },
+        {
+          "stage": 11,
+          "body_length": "86-95",
+          "tail_length": "78-85",
+          "ac": "-6",
+          "breath": "11d6+11",
+          "spell_level": "3",
+          "mr": "35%",
+          "treasure": "E, O, Sx3",
+          "xp": "18,000"
+        },
+        {
+          "stage": 12,
+          "body_length": "95-104",
+          "tail_length": "85-94",
+          "ac": "-7",
+          "breath": "12d6+12",
+          "spell_level": "4",
+          "mr": "40%",
+          "treasure": "E, O, Sx3",
+          "xp": "19,000"
+        }
+      ],
+      "specials_text": "From their birth, white dragons are immune to cold. As they grow older, they gain the following additional abilities: Juvenile: ice walking, which allows the dragon to walk across ice as easily as easily as creatures walk across flat, dry ground. Mature adult: gust of wind three times a day. Very old: wall of fog three times a day, this produces snow or hail rather than rain. Wyrm: freezing fog three times a day. This obscures vision in a 100' radius and causes frost to form, creating a thin layer of glare ice on the ground and on all surfaces within the radius."
+    },
+    "Brass": {
+      "file": "DD03853.HTM",
+      "base_hd": "12 (base)",
+      "base_thac0": "9",
+      "stages": [
+        {
+          "stage": 1,
+          "body_length": "3-6",
+          "tail_length": "2-5",
+          "ac": "3",
+          "breath": "2d4+1",
+          "spell_level": "Nil/Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "4,000"
+        },
+        {
+          "stage": 2,
+          "body_length": "6-14",
+          "tail_length": "4-12",
+          "ac": "2",
+          "breath": "4d4+2",
+          "spell_level": "Nil/Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "6,000"
+        },
+        {
+          "stage": 3,
+          "body_length": "14-22",
+          "tail_length": "12-18",
+          "ac": "1",
+          "breath": "6d4+3",
+          "spell_level": "Nil/Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "8,000"
+        },
+        {
+          "stage": 4,
+          "body_length": "22-31",
+          "tail_length": "18-24",
+          "ac": "0",
+          "breath": "8d4+4",
+          "spell_level": "Nil/1",
+          "mr": "Nil",
+          "treasure": "\u00bdH",
+          "xp": "11,000"
+        },
+        {
+          "stage": 5,
+          "body_length": "31-41",
+          "tail_length": "24-34",
+          "ac": "-1",
+          "breath": "10d4+5",
+          "spell_level": "1",
+          "mr": "15%",
+          "treasure": "H",
+          "xp": "13,000"
+        },
+        {
+          "stage": 6,
+          "body_length": "41-52",
+          "tail_length": "34-44",
+          "ac": "-2",
+          "breath": "12d4+6",
+          "spell_level": "1 1",
+          "mr": "20%",
+          "treasure": "H",
+          "xp": "14,000"
+        },
+        {
+          "stage": 7,
+          "body_length": "52-64",
+          "tail_length": "44-54",
+          "ac": "-3",
+          "breath": "14d4+7",
+          "spell_level": "2 1",
+          "mr": "25%",
+          "treasure": "H",
+          "xp": "15,000"
+        },
+        {
+          "stage": 8,
+          "body_length": "64-77",
+          "tail_length": "54-64",
+          "ac": "-4",
+          "breath": "16d4+8",
+          "spell_level": "3 2/1",
+          "mr": "30%",
+          "treasure": "Hx2",
+          "xp": "17,000"
+        },
+        {
+          "stage": 9,
+          "body_length": "77-91",
+          "tail_length": "64-74",
+          "ac": "-5",
+          "breath": "18d4+9",
+          "spell_level": "3 3/1 1",
+          "mr": "35%",
+          "treasure": "Hx2",
+          "xp": "18,000"
+        },
+        {
+          "stage": 10,
+          "body_length": "91-105",
+          "tail_length": "74-84",
+          "ac": "-6",
+          "breath": "20d4+10",
+          "spell_level": "4 3/2 1",
+          "mr": "40%",
+          "treasure": "Hx2",
+          "xp": "19,000"
+        },
+        {
+          "stage": 11,
+          "body_length": "105-121",
+          "tail_length": "84-94",
+          "ac": "-7",
+          "breath": "22d4+11",
+          "spell_level": "4 4/2 2",
+          "mr": "45%",
+          "treasure": "Hx3",
+          "xp": "20,000"
+        },
+        {
+          "stage": 12,
+          "body_length": "121-138",
+          "tail_length": "94-104",
+          "ac": "-8",
+          "breath": "24d4+12",
+          "spell_level": "5 4/3 2",
+          "mr": "50%",
+          "treasure": "Hx3",
+          "xp": "21,000"
+        }
+      ],
+      "specials_text": ""
+    },
+    "Bronze": {
+      "file": "DD03854.HTM",
+      "base_hd": "14 (base)",
+      "base_thac0": "8 (base)",
+      "stages": [
+        {
+          "stage": 1,
+          "body_length": "5-14",
+          "tail_length": "3-10",
+          "ac": "1",
+          "breath": "2d8+1",
+          "spell_level": "Nil/Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "6,000"
+        },
+        {
+          "stage": 2,
+          "body_length": "14-23",
+          "tail_length": "10-19",
+          "ac": "0",
+          "breath": "4d8+2",
+          "spell_level": "Nil/Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "8,000"
+        },
+        {
+          "stage": 3,
+          "body_length": "23-32",
+          "tail_length": "19-28",
+          "ac": "-1",
+          "breath": "6d8+3",
+          "spell_level": "Nil/Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "10,000"
+        },
+        {
+          "stage": 4,
+          "body_length": "32-42",
+          "tail_length": "28-37",
+          "ac": "-2",
+          "breath": "8d8+4",
+          "spell_level": "1",
+          "mr": "Nil",
+          "treasure": "E, S, T",
+          "xp": "12,000"
+        },
+        {
+          "stage": 5,
+          "body_length": "42-52",
+          "tail_length": "37-44",
+          "ac": "-3",
+          "breath": "10d8+5",
+          "spell_level": "1 1",
+          "mr": "20%",
+          "treasure": "H, S, T",
+          "xp": "14,000"
+        },
+        {
+          "stage": 6,
+          "body_length": "52-63",
+          "tail_length": "44-52",
+          "ac": "-4",
+          "breath": "12d8+6",
+          "spell_level": "2 1",
+          "mr": "25%",
+          "treasure": "H, S, T",
+          "xp": "15,000"
+        },
+        {
+          "stage": 7,
+          "body_length": "63-74",
+          "tail_length": "52-60",
+          "ac": "-5",
+          "breath": "14d8+7",
+          "spell_level": "2 2",
+          "mr": "30%",
+          "treasure": "H, S, T",
+          "xp": "16,000"
+        },
+        {
+          "stage": 8,
+          "body_length": "74-85",
+          "tail_length": "60-70",
+          "ac": "-6",
+          "breath": "16d8+8",
+          "spell_level": "2 2 1/1",
+          "mr": "35%",
+          "treasure": "H, S, Tx2",
+          "xp": "20,000"
+        },
+        {
+          "stage": 9,
+          "body_length": "85-96",
+          "tail_length": "70-80",
+          "ac": "-7",
+          "breath": "18d8+9",
+          "spell_level": "2 2 2/1 1",
+          "mr": "40%",
+          "treasure": "H, S, Tx2",
+          "xp": "22,000"
+        },
+        {
+          "stage": 10,
+          "body_length": "96-108",
+          "tail_length": "80-90",
+          "ac": "-8",
+          "breath": "20d8+10",
+          "spell_level": "2 2 2 1/2 1",
+          "mr": "45%",
+          "treasure": "H, S, Tx2",
+          "xp": "23,000"
+        },
+        {
+          "stage": 11,
+          "body_length": "108-120",
+          "tail_length": "90-100",
+          "ac": "-9",
+          "breath": "22d8+11",
+          "spell_level": "2 2 2 2/2 2",
+          "mr": "50%",
+          "treasure": "H, S Tx3",
+          "xp": "24,000"
+        },
+        {
+          "stage": 12,
+          "body_length": "120-134",
+          "tail_length": "100-110",
+          "ac": "-10",
+          "breath": "24d8+12",
+          "spell_level": "2 2 2 2 1/2 2 1",
+          "mr": "55%",
+          "treasure": "H, S, Tx3",
+          "xp": "25,000"
+        }
+      ],
+      "specials_text": ""
+    },
+    "Copper": {
+      "file": "DD03855.HTM",
+      "base_hd": "13 (base)",
+      "base_thac0": "9",
+      "stages": [
+        {
+          "stage": 1,
+          "body_length": "3-8",
+          "tail_length": "2-6",
+          "ac": "2",
+          "breath": "2d6+1",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "5,000"
+        },
+        {
+          "stage": 2,
+          "body_length": "8-16",
+          "tail_length": "4-12",
+          "ac": "1",
+          "breath": "4d6+2",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "7,000"
+        },
+        {
+          "stage": 3,
+          "body_length": "16-27",
+          "tail_length": "12-20",
+          "ac": "0",
+          "breath": "6d6+3",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "9,000"
+        },
+        {
+          "stage": 4,
+          "body_length": "27-38",
+          "tail_length": "20-30",
+          "ac": "-1",
+          "breath": "8d6+4",
+          "spell_level": "1",
+          "mr": "Nil",
+          "treasure": "\u00bdH, S",
+          "xp": "11,000"
+        },
+        {
+          "stage": 5,
+          "body_length": "38-50",
+          "tail_length": "30-40",
+          "ac": "-2",
+          "breath": "10d6+5",
+          "spell_level": "2",
+          "mr": "10%",
+          "treasure": "H, S",
+          "xp": "14,000"
+        },
+        {
+          "stage": 6,
+          "body_length": "50-59",
+          "tail_length": "40-50",
+          "ac": "-3",
+          "breath": "12d6+6",
+          "spell_level": "3",
+          "mr": "15%",
+          "treasure": "H, S",
+          "xp": "15,000"
+        },
+        {
+          "stage": 7,
+          "body_length": "59-73",
+          "tail_length": "50-60",
+          "ac": "-4",
+          "breath": "14d6+7",
+          "spell_level": "3 1",
+          "mr": "20%",
+          "treasure": "H, S",
+          "xp": "16,000"
+        },
+        {
+          "stage": 8,
+          "body_length": "73-86",
+          "tail_length": "60-70",
+          "ac": "-5",
+          "breath": "16d6+8",
+          "spell_level": "3 2/1",
+          "mr": "25%",
+          "treasure": "H, Sx2",
+          "xp": "17,000"
+        },
+        {
+          "stage": 9,
+          "body_length": "86-100",
+          "tail_length": "70-80",
+          "ac": "-6",
+          "breath": "18d6+9",
+          "spell_level": "3 3/2",
+          "mr": "30%",
+          "treasure": "H, Sx2",
+          "xp": "19,000"
+        },
+        {
+          "stage": 10,
+          "body_length": "100-114",
+          "tail_length": "80-90",
+          "ac": "-7",
+          "breath": "20d6+10",
+          "spell_level": "3 3 1/3",
+          "mr": "35%",
+          "treasure": "H, Sx2",
+          "xp": "21,000"
+        },
+        {
+          "stage": 11,
+          "body_length": "114-130",
+          "tail_length": "90-100",
+          "ac": "-8",
+          "breath": "22d6+11",
+          "spell_level": "3 3 2/3 2",
+          "mr": "40%",
+          "treasure": "H, Sx3",
+          "xp": "22,000"
+        },
+        {
+          "stage": 12,
+          "body_length": "130-147",
+          "tail_length": "100-110",
+          "ac": "-9",
+          "breath": "24d6+12",
+          "spell_level": "3 3 2 1/3 3",
+          "mr": "45%",
+          "treasure": "H, Sx3",
+          "xp": "23,000"
+        }
+      ],
+      "specials_text": ""
+    },
+    "Gold": {
+      "file": "DD03856.HTM",
+      "base_hd": "16 (base)",
+      "base_thac0": "5 (at 16 HD)",
+      "stages": [
+        {
+          "stage": 1,
+          "body_length": "7-19",
+          "tail_length": "6-16",
+          "ac": "-1",
+          "breath": "2d12+1",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "8,000"
+        },
+        {
+          "stage": 2,
+          "body_length": "19-31",
+          "tail_length": "16-28",
+          "ac": "-2",
+          "breath": "4d12+2",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "9,000"
+        },
+        {
+          "stage": 3,
+          "body_length": "31-43",
+          "tail_length": "28-38",
+          "ac": "-3",
+          "breath": "6d12+3",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "11,000"
+        },
+        {
+          "stage": 4,
+          "body_length": "43-55",
+          "tail_length": "38-50",
+          "ac": "-4",
+          "breath": "8d12+4",
+          "spell_level": "1",
+          "mr": "Nil",
+          "treasure": "E, R, T",
+          "xp": "13,000"
+        },
+        {
+          "stage": 5,
+          "body_length": "55-67",
+          "tail_length": "50-60",
+          "ac": "-5",
+          "breath": "10d12+5",
+          "spell_level": "2",
+          "mr": "35%",
+          "treasure": "H, R, T",
+          "xp": "15,000"
+        },
+        {
+          "stage": 6,
+          "body_length": "67-80",
+          "tail_length": "60-70",
+          "ac": "-6",
+          "breath": "12d12+6",
+          "spell_level": "2 2",
+          "mr": "40%",
+          "treasure": "H, R, T",
+          "xp": "18,000"
+        },
+        {
+          "stage": 7,
+          "body_length": "80-93",
+          "tail_length": "70-84",
+          "ac": "-7",
+          "breath": "14d12+7",
+          "spell_level": "2 2 2",
+          "mr": "45%",
+          "treasure": "H, R, T",
+          "xp": "19,000"
+        },
+        {
+          "stage": 8,
+          "body_length": "93-10",
+          "tail_length": "84-95",
+          "ac": "-8",
+          "breath": "16d12+8",
+          "spell_level": "2 2 2 2/1",
+          "mr": "50%",
+          "treasure": "H, R, Tx2",
+          "xp": "20,000"
+        },
+        {
+          "stage": 9,
+          "body_length": "106-120",
+          "tail_length": "95-108",
+          "ac": "-9",
+          "breath": "18d12+9",
+          "spell_level": "2 2 2 2 2/2",
+          "mr": "55%",
+          "treasure": "H, R, Tx2",
+          "xp": "22,000"
+        },
+        {
+          "stage": 10,
+          "body_length": "120-134",
+          "tail_length": "108-120",
+          "ac": "-10",
+          "breath": "20d12+102",
+          "spell_level": "2 2 2 2 2/2 2",
+          "mr": "60%",
+          "treasure": "H, R, Tx2",
+          "xp": "23,000"
+        },
+        {
+          "stage": 11,
+          "body_length": "134-148",
+          "tail_length": "121-133",
+          "ac": "-11",
+          "breath": "22d12+112",
+          "spell_level": "2 2 2 2 2 2/2 2 2",
+          "mr": "65%",
+          "treasure": "H, R, Tx3",
+          "xp": "24,000"
+        },
+        {
+          "stage": 12,
+          "body_length": "148-162",
+          "tail_length": "133-146",
+          "ac": "-12",
+          "breath": "24d12+122",
+          "spell_level": "2 2 2 2 2 2 1/2 2 2 2",
+          "mr": "70%",
+          "treasure": "H, R, Tx3",
+          "xp": "25,000"
+        }
+      ],
+      "specials_text": ""
+    },
+    "Silver": {
+      "file": "DD03857.HTM",
+      "base_hd": "15 (base)",
+      "base_thac0": "5 (at 15 HD)",
+      "stages": [
+        {
+          "stage": 1,
+          "body_length": "8-18",
+          "tail_length": "3-6",
+          "ac": "0",
+          "breath": "2d10+1",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "7,000"
+        },
+        {
+          "stage": 2,
+          "body_length": "18-30",
+          "tail_length": "6-12",
+          "ac": "-1",
+          "breath": "4d10+2",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "8,000"
+        },
+        {
+          "stage": 3,
+          "body_length": "30-42",
+          "tail_length": "12-16",
+          "ac": "-2",
+          "breath": "6d10+3",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "10,000"
+        },
+        {
+          "stage": 4,
+          "body_length": "42-52",
+          "tail_length": "16-21",
+          "ac": "-3",
+          "breath": "8d10+4",
+          "spell_level": "2",
+          "mr": "Nil",
+          "treasure": "E, R",
+          "xp": "12,000"
+        },
+        {
+          "stage": 5,
+          "body_length": "52-63",
+          "tail_length": "21-27",
+          "ac": "-4",
+          "breath": "10d10+5",
+          "spell_level": "2 2",
+          "mr": "25%",
+          "treasure": "H, R",
+          "xp": "14,000"
+        },
+        {
+          "stage": 6,
+          "body_length": "63-74",
+          "tail_length": "27-32",
+          "ac": "-5",
+          "breath": "12d10+6",
+          "spell_level": "2 2 1",
+          "mr": "30%",
+          "treasure": "H, R",
+          "xp": "17,000"
+        },
+        {
+          "stage": 7,
+          "body_length": "74-85",
+          "tail_length": "32-37",
+          "ac": "-6",
+          "breath": "14d10+7",
+          "spell_level": "2 2 2",
+          "mr": "35%",
+          "treasure": "H, R",
+          "xp": "18,000"
+        },
+        {
+          "stage": 8,
+          "body_length": "85-96",
+          "tail_length": "37-43",
+          "ac": "-7",
+          "breath": "16d10+8",
+          "spell_level": "2 2 2 1/2",
+          "mr": "40%",
+          "treasure": "H, Rx2",
+          "xp": "19,000"
+        },
+        {
+          "stage": 9,
+          "body_length": "96-108",
+          "tail_length": "43-48",
+          "ac": "-8",
+          "breath": "18d10+9",
+          "spell_level": "2 2 2 2/2",
+          "mr": "45%",
+          "treasure": "H, Rx2",
+          "xp": "21,000"
+        },
+        {
+          "stage": 10,
+          "body_length": "108-120",
+          "tail_length": "48-54",
+          "ac": "-9",
+          "breath": "20d10+102",
+          "spell_level": "2 2 2 1/2 2 1",
+          "mr": "50%",
+          "treasure": "H, Rx2",
+          "xp": "22,000"
+        },
+        {
+          "stage": 11,
+          "body_length": "120-134",
+          "tail_length": "54-60",
+          "ac": "-10",
+          "breath": "22d10+112",
+          "spell_level": "2 2 2 2/2 2 2",
+          "mr": "55%",
+          "treasure": "H, Rx3",
+          "xp": "23,000"
+        },
+        {
+          "stage": 12,
+          "body_length": "134-148",
+          "tail_length": "60-67",
+          "ac": "-11",
+          "breath": "24d10+122",
+          "spell_level": "2 2 2 2 1/2 2 2 1",
+          "mr": "60%",
+          "treasure": "H, Rx3",
+          "xp": "24,000"
+        }
+      ],
+      "specials_text": ""
+    },
+    "Amethyst": {
+      "file": "DD03848.HTM",
+      "base_hd": "14 (base)",
+      "base_thac0": "7 (base)",
+      "stages": [
+        {
+          "stage": 1,
+          "body_length": "2-10",
+          "tail_length": "4-10",
+          "ac": "-1",
+          "breath": "2d8+1",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "4,000"
+        },
+        {
+          "stage": 2,
+          "body_length": "10-18",
+          "tail_length": "10-16",
+          "ac": "-2",
+          "breath": "4d8+2",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "6,000"
+        },
+        {
+          "stage": 3,
+          "body_length": "18-28",
+          "tail_length": "16-26",
+          "ac": "-3",
+          "breath": "6d8+3",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "7,000"
+        },
+        {
+          "stage": 4,
+          "body_length": "28-38",
+          "tail_length": "26-36",
+          "ac": "-4",
+          "breath": "8d8+4",
+          "spell_level": "Nil/1",
+          "mr": "Nil",
+          "treasure": "H, U, T",
+          "xp": "9,000"
+        },
+        {
+          "stage": 5,
+          "body_length": "38-53",
+          "tail_length": "36-46",
+          "ac": "-5",
+          "breath": "10d8+5",
+          "spell_level": "1/1",
+          "mr": "25%",
+          "treasure": "H, Ux2, T",
+          "xp": "10,000"
+        },
+        {
+          "stage": 6,
+          "body_length": "53-68",
+          "tail_length": "46-56",
+          "ac": "-6",
+          "breath": "12d8+6",
+          "spell_level": "1/2 1",
+          "mr": "30%",
+          "treasure": "H, Ux3, Tx2",
+          "xp": "12,000"
+        },
+        {
+          "stage": 7,
+          "body_length": "68-80",
+          "tail_length": "56-66",
+          "ac": "-7",
+          "breath": "14d8+7",
+          "spell_level": "1 1/2 1 1",
+          "mr": "35%",
+          "treasure": "H, Ux4, Tx2",
+          "xp": "13,000"
+        },
+        {
+          "stage": 8,
+          "body_length": "80-92",
+          "tail_length": "66-76",
+          "ac": "-8",
+          "breath": "16d8+8",
+          "spell_level": "2 1/2 2 1 1",
+          "mr": "40%",
+          "treasure": "H, Ux6, Tx3",
+          "xp": "15,000"
+        },
+        {
+          "stage": 9,
+          "body_length": "92-102",
+          "tail_length": "76-82",
+          "ac": "-9",
+          "breath": "18d8+9",
+          "spell_level": "2 1 1/2 2 2 1 1",
+          "mr": "45%",
+          "treasure": "H, Ux8, Tx3",
+          "xp": "17,000"
+        },
+        {
+          "stage": 10,
+          "body_length": "102-112",
+          "tail_length": "82-88",
+          "ac": "-10",
+          "breath": "20d8+10",
+          "spell_level": "2 2 1 1/2 2 2 2 1 1",
+          "mr": "50%",
+          "treasure": "H, Ux10, Tx4",
+          "xp": "19,000"
+        },
+        {
+          "stage": 11,
+          "body_length": "112-122",
+          "tail_length": "88-94",
+          "ac": "-11",
+          "breath": "22d8+11",
+          "spell_level": "2 2 2 2 1/2 2 2 2 2 1",
+          "mr": "55%",
+          "treasure": "H, Ux13, Tx4",
+          "xp": "20,000"
+        },
+        {
+          "stage": 12,
+          "body_length": "122-132",
+          "tail_length": "94-100",
+          "ac": "-12",
+          "breath": "24d8+12",
+          "spell_level": "2 2 2 2 2 2/2 2 2 2 2 2",
+          "mr": "60%",
+          "treasure": "H, Ux16, Tx5",
+          "xp": "21,000"
+        }
+      ],
+      "specials_text": ""
+    },
+    "Crystal": {
+      "file": "DD03849.HTM",
+      "base_hd": "10 (base)",
+      "base_thac0": "11 (base)",
+      "stages": [
+        {
+          "stage": 1,
+          "body_length": "1-4",
+          "tail_length": "1-6",
+          "ac": "3",
+          "breath": "1d4+1",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "1,400"
+        },
+        {
+          "stage": 2,
+          "body_length": "4-9",
+          "tail_length": "6-11",
+          "ac": "2",
+          "breath": "2d4+2",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "2,000"
+        },
+        {
+          "stage": 3,
+          "body_length": "9-14",
+          "tail_length": "11-16",
+          "ac": "1",
+          "breath": "3d4+3",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "3,000"
+        },
+        {
+          "stage": 4,
+          "body_length": "14-21",
+          "tail_length": "16-23",
+          "ac": "0",
+          "breath": "4d4+4",
+          "spell_level": "Nil/1",
+          "mr": "Nil",
+          "treasure": "E, Q",
+          "xp": "5,000"
+        },
+        {
+          "stage": 5,
+          "body_length": "21-28",
+          "tail_length": "23-30",
+          "ac": "-1",
+          "breath": "5d4+5",
+          "spell_level": "1/1",
+          "mr": "5%",
+          "treasure": "E, Qx2, T",
+          "xp": "6,000"
+        },
+        {
+          "stage": 6,
+          "body_length": "28-38",
+          "tail_length": "30-40",
+          "ac": "-2",
+          "breath": "6d4+6",
+          "spell_level": "1/1 1",
+          "mr": "10%",
+          "treasure": "H, Qx3, T",
+          "xp": "7,000"
+        },
+        {
+          "stage": 7,
+          "body_length": "38-48",
+          "tail_length": "40-50",
+          "ac": "-3",
+          "breath": "7d4+7",
+          "spell_level": "1/1 1 1",
+          "mr": "15%",
+          "treasure": "H, Qx4, T",
+          "xp": "9,000"
+        },
+        {
+          "stage": 8,
+          "body_length": "48-56",
+          "tail_length": "50-60",
+          "ac": "-4",
+          "breath": "8d4+8",
+          "spell_level": "1 1/1 1 1",
+          "mr": "20%",
+          "treasure": "H, Qx5, T",
+          "xp": "10,000"
+        },
+        {
+          "stage": 9,
+          "body_length": "56-64",
+          "tail_length": "60-70",
+          "ac": "-5",
+          "breath": "9d4+9",
+          "spell_level": "1 1 1/2 1 1",
+          "mr": "25%",
+          "treasure": "H, Qx6, Tx2",
+          "xp": "12,000"
+        },
+        {
+          "stage": 10,
+          "body_length": "64-72",
+          "tail_length": "70-77",
+          "ac": "-6",
+          "breath": "10d4+10",
+          "spell_level": "1 1 1/2 2 1 1",
+          "mr": "30%",
+          "treasure": "H, Qx7, Tx2",
+          "xp": "13,000"
+        },
+        {
+          "stage": 11,
+          "body_length": "72-80",
+          "tail_length": "77-84",
+          "ac": "-6",
+          "breath": "11d4+11",
+          "spell_level": "2 1 1/2 2 2 1",
+          "mr": "35%",
+          "treasure": "H, Qx8, Tx2",
+          "xp": "15,000"
+        },
+        {
+          "stage": 12,
+          "body_length": "80-92",
+          "tail_length": "84-91",
+          "ac": "-8",
+          "breath": "12d4+12",
+          "spell_level": "2 2 1/2 2 2 2",
+          "mr": "40%",
+          "treasure": "H, Qx9, Tx2",
+          "xp": "16,000"
+        }
+      ],
+      "specials_text": ""
+    },
+    "Emerald": {
+      "file": "DD03850.HTM",
+      "base_hd": "12 (base)",
+      "base_thac0": "9 (base)",
+      "stages": [
+        {
+          "stage": 1,
+          "body_length": "3-9",
+          "tail_length": "2-7",
+          "ac": "1",
+          "breath": "2d4+1",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "2,000"
+        },
+        {
+          "stage": 2,
+          "body_length": "9-18",
+          "tail_length": "7-14",
+          "ac": "0",
+          "breath": "4d4+2",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "3,000"
+        },
+        {
+          "stage": 3,
+          "body_length": "18-27",
+          "tail_length": "14-21",
+          "ac": "-1",
+          "breath": "6d4+3",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "5,000"
+        },
+        {
+          "stage": 4,
+          "body_length": "27-36",
+          "tail_length": "21-28",
+          "ac": "-2",
+          "breath": "8d4+4",
+          "spell_level": "1",
+          "mr": "Nil",
+          "treasure": "\u00bdH, Qx2",
+          "xp": "7,000"
+        },
+        {
+          "stage": 5,
+          "body_length": "36-45",
+          "tail_length": "28-35",
+          "ac": "-3",
+          "breath": "10d4+5",
+          "spell_level": "1/1",
+          "mr": "15%",
+          "treasure": "H, Qx4, T",
+          "xp": "8,000"
+        },
+        {
+          "stage": 6,
+          "body_length": "45-54",
+          "tail_length": "35-42",
+          "ac": "-4",
+          "breath": "12d4+6",
+          "spell_level": "1 1/1",
+          "mr": "20%",
+          "treasure": "H, Qx6, T",
+          "xp": "10,000"
+        },
+        {
+          "stage": 7,
+          "body_length": "54-63",
+          "tail_length": "42-49",
+          "ac": "-5",
+          "breath": "14d4+7",
+          "spell_level": "1 1/1 1",
+          "mr": "25%",
+          "treasure": "H, Qx8, Tx2",
+          "xp": "12,000"
+        },
+        {
+          "stage": 8,
+          "body_length": "63-72",
+          "tail_length": "49-56",
+          "ac": "-6",
+          "breath": "16d4+8",
+          "spell_level": "1 1 1/2 1",
+          "mr": "30%",
+          "treasure": "H, Qx10, Tx2",
+          "xp": "13,000"
+        },
+        {
+          "stage": 9,
+          "body_length": "72-81",
+          "tail_length": "56-63",
+          "ac": "-7",
+          "breath": "18d4+9",
+          "spell_level": "2 1 1/2 1 1",
+          "mr": "35%",
+          "treasure": "Hx2, Qx12, Tx2",
+          "xp": "14,000"
+        },
+        {
+          "stage": 10,
+          "body_length": "81-90",
+          "tail_length": "63-70",
+          "ac": "-8",
+          "breath": "20d4+10",
+          "spell_level": "2 2 1/2 2 1",
+          "mr": "40%",
+          "treasure": "Hx2, Qx14, Tx3",
+          "xp": "16,000"
+        },
+        {
+          "stage": 11,
+          "body_length": "90-99",
+          "tail_length": "70-77",
+          "ac": "-9",
+          "breath": "22d4+11",
+          "spell_level": "2 2 1 1/2 2 1 1",
+          "mr": "45%",
+          "treasure": "Hx2, Qx16, Tx3",
+          "xp": "17,000"
+        },
+        {
+          "stage": 12,
+          "body_length": "99-108",
+          "tail_length": "77-84",
+          "ac": "10",
+          "breath": "24d4+12",
+          "spell_level": "2 2 1 1 1/2 2 2 1",
+          "mr": "50%",
+          "treasure": "Hx2, Qx18, Tx3",
+          "xp": "19,000"
+        }
+      ],
+      "specials_text": ""
+    },
+    "Sapphire": {
+      "file": "DD03851.HTM",
+      "base_hd": "13 (base)",
+      "base_thac0": "7 (base)",
+      "stages": [
+        {
+          "stage": 1,
+          "body_length": "4-10",
+          "tail_length": "2-5",
+          "ac": "0",
+          "breath": "2d6+1",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "2,000"
+        },
+        {
+          "stage": 2,
+          "body_length": "10-20",
+          "tail_length": "5-10",
+          "ac": "-1",
+          "breath": "4d6+2",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "4,000"
+        },
+        {
+          "stage": 3,
+          "body_length": "20-30",
+          "tail_length": "10-15",
+          "ac": "-2",
+          "breath": "6d6+3",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "6,000"
+        },
+        {
+          "stage": 4,
+          "body_length": "30-40",
+          "tail_length": "15-20",
+          "ac": "-3",
+          "breath": "8d6+4",
+          "spell_level": "Nil/1",
+          "mr": "Nil",
+          "treasure": "H, Qx2",
+          "xp": "8,000"
+        },
+        {
+          "stage": 5,
+          "body_length": "40-50",
+          "tail_length": "20-25",
+          "ac": "-4",
+          "breath": "10d6+5",
+          "spell_level": "1/1",
+          "mr": "20%",
+          "treasure": "H, Qx4, T",
+          "xp": "9,000"
+        },
+        {
+          "stage": 6,
+          "body_length": "50-60",
+          "tail_length": "25-30",
+          "ac": "-5",
+          "breath": "12d6+6",
+          "spell_level": "1/1 1",
+          "mr": "25%",
+          "treasure": "H, Qx6, T",
+          "xp": "11,000"
+        },
+        {
+          "stage": 7,
+          "body_length": "60-70",
+          "tail_length": "30-35",
+          "ac": "-6",
+          "breath": "14d6+7",
+          "spell_level": "1 1/1 1",
+          "mr": "30%",
+          "treasure": "H, Qx8, Tx2",
+          "xp": "13,000"
+        },
+        {
+          "stage": 8,
+          "body_length": "70-80",
+          "tail_length": "35-40",
+          "ac": "-7",
+          "breath": "16d6+8",
+          "spell_level": "2 1/2 1",
+          "mr": "35%",
+          "treasure": "Hx2, Qx10, Tx2",
+          "xp": "14,000"
+        },
+        {
+          "stage": 9,
+          "body_length": "80-90",
+          "tail_length": "40-45",
+          "ac": "-8",
+          "breath": "18d6+9",
+          "spell_level": "2 1 1/2 1 1",
+          "mr": "40%",
+          "treasure": "Hx2, Qx13, Tx3",
+          "xp": "15,000"
+        },
+        {
+          "stage": 10,
+          "body_length": "90-100",
+          "tail_length": "45-50",
+          "ac": "-9",
+          "breath": "20d6+10",
+          "spell_level": "2 2 1/2 2 1 1",
+          "mr": "45%",
+          "treasure": "Hx2, Qx16, Tx3",
+          "xp": "17,000"
+        },
+        {
+          "stage": 11,
+          "body_length": "100-110",
+          "tail_length": "50-55",
+          "ac": "-10",
+          "breath": "22d6+11",
+          "spell_level": "2 2 1 1/2 2 2 1 1",
+          "mr": "50%",
+          "treasure": "Hx2, Qx20, Tx4",
+          "xp": "18,000"
+        },
+        {
+          "stage": 12,
+          "body_length": "110-130",
+          "tail_length": "55-65",
+          "ac": "-11",
+          "breath": "24d6+12",
+          "spell_level": "2 2 2 1/2 2 2 2 2",
+          "mr": "55%",
+          "treasure": "Hx2, Qx24, Tx4",
+          "xp": "20,000"
+        }
+      ],
+      "specials_text": ""
+    },
+    "Topaz": {
+      "file": "DD03852.HTM",
+      "base_hd": "11 (base)",
+      "base_thac0": "9 (base)",
+      "stages": [
+        {
+          "stage": 1,
+          "body_length": "2-9",
+          "tail_length": "2-5",
+          "ac": "2",
+          "breath": "1d6+1",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "2,000"
+        },
+        {
+          "stage": 2,
+          "body_length": "9-16",
+          "tail_length": "5-9",
+          "ac": "1",
+          "breath": "2d6+2",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "3,000"
+        },
+        {
+          "stage": 3,
+          "body_length": "16-23",
+          "tail_length": "9-13",
+          "ac": "0",
+          "breath": "3d6+3",
+          "spell_level": "Nil",
+          "mr": "Nil",
+          "treasure": "Nil",
+          "xp": "5,000"
+        },
+        {
+          "stage": 4,
+          "body_length": "23-35",
+          "tail_length": "13-17",
+          "ac": "-1",
+          "breath": "4d6+4",
+          "spell_level": "Nil/1",
+          "mr": "Nil",
+          "treasure": "E, Q",
+          "xp": "7,000"
+        },
+        {
+          "stage": 5,
+          "body_length": "35-44",
+          "tail_length": "17-23",
+          "ac": "-2",
+          "breath": "5d6+5",
+          "spell_level": "1/1",
+          "mr": "10%",
+          "treasure": "H, Qx3, T",
+          "xp": "8,000"
+        },
+        {
+          "stage": 6,
+          "body_length": "44-53",
+          "tail_length": "23-29",
+          "ac": "-3",
+          "breath": "6d6+6",
+          "spell_level": "1/1 1",
+          "mr": "15%",
+          "treasure": "H, Qx5, T",
+          "xp": "10,000"
+        },
+        {
+          "stage": 7,
+          "body_length": "53-59",
+          "tail_length": "29-33",
+          "ac": "-4",
+          "breath": "7d6+7",
+          "spell_level": "1/2 1",
+          "mr": "20%",
+          "treasure": "H, Qx7, T",
+          "xp": "12,000"
+        },
+        {
+          "stage": 8,
+          "body_length": "59-65",
+          "tail_length": "33-37",
+          "ac": "-5",
+          "breath": "8d6+8",
+          "spell_level": "1 1/2 1 1",
+          "mr": "25%",
+          "treasure": "H, Qx9, Tx2",
+          "xp": "14,000"
+        },
+        {
+          "stage": 9,
+          "body_length": "65-70",
+          "tail_length": "37-41",
+          "ac": "-6",
+          "breath": "9d6+9",
+          "spell_level": "1 1 1/2 2 1",
+          "mr": "30%",
+          "treasure": "H, Qx11, Tx2",
+          "xp": "15,000"
+        },
+        {
+          "stage": 10,
+          "body_length": "70-75",
+          "tail_length": "41-45",
+          "ac": "-7",
+          "breath": "10d6+10",
+          "spell_level": "2 1 1/2 2 1 1",
+          "mr": "35%",
+          "treasure": "H, Qx13, Tx2",
+          "xp": "16,000"
+        },
+        {
+          "stage": 11,
+          "body_length": "75-80",
+          "tail_length": "45-48",
+          "ac": "-8",
+          "breath": "11d6+11",
+          "spell_level": "2 2 1/2 2 2 1",
+          "mr": "40%",
+          "treasure": "Hx2, Qx15, Tx3",
+          "xp": "17,000"
+        },
+        {
+          "stage": 12,
+          "body_length": "80-92",
+          "tail_length": "48-50",
+          "ac": "-9",
+          "breath": "12d6+12",
+          "spell_level": "2 2 1 1/2 2 2 2",
+          "mr": "45%",
+          "treasure": "Hx2, Qx17, Tx3",
+          "xp": "18,000"
+        }
+      ],
+      "specials_text": ""
+    },
+    "Shadow": {
+      "file": "DD03863.HTM",
+      "base_hd": null,
+      "base_thac0": null,
+      "stages": [],
+      "specials_text": ""
+    }
+  }
+}

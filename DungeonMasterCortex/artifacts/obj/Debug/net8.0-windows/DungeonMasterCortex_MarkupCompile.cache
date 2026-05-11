@@ -1,0 +1,20 @@
+﻿DungeonMasterCortex
+
+
+winexe
+C#
+.cs
+C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\artifacts\obj\Debug\net8.0-windows\
+DungeonMasterCortex
+none
+false
+TRACE;DEBUG;NET;NET8_0;NETCOREAPP
+C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\DungeonMasterCortex\App.xaml
+14-645260347
+
+69-1286761631
+198-416154975
+MainWindow.xaml;Themes\DarkGold.xaml;Views\CampaignScreen.xaml;Views\CharacterRosterScreen.xaml;Views\CharGenAbilitiesScreen.xaml;Views\CharGenClassScreen.xaml;Views\CharGenNameScreen.xaml;Views\CharGenRaceScreen.xaml;Views\CharGenReviewScreen.xaml;Views\CombatTrackerScreen.xaml;Views\DiceRollerScreen.xaml;Views\DmToolsScreen.xaml;Views\EditInfoScreen.xaml;Views\HubScreen.xaml;
+
+True
+

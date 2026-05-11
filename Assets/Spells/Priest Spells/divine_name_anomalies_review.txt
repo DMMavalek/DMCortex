@@ -1,0 +1,59 @@
+Remaining divine name anomalies for manual review
+
+ID: PRI001063
+Name: Notes: Common for clerics and druids (PHB).
+Brief: By means of this spell, the caster calls up to six animals of 8 Hit Dice or less, or 12 animals of 4 Hit Dice or less—of whatever sort the caster names.
+Desc: By means of this spell, the caster calls up to six animals of 8 Hit Dice or less, or 12 animals of 4 Hit Dice or less—of whatever sort the caster names. Only animals within range of the caster at the time the spell is ca
+
+ID: PRI001064
+Name: Notes: Common for priests from a vedic
+Brief: This spell empowers the shukenja to see through a nonmagical disguise (that is, one composed solely of makeup or altered clothing) It can determine if an individual is under the effects of a friends spell.
+Desc: This spell empowers the shukenja to see through a nonmagical disguise (that is, one composed solely of makeup or altered clothing). It can determine if an individual is under the effects of a friends spell. The penetrate
+
+ID: PRI001065
+Name: Notes: Granted by Ela, a goddess of thieves.
+
+ID: PRI001066
+Name: Notes: Known to priests of Ela’s Temple.
+Brief: Despite its name, this spell works through the entire body of the caster, not just a hand.
+Desc: Despite its name, this spell works through the entire body of the caster, not just a hand. The caster is unaffected by this magic (and can even undertake other spellcasting or activities for an indefinite period of time 
+
+ID: PRI001067
+Name: Notes: Restricted to dwarven priests, very rare.
+Brief: To set this spell in motion, the caster sings the first phrase or the chorus of a tuneful, catchy song Those potentially affected by the forgotten melody must each make a successful saving throw vs.
+Desc: To set this spell in motion, the caster sings the first phrase or the chorus of a tuneful, catchy song. Those potentially affected by the forgotten melody must each make a successful saving throw vs. spell at a—4 penalty
+
+ID: PRI001068
+Name: Notes: Uncommon for clerics and druids
+Brief: This spell is similar to the Sth-level priest spell pass plant The creature must immerse itself in a body of water (a lake, river, stream, or a full bath- tub); the priest then casts the spell.
+Desc: This spell is similar to the Sth-level priest spell pass plant. The creature must immerse itself in a body of water (a lake, river, stream, or a full bath- tub); the priest then casts the spell. The subject and up to 100
+
+ID: PRI001069
+Name: Notes: Uncommon for shamans.
+Brief: This spell imbues the priest’s bronzewood or oaken cudgel with the power to charm an oppo- nent by touch The priest can make a nondamaging touch, or a normal melee attack.
+Desc: This spell imbues the priest’s bronzewood or oaken cudgel with the power to charm an oppo- nent by touch. The priest can make a nondamaging touch, or a normal melee attack. In either case, a target creature that is hit m
+
+ID: PRI001070
+Name: Notes: Uncommon spell for clerics and druids
+Brief: This spell is a more powerful version of the prevent rot spell.
+Desc: This spell is a more powerful version of the prevent rot spell. If cast upon a wooden object af- fected by a wood rot spell, this spell completely cures the wood rot at a rate of 1 cubic foot per round until the object i
+
+ID: PRI001071
+Name: Notes: Very rare for druids and similar priests.
+Brief: This spell is often used by priests with animal companions By casting this spell upon an animal, the priest literally sees through that creature’s eyes.
+Desc: This spell is often used by priests with animal companions. By casting this spell upon an animal, the priest literally sees through that creature’s eyes. Wherever the animal travels for the duration of the spell, the pri
+
+ID: PRI001072
+Name: Notes: Very rare spell granted by elven gods.
+Brief: This spell causes the casting of all wizard spells in the area of effect to be slowed, resulting in a +3 penalty to the casting times of wizard spells that normally take one round or less to cast.
+Desc: This spell causes the casting of all wizard spells in the area of effect to be slowed, resulting in a +3 penalty to the casting times of wizard spells that normally take one round or less to cast. Spells that take more t
+
+ID: PRI001599
+Name: The priest's level adds. +1 Hit Die per three levels
+Brief: + 1 rd/level This spell allows the caster to animate a normal statue and have it fight for him The statue can be from 3 to 12 feet tall and can be made of wood, stone, or crystal.
+Desc: Duration; 3 rds. + 1 rd/level This spell allows the caster to animate a normal statue and have it fight for him. The statue can be from 3 to 12 feet tall and can be made of wood, stone, or crystal. When animated, the sta
+
+ID: PRI001747
+Name: While the spell is in effect, anyone who speaks
+Brief: This powerful spell enables the priest to tem- porarily form a stone guardian from a solid block of stone of sufficient volume (3,000 pounds mini-.
+Desc: This powerful spell enables the priest to tem- porarily form a stone guardian from a solid block of stone of sufficient volume (3,000 pounds mini- mum), The stone guardian has all the abilities and restrictions of a crea

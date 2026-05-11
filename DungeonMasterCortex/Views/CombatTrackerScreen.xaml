@@ -1,0 +1,220 @@
+<UserControl x:Class="DungeonMasterCortex.Views.CombatTrackerScreen"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource BrushPanel}">
+    <Grid Margin="28,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Grid Grid.Row="0">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="COMBAT TRACKER"
+                           Style="{StaticResource TitleText}" FontSize="20"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+            <Button Content="◀  DM TOOLS" Style="{StaticResource GoldButton}"
+                    HorizontalAlignment="Right" Width="150" Click="BtnBack_Click"/>
+        </Grid>
+        <Rectangle Grid.Row="1" Height="1" Fill="{StaticResource BrushBorder}" Margin="0,10,0,12"/>
+
+        <!-- Content -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="280"/>
+                <ColumnDefinition Width="16"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- ── Left panel ── -->
+            <StackPanel Grid.Column="0">
+
+                <TextBlock Text="Encounter" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                <TextBox x:Name="TxtEncName" Style="{StaticResource DarkTextBox}"
+                         Text="New Encounter" Margin="0,0,0,6"/>
+                <Button Content="⚔  NEW ENCOUNTER" Style="{StaticResource GoldButton}"
+                        Click="BtnNewEncounter_Click" Margin="0,0,0,16"/>
+
+                <Rectangle Height="1" Fill="{StaticResource BrushBorder2}" Margin="0,0,0,12"/>
+
+                <TextBlock Text="Add Combatant" Style="{StaticResource LabelText}" Margin="0,0,0,8"/>
+
+                <TextBlock Text="Name:" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                <TextBox x:Name="TxtCombName" Style="{StaticResource DarkTextBox}" Margin="0,0,0,6"/>
+
+                <Grid Margin="0,0,0,6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Initiative:" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                        <TextBox x:Name="TxtInit" Style="{StaticResource DarkTextBox}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="HP:" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                        <TextBox x:Name="TxtHp" Style="{StaticResource DarkTextBox}"/>
+                    </StackPanel>
+                </Grid>
+
+                <Button Content="+  ADD COMBATANT" Style="{StaticResource GoldButton}"
+                        Click="BtnAdd_Click" Margin="0,0,0,16"/>
+
+                <Rectangle Height="1" Fill="{StaticResource BrushBorder2}" Margin="0,0,0,12"/>
+
+                <TextBlock Text="Enemy Modifiers" Style="{StaticResource LabelText}" Margin="0,0,0,6"/>
+                <TextBlock Text="Attacker Character:" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                <ComboBox x:Name="EnemyModCharacterPicker"
+                          Style="{StaticResource DarkComboBox}"
+                          Margin="0,0,0,6"
+                          SelectionChanged="EnemyModCharacterPicker_SelectionChanged"/>
+
+                <TextBlock Text="Enemy Context:" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                <ComboBox x:Name="EnemyContextPicker"
+                          Style="{StaticResource DarkComboBox}"
+                          IsEditable="True"
+                          IsTextSearchEnabled="True"
+                          Margin="0,0,0,6"
+                          SelectionChanged="EnemyContextPicker_SelectionChanged"/>
+
+                <CheckBox x:Name="ApplyEnemyDamageBonusCheck"
+                          Content="Apply enemy damage bonus when using APPLY"
+                          IsChecked="True"
+                          Margin="0,0,0,4"
+                          Foreground="{StaticResource BrushText}"/>
+
+                <TextBlock x:Name="EnemyModifierInfo"
+                           Style="{StaticResource SubtitleText}"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,12"
+                           Text="Select a character and enemy context to preview bonuses."/>
+
+                <Rectangle Height="1" Fill="{StaticResource BrushBorder2}" Margin="0,0,0,12"/>
+
+                <TextBlock Text="Attack Resolver (Monsters/NPCs)" Style="{StaticResource LabelText}" Margin="0,0,0,6"/>
+
+                <TextBlock Text="Attacker (combatant):" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                <ComboBox x:Name="AttackAttackerPicker"
+                          Style="{StaticResource DarkComboBox}"
+                          Margin="0,0,0,6"
+                          SelectionChanged="AttackAttackerPicker_SelectionChanged"/>
+
+                <Grid Margin="0,0,0,6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Roll (d20):" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                        <TextBox x:Name="TxtAttackRoll" Style="{StaticResource DarkTextBox}"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="THAC0:" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                        <TextBox x:Name="TxtAttackThac0" Style="{StaticResource DarkTextBox}" Text="20"/>
+                    </StackPanel>
+                </Grid>
+
+                <Grid Margin="0,0,0,6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Attack Mod:" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                        <TextBox x:Name="TxtAttackModifier" Style="{StaticResource DarkTextBox}" Text="0"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Target AC:" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                        <TextBox x:Name="TxtTargetAc" Style="{StaticResource DarkTextBox}" Text="10"/>
+                    </StackPanel>
+                </Grid>
+
+                <TextBlock Text="Target Character (optional):" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                <ComboBox x:Name="AttackTargetCharacterPicker"
+                          Style="{StaticResource DarkComboBox}"
+                          Margin="0,0,0,6"
+                          SelectionChanged="AttackTargetCharacterPicker_SelectionChanged"/>
+
+                <CheckBox x:Name="AttackUseAscendingAcCheck"
+                      Content="Use ascending AC mode"
+                      IsChecked="False"
+                      Margin="0,0,0,3"
+                      Foreground="{StaticResource BrushText}"/>
+
+                <CheckBox x:Name="AttackIncludeEnemyBonusCheck"
+                      Content="Include enemy-context attack bonus"
+                      IsChecked="True"
+                      Margin="0,0,0,6"
+                      Foreground="{StaticResource BrushText}"/>
+
+                <Button Content="RESOLVE ATTACK" Style="{StaticResource GoldButton}"
+                        Click="BtnResolveAttack_Click" Margin="0,0,0,4"/>
+
+                <Button Content="RESOLVE + APPLY DAMAGE" Style="{StaticResource GoldButton}"
+                    Click="BtnResolveAndApplyDamage_Click" Margin="0,0,0,4"/>
+
+                <TextBlock x:Name="AttackResolverInfo"
+                           Style="{StaticResource SubtitleText}"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,12"
+                           Text="Enter monster/NPC roll and THAC0 to auto-check hit or miss."/>
+
+                <TextBlock Text="Apply Damage" Style="{StaticResource LabelText}" Margin="0,0,0,6"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                    <TextBox x:Name="TxtDmg" Style="{StaticResource DarkTextBox}"
+                             Width="100" Margin="0,0,8,0"/>
+                    <Button Content="APPLY" Style="{StaticResource GoldButton}"
+                            Width="90" Click="BtnDamage_Click"/>
+                </StackPanel>
+                <TextBlock Text="(select combatant in list first)"
+                           Style="{StaticResource SubtitleText}" Margin="0,0,0,14"/>
+
+                <Button Content="▶  NEXT ROUND" Style="{StaticResource GoldButton}"
+                        Click="BtnNextRound_Click"/>
+            </StackPanel>
+
+            <!-- Divider -->
+            <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource BrushBorder2}"
+                       VerticalAlignment="Stretch"/>
+
+            <!-- ── Right panel ── -->
+            <Grid Grid.Column="2" Margin="16,0,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock x:Name="RoundLabel" Grid.Row="0"
+                           Text="No encounter active"
+                           Style="{StaticResource TitleText}" FontSize="15"
+                           Margin="0,0,0,8"/>
+
+                <ListBox x:Name="CombatantList" Grid.Row="1"
+                         Style="{StaticResource DarkListBox}"
+                         ItemContainerStyle="{StaticResource DarkListBoxItem}"
+                         FontFamily="Consolas" FontSize="13"/>
+
+                <!-- Status bar -->
+                <Border Grid.Row="2" Background="{StaticResource BrushCard}"
+                        BorderBrush="{StaticResource BrushBorder2}"
+                        BorderThickness="1" CornerRadius="2"
+                        Padding="12,6" Margin="0,8,0,0">
+                    <TextBlock x:Name="StatusBar"
+                               Text="Create an encounter to begin."
+                               Style="{StaticResource SubtitleText}"/>
+                </Border>
+            </Grid>
+        </Grid>
+    </Grid>
+</UserControl>

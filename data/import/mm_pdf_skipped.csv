@@ -1,0 +1,69 @@
+page,reason,name
+6,no_stat_block_parsed,How To Use This Book
+7,non-monster page,Flying creatures also have a Maneuverability Class
+8,already_in_dataset,Aarakocra
+9,already_in_dataset,Aboleth
+10,already_in_dataset,Ankheg
+13,multi-species,Aurumvorax
+16,already_in_dataset,Banshee
+24,multi-species,"C? 1' f&. -,- > % , Beholder and Beholder-kin"
+35,multi-species,Bugbear
+36,already_in_dataset,Bulette
+38,multi-species,Carrion Crawler
+39,already_in_dataset,"Cat, Great"
+41,already_in_dataset,"Cat, Small"
+44,already_in_dataset,Centaur
+46,already_in_dataset,Chimera
+47,multi-species,Cloaker
+48,already_in_dataset,Cockatrice
+49,already_in_dataset,Couatl
+55,missing_ac_and_hd,I Death Knight
+59,already_in_dataset,Displacer Beast
+64,multi-species,CLIMATE!TERRAIN: See below
+115,missing_ac_and_hd,"Elf, Drow"
+117,already_in_dataset,Ettercap
+129,already_in_dataset,Djinni
+133,multi-species,I
+134,already_in_dataset,Ghoul
+141,missing_ac_and_hd,p cm ERRAWI:
+144,multi-species,"Giant, Hill"
+162,already_in_dataset,Gnome
+167,missing_ac_and_hd,"Golem, General"
+175,already_in_dataset,Gorgon
+186,already_in_dataset,Halfling
+203,already_in_dataset,Hydra
+210,already_in_dataset,Intellect Devourer
+216,missing_ac_and_hd,Kirre
+217,already_in_dataset,Kobold
+218,already_in_dataset,Kuo-Toa
+225,already_in_dataset,Lich
+231,already_in_dataset,Locathah
+234,non-monster page,"lycanthrope form, the monster can be struck only b"
+245,no_stat_block_parsed,Mammal
+249,already_in_dataset,Manticore
+250,already_in_dataset,Medusa
+252,already_in_dataset,Merman
+255,already_in_dataset,Minotaur
+267,missing_ac_and_hd,CLlMATE/TERRAIN: Subterranean
+272,already_in_dataset,Nightmare
+275,already_in_dataset,Ogre
+284,already_in_dataset,Orc
+287,already_in_dataset,Owlbear
+289,already_in_dataset,Peryton
+294,missing_ac_and_hd,"Plant, Dangerous"
+307,already_in_dataset,Roper
+315,already_in_dataset,Shadow
+318,already_in_dataset,Skeleton
+319,missing_ac_and_hd,"Skeleton, Giant"
+331,already_in_dataset,Sprite
+342,already_in_dataset,Tarrasque
+349,already_in_dataset,Treant
+355,already_in_dataset,Umber Hulk
+360,multi-species,Wemic
+363,already_in_dataset,Wight
+368,already_in_dataset,Wraith
+371,already_in_dataset,Yeti
+372,already_in_dataset,Yuan-ti
+375,missing_ac_and_hd,Zaratan
+376,non-monster page,Common Monster Ju-ju Lord Sea
+378,missing_ac_and_hd,structions for the Blank Monster Form

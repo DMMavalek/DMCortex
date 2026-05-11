@@ -1,0 +1,57 @@
+<UserControl x:Class="DungeonMasterCortex.Views.CharGenAbilitiesScreen"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource BrushPanel}">
+    <Grid>
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+
+            <TextBlock Text="ABILITY SCORES"
+                       Style="{StaticResource TitleText}" FontSize="22"
+                       HorizontalAlignment="Center"/>
+            <TextBlock Text="Step 2  ·  Review or reroll your ability scores"
+                       Style="{StaticResource SubtitleText}"
+                       HorizontalAlignment="Center" Margin="0,4,0,16"/>
+            <Rectangle Height="1" Fill="{StaticResource BrushBorder}" Margin="0,0,0,24"/>
+
+            <!-- Score cards -->
+            <ItemsControl x:Name="AbilityItems">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{StaticResource BrushCard}"
+                                BorderBrush="{StaticResource BrushBorder2}"
+                                BorderThickness="1" CornerRadius="2"
+                                Width="90" Height="100" Margin="6,0">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Score}"
+                                           FontFamily="Georgia" FontSize="28" FontWeight="Bold"
+                                           Foreground="{Binding ScoreColor}"
+                                           HorizontalAlignment="Center"/>
+                                <TextBlock Text="{Binding Abbrev}"
+                                           Style="{StaticResource SubtitleText}" FontSize="10"
+                                           HorizontalAlignment="Center"/>
+                                <TextBlock Text="{Binding Label}"
+                                           Style="{StaticResource SubtitleText}" FontSize="9"
+                                           HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <Rectangle Height="1" Fill="{StaticResource BrushBorder}" Margin="0,24,0,16"/>
+
+            <Button x:Name="BtnReroll" Content="↺  REROLL SCORES"
+                    Style="{StaticResource GoldButton}" Width="200"
+                    HorizontalAlignment="Center" Click="BtnReroll_Click"/>
+
+            <TextBlock x:Name="MethodLabel" Text=""
+                       Style="{StaticResource SubtitleText}"
+                       HorizontalAlignment="Center" Margin="0,10,0,0"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

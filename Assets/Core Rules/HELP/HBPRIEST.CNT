@@ -1,0 +1,255 @@
+:Base HBPriest.HLP
+1 The Complete Priest's Handbook
+2 Table of Contents=The_Complete_Priest_s_Handbook_HPr
+2 Credits=Credits_HPr
+2 Introduction=Introduction_HPr
+2 Priests, Gods and the World
+3 Priests, Gods, and the World=Priests_Gods_and_the_World_Hpr
+3 Creation=Creation_HPr
+3 Propagation=Propagation_HPr
+3 Characteristics of the Gods=Characteristics_of_the_Gods_HPr
+3 Humans, Humanoids, Animals, Plants=Humans_Humanoids_Animals_Plants_HPr
+3 Fall From Grace=Fall_From_Grace_HPr
+3 The Challenge=The_Challenge_HPr
+3 The Future=The_Future_HPr
+3 The Pantheon=The_Pantheon_HPr
+3 Events=Events_HPr
+3 Forces and Philosophies=Forces_and_Philosophies_HPr
+3 Mythic History Creation Sheet=Mythic_History_Creation_Sheet_HPr
+2 Designing Faith
+3 Designing Faiths=Designing_Faiths_HPr
+3 God, Force, or Philosophy=God_Force_or_Philosophy_HPr
+3 Ethos and Requirements of the Faith=Ethos_and_Requirements_of_the_Faith_HPr
+3 Sample Priesthoods=Sample_Priesthoods_HPr
+3 Faith Design Sheet=Faith_Design_Sheet_HPr
+3 Faith
+4 Goals and Purposes=Goals_and_Purposes_HPr
+4 Alignment=Alignment_HPr
+4 Ability Scores=Ability_Scores_HPr
+4 Races Allowed=Races_Allowed_HPr
+4 Experience and Spell Progression=Experience_and_Spell_Progression_HPr
+4 Gender Requirements=Gender_Requirements_HPr
+4 Nonweapon and Weapon Proficiencies=Nonweapon_and_Weapon_Proficiencies_HPr
+3 Duties of the Priest
+4 Duties of the Priest=Duties_of_the_Priest_HPr
+4 Devotions=Devotions_HPr
+4 Guidance=Guidance_HPr
+4 Marriage=Marriage_HPr
+4 Missions=Missions_HPr
+4 Omen-Reading=Omen_Reading_HPr
+4 Vigilance=Vigilance_HPr
+3 Rights of the Priesthood
+4 Rights of the Priesthood=Rights_of_the_Priesthood_HPr
+4 Church Trial=Church_Trial_HPr
+4 Coronation=Coronation_HPr
+4 Other Confirmations=Other_Confirmations_HPr
+4 Tithes=Tithes_HPr
+4 Separation from the Faith=Separation_from_the_Faith_HPr
+4 Rule=Rule_HPr
+4 The State Religion=The_State_Religion_HPr
+3 Followers and Believers
+4 Followers and Believers=Followers_and_Believers_HPr
+4 What Are They?=What_Are_They_HPr
+4 Who Are They, and How Do They Know to Arrive?=Who_Are_They_and_How_Do_They_Know_to_Arrive_HPr
+4 How Many and How Strong Are They?=How_Many_and_How_Strong_Are_They_HPr
+4 How Much Control Does the Priest Have?=How_Much_Control_Does_the_Priest_Have_HPr
+4 What If They Die or Gain Experience?=What_If_They_Die_or_Gain_Experience_HPr
+4 What If The Priest-Character Is Scum?=What_If_The_Priest_Character_Is_Scum_HPr
+3 Role of the Faith
+4 Role of the Faith=Role_of_the_Faith_HPr
+4 Relations With Other Faiths=Relations_With_Other_Faiths_HPr
+4 Relations With the People=Relations_With_the_People_HPr
+4 Relations With the Aristocracy=Relations_With_the_Aristocracy_HPr
+4 Relations With Foreign Faiths=Relations_With_Foreign_Faiths_HPr
+3 Rites and the Calendar
+4 Rites and the Calendar=Rites_and_the_Calendar_HPr
+3 Heirarchy of the Faith
+4 Hierarchy of the Faith=Hierarchy_of_the_Faith_HPr
+4 Experience Levels and Hierarchy=Experience_Levels_and_Hierarchy_HPr
+4 PC Priests and the Hierarchy=PC_Priests_and_the_Hierarchy_HPr
+4 Finances of the PC's Temple=Finances_of_the_PC_s_Temple_HPr
+4 Non-Priests Working For the Faith=Non_Priests_Working_For_the_Faith_HPr
+4 PCs, Forces and Philosophies=PCs_Forces_and_Philosophies_HPr
+3 Restrictions on the Priest
+4 Restrictions on the Priest=Restrictions_on_the_Priest_HPr
+4 Armor=Armor_HPr
+4 Celibacy=Celibacy_HPr
+4 Chastity=Chastity_HPr
+4 Clothing=Clothing_HPr
+4 Contamination=Contamination_HPr
+4 Hit Points=Hit_Points_HPr
+4 Magical Items=Magical_Items_HPr
+4 Mutilation=Mutilation_HPr
+4 Weapons=Weapons_HPr
+3 Spheres of Influence
+4 Spheres of Influence=Spheres_of_Influence_HPr
+3 Granted Powers
+4 Granted Powers=Granted_Powers_HPr
+4 High Powers=High_Powers_HPr
+4 Medium Powers=Medium_Powers_HPr
+4 Low Powers=Low_Powers_HPr
+4 Other Powers=Other_Powers_HPr
+2 Sample Priesthoods
+3 Sample Priesthoods=Sample_Priesthoods_CH_HPr
+3 Priesthoods
+4 Priesthoods=Priesthoods_HPr
+4 Agriculture=Agriculture_HPr
+4 Ancestors=Ancestors_HPr
+4 Animals=Animals_HPr
+4 Arts=Arts_HPr
+4 Birth, Children=Birth_Children_HPr
+4 Community=Community_HPr
+4 Competition=Competition_HPr
+4 Crafts=Crafts_HPr
+4 Culture (Bringing Of)=Culture_Bringing_Of_HPr
+4 Darkness, Night=Darkness_Night_HPr
+4 Dawn=Dawn_HPr
+4 Death=Death_HPr
+4 Disease=Disease_HPr
+4 Divinity of Mankind (Philosophy)=Divinity_of_Mankind_Philosophy_HPr
+4 Druid=Druid_HPr
+4 Earth=Earth_HPr
+4 Elemental Forces (Force)=Elemental_Forces_Force_HPr
+4 Everything=Everything_HPr
+4 Evil (Philosophy)=Evil_Philosophy_HPr
+4 Fate, Destiny=Fate_Destiny_HPr
+4 Fertility=Fertility_HPr
+4 Fire=Fire_HPr
+4 Fortune, Luck=Fortune_Luck_HPr
+4 Good (Philosophy)=Good_Philosophy_HPr
+4 Guardianship=Guardianship_HPr
+4 Healing=Healing_HPr
+4 Hunting=Hunting_HPr
+4 Justice, Revenge=Justice_Revenge_HPr
+4 Life-Death-Rebirth Cycle (Force)=Life_Death_Rebirth_Cycle_Force_HPr
+4 Light=Light_HPr
+4 Lightning=Lightning_HPr
+4 Literature, Poetry=Literature_Poetry_HPr
+4 Love=Love_HPr
+4 Magic=Magic_HPr
+4 Marriage=Marriage_SP_HPr
+4 Messengers=Messengers_HPr
+4 Metalwork=Metalwork_HPr
+4 Mischief, Trickery=Mischief_Trickery_HPr
+4 Moon=Moon_HPr
+4 Music, Dance=Music_Dance_HPr
+4 Nature=Nature_HPr
+4 Oceans, Rivers=Oceans_Rivers_HPr
+4 Oracles, Prophecy=Oracles_Prophecy_HPr
+4 Peace=Peace_HPr
+4 Prosperity=Prosperity_HPr
+4 Race=Race_HPr
+4 Redemption=Redemption_HPr
+4 Rulership, Kingship=Rulership_Kingship_HPr
+4 Seasons=Seasons_HPr
+4 Sites=Sites_HPr
+4 Sky, Weather=Sky_Weather_HPr
+4 Strength=Strength_HPr
+4 Sun=Sun_HPr
+4 Thunder=Thunder_HPr
+4 Time=Time_HPr
+4 Trade=Trade_HPr
+4 Vegetation=Vegetation_HPr
+4 War=War_HPr
+4 Wind=Wind_HPr
+4 Wisdom=Wisdom_HPr
+3 Combining Traits in One Priesthood
+4 Combining Traits in One Priesthood=Combining_Traits_in_One_Priesthood_HPr
+4 Multiple Priest Classes=Multiple_Priest_Classes_HPr
+4 Revised Priest Classes=Revised_Priest_Classes_HPr
+3 Multi-class Characters
+4 Multi-Class Characters=Multi_Class_Characters_HPr
+2 Priest Kits
+3 Priest Kits=Priest_Kits_HPr
+3 Kits and the Priest Classes=Kits_and_the_Priest_Classes_HPr
+3 Kits and Character Creation=Kits_and_Character_Creation_HPr
+3 Recording Kits on the Character Sheet=Recording_Kits_on_the_Character_Sheet_HPr
+3 Multi-Class and Dual-Class Characters=Multi_Class_and_Dual_Class_Characters_HPr
+3 Abandoning Kits=Abandoning_Kits_HPr
+3 Modifying and Creating Kits=Modifying_and_Creating_Kits_HPr
+3 The Priest Kits
+4 The Priest Kits=The_Priest_Kits_HPr
+4 Amazon Priestess=Amazon_Priestess_HPr
+4 Barbarian/Berserker Priest=Barbarian_Berserker_Priest_HPr
+4 Fighting-Monk=Fighting_Monk_HPr
+4 Nobleman Priest=Nobleman_Priest_HPr
+4 Outlaw Priest=Outlaw_Priest_HPr
+4 Pacifist Priest=Pacifist_Priest_HPr
+4 Peasant Priest=Peasant_Priest_HPr
+4 Prophet Priest=Prophet_Priest_HPr
+4 Savage Priest=Savage_Priest_HPr
+4 Scholar Priest=Scholar_Priest_HPr
+2 Role-Playing
+3 Role-Playing=Role_Playing_HPr
+3 Priest Personalities
+4 Priest Personalities=Priest_Personalities_HPr
+4 The Crusader=The_Crusader_HPr
+4 The Earnest Novice=The_Earnest_Novice_HPr
+4 The Hypocrite=The_Hypocrite_HPr
+4 The Motivator=The_Motivator_HPr
+4 The Philosopher=The_Philosopher_HPr
+4 The Politician=The_Politician_HPr
+4 The Proselytizer=The_Proselytizer_HPr
+4 The Sage Counselor=The_Sage_Counselor_HPr
+4 Changing Personality Types=Changing_Personality_Types_HPr
+4 All Sense and No Brains=All_Sense_and_No_Brains_HPr
+3 Priest Adventures
+4 Priest Adventures=Priest_Adventures_HPr
+4 Advisor of the Faithful=Advisor_of_the_Faithful_HPr
+4 Agent of the Priesthood=Agent_of_the_Priesthood_HPr
+4 Defender of the Faith=Defender_of_the_Faith_HPr
+4 Defender of the Faithful=Defender_of_the_Faithful_HPr
+4 Martyr for a Cause=Martyr_for_a_Cause_HPr
+4 Servant of the God=Servant_of_the_God_HPr
+3 Rites and Role-Playing
+4 Rites and Role-Playing=Rites_and_Role_Playing_HPr
+4 Atonement=Atonement_HPr
+4 Calendar Ceremonies=Calendar_Ceremonies_HPr
+4 Communion=Communion_HPr
+4 Confirmation of Adulthood=Confirmation_of_Adulthood_HPr
+4 Confirmation of Birth=Confirmation_of_Birth_HPr
+4 Fast=Fast_HPr
+4 Feast=Feast_HPr
+4 Funeral=Funeral_HPr
+4 Libation=Libation_HPr
+4 Mysteries=Mysteries_HPr
+4 Meditation=Meditation_HPr
+4 Naming=Naming_HPr
+4 Prayer=Prayer_HPr
+4 Purification=Purification_HPr
+4 Sacrifice=Sacrifice_HPr
+3 Priests and Punishment
+4 Priests and Punishment=Priests_and_Punishment_HPr
+4 Minor Offenses=Minor_Offenses_HPr
+4 Inappropriate Weapon and Armor Use=Inappropriate_Weapon_and_Armor_Use_HPr
+4 Betrayal of Goals=Betrayal_of_Goals_HPr
+4 Divine Retributions=Divine_Retributions_HPr
+4 Society's Punishments=Society_s_Punishments_HPr
+4 When Priests Renounce Their Faith=When_Priests_Renounce_Their_Faith_HPr
+3 When Gods Bestow Spells
+4 When Gods Bestow Spells=When_Gods_Bestow_Spells_HPr
+3 Priestly Followers
+4 Priestly Followers=Priestly_Followers_HPr
+3 Toning Down the Cleric
+4 Toning Down the Cleric=Toning_Down_the_Cleric_HPr
+2 Equipment and Combat
+3 Equipment and Combat=Equipment_and_Combat_HPr
+3 Priestly Items=Priestly_Items_HPr
+3 The Canon=The_Canon_HPr
+3 Holy Symbol=Holy_Symbol_HPr
+3 Holy Water=Holy_Water_HPr
+3 Priestly Vestments=Priestly_Vestments_HPr
+3 New Weapons=New_Weapons_HPr
+3 New Weapons List=New_Weapons_List_HPr
+3 New Weapons Descriptions=New_Weapons_Descriptions_HPr
+3 Unarmed Combat=Unarmed_Combat_HPr
+3 Attacking Without Killing=Attacking_Without_Killing_HPr
+3 Knowing Punching, Wrestling, Martial Arts=Knowing_Punching_Wrestling_Martial_Arts_HPr
+3 Martial Arts Results=Martial_Arts_Results_HPr
+3 Specializing in Punching=Specializing_in_Punching_HPr
+3 Specializing in Wrestling=Specializing_in_Wrestling_HPr
+3 Specializing in Martial Arts=Specializing_in_Martial_Arts_HPr
+3 More Than One Style=More_Than_One_Style_HPr
+3 Continuing Specialization=Continuing_Specialization_HPr
+2 Bibliography
+3 Bibliography=Bibliography_HPr

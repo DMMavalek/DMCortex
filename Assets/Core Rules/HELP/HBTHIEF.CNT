@@ -1,0 +1,395 @@
+:Base HBThief.HLP
+1 The Complete Thief's Handbook
+2 Table of Contents=The_Complete_Thief_s_Handbook_HT@HBThief.hlp
+2 Credits=Credits_HT@HBThief.hlp
+2 Introduction
+3 Introduction=Introduction_HT@HBThief.hlp
+3 The Purpose of the Complete Thief's Handbook=The_Purpose_of_the_Complete_Thief_s_Handbook_HT@HBThief.hlp
+3 The Role of the Thief=The_Role_of_the_Thief_HT@HBThief.hlp
+3 Thieves and the Law=Thieves_and_the_Law_I_HT@HBThief.hlp
+2 Chapter 1: Role-Playing Thieves
+3 Role-Playing Thieves=Chapter_1_Role_Playing_Thieves_HT@HBThief.hlp
+3 Setting=Setting_HT@HBThief.hlp
+3 Social Background=Social_Background_HT@HBThief.hlp
+3 Motivation=Motivation_HT@HBThief.hlp
+3 Sample Archetypes=Sample_Archetypes_HT@HBThief.hlp
+3 Demihumans=Demihumans_HT@HBThief.hlp
+3 Other Nonhuman Races=Other_Nonhuman_Races_HT@HBThief.hlp
+3 Demihumans, Cities and Guilds=Demihumans_Cities_and_Guilds_HT@HBThief.hlp
+3 Code of the Professional=Code_of_the_Professional_HT@HBThief.hlp
+2 Chapter 2: Proficiencies
+3 Proficiencies=Chapter_2_Proficiencies_HT@HBThief.hlp
+3 Demihumans and Nonweapon Proficiencies=Demihumans_and_Nonweapon_Proficiencies_HT@HBThief.hlp
+3 New Proficiencies
+4 New Proficiencies=New_Proficiencies_HT@HBThief.hlp
+4 Alertness=Alertness_HT@HBThief.hlp
+4 Animal Noise=Animal_Noise_HT@HBThief.hlp
+4 Begging=Begging_HT@HBThief.hlp
+4 Boating=Boating_HT@HBThief.hlp
+4 Endurance=Endurance_HT@HBThief.hlp
+4 Fast-Talking=Fast_Talking_HT@HBThief.hlp
+4 Fortune Telling=Fortune_Telling_HT@HBThief.hlp
+4 Herbalism=Herbalism_HT@HBThief.hlp
+4 Hunting=Hunting_HT@HBThief.hlp
+4 Information Gathering=Information_Gathering_HT@HBThief.hlp
+4 Intimidation=Intimidation_HT@HBThief.hlp
+4 Locksmithing=Locksmithing_HT@HBThief.hlp
+4 Looting=Looting_HT@HBThief.hlp
+4 Navigation=Navigation_HT@HBThief.hlp
+4 Observation=Observation_HT@HBThief.hlp
+4 Reading/Writing=Reading_Writing_HT@HBThief.hlp
+4 Survival=Survival_HT@HBThief.hlp
+4 Tracking=Tracking_HT@HBThief.hlp
+4 Trailing=Trailing_HT@HBThief.hlp
+4 Voice Mimicry=Voice_Mimicry_HT@HBThief.hlp
+2 Chapter 3: Thief Kits
+3 Thief Kits=Chapter_3_Thief_Kits_HT@HBThief.hlp
+3 Kits and Thief Types=Kits_and_Thief_Types_HT@HBThief.hlp
+3 Kits and the Thief Classes=Kits_and_the_Thief_Classes_HT@HBThief.hlp
+3 Kits and Character Creation=Kits_and_Character_Creation_HT@HBThief.hlp
+3 The Thief Kits=The_Thief_Kits_HT@HBThief.hlp
+3 Thief Kits and Thieving Skills=Thief_Kits_and_Thieving_Skills_HT@HBThief.hlp
+3 Recording Kits on the Character Sheet=Recording_Kits_on_the_Character_Sheet_HT@HBThief.hlp
+3 Thief Types and Multi-Class Characters=Thief_Types_and_Multi_Class_Characters_HT@HBThief.hlp
+3 Thief Types and Dual-Class Characters=Thief_Types_and_Dual_Class_Characters_HT@HBThief.hlp
+3 Creating New Kits=Creating_New_Kits_HT@HBThief.hlp
+3 The Thief Kit Creation Sheet=The_Thief_Kit_Creation_Sheet_HT@HBThief.hlp
+3 The "Lone Wolf"=The_Lone_Wolf_HT@HBThief.hlp
+3 "Bluehand" Ajathar, Lone Wolf=_Bluehand_Ajathar_Lone_Wolf_HT@HBThief.hlp
+3 Adventure Suggestion=Adventure_Suggestion_HT@HBThief.hlp
+3 Glossary of Thief Slang=Glossary_of_Thief_Slang_HT@HBThief.hlp
+3 Thief Kits
+4 Acrobat=Acrobat_HT@HBThief.hlp
+4 Adventurer=Adventurer_HT@HBThief.hlp
+4 Assassin=Assassin_HT@HBThief.hlp
+4 Bandit=Bandit_HT@HBThief.hlp
+4 Beggar=Beggar_HT@HBThief.hlp
+4 Bounty Hunter=Bounty_Hunter_HT@HBThief.hlp
+4 Buccaneer=Buccaneer_HT@HBThief.hlp
+4 Burglar=Burglar_HT@HBThief.hlp
+4 Cutpurse=Cutpurse_HT@HBThief.hlp
+4 Fence=Fence_HT@HBThief.hlp
+4 Investigator=Investigator_HT@HBThief.hlp
+4 Scout=Scout_HT@HBThief.hlp
+4 Smuggler=Smuggler_HT@HBThief.hlp
+4 Spy=Spy_HT@HBThief.hlp
+4 Swashbuckler=Swashbuckler_HT@HBThief.hlp
+4 Swindler=Swindler_HT@HBThief.hlp
+4 Thug=Thug_HT@HBThief.hlp
+4 Troubleshooter=Troubleshooter_HT@HBThief.hlp
+2 Chapter 4: Thieves' Guild
+3 Thieves' Guild=Chapter_4_Thieves_Guild_HT@HBThief.hlp
+3 Developing the Thieves' Guild=Developing_the_Thieves_Guild_HT@HBThief.hlp
+3 Benefits of Guild Membership
+4 Benefits of Guild Membership=Benefits_of_Guild_Membership_HT@HBThief.hlp
+4 Training=Training_HT@HBThief.hlp
+4 Equipment=Equipment_HT@HBThief.hlp
+4 Information=Information_HT@HBThief.hlp
+4 Fencing=Fencing_HT@HBThief.hlp
+4 Specialist Help=Specialist_Help_HT@HBThief.hlp
+3 Responsibilities of Guild Membership
+4 Responsibilities of Guild Membership=Responsibilities_of_Guild_Membership_HT@HBThief.hlp
+4 Secrecy=Secrecy_HT@HBThief.hlp
+4 Providing Information=Providing_Information_HT@HBThief.hlp
+4 Limited Territory=Limited_Territory_HT@HBThief.hlp
+4 Other Duties=Other_Duties_HT@HBThief.hlp
+4 The Recalcitrant PC Thief=The_Recalcitrant_PC_Thief_HT@HBThief.hlp
+3 Activities of Thieves' Guilds
+4 Activities of Thieves' Guilds=Activities_of_Thieves_Guilds_HT@HBThief.hlp
+4 Protection Rackets=Protection_Rackets_HT@HBThief.hlp
+4 Smuggling=Smuggling_HT@HBThief.hlp
+4 Forgery and Coin Clipping=Forgery_and_Coin_Clipping_HT@HBThief.hlp
+4 Entertainments=Entertainments_HT@HBThief.hlp
+4 Lawful Operations=Lawful_Operations_HT@HBThief.hlp
+3 Thieves' Guilds in the Campaign World
+4 Thieves' Guilds in the Campaign World=Thieves_Guilds_in_the_Campaign_World_HT@HBThief.hlp
+4 Size and Wealth of Communities=Size_and_Wealth_of_Communities_HT@HBThief.hlp
+4 Social Alignment=Social_Alignment_HT@HBThief.hlp
+4 Special Social Factors=Special_Social_Factors_HT@HBThief.hlp
+4 Divided Alignments=Divided_Alignments_HT@HBThief.hlp
+4 Racial Divisions=Racial_Divisions_HT@HBThief.hlp
+4 Religious Factors=Religious_Factors_HT@HBThief.hlp
+4 Historical Factors=Historical_Factors_HT@HBThief.hlp
+3 Thieves' Guilds and Other Groups
+4 Thieves' Guilds and Other Groups=Thieves_Guilds_and_Other_Groups_HT@HBThief.hlp
+3 Thieves and the Law
+4 Thieves and the Law=Thieves_and_the_Law_HT@HBThief.hlp
+4 Persecution=Persecution_HT@HBThief.hlp
+4 Hassle=Hassle_HT@HBThief.hlp
+4 Opposition=Opposition_HT@HBThief.hlp
+4 Tolerance=Tolerance_HT@HBThief.hlp
+4 Corruption=Corruption_HT@HBThief.hlp
+4 Complex/Mix=Complex_Mix_HT@HBThief.hlp
+3 Thieves and Merchants
+4 Thieves and Merchants=Thieves_and_Merchants_HT@HBThief.hlp
+4 Warfare=Warfare_HT@HBThief.hlp
+4 Opposition=Opposition_T_M_HT@HBThief.hlp
+4 Standoff=Standoff_HT@HBThief.hlp
+4 Submission=Submission_HT@HBThief.hlp
+4 Infiltration=Infiltration_HT@HBThief.hlp
+4 Complex/Mix=Complex_Mix_T_M_HT@HBThief.hlp
+3 Thieves and Other Guilds
+4 Thieves and Other Guilds=Thieves_and_Other_Guilds_HT@HBThief.hlp
+4 Craft Guilds=Craft_Guilds_HT@HBThief.hlp
+4 Adventuring Guilds=Adventuring_Guilds_HT@HBThief.hlp
+4 Thieves and Assassins=Thieves_and_Assassins_HT@HBThief.hlp
+4 Thieves and Beggars=Thieves_and_Beggars_HT@HBThief.hlp
+4 Thieves and Bards=Thieves_and_Bards_HT@HBThief.hlp
+3 Guildmasters and Guild Structures
+4 Guildmasters and Guild Structures=Guildmasters_and_Guild_Structures_HT@HBThief.hlp
+3 Guild Organizations
+4 Guild Organizations=Guild_Organizations_HT@HBThief.hlp
+4 Centralist=Centralist_HT@HBThief.hlp
+4 Cohesive=Cohesive_HT@HBThief.hlp
+4 Fractionated=Fractionated_HT@HBThief.hlp
+4 Oppositional=Oppositional_HT@HBThief.hlp
+4 Anarchic=Anarchic_HT@HBThief.hlp
+4 Complex/Mix=Complex_Mix_G_O_HT@HBThief.hlp
+3 Guild Leaders
+4 Guild Leaders=Guild_Leaders_HT@HBThief.hlp
+4 Guildmaster=Guildmaster_HT@HBThief.hlp
+4 Council=Council_HT@HBThief.hlp
+4 Democracy=Democracy_HT@HBThief.hlp
+4 Leaderless=Leaderless_HT@HBThief.hlp
+4 Complex/Mix=Complex_Mix_G_L_HT@HBThief.hlp
+4 Special=Special_HT@HBThief.hlp
+3 Guild Rulership
+4 Guild Rulership=Guild_Rulership_HT@HBThief.hlp
+4 Weak/Strong=Weak_Strong_HT@HBThief.hlp
+4 Cruel/Just=Cruel_Just_HT@HBThief.hlp
+4 Despotic/Populist=Despotic_Populist_HT@HBThief.hlp
+3 Designing a Thieves' Guild
+4 Designing a Thieves' Guild=Designing_a_Thieves_Guild_HT@HBThief.hlp
+4 Using the Tables=Using_the_Tables_HT@HBThief.hlp
+4 Guild Background=Guild_Background_HT@HBThief.hlp
+4 Social Alignment=Social_Alignment_D_HT@HBThief.hlp
+4 Special Social Factors=Special_Social_Factors_D_HT@HBThief.hlp
+4 Size of Community=Size_of_Community_HT@HBThief.hlp
+4 Wealth of Community=Wealth_of_Community_HT@HBThief.hlp
+4 Attitudes of the Law=Attitudes_of_the_Law_HT@HBThief.hlp
+4 Relationship with Merchants=Relationship_with_Merchants_HT@HBThief.hlp
+4 Relationships with other Guilds=Relationships_with_other_Guilds_HT@HBThief.hlp
+4 Guild Rulership=Guild_Rulership_D_HT@HBThief.hlp
+4 Guildmembers and The Rest=Guildmembers_and_The_Rest_HT@HBThief.hlp
+4 Experience Levels of Thieves=Experience_Levels_of_Thieves_HT@HBThief.hlp
+4 Multi-classed thieves=Multi_classed_thieves_HT@HBThief.hlp
+4 Non-Thief Guildmembers=Non_Thief_Guildmembers_HT@HBThief.hlp
+4 Fleshing out Guildmembers=Fleshing_out_Guildmembers_HT@HBThief.hlp
+4 Alignment=Alignment_HT@HBThief.hlp
+4 Prime Requisite=Prime_Requisite_HT@HBThief.hlp
+4 Senior Thieves=Senior_Thieves_HT@HBThief.hlp
+4 Junior Thieves=Junior_Thieves_HT@HBThief.hlp
+4 A Final Record=A_Final_Record_HT@HBThief.hlp
+4 Guild Dues=Guild_Dues_HT@HBThief.hlp
+4 Normal Resources=Normal_Resources_HT@HBThief.hlp
+4 Special Resources=Special_Resources_HT@HBThief.hlp
+4 Major Activities=Major_Activities_HT@HBThief.hlp
+4 The Guildhouse=The_Guildhouse_HT@HBThief.hlp
+3 Thieves' Guild of Mallain
+4 The Thieves' Guild of Mallain=The_Thieves_Guild_of_Mallain_HT@HBThief.hlp
+3 Unusual Guilds
+4 The Traveling Guild=The_Traveling_Guild_HT@HBThief.hlp
+4 Unusual Guilds=Unusual_Guilds_HT@HBThief.hlp
+4 Piratical Guilds=Piratical_Guilds_HT@HBThief.hlp
+4 The Guild of Honorable Gentlemen=The_Guild_of_Honorable_Gentlemen_HT@HBThief.hlp
+4 The Good-Aligned Guild=The_Good_Aligned_Guild_HT@HBThief.hlp
+3 Player-Character Guildmasters
+4 Player-Character Guildmasters=Player_Character_Guildmasters_HT@HBThief.hlp
+4 Determining Guildmembers=Determining_Guildmembers_HT@HBThief.hlp
+4 Guild Income=Guild_Income_HT@HBThief.hlp
+4 Levels of Operations=Levels_of_Operations_HT@HBThief.hlp
+4 The Long Arm of the Law=The_Long_Arm_of_the_Law_HT@HBThief.hlp
+4 Guild Morale=Guild_Morale_HT@HBThief.hlp
+4 New Followers=New_Followers_HT@HBThief.hlp
+4 Special Events and Occurrences=Special_Events_and_Occurrences_HT@HBThief.hlp
+3 Blueprint Profiles
+4 Blueprint Profiles=Blueprint_Profiles_HT@HBThief.hlp
+4 Guildmaster Septien Selfareine, the "White Lily"=Guildmaster_Septien_Selfareine_the_White_Lily_HT@HBThief.hlp
+4 Guildmaster Tulmara Zir Bharann, "Cruelty's Mask"=Guildmaster_Tulmara_Zir_Bharann_Cruelty_s_Mask_HT@HBThief.hlp
+4 Quartermaster Marmel Raveiz=Quartermaster_Marmel_Raveiz_HT@HBThief.hlp
+4 Durdlan Silverpalm, Master Fence=Durdlan_Silverpalm_Master_Fence_HT@HBThief.hlp
+2 Chapter 5: Tools of the Trade
+3 Eauipment for the Thief's Skills=Chapter_5_Tools_of_the_Trade_HT@HBThief.hlp
+3 Skill Modifiers=Skill_Modifiers_HT@HBThief.hlp
+3 Picking Pockets
+4 Picking Pockets=Picking_Pockets_HT@HBThief.hlp
+4 Arm Sling=Arm_Sling_HT@HBThief.hlp
+4 Mini-Blade=Mini_Blade_HT@HBThief.hlp
+3 Opening Locks
+4 Opening Locks=Opening_Locks_HT@HBThief.hlp
+4 Improvised Lockpicks=Improvised_Lockpicks_HT@HBThief.hlp
+4 Acid=Acid_HT@HBThief.hlp
+4 Chisels=Chisels_HT@HBThief.hlp
+4 Cutters, Files and Hacksaws=Cutters_Files_and_Hacksaws_HT@HBThief.hlp
+4 Magnifying Glass/Lens=Magnifying_Glass_Lens_HT@HBThief.hlp
+4 Oil and Funnel=Oil_and_Funnel_HT@HBThief.hlp
+4 Time Scales=Time_Scales_HT@HBThief.hlp
+3 Finding and Removing Traps
+4 Finding and Removing Traps=Finding_and_Removing_Traps_HT@HBThief.hlp
+4 Lockpicks=Lockpicks_HT@HBThief.hlp
+3 Moving Silently
+4 Moving Silently=Moving_Silently_HT@HBThief.hlp
+4 Silenced Armor=Silenced_Armor_HT@HBThief.hlp
+4 Strapping=Strapping_HT@HBThief.hlp
+3 Hiding in Shadows
+4 Hiding in Shadows=Hiding_in_Shadows_HT@HBThief.hlp
+4 Camouflage Clothing=Camouflage_Clothing_HT@HBThief.hlp
+4 Charcoal=Charcoal_HT@HBThief.hlp
+4 Plant Dyes=Plant_Dyes_HT@HBThief.hlp
+4 Weaponblack=Weaponblack_HT@HBThief.hlp
+3 Detecting Noise
+4 Detecting Noise=Detecting_Noise_HT@HBThief.hlp
+3 Climbing Walls
+4 Climbing Walls=Climbing_Walls_HT@HBThief.hlp
+4 Climbing Daggers=Climbing_Daggers_HT@HBThief.hlp
+4 Grapples=Grapples_HT@HBThief.hlp
+4 Special Function Arrows=Special_Function_Arrows_HT@HBThief.hlp
+4 Spikes and Line=Spikes_and_Line_HT@HBThief.hlp
+3 Miscellaneous Equipment
+4 Miscellaneous Equipment=Miscellaneous_Equipment_HT@HBThief.hlp
+3 Burglary and Theft
+4 Burglary and Theft=Burglary_and_Theft_HT@HBThief.hlp
+4 Glass Cutter=Glass_Cutter_HT@HBThief.hlp
+4 Housebreaker's Harness=Housebreaker_s_Harness_HT@HBThief.hlp
+4 Keymaking Set=Keymaking_Set_HT@HBThief.hlp
+4 Limewood Strips=Limewood_Strips_HT@HBThief.hlp
+4 Sharkskin=Sharkskin_HT@HBThief.hlp
+4 Skeleton Key=Skeleton_Key_HT@HBThief.hlp
+4 Tar Paper=Tar_Paper_HT@HBThief.hlp
+4 Wax Pad=Wax_Pad_HT@HBThief.hlp
+3 Evasions
+4 Evasions=Evasions_HT@HBThief.hlp
+4 Aniseed=Aniseed_HT@HBThief.hlp
+4 Caltrops=Caltrops_HT@HBThief.hlp
+4 Catstink=Catstink_HT@HBThief.hlp
+4 Dog Pepper=Dog_Pepper_HT@HBThief.hlp
+4 Hand Lamp=Hand_Lamp_HT@HBThief.hlp
+4 Hollow Boots=Hollow_Boots_HT@HBThief.hlp
+4 Marbles=Marbles_HT@HBThief.hlp
+3 Self-Protectin and Combat
+4 Self-Protection and Combat=Self_Protection_and_Combat_HT@HBThief.hlp
+4 Blinding Powder=Blinding_Powder_HT@HBThief.hlp
+4 Death Knife=Death_Knife_HT@HBThief.hlp
+4 Folding Bow=Folding_Bow_HT@HBThief.hlp
+4 Pin Ring=Pin_Ring_HT@HBThief.hlp
+4 Sword Stick=Sword_Stick_HT@HBThief.hlp
+4 Wrist Sheath=Wrist_Sheath_HT@HBThief.hlp
+3 The Joy of Sticks
+4 The Joy of Sticks=The_Joy_of_Sticks_HT@HBThief.hlp
+4 Blade Pole=Blade_Pole_HT@HBThief.hlp
+4 Climbing Pole=Climbing_Pole_HT@HBThief.hlp
+4 Hooked Pole=Hooked_Pole_HT@HBThief.hlp
+4 Mirror Pole=Mirror_Pole_HT@HBThief.hlp
+3 Miscellany
+4 Blade Boots=Blade_Boots_HT@HBThief.hlp
+4 False Scabbard=False_Scabbard_HT@HBThief.hlp
+4 Hand Warming Lamp=Hand_Warming_Lamp_HT@HBThief.hlp
+4 Marked Cards and Biased Dice=Marked_Cards_and_Biased_Dice_HT@HBThief.hlp
+4 Water Shoes=Water_Shoes_HT@HBThief.hlp
+3 Cost and Availability of Equipment
+4 Cost and Availability of Equipment=Cost_and_Availability_of_Equipment_HT@HBThief.hlp
+3 Magical Items for Thieves
+4 Magical Items for Thieves=Magical_Items_for_Thieves_HT@HBThief.hlp
+3 Detection Resistance
+4 Detection Resistance=Detection_Resistance_HT@HBThief.hlp
+3 Description of Magical Items
+4 Description of Magical Items=Description_of_Magical_Items_HT@HBThief.hlp
+4 Miscellaneous Magic: Clothing and Jewelry=Miscellaneous_Magic_Clothing_and_Jewelry_HT@HBThief.hlp
+4 Miscellaneous Magic: Other Sneaky Stuff=Miscellaneous_Magic_Other_Sneaky_Stuff_HT@HBThief.hlp
+4 Weapons=Weapons_HT@HBThief.hlp
+2 Chapter 6: The Arts of Deception: Classic Cons
+3 The Arts of Deception: Classic Cons=Chapter_6_The_Arts_of_Deception_Classic_Cons_HT@HBThief.hlp
+3 Short-Change Swindles=Short_Change_Swindles_HT@HBThief.hlp
+3 Gambling=Gambling_HT@HBThief.hlp
+3 Quackery=Quackery_HT@HBThief.hlp
+3 Forgery and Counterfeiting=Forgery_and_Counterfeiting_HT@HBThief.hlp
+3 Jewelry Swindles=Jewelry_Swindles_HT@HBThief.hlp
+3 Robbing the Robbers=Robbing_the_Robbers_HT@HBThief.hlp
+2 Chapter 7: New Rules for Thieves
+3 New Rules for Thieves=Chapter_7_New_Rules_for_Thieves_HT@HBThief.hlp
+3 Poison Antidotes=Poison_Antidotes_HT@HBThief.hlp
+3 Mugging-the Thief's KO=Mugging_the_Thief_s_KO_HT@HBThief.hlp
+3 Armor and Acrobatic Proficiencies=Armor_and_Acrobatic_Proficiencies_HT@HBThief.hlp
+3 Armor and Thief Skills=Armor_and_Thief_Skills_HT@HBThief.hlp
+3 Advanced Locks and Traps
+4 Advanced Locks and Traps=Advanced_Locks_and_Traps_HT@HBThief.hlp
+4 Modifying Checks=Modifying_Checks_HT@HBThief.hlp
+4 Building Better Locks=Building_Better_Locks_HT@HBThief.hlp
+4 Multiple Locks=Multiple_Locks_HT@HBThief.hlp
+4 Lockpicking/Trap Removing Noise=Lockpicking_Trap_Removing_Noise_HT@HBThief.hlp
+3 Animal Assistants
+4 Animal Assistants=Animal_Assistants_HT@HBThief.hlp
+4 The Thief's Fetch=The_Thief_s_Fetch_HT@HBThief.hlp
+3 Poison and Sedatives
+4 Poison and Sedatives=Poison_and_Sedatives_HT@HBThief.hlp
+4 Campaigns without Nonweapon Proficiencies=Campaigns_without_Nonweapon_Proficiencies_HT@HBThief.hlp
+4 Healing Proficiency and Poison=Healing_Proficiency_and_Poison_HT@HBThief.hlp
+4 Antidote Effects=Antidote_Effects_HT@HBThief.hlp
+4 Producing Antidotes=Producing_Antidotes_HT@HBThief.hlp
+2 Chapter 8: The Thief Campaign
+3 The Thief Campaign=Chapter_8_The_Thief_Campaign_HT@HBThief.hlp
+3 Cultural Considerations=Cultural_Considerations_HT@HBThief.hlp
+3 The Social Campaign Environment=The_Social_Campaign_Environment_HT@HBThief.hlp
+3 The Social Overview of Thieves=The_Social_Overview_of_Thieves_HT@HBThief.hlp
+3 Detailed and Varied Non-Player Characters=Detailed_and_Varied_Non_Player_Characters_HT@HBThief.hlp
+3 Unique Buildings and Structures=Unique_Buildings_and_Structures_HT@HBThief.hlp
+3 A Well-Defined Economic System=A_Well_Defined_Economic_System_HT@HBThief.hlp
+3 Interesting Objects D'Art and Other Treasures=Interesting_Objects_D_Art_and_Other_Treasures_HT@HBThief.hlp
+3 Well-Defined Legal System=Well_Defined_Legal_System_HT@HBThief.hlp
+3 Counter-Thief Tactics=Counter_Thief_Tactics_HT@HBThief.hlp
+3 Background of Interesting Conflicts=Background_of_Interesting_Conflicts_HT@HBThief.hlp
+3 Challenges To Thief Character Class Abilities=Challenges_To_Thief_Character_Class_Abilities_HT@HBThief.hlp
+3 The Thieves' Guild=The_Thieves_Guild_HT@HBThief.hlp
+3 Basic Storylines for Thief Campaigns
+4 Basic Storylines For Thief Campaigns=Basic_Storylines_For_Thief_Campaigns_HT@HBThief.hlp
+4 The Great Artifact=The_Great_Artifact_HT@HBThief.hlp
+4 The Mysterious Client=The_Mysterious_Client_HT@HBThief.hlp
+4 Role Reversal=Role_Reversal_HT@HBThief.hlp
+4 Foul Betrayal=Foul_Betrayal_HT@HBThief.hlp
+4 The Spy=The_Spy_HT@HBThief.hlp
+3 Playing in and Running the Thief Campaign
+4 Playing In And Running the Thief Campaign=Playing_In_And_Running_the_Thief_Campaign_HT@HBThief.hlp
+4 Wizards Working With Thieves=Wizards_Working_With_Thieves_HT@HBThief.hlp
+4 Levels of Magic in the Thieves' Campaign=Levels_of_Magic_in_the_Thieves_Campaign_HT@HBThief.hlp
+4 Multi- or Dual-Classed Thieves=Multi_or_Dual_Classed_Thieves_HT@HBThief.hlp
+4 Henchmen and Hirelings of Thieves=Henchmen_and_Hirelings_of_Thieves_HT@HBThief.hlp
+4 Dens and Hideouts=Dens_and_Hideouts_HT@HBThief.hlp
+2 List of Tables
+3 1: Nonweapon Proficiencies-Thieves=Chapter_2_Proficiencies_HT@HBThief.hlp
+3 2: Suggested Begging Modifiers=Begging_HT@HBThief.hlp
+3 3: Fast-Talking Modifiers=Fast_Talking_HT@HBThief.hlp
+3 4: Thieving Skill, Thief Kit Modifiers=Thief_Kits_and_Thieving_Skills_HT@HBThief.hlp
+3 5: Urlar's Skill Adjustments=Table_5_HT@HBThief.hlp
+3 6: Aljahar's Experience Table and Spells=Table_6_HT@HBThief.hlp
+3 7: Wealth of Community With Thieves' Guild=Wealth_of_Community_HT@HBThief.hlp
+3 8: Legal Attitudes=Attitudes_of_the_Law_HT@HBThief.hlp
+3 9: Merchants' Attitudes Toward Thieves=Relationship_with_Merchants_HT@HBThief.hlp
+3 10: Thieves and Other Guilds=Relationships_with_other_Guilds_HT@HBThief.hlp
+3 11: Thieves in Towns and Cities=Table_11_HT@HBThief.hlp
+3 12: Guild Rulership=Guild_Rulership_D_HT@HBThief.hlp
+3 13: Unusual Guild rulership=Table_13_HT@HBThief.hlp
+3 14: Rulership Style=Table_14_HT@HBThief.hlp
+3 15: Guild Organization=Table_15_HT@HBThief.hlp
+3 16: Guild Attitudes Towards Guildless Thieves=Table_16_HT@HBThief.hlp
+3 17: Experience Levels of Thieves=Table_17_HT@HBThief.hlp
+3 18: Thief Races=Multi_classed_thieves_HT@HBThief.hlp
+3 19: Thief Classes=Table_19_HT@HBThief.hlp
+3 20: NPC Thief Alignments=Alignment_HT@HBThief.hlp
+3 21: Availability of Resources=Normal_Resources_HT@HBThief.hlp
+3 22: Modifiers to Guild Income=Guild_Income_HT@HBThief.hlp
+3 23: Guild Monthly Income=Table_23_HT@HBThief.hlp
+3 24: Confrontations with the Law I=The_Long_Arm_of_the_Law_HT@HBThief.hlp
+3 25: Confrontations with the Law II=Table_25_HT@HBThief.hlp
+3 26: Modifiers to Followers Dice Rolls=New_Followers_HT@HBThief.hlp
+3 27: Special Events in Thieves' Guilds=Special_Events_and_Occurrences_HT@HBThief.hlp
+3 28: Silenced Armor (Elfin Chain) Effect on Skill=Silenced_Armor_HT@HBThief.hlp
+3 29: Grappling Success=Grapples_HT@HBThief.hlp
+3 30: Special Function Arrows=Table_30_HT@HBThief.hlp
+3 31: Purchasing Thief Equipment=Table_31_HT@HBThief.hlp
+3 32: Magical Items for Thieves=Magical_Items_for_Thieves_HT@HBThief.hlp
+3 33: Potions and Oils=Detection_Resistance_HT@HBThief.hlp
+3 34: Misc. Magic: Clothing and Jewelry=Table_34_HT@HBThief.hlp
+3 35: Other Sneaky Stuff=Table_35_HT@HBThief.hlp
+3 36: Magic Weapons=Table_36_HT@HBThief.hlp
+3 37: Effects of Armor on Acrobatic Proficiencies=Table_37_HT@HBThief.hlp
+3 38: Effects of Armor on Thief Skills=Table_38_HT@HBThief.hlp
