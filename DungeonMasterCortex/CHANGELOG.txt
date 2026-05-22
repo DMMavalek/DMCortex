@@ -1,6 +1,11 @@
 Dungeon Master Cortex - Running Changelog
 ========================================
 
+v1.3.15 (2026-05-21)
+- Updater download validation now trusts the downloaded installer bytes instead of relying on GitHub response metadata.
+- Existing valid installer downloads in the updater temp folder are reused on retry.
+- Networking features remain hidden in offline release builds.
+
 v1.3.14 (2026-05-21)
 - Automatic GitHub release pipeline validation update.
 - Future releases now publish from version bumps on master without manual tag pushes.

@@ -282,28 +282,56 @@ public sealed class AppUpdateService
 
     private bool DownloadInstaller(string downloadUrl, string localInstaller, out string message)
     {
+        if (File.Exists(localInstaller) && IsWindowsExecutable(localInstaller))
+        {
+            message = string.Empty;
+            return true;
+        }
+
+        string tempDownloadPath = localInstaller + ".download";
+        if (File.Exists(tempDownloadPath))
+            File.Delete(tempDownloadPath);
+
         using var response = Http.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead).GetAwaiter().GetResult();
         response.EnsureSuccessStatusCode();
 
-        string? mediaType = response.Content.Headers.ContentType?.MediaType;
-        if (!string.IsNullOrWhiteSpace(mediaType)
-            && (mediaType.Contains("html", StringComparison.OrdinalIgnoreCase)
-                || mediaType.Contains("json", StringComparison.OrdinalIgnoreCase)
-                || mediaType.Contains("text", StringComparison.OrdinalIgnoreCase)))
-        {
-            message = "GitHub returned a web response instead of the installer binary.";
-            return false;
-        }
-
         using var responseStream = response.Content.ReadAsStreamAsync().GetAwaiter().GetResult();
-        using var file = File.Create(localInstaller);
+        using var file = File.Create(tempDownloadPath);
         responseStream.CopyTo(file);
+        file.Flush();
 
-        if (!IsWindowsExecutable(localInstaller))
+        if (!IsWindowsExecutable(tempDownloadPath))
         {
-            message = "The downloaded update was not a valid Windows installer.";
+            string? mediaType = response.Content.Headers.ContentType?.MediaType;
+            long fileSize = 0;
+            try
+            {
+                fileSize = new FileInfo(tempDownloadPath).Length;
+            }
+            catch
+            {
+                // Best-effort diagnostics only.
+            }
+
+            try
+            {
+                File.Delete(tempDownloadPath);
+            }
+            catch
+            {
+                // Best-effort cleanup only.
+            }
+
+            message = string.IsNullOrWhiteSpace(mediaType)
+                ? $"The downloaded update was not a valid Windows installer. File size: {fileSize} bytes."
+                : $"The downloaded update was not a valid Windows installer. Content-Type: {mediaType}; File size: {fileSize} bytes.";
             return false;
         }
+
+        if (File.Exists(localInstaller))
+            File.Delete(localInstaller);
+
+        File.Move(tempDownloadPath, localInstaller);
 
         message = string.Empty;
         return true;
