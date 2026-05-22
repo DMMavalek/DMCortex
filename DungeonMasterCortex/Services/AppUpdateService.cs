@@ -296,9 +296,11 @@ public sealed class AppUpdateService
         response.EnsureSuccessStatusCode();
 
         using var responseStream = response.Content.ReadAsStreamAsync().GetAwaiter().GetResult();
-        using var file = File.Create(tempDownloadPath);
-        responseStream.CopyTo(file);
-        file.Flush();
+        using (var file = File.Create(tempDownloadPath))
+        {
+            responseStream.CopyTo(file);
+            file.Flush();
+        }
 
         if (!IsWindowsExecutable(tempDownloadPath))
         {
