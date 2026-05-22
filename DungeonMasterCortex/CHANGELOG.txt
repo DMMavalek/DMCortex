@@ -1,0 +1,67 @@
+Dungeon Master Cortex - Running Changelog
+========================================
+
+v1.3.13 (2026-05-21)
+- Updater source moved from Google Drive to GitHub Releases.
+- Release automation now publishes DM and Player installers to GitHub on version tags.
+- Networking features remain hidden in offline release builds.
+
+v1.3.11 (2026-05-21)
+- Modified the Core Rules and the Player Options to be more individualized.   Some things are still overlapping, but I am working on making them function separately.
+- Revamping some of the workflow to move smoother and quicker
+- Working on building more mechanics into the backend to affect the character sheets properly
+
+v1.3.01 (2026-05-20)
+---------------------
+- Session Manager is now hidden for both Dungeon Master and Player editions in offline releases.
+- Added a navigation guard so direct links to Session Manager are blocked when networking is disabled.
+
+v1.3.00 (2026-05-19)
+---------------------
+Coming Soon : Campaign Management via Local Area networking
+- Control Combat and Campaign Management at the table!
+[HIDE-START]
+- Session Manager added for DM hosting and player session join workflows.
+- LAN transport implemented:
+  - UDP session discovery.
+  - TCP join requests and character sync envelopes.
+- Player character selection added before join.
+- Host view shows connected participants and synced characters.
+- Automatic character auto-sync added (periodic background sync).
+- Manual SYNC NOW action added on session screen.
+- Host audit log added for joins, sync events, and conflict notes.
+- Reconnect flow added for dropped session transport with retry cooldown.
+- Build-time networking toggle added for offline package generation.
+[HIDE-END]
+
+v1.2.04-v1.1.10 (2026-05-18)
+---------------------
+- Made changes to code to make tasks in the Campaign Manager work properly
+- Updated some pages on the DM Editor to affect appearance
+- Added an Options section to allow resizing of screen, control updater, and deactivate software activation
+
+v1.2.03 (2026-05-12)
+---------------------
+- Combat tracker and spell workflow improvements.
+- Quick cast flow improvements for speed and clarity.
+- Healing mode support in quick cast path.
+- Spell cast tracking integration improvements.
+- Spell tracker UX refinements and cast details flow updates.
+
+v1.2.00
+-------
+- Combat tracker enhancements:
+  - Initiative order and round progression polish.
+  - End-of-round review and round-complete feedback.
+- Calendar and campaign improvements:
+  - Better calendar visibility and campaign overlays.
+  - Event marker and timeline consistency updates.
+- Multi-campaign improvements:
+  - Campaign color consistency and shared calendar support.
+
+v1.1.x and earlier
+------------------
+- Core AD&D 2e toolkit foundations.
+- Character generation workflows.
+- Campaign and DM utility foundations.
+- Rules, equipment, spell, and tracking system groundwork.

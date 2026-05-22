@@ -1,0 +1,42 @@
+name: Build And Publish Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --yes --no-progress
+
+      - name: Build Installers
+        shell: pwsh
+        run: |
+          ./build-installers.ps1 `
+            -DmInstallerOutputDir artifacts/github-release/dm `
+            -PlayerInstallerOutputDir artifacts/github-release/player
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/github-release/dm/DMCodex-Setup-*.exe
+            artifacts/github-release/player/PlayerCodex-Setup-*.exe
+          generate_release_notes: true

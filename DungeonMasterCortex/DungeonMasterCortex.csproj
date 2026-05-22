@@ -6,15 +6,51 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-    <Version>1.1.00</Version>
-    <AssemblyVersion>1.1.0.0</AssemblyVersion>
-    <FileVersion>1.1.0.0</FileVersion>
-    <InformationalVersion>1.1.00</InformationalVersion>
+    <Version>1.3.13</Version>
+    <AssemblyVersion>1.3.13.0</AssemblyVersion>
+    <FileVersion>1.3.13.0</FileVersion>
+    <InformationalVersion>1.3.13</InformationalVersion>
     <DefineConstants>$(DefineConstants);APP_EDITION_DM</DefineConstants>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <DisableNetworkingBuild Condition="'$(DisableNetworkingBuild)' == ''">false</DisableNetworkingBuild>
+    <DmUpdateOutputDir>$(UserProfile)\Documents\Projects\DMC Updates\DMCodex</DmUpdateOutputDir>
+    <PlayerUpdateOutputDir>$(UserProfile)\Documents\Projects\DMC Updates\playercodex</PlayerUpdateOutputDir>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(DisableNetworkingBuild)' == 'true'">
+    <DefineConstants>$(DefineConstants);DISABLE_NETWORKING</DefineConstants>
+  </PropertyGroup>
+
+  <!--
+    Permanent release staging rule:
+    - DM builds stage to $(DmUpdateOutputDir)
+    - Player builds (AssemblyName=PlayerCortex) stage to $(PlayerUpdateOutputDir)
+  -->
+  <Target Name="StageReleaseOutputToUpdateFolders" AfterTargets="Build" Condition="'$(Configuration)' == 'Release' and '$(SkipUpdateFolderStaging)' != 'true'">
+    <ItemGroup>
+      <ReleaseBuildFiles Include="$(OutputPath)**\*" Exclude="$(OutputPath)**\*.pdb" />
+    </ItemGroup>
+
+    <MakeDir Condition="'$(AssemblyName)' == 'PlayerCortex'" Directories="$(PlayerUpdateOutputDir)" />
+    <MakeDir Condition="'$(AssemblyName)' != 'PlayerCortex'" Directories="$(DmUpdateOutputDir)" />
+
+    <Copy Condition="'$(AssemblyName)' == 'PlayerCortex'"
+          SourceFiles="@(ReleaseBuildFiles)"
+          DestinationFiles="@(ReleaseBuildFiles->'$(PlayerUpdateOutputDir)\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true"
+          OverwriteReadOnlyFiles="true" />
+
+    <Copy Condition="'$(AssemblyName)' != 'PlayerCortex'"
+          SourceFiles="@(ReleaseBuildFiles)"
+          DestinationFiles="@(ReleaseBuildFiles->'$(DmUpdateOutputDir)\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true"
+          OverwriteReadOnlyFiles="true" />
+  </Target>
+
   <ItemGroup>
-    <Compile Remove="bin\**\*.cs;obj\**\*.cs;artifacts\**\*.cs" />
+    <Compile Remove="bin\**\*.cs;artifacts\**\*.cs" />
     <EmbeddedResource Remove="bin\**\*;obj\**\*;artifacts\**\*" />
     <None Remove="bin\**\*;obj\**\*;artifacts\**\*" />
     <Page Remove="artifacts\**\*.xaml" />
@@ -26,17 +62,54 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="CHANGELOG.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="..\Assets\Class Abilities\Class Abilities.xlsx">
+      <Link>Assets\Class Abilities\Class Abilities.xlsx</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="..\data\rulesets\**\*">
+      <Link>data\rulesets\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="..\data\rulesets\overlays\players_option.json">
+      <Link>data\rulesets\overlays\players_option.json</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="..\data\rulesets\monsters.json">
+      <Link>data\rulesets\monsters.json</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="..\data\rulesets\spells.json">
+      <Link>data\rulesets\spells.json</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
     <Content Include="..\Assets\Nonweapon Proficiencies\**\*">
       <Link>Assets\Nonweapon Proficiencies\%(RecursiveDir)%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
     <Content Include="..\Assets\Core Rules\WEBHELP\SP\**\*">
       <Link>Assets\Core Rules\WEBHELP\SP\%(RecursiveDir)%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
     <Content Include="..\Assets\Class Abilities\**\*">
       <Link>Assets\Class Abilities\%(RecursiveDir)%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="..\Assets\Spells\**\*">
+      <Link>Assets\Spells\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
     <Resource Include="..\Assets\Icons\DM Codex Icon.png">
       <Link>Resources\DmSplash.png</Link>
@@ -50,5 +123,21 @@
     <PackageReference Include="ClosedXML" Version="0.104.1" />
     <PackageReference Include="UglyToad.PdfPig" Version="1.7.0-custom-5" />
   </ItemGroup>
+
+  <ItemGroup>
+    <RequiredRuntimePayload Include="..\Assets\Class Abilities\**\*">
+      <RelativeTargetPath>Assets\Class Abilities\%(RecursiveDir)%(Filename)%(Extension)</RelativeTargetPath>
+    </RequiredRuntimePayload>
+    <RequiredRuntimePayload Include="..\data\rulesets\**\*">
+      <RelativeTargetPath>data\rulesets\%(RecursiveDir)%(Filename)%(Extension)</RelativeTargetPath>
+    </RequiredRuntimePayload>
+  </ItemGroup>
+
+  <Target Name="CopyRequiredRuntimePayload" AfterTargets="Publish">
+    <Copy SourceFiles="@(RequiredRuntimePayload)"
+          DestinationFiles="@(RequiredRuntimePayload->'$(PublishDir)%(RelativeTargetPath)')"
+          SkipUnchangedFiles="true"
+          OverwriteReadOnlyFiles="true" />
+  </Target>
 
 </Project>
