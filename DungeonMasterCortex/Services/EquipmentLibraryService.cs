@@ -132,6 +132,31 @@ public sealed class EquipmentLibraryService
         ("Full plate, full", 1),
     };
 
+    private static readonly (string Id, string Name, int CostGold, double Weight, string Description)[] SupplementalSpellbooks =
+    {
+        (
+            "spellbook_traveling",
+            "Traveling Spellbook",
+            100,
+            3.0,
+            "Wizard spellbook, 50 pages, 12\" x 6\" x 1\"."
+        ),
+        (
+            "spellbook_standard",
+            "Standard Spellbook",
+            500,
+            15.0,
+            "Wizard spellbook, 100 pages, 16\" x 12\" x 6\"."
+        ),
+        (
+            "spellbook_tome",
+            "Spellbook Tome",
+            3000,
+            100.0,
+            "Wizard spellbook tome, 500 pages, 20\" x 16\" x 12\"."
+        ),
+    };
+
     // Canonical armor names that should always be treated as body armor when encountered.
     private static readonly Dictionary<string, int> CanonicalArmorNameToAc = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -644,6 +669,20 @@ public sealed class EquipmentLibraryService
             changed = true;
         }
 
+        // Add core spellbook items so they are purchasable from the equipment catalog.
+        foreach (var spellbook in BuildSupplementalSpellbookEntries())
+        {
+            string nameKey = BuildNameKey(spellbook.Name);
+            bool alreadyExists = migrated.Any(x =>
+                string.Equals(BuildNameKey(x.Name), nameKey, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(CanonicalizeId(x.Id), CanonicalizeId(spellbook.Id), StringComparison.OrdinalIgnoreCase));
+            if (alreadyExists)
+                continue;
+
+            migrated.Add(Normalize(spellbook));
+            changed = true;
+        }
+
         // Add weapons from the AEG Master Weapons Chart (most complete weapon reference).
         foreach (var weapon in BuildWeaponEntriesFromFile(@"Core Rules\WEBHELP\AEG\DD00160.HTM"))
         {
@@ -1059,6 +1098,34 @@ public sealed class EquipmentLibraryService
                 ArmorClassValue = ac,
                 RogueArmorProfile = InferRogueArmorProfile(name, ac),
                 CostGold = 0,
+                CostSilver = 0,
+                CostCopper = 0,
+                IsContainer = false,
+                ContainerMaxItems = 0,
+                ContainerMaxWeight = 0,
+                AllowedContentTags = new List<string>(),
+            };
+        }
+    }
+
+    private static IEnumerable<CustomEquipmentData> BuildSupplementalSpellbookEntries()
+    {
+        foreach (var (id, name, costGold, weight, description) in SupplementalSpellbooks)
+        {
+            yield return new CustomEquipmentData
+            {
+                Id = id,
+                Name = name,
+                Description = description,
+                IsMagical = false,
+                Categories = new List<string> { "Books & Writing", "Arcane Gear" },
+                ItemTags = new List<string> { "spellbook", "wizard", "arcane" },
+                SizeClass = "Medium",
+                Weight = weight,
+                IsArmor = false,
+                IsShield = false,
+                IsWeapon = false,
+                CostGold = costGold,
                 CostSilver = 0,
                 CostCopper = 0,
                 IsContainer = false,

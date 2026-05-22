@@ -1,0 +1,74 @@
+<Window x:Class="DungeonMasterCortex.Views.RoundReviewDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:models="clr-namespace:DungeonMasterCortex.Models"
+        Title="Round Review" Width="480" Height="360"
+        ResizeMode="NoResize" WindowStartupLocation="CenterScreen" ShowInTaskbar="False"
+        Background="{StaticResource BrushPanel}">
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <TextBlock Grid.Row="0" x:Name="RoundLabel" Text="Round 1 Starting" 
+                  Style="{StaticResource TitleText}" Margin="0,0,0,12"/>
+
+        <!-- Combatants List -->
+        <Border Grid.Row="1" Background="{StaticResource BrushCard}"
+                BorderBrush="{StaticResource BrushBorder2}" BorderThickness="1"
+                CornerRadius="2" Padding="0" Margin="0,0,0,12">
+            <ListBox x:Name="CombatantList" Style="{StaticResource DarkListBox}"
+                     BorderThickness="0" Padding="8" Background="Transparent">
+                <ListBox.ItemTemplate>
+                    <DataTemplate DataType="{x:Type models:Combatant}">
+                        <Border Background="Transparent" Padding="6,4">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="44"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="100"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="{Binding Initiative}" 
+                                          Foreground="{StaticResource BrushTitle}" FontWeight="Bold"
+                                          VerticalAlignment="Center" TextAlignment="Center"/>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding DisplayName}" 
+                                              Foreground="{StaticResource BrushText}" FontWeight="Bold"/>
+                                    <TextBlock Text="{Binding DisplayTag}" 
+                                              Foreground="{StaticResource BrushDim}" FontSize="11"/>
+                                </StackPanel>
+                                <TextBlock Grid.Column="2" Text="HP:" 
+                                          Foreground="{StaticResource BrushDim}"
+                                          VerticalAlignment="Center" Margin="8,0,4,0"/>
+                                <TextBlock Grid.Column="2" Text="{Binding HpCurrent}" 
+                                          Foreground="{StaticResource BrushText}"
+                                          VerticalAlignment="Center" Margin="36,0,4,0"/>
+                                <TextBox Grid.Column="4" x:Name="InitiativeBox" 
+                                        Text="{Binding Initiative, Mode=OneWay}"
+                                        Style="{StaticResource DarkTextBox}"
+                                        VerticalAlignment="Center" Padding="4,3"
+                                        Tag="{Binding CombatantId}"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Border>
+
+        <!-- Buttons -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="0" Content="Modify Initiative" Click="BtnEditInitiatives_Click" Style="{StaticResource GoldButton}"/>
+            <Button Grid.Column="2" Content="Start Next Round" Click="BtnStartRound_Click" Style="{StaticResource GoldButton}" IsDefault="True"/>
+        </Grid>
+    </Grid>
+</Window>

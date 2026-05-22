@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
@@ -16,16 +17,28 @@ namespace DungeonMasterCortex.Views;
 
 public class CharacterRosterScreen : UserControl, IScreen
 {
+    private const string AllPartiesFilterLabel = "All Parties";
+    private const string UnassignedPartyFilterLabel = "Unassigned";
+
     private readonly MainWindow _app;
     private readonly DataGrid CharacterGrid;
     private readonly TextBlock RosterStatus;
+    private readonly ComboBox PartyFilterCombo;
+    private readonly ListBox PartyList;
+    private readonly TextBlock SelectedCharacterText;
+    private readonly TextBlock SelectedCharacterDetails;
+    private readonly TextBox PlayerNameEditor;
+    private readonly TextBox PartyNameEditor;
+    private readonly TextBlock PartyStatus;
+    private string _activePartyFilter = string.Empty;
+    private bool _isRefreshingPartyControls;
 
     public UIElement View => this;
 
     public CharacterRosterScreen(MainWindow app)
     {
         _app = app;
-        (CharacterGrid, RosterStatus) = BuildUi();
+        (CharacterGrid, RosterStatus, PartyFilterCombo, PartyList, SelectedCharacterText, SelectedCharacterDetails, PlayerNameEditor, PartyNameEditor, PartyStatus) = BuildUi();
     }
 
     private static int GetDisplayedClassCount(CharacterSheet character)
@@ -59,11 +72,11 @@ public class CharacterRosterScreen : UserControl, IScreen
 
     public void OnEnter()
     {
-        _app.SetBanner("Character Generator  ›  Character Roster");
+        _app.SetBanner("Character Blueprint  ›  Character Roster");
         RefreshGrid();
     }
 
-    private (DataGrid Grid, TextBlock Status) BuildUi()
+    private (DataGrid Grid, TextBlock Status, ComboBox FilterCombo, ListBox PartyList, TextBlock SelectedCharacterText, TextBlock SelectedCharacterDetails, TextBox PlayerEditor, TextBox PartyEditor, TextBlock PartyStatus) BuildUi()
     {
         var root = new Grid { Margin = new Thickness(28, 16, 28, 16) };
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -109,6 +122,7 @@ public class CharacterRosterScreen : UserControl, IScreen
             Margin = new Thickness(0, 6, 0, 0)
         };
         actionsBottom.Children.Add(CreateHeaderButton("UPDATE", 100, BtnLevelUp_Click));
+        actionsBottom.Children.Add(CreateHeaderButton("SPELL TRACKER", 140, BtnSpellTracker_Click));
         actionsBottom.Children.Add(CreateHeaderButton("± CP ADJUST", 120, BtnAwardBonusCp_Click));
         actionsBottom.Children.Add(CreateHeaderButton("◀ HUB", 100, BtnHub_Click, isLast: true));
         Grid.SetRow(actionsBottom, 1);
@@ -128,6 +142,7 @@ public class CharacterRosterScreen : UserControl, IScreen
         content.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         content.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         content.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        content.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         Grid.SetRow(content, 2);
 
         var grid = new DataGrid
@@ -145,6 +160,7 @@ public class CharacterRosterScreen : UserControl, IScreen
         grid.SetResourceReference(ForegroundProperty, "BrushText");
         grid.SetResourceReference(BorderBrushProperty, "BrushBorder2");
         grid.MouseDoubleClick += CharacterGrid_MouseDoubleClick;
+        grid.SelectionChanged += CharacterGrid_SelectionChanged;
         Grid.SetRow(grid, 0);
 
         var headerStyle = new Style(typeof(System.Windows.Controls.Primitives.DataGridColumnHeader));
@@ -191,9 +207,140 @@ public class CharacterRosterScreen : UserControl, IScreen
         Grid.SetRow(bottomActions, 2);
         content.Children.Add(bottomActions);
 
+        var partyPanel = new Border
+        {
+            Margin = new Thickness(0, 12, 0, 0),
+            Padding = new Thickness(10),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(6)
+        };
+        partyPanel.SetResourceReference(BorderBrushProperty, "BrushBorder");
+        partyPanel.SetResourceReference(BackgroundProperty, "BrushInputBg");
+        Grid.SetRow(partyPanel, 3);
+
+        var partyLayout = new Grid();
+        partyLayout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(250) });
+        partyLayout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(14) });
+        partyLayout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        partyLayout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        partyLayout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        partyLayout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+        var partyTitle = new TextBlock
+        {
+            Text = "PARTY MANAGEMENT",
+            FontSize = 16,
+            Margin = new Thickness(0, 0, 0, 6),
+        };
+        partyTitle.SetResourceReference(StyleProperty, "TitleText");
+        Grid.SetColumnSpan(partyTitle, 3);
+        Grid.SetRow(partyTitle, 0);
+        partyLayout.Children.Add(partyTitle);
+
+        var leftPanel = new StackPanel
+        {
+            Orientation = Orientation.Vertical,
+            Margin = new Thickness(0, 0, 0, 0)
+        };
+        Grid.SetColumn(leftPanel, 0);
+        Grid.SetRow(leftPanel, 1);
+        Grid.SetRowSpan(leftPanel, 2);
+
+        leftPanel.Children.Add(new TextBlock { Text = "Party Filter", Margin = new Thickness(0, 0, 0, 2) });
+        var filterCombo = new ComboBox
+        {
+            Margin = new Thickness(0, 0, 0, 8),
+            MinWidth = 220
+        };
+        filterCombo.SelectionChanged += PartyFilterCombo_SelectionChanged;
+        leftPanel.Children.Add(filterCombo);
+
+        leftPanel.Children.Add(new TextBlock { Text = "Known Parties", Margin = new Thickness(0, 0, 0, 2) });
+        var partyList = new ListBox
+        {
+            MinHeight = 74,
+            MaxHeight = 96,
+            Margin = new Thickness(0, 0, 0, 4)
+        };
+        partyList.SelectionChanged += PartyList_SelectionChanged;
+        leftPanel.Children.Add(partyList);
+        partyLayout.Children.Add(leftPanel);
+
+        var rightPanel = new StackPanel
+        {
+            Orientation = Orientation.Vertical,
+            Margin = new Thickness(0, 0, 0, 0)
+        };
+        Grid.SetColumn(rightPanel, 2);
+        Grid.SetRow(rightPanel, 1);
+        Grid.SetRowSpan(rightPanel, 2);
+
+        var selectedCharacterText = new TextBlock
+        {
+            Text = "Selected character: none",
+            Margin = new Thickness(0, 0, 0, 6)
+        };
+        selectedCharacterText.SetResourceReference(StyleProperty, "SubtitleText");
+        rightPanel.Children.Add(selectedCharacterText);
+
+        var selectedCharacterDetails = new TextBlock
+        {
+            Text = "Level: -   HP: -   Race: -   Class: -",
+            Margin = new Thickness(0, 0, 0, 10),
+            TextWrapping = TextWrapping.Wrap
+        };
+        selectedCharacterDetails.SetResourceReference(StyleProperty, "SubtitleText");
+        rightPanel.Children.Add(selectedCharacterDetails);
+
+        rightPanel.Children.Add(new TextBlock { Text = "Player Name", Margin = new Thickness(0, 0, 0, 2) });
+        var playerNameEditor = new TextBox
+        {
+            Margin = new Thickness(0, 0, 0, 8),
+            Padding = new Thickness(6, 3, 6, 3)
+        };
+        rightPanel.Children.Add(playerNameEditor);
+
+        rightPanel.Children.Add(new TextBlock { Text = "Party Name", Margin = new Thickness(0, 0, 0, 2) });
+        var partyNameEditor = new TextBox
+        {
+            Margin = new Thickness(0, 0, 0, 8),
+            Padding = new Thickness(6, 3, 6, 3)
+        };
+        rightPanel.Children.Add(partyNameEditor);
+
+        var assignRow = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Margin = new Thickness(0, 0, 0, 8)
+        };
+        assignRow.Children.Add(CreateHeaderButton("ASSIGN TO PARTY", 118, BtnAssignToSelectedParty_Click));
+        assignRow.Children.Add(CreateHeaderButton("APPLY", 84, BtnApplyToCharacter_Click));
+        assignRow.Children.Add(CreateHeaderButton("CLEAR", 84, BtnClearCharacterParty_Click));
+        assignRow.Children.Add(CreateHeaderButton("CREATE", 84, BtnCreateParty_Click));
+        assignRow.Children.Add(CreateHeaderButton("RENAME", 96, BtnRenameSelectedParty_Click));
+        assignRow.Children.Add(CreateHeaderButton("DELETE", 88, BtnDeleteSelectedParty_Click, isLast: true, style: "DangerButton"));
+        rightPanel.Children.Add(assignRow);
+
+        var partyStatus = new TextBlock
+        {
+            Margin = new Thickness(0, 2, 0, 0),
+            TextWrapping = TextWrapping.Wrap,
+        };
+        partyStatus.SetResourceReference(StyleProperty, "SubtitleText");
+        rightPanel.Children.Add(partyStatus);
+        partyLayout.Children.Add(rightPanel);
+
+        partyPanel.Child = partyLayout;
+        content.Children.Add(partyPanel);
+
         root.Children.Add(content);
-        Content = root;
-        return (grid, status);
+        Content = new ScrollViewer
+        {
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+            Content = root
+        };
+        return (grid, status, filterCombo, partyList, selectedCharacterText, selectedCharacterDetails, playerNameEditor, partyNameEditor, partyStatus);
     }
 
     private Button CreateHeaderButton(string content, double width, RoutedEventHandler onClick, bool isLast = false, string style = "GoldButton")
@@ -229,6 +376,20 @@ public class CharacterRosterScreen : UserControl, IScreen
             selectedIndex = selected.SourceIndex;
 
         _app.OpenCharacterSheets(selectedIndex);
+    }
+
+    private void BtnSpellTracker_Click(object sender, RoutedEventArgs e)
+    {
+        if (CharacterGrid.SelectedItem is not CharacterRow selected
+            || selected.SourceIndex < 0
+            || selected.SourceIndex >= _app.Characters.Count)
+        {
+            MessageBox.Show("Select a character in the roster first.", "Spell Tracker",
+                            MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        _app.OpenSpellTracker(selected.SourceIndex);
     }
 
     private void BtnExport_Click(object sender, RoutedEventArgs e)
@@ -377,6 +538,219 @@ public class CharacterRosterScreen : UserControl, IScreen
     }
 
     private void BtnRefresh_Click(object sender, RoutedEventArgs e) => RefreshGrid();
+
+    private void CharacterGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (CharacterGrid.SelectedItem is CharacterRow selected && selected.SourceIndex >= 0 && selected.SourceIndex < _app.Characters.Count)
+        {
+            var character = _app.Characters[selected.SourceIndex];
+            SelectedCharacterText.Text = $"Selected character: {character.Name}";
+            SelectedCharacterDetails.Text = $"Level: {Math.Max(1, character.Level)}   HP: {character.HitPoints}   Race: {(string.IsNullOrWhiteSpace(character.RaceName) ? character.RaceId : character.RaceName)}   Class: {(string.IsNullOrWhiteSpace(character.ClassName) ? character.ClassId : character.ClassName)}";
+            PlayerNameEditor.Text = character.PlayerName ?? string.Empty;
+            PartyNameEditor.Text = character.Party ?? string.Empty;
+            return;
+        }
+
+        SelectedCharacterText.Text = "Selected character: none";
+        SelectedCharacterDetails.Text = "Level: -   HP: -   Race: -   Class: -";
+        PlayerNameEditor.Text = string.Empty;
+        PartyNameEditor.Text = string.Empty;
+    }
+
+    private void PartyFilterCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_isRefreshingPartyControls)
+            return;
+
+        if (PartyFilterCombo.SelectedItem is not string selected)
+            return;
+
+        if (string.Equals(selected, AllPartiesFilterLabel, StringComparison.OrdinalIgnoreCase))
+            _activePartyFilter = string.Empty;
+        else if (string.Equals(selected, UnassignedPartyFilterLabel, StringComparison.OrdinalIgnoreCase))
+            _activePartyFilter = UnassignedPartyFilterLabel;
+        else
+            _activePartyFilter = selected;
+
+        RefreshGrid();
+    }
+
+    private void PartyList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (PartyList.SelectedItem is string selected)
+            PartyNameEditor.Text = selected;
+    }
+
+    private void BtnAssignToSelectedParty_Click(object sender, RoutedEventArgs e)
+    {
+        if (CharacterGrid.SelectedItem is not CharacterRow selected || selected.SourceIndex < 0 || selected.SourceIndex >= _app.Characters.Count)
+        {
+            MessageBox.Show("Select a character in the roster first.", "Party Management", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        if (PartyList.SelectedItem is not string selectedParty || string.IsNullOrWhiteSpace(selectedParty))
+        {
+            MessageBox.Show("Select a party from Known Parties first.", "Party Management", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var character = _app.Characters[selected.SourceIndex];
+        character.Party = selectedParty;
+        character.LastModified = DateTime.Now;
+        character.Revision = Math.Max(1, character.Revision + 1);
+
+        _app.SaveCharacters();
+        RefreshGrid();
+        PartyStatus.Text = $"Assigned {character.Name} to party '{selectedParty}'.";
+    }
+
+    private void BtnApplyToCharacter_Click(object sender, RoutedEventArgs e)
+    {
+        if (CharacterGrid.SelectedItem is not CharacterRow selected || selected.SourceIndex < 0 || selected.SourceIndex >= _app.Characters.Count)
+        {
+            MessageBox.Show("Select a character in the roster first.", "Party Management", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var character = _app.Characters[selected.SourceIndex];
+        string newPlayerName = (PlayerNameEditor.Text ?? string.Empty).Trim();
+        string newPartyName = (PartyNameEditor.Text ?? string.Empty).Trim();
+
+        character.PlayerName = newPlayerName;
+        character.Party = newPartyName;
+        character.LastModified = DateTime.Now;
+        character.Revision = Math.Max(1, character.Revision + 1);
+
+        _app.SaveCharacters();
+        RefreshGrid();
+        PartyStatus.Text = string.IsNullOrWhiteSpace(newPartyName)
+            ? $"Updated {character.Name}. Character is now unassigned."
+            : $"Updated {character.Name}. Assigned to party '{newPartyName}'.";
+    }
+
+    private void BtnClearCharacterParty_Click(object sender, RoutedEventArgs e)
+    {
+        if (CharacterGrid.SelectedItem is not CharacterRow selected || selected.SourceIndex < 0 || selected.SourceIndex >= _app.Characters.Count)
+        {
+            MessageBox.Show("Select a character in the roster first.", "Party Management", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var character = _app.Characters[selected.SourceIndex];
+        character.Party = string.Empty;
+        character.LastModified = DateTime.Now;
+        character.Revision = Math.Max(1, character.Revision + 1);
+
+        _app.SaveCharacters();
+        RefreshGrid();
+        PartyStatus.Text = $"Cleared party assignment for {character.Name}.";
+    }
+
+    private void BtnCreateParty_Click(object sender, RoutedEventArgs e)
+    {
+        string newPartyName = (PartyNameEditor.Text ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(newPartyName))
+        {
+            MessageBox.Show("Enter a party name first.", "Party Management", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        if (CharacterGrid.SelectedItem is not CharacterRow selected || selected.SourceIndex < 0 || selected.SourceIndex >= _app.Characters.Count)
+        {
+            MessageBox.Show("Select a character to seed the new party.", "Party Management", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var character = _app.Characters[selected.SourceIndex];
+        character.Party = newPartyName;
+        character.LastModified = DateTime.Now;
+        character.Revision = Math.Max(1, character.Revision + 1);
+
+        _app.SaveCharacters();
+        _activePartyFilter = newPartyName;
+        RefreshGrid();
+        PartyStatus.Text = $"Created/updated party '{newPartyName}' with {character.Name}.";
+    }
+
+    private void BtnRenameSelectedParty_Click(object sender, RoutedEventArgs e)
+    {
+        if (PartyList.SelectedItem is not string selectedParty || string.IsNullOrWhiteSpace(selectedParty))
+        {
+            MessageBox.Show("Select a party from Known Parties first.", "Party Management", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        string newPartyName = (PartyNameEditor.Text ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(newPartyName))
+        {
+            MessageBox.Show("Enter a new party name.", "Party Management", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        if (string.Equals(selectedParty, newPartyName, StringComparison.OrdinalIgnoreCase))
+        {
+            PartyStatus.Text = "Party name is unchanged.";
+            return;
+        }
+
+        int updatedCount = 0;
+        foreach (var character in _app.Characters)
+        {
+            if (!string.Equals((character.Party ?? string.Empty).Trim(), selectedParty, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            character.Party = newPartyName;
+            character.LastModified = DateTime.Now;
+            character.Revision = Math.Max(1, character.Revision + 1);
+            updatedCount++;
+        }
+
+        if (updatedCount == 0)
+        {
+            PartyStatus.Text = "No members were found for the selected party.";
+            return;
+        }
+
+        _app.SaveCharacters();
+        _activePartyFilter = newPartyName;
+        RefreshGrid();
+        PartyStatus.Text = $"Renamed party '{selectedParty}' to '{newPartyName}' for {updatedCount} character{(updatedCount == 1 ? "" : "s")}.";
+    }
+
+    private void BtnDeleteSelectedParty_Click(object sender, RoutedEventArgs e)
+    {
+        if (PartyList.SelectedItem is not string selectedParty || string.IsNullOrWhiteSpace(selectedParty))
+        {
+            MessageBox.Show("Select a party from Known Parties first.", "Party Management", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var confirm = MessageBox.Show(
+            $"Remove party '{selectedParty}' from all of its members?",
+            "Delete Party",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+        if (confirm != MessageBoxResult.Yes)
+            return;
+
+        int updatedCount = 0;
+        foreach (var character in _app.Characters)
+        {
+            if (!string.Equals((character.Party ?? string.Empty).Trim(), selectedParty, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            character.Party = string.Empty;
+            character.LastModified = DateTime.Now;
+            character.Revision = Math.Max(1, character.Revision + 1);
+            updatedCount++;
+        }
+
+        _app.SaveCharacters();
+        _activePartyFilter = string.Empty;
+        RefreshGrid();
+        PartyStatus.Text = $"Deleted party '{selectedParty}'. Cleared assignment for {updatedCount} character{(updatedCount == 1 ? "" : "s")}.";
+    }
 
     private void CharacterGrid_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
         => DoLevelUp();
@@ -779,11 +1153,18 @@ public class CharacterRosterScreen : UserControl, IScreen
     private void RefreshGrid()
     {
         var rows = new List<CharacterRow>();
+        int sourceIndex = 0;
         foreach (var c in _app.Characters)
         {
+            if (!MatchesActivePartyFilter(c.Party))
+            {
+                sourceIndex++;
+                continue;
+            }
+
             rows.Add(new CharacterRow
             {
-                SourceIndex = rows.Count,
+                SourceIndex = sourceIndex,
                 Name = c.Name,
                 PlayerName = c.PlayerName,
                 Party = c.Party,
@@ -797,12 +1178,60 @@ public class CharacterRosterScreen : UserControl, IScreen
                 Revision = c.Revision,
                 LastModified = c.LastModifiedDisplay,
             });
+
+            sourceIndex++;
         }
 
         CharacterGrid.ItemsSource = rows;
         RosterStatus.Text = rows.Count == 0
-            ? "No characters yet. Click NEW CHARACTER or ADD EXISTING to start."
-            : $"{rows.Count} character{(rows.Count == 1 ? "" : "s")} loaded.";
+            ? "No characters match the current filter."
+            : $"{rows.Count} character{(rows.Count == 1 ? "" : "s")} shown.";
+
+        RefreshPartyControls();
+    }
+
+    private bool MatchesActivePartyFilter(string? partyName)
+    {
+        string normalizedParty = (partyName ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(_activePartyFilter))
+            return true;
+
+        if (string.Equals(_activePartyFilter, UnassignedPartyFilterLabel, StringComparison.OrdinalIgnoreCase))
+            return string.IsNullOrWhiteSpace(normalizedParty);
+
+        return string.Equals(normalizedParty, _activePartyFilter, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void RefreshPartyControls()
+    {
+        _isRefreshingPartyControls = true;
+
+        var knownParties = _app.Characters
+            .Select(x => (x.Party ?? string.Empty).Trim())
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        string selectedParty = PartyList.SelectedItem as string ?? string.Empty;
+        PartyList.ItemsSource = knownParties;
+        if (!string.IsNullOrWhiteSpace(selectedParty) && knownParties.Any(x => string.Equals(x, selectedParty, StringComparison.OrdinalIgnoreCase)))
+            PartyList.SelectedItem = knownParties.First(x => string.Equals(x, selectedParty, StringComparison.OrdinalIgnoreCase));
+
+        string currentFilterLabel = string.IsNullOrWhiteSpace(_activePartyFilter) ? AllPartiesFilterLabel : _activePartyFilter;
+        var filterItems = new List<string> { AllPartiesFilterLabel, UnassignedPartyFilterLabel };
+        filterItems.AddRange(knownParties);
+
+        PartyFilterCombo.ItemsSource = filterItems;
+        if (filterItems.Contains(currentFilterLabel, StringComparer.OrdinalIgnoreCase))
+            PartyFilterCombo.SelectedItem = filterItems.First(x => string.Equals(x, currentFilterLabel, StringComparison.OrdinalIgnoreCase));
+        else
+            PartyFilterCombo.SelectedItem = AllPartiesFilterLabel;
+
+        _isRefreshingPartyControls = false;
+
+        int unassignedCount = _app.Characters.Count(x => string.IsNullOrWhiteSpace((x.Party ?? string.Empty).Trim()));
+        PartyStatus.Text = $"{knownParties.Count} part{(knownParties.Count == 1 ? "y" : "ies")} tracked, {unassignedCount} unassigned character{(unassignedCount == 1 ? "" : "s")}.";
     }
 
     private static bool PromptForExistingCharacterSetup(

@@ -113,9 +113,10 @@
                                    Style="{StaticResource BodyText}" Margin="0,0,0,4"/>
                         <WrapPanel>
                             <RadioButton x:Name="ShowAll" Content="All" GroupName="ShowType"
-                                         IsChecked="True" Checked="ShowType_Changed"
+                                         Checked="ShowType_Changed"
                                          Foreground="{StaticResource BrushText}" Margin="0,0,10,0"/>
                             <RadioButton x:Name="ShowIndividual" Content="Individual" GroupName="ShowType"
+                                         IsChecked="True"
                                          Checked="ShowType_Changed"
                                          Foreground="{StaticResource BrushText}" Margin="0,0,10,0"/>
                             <RadioButton x:Name="ShowTight" Content="Tight Groups" GroupName="ShowType"

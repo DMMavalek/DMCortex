@@ -58,6 +58,7 @@
     <SolidColorBrush x:Key="BrushSel"      Color="{StaticResource ColSel}"/>
     <SolidColorBrush x:Key="BrushSelTxt"   Color="{StaticResource ColSelTxt}"/>
     <SolidColorBrush x:Key="BrushLightGold" Color="{StaticResource ColLightGold}"/>
+    <SolidColorBrush x:Key="BrushGold"     Color="#D4A574"/>
 
     <!-- ═══════════════════════════════════════════
          FONTS
@@ -91,10 +92,12 @@
         <Setter Property="ContentTemplate">
             <Setter.Value>
                 <DataTemplate>
-                    <TextBlock Text="{Binding}"
-                               TextAlignment="Center"
-                               TextWrapping="Wrap"
-                               TextTrimming="CharacterEllipsis"/>
+                    <Viewbox Stretch="Uniform" StretchDirection="DownOnly">
+                        <TextBlock Text="{Binding}"
+                                   TextAlignment="Center"
+                                   TextWrapping="NoWrap"
+                                   TextTrimming="CharacterEllipsis"/>
+                    </Viewbox>
                 </DataTemplate>
             </Setter.Value>
         </Setter>

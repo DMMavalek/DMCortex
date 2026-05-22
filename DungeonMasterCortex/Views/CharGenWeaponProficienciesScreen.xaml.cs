@@ -65,17 +65,17 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
     {
         _app.SetBanner(_app.CharGen.IsLevelUpMode
             ? "Character Section  ›  Level Up  ›  Weapon Proficiencies"
-            : "Character Generator  ›  Weapon Proficiencies");
+            : "Character Blueprint  ›  Weapon Proficiencies");
         _catalog = new CharacterOptionCatalogService().GetCatalog();
         bool isPO = _app.CharGen.CharacterMode == "players_option";
 
         // Step numbering: equipment now sits between weapon proficiencies and review.
-        // Core: step 8 of 10; PO no-wizard: step 10 of 12; PO wizard: step 11 of 13
+        // Core: step 7 of 9; PO no-wizard: step 10 of 12; PO wizard: step 11 of 13
         bool isWizardPO = isPO && string.Equals(_app.CharGen.ClassId, "wizard", StringComparison.OrdinalIgnoreCase);
         bool hasWizardSpecs = _app.Rules.Classes.TryGetValue("wizard", out var wc) && wc.Specializations is { Count: > 0 };
         int stepTotal = isPO
             ? (isWizardPO && hasWizardSpecs ? 13 : 12)
-            : 10;
+            : 9;
         int stepCurrent = stepTotal - 2;
 
         _app.SetNavBar(stepCurrent, stepTotal, "Weapon Proficiencies",

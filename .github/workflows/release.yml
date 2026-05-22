@@ -48,10 +48,30 @@ jobs:
 
       - name: Build Installers
         shell: pwsh
+        env:
+          WINDOWS_SIGNING_CERT_BASE64: ${{ secrets.WINDOWS_SIGNING_CERT_BASE64 }}
+          WINDOWS_SIGNING_CERT_PASSWORD: ${{ secrets.WINDOWS_SIGNING_CERT_PASSWORD }}
         run: |
-          ./build-installers.ps1 `
-            -DmInstallerOutputDir artifacts/github-release/dm `
-            -PlayerInstallerOutputDir artifacts/github-release/player
+          $dmOut = 'artifacts/github-release/dm'
+          $playerOut = 'artifacts/github-release/player'
+
+          if (-not [string]::IsNullOrWhiteSpace($env:WINDOWS_SIGNING_CERT_BASE64) -and -not [string]::IsNullOrWhiteSpace($env:WINDOWS_SIGNING_CERT_PASSWORD)) {
+            New-Item -ItemType Directory -Path artifacts/signing -Force | Out-Null
+            $certPath = 'artifacts/signing/codesign.pfx'
+            [System.IO.File]::WriteAllBytes($certPath, [System.Convert]::FromBase64String($env:WINDOWS_SIGNING_CERT_BASE64))
+
+            ./build-installers.ps1 `
+              -DmInstallerOutputDir $dmOut `
+              -PlayerInstallerOutputDir $playerOut `
+              -SignInstallers `
+              -SigningCertPath $certPath `
+              -SigningCertPassword $env:WINDOWS_SIGNING_CERT_PASSWORD
+          }
+          else {
+            ./build-installers.ps1 `
+              -DmInstallerOutputDir $dmOut `
+              -PlayerInstallerOutputDir $playerOut
+          }
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2

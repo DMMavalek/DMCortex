@@ -55,7 +55,7 @@ public partial class DiceRollerScreen : UserControl, IScreen
 
     public void OnEnter()
     {
-        _app.SetBanner("Character Generator  ›  Dice Roller");
+        _app.SetBanner("Character Blueprint  ›  Dice Roller");
 
         if (string.IsNullOrWhiteSpace(_app.CharGen.Method))
             _app.CharGen.Method = "method_v_4d6_drop_lowest";
@@ -63,6 +63,7 @@ public partial class DiceRollerScreen : UserControl, IScreen
         CmbMethod.SelectedValue = _app.CharGen.Method;
         if (CmbMethod.SelectedIndex < 0) CmbMethod.SelectedIndex = 0;
         MethodDesc.Text = ((RollMethodOption)CmbMethod.SelectedItem).Description;
+        MethodDesc.ToolTip = GetMethodTooltip(CmbMethod.SelectedValue?.ToString() ?? string.Empty);
         RbCoreRules.IsChecked = _app.CharGen.CharacterMode != "players_option";
         RbPlayersOption.IsChecked = _app.CharGen.CharacterMode == "players_option";
         UpdateManualEntryMode();
@@ -83,6 +84,7 @@ public partial class DiceRollerScreen : UserControl, IScreen
     {
         if (CmbMethod.SelectedItem is not RollMethodOption option) return;
         MethodDesc.Text = option.Description;
+        MethodDesc.ToolTip = GetMethodTooltip(option.Id);
         _app.CharGen.Method = option.Id;
         UpdateManualEntryMode();
         StatusText.Text = option.Id == "manual_entry"
@@ -278,16 +280,16 @@ public partial class DiceRollerScreen : UserControl, IScreen
             tokens.RemoveAll(t => t.Id == tokenId);
     }
 
-    private void LoadPool(IEnumerable<int> scores)
+    private void LoadPool(IEnumerable<DungeonMasterCortex.Services.RulesEngine.DiceRollResult> scores)
     {
         _pool.Clear();
         foreach (var key in AbilityOrder) _assigned[key].Clear();
 
         foreach (var score in scores)
-            _pool.Add(new ScoreToken(score));
+            _pool.Add(new ScoreToken(score.Total) { DetailText = score.DetailText });
     }
 
-    private void LoadAssignedInOrder(IEnumerable<int> scores)
+    private void LoadAssignedInOrder(IEnumerable<DungeonMasterCortex.Services.RulesEngine.DiceRollResult> scores)
     {
         _pool.Clear();
         foreach (var key in AbilityOrder) _assigned[key].Clear();
@@ -297,7 +299,7 @@ public partial class DiceRollerScreen : UserControl, IScreen
         {
             if (index >= AbilityOrder.Length) break;
             var ability = AbilityOrder[index++];
-            var token = new ScoreToken(score) { AssignedAbility = ability };
+            var token = new ScoreToken(score.Total) { AssignedAbility = ability, DetailText = score.DetailText };
             _assigned[ability].Add(token);
         }
     }
@@ -314,7 +316,8 @@ public partial class DiceRollerScreen : UserControl, IScreen
         foreach (var key in AbilityOrder)
         {
             _assigned[key].Clear();
-            var token = new ScoreToken(abilities.GetValueOrDefault(key, 10)) { AssignedAbility = key };
+            var value = abilities.GetValueOrDefault(key, 10);
+            var token = new ScoreToken(value) { AssignedAbility = key, DetailText = $"{key.ToUpperInvariant()}: {value}" };
             _assigned[key].Add(token);
         }
 
@@ -531,6 +534,21 @@ public partial class DiceRollerScreen : UserControl, IScreen
 
     private bool IsStrictInOrder() => CmbMethod.SelectedValue?.ToString() == "method_i_3d6_in_order";
 
+    private static string GetMethodTooltip(string methodId)
+    {
+        return methodId switch
+        {
+            "method_v_4d6_drop_lowest" =>
+                "Method V uses 4d6, drops the lowest die, and keeps the best 3. An 18 is rare by design: 1.62% per roll, or about 8.7% chance of seeing at least one 18 across six abilities.",
+            "homebrew_4d6_reroll_1s" =>
+                "This homebrew rerolls any 1s before dropping the lowest die, which raises the average score a little compared with standard 4d6 drop-lowest.",
+            "method_vi_8_plus_7d6" =>
+                "Method VI starts every ability at 8 and then distributes seven d6 rolls. It is not a standard 4d6-drop-lowest method.",
+            _ =>
+                "Hover here for method guidance. The 4d6-drop-lowest method is the standard 'roll 4d6, drop the lowest' approach, where high scores are uncommon but possible.",
+        };
+    }
+
     private int GetAssignedBonus(string ability) => _assigned[ability].Sum(t => t.Value);
 
     private string GetDisplayedAssignedValue(string ability)
@@ -550,6 +568,7 @@ public partial class DiceRollerScreen : UserControl, IScreen
         public Guid Id { get; }
         public int Value { get; }
         public string? AssignedAbility { get; set; }
+        public string DetailText { get; set; } = string.Empty;
 
         public ScoreToken(int value)
         {

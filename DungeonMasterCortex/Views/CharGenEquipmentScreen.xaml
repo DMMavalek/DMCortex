@@ -96,6 +96,8 @@
                         Margin="0,0,0,10" Click="BtnAdd_Click"/>
                 <Button x:Name="BtnEquip" Content="⚔ EQUIP" Style="{StaticResource GoldButton}"
                         Margin="0,0,0,10" Click="BtnEquip_Click" IsEnabled="False"/>
+                <Button x:Name="BtnSetQuantity" Content="SET QTY" Style="{StaticResource GoldButton}"
+                    Margin="0,0,0,10" Click="BtnSetQuantity_Click" IsEnabled="False"/>
                 <Button x:Name="BtnRemove" Content="◀  REMOVE" Style="{StaticResource DarkButton}"
                         Margin="0,0,0,10" Click="BtnRemove_Click"/>
                 <Button x:Name="BtnClear" Content="CLEAR" Style="{StaticResource DarkButton}"

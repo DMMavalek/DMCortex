@@ -16,7 +16,7 @@ public partial class CharGenNameScreen : UserControl, IScreen
 
     public void OnEnter()
     {
-        _app.SetBanner("Character Generator  ›  Name");
+        _app.SetBanner("Character Blueprint  ›  Name");
         bool isPO_ = _app.CharGen.CharacterMode == "players_option";
         _app.SetNavBar(1, isPO_ ? 7 : 6, "Name",
             backAction: () => _app.GoTo("dice_roller", -1),

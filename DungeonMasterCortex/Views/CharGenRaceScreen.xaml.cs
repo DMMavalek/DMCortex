@@ -27,7 +27,7 @@ public partial class CharGenRaceScreen : UserControl, IScreen
         bool isLevelUp = _app.CharGen.IsLevelUpMode;
         _app.SetBanner(isLevelUp
             ? "Character Section  ›  Level Up  ›  Race"
-            : "Character Generator  ›  Race");
+            : "Character Blueprint  ›  Race");
         bool isPO  = _app.CharGen.CharacterMode == "players_option";
         int  total = isPO ? 8 : 7;
         _app.SetNavBar(3, total, "Race",
@@ -95,7 +95,8 @@ public partial class CharGenRaceScreen : UserControl, IScreen
             ? _app.CharGen.SelectedRacialAbilityIds
             : Enumerable.Empty<string>();
         var cp = _app.Rules.BuildRacialAbilityPackage(cpRace.Id, selectedIds);
-        if (cp.budget > 0)
+        bool isPlayersOption = string.Equals(_app.CharGen.CharacterMode, "players_option", System.StringComparison.OrdinalIgnoreCase);
+        if (isPlayersOption && cp.budget > 0)
         {
             CpSummary.Text = $"Remaining CP: {cp.remaining}  (Spent {cp.spent} / {cp.budget})";
             CpSummary.Foreground = new SolidColorBrush(
@@ -106,7 +107,7 @@ public partial class CharGenRaceScreen : UserControl, IScreen
             CpSummary.Text = "";
         }
 
-        if (previewRace.RacialPointBudget > 0)
+        if (isPlayersOption && previewRace.RacialPointBudget > 0)
         {
             var autoCost = previewRace.StructuredAbilities
                 .Where(a => a.AutoGranted)

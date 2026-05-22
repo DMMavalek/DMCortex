@@ -127,7 +127,7 @@ public partial class CharGenClassScreen : UserControl, IScreen
         {
             _app.SetBanner(_app.CharGen.IsLevelUpMode
                 ? "Character Section  ›  Level Up  ›  Class"
-                : "Character Generator  ›  Class");
+                : "Character Blueprint  ›  Class");
             bool isPO = _app.CharGen.CharacterMode == "players_option";
             _app.SetNavBar(5, isPO ? 9 : 8, "Class",
                 backAction: () => _app.GoTo("chargen_subrace", -1),
@@ -379,7 +379,8 @@ public partial class CharGenClassScreen : UserControl, IScreen
         ClassDetailSubtitle.Text = "Selected class details";
 
         // CP budget badge
-        if (cls.ClassPointBudget > 0)
+        if (string.Equals(_app.CharGen.CharacterMode, "players_option", System.StringComparison.OrdinalIgnoreCase)
+            && cls.ClassPointBudget > 0)
         {
             ClassCpBadgeText.Text = $"{cls.ClassPointBudget} CP";
             ClassCpBadge.Visibility = Visibility.Visible;
@@ -639,6 +640,29 @@ public partial class CharGenClassScreen : UserControl, IScreen
         }
 
         _app.CharGen.RecalculateLevelFromExistingExperience();
+
+        // Core Rules: skip the class abilities screen entirely — all abilities are auto-granted.
+        if (!string.Equals(_app.CharGen.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase))
+        {
+            _app.CharGen.SelectedAbilitiesByClass.Clear();
+            foreach (var classId in _app.CharGen.SelectedClassIds)
+            {
+                if (_app.Rules.Classes.TryGetValue(classId, out var cls))
+                {
+                    _app.CharGen.SelectedAbilitiesByClass[classId] = cls.StructuredAbilities
+                        .Where(a => a.AutoGranted)
+                        .Select(a => a.Id)
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+                }
+            }
+            _app.CharGen.SelectedClassAbilityIds = _app.CharGen.SelectedAbilitiesByClass
+                .TryGetValue(_app.CharGen.ClassId, out var classIds)
+                    ? new List<string>(classIds)
+                    : new List<string>();
+            _app.GoTo("chargen_character_options");
+            return;
+        }
 
         _app.GoTo("chargen_class_abilities");
     }

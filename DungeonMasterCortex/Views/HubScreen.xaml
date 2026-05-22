@@ -34,20 +34,13 @@
                                    Margin="0,2,0,0"
                                    Text="Version 1.1.00"/>
                     </StackPanel>
-                    <Button x:Name="BtnCheckUpdates"
-                            Content="CHECK FOR UPDATES"
+                    <Button x:Name="BtnOptions"
+                            Content="OPTIONS"
                             DockPanel.Dock="Right"
                             Style="{StaticResource GoldButton}"
                             Margin="12,0,0,0"
                             Padding="12,4"
-                            Click="BtnCheckUpdates_Click"/>
-                    <Button x:Name="BtnActivate"
-                            Content="ACTIVATE"
-                            DockPanel.Dock="Right"
-                            Style="{StaticResource GoldButton}"
-                            Margin="12,0,0,0"
-                            Padding="12,4"
-                            Click="BtnActivate_Click"/>
+                            Click="BtnOptions_Click"/>
                 </DockPanel>
             </Border>
 
@@ -61,7 +54,32 @@
             <!-- Hub cards -->
             <WrapPanel HorizontalAlignment="Center" Margin="0,0,0,8">
 
-                <!-- Character Generator -->
+                <!-- Session Manager -->
+                <Border x:Name="CardSessions" Style="{StaticResource GoldCard}" Margin="16,0" Width="220">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="⌘" FontSize="32" HorizontalAlignment="Center"
+                                   Foreground="{StaticResource BrushTitle}" Margin="0,0,0,8"/>
+                        <TextBlock Grid.Row="1" Text="SESSION MANAGER"
+                                   Style="{StaticResource TitleText}" FontSize="14"
+                                   HorizontalAlignment="Center" TextWrapping="Wrap"
+                                   TextAlignment="Center" Margin="0,0,0,8"/>
+                        <TextBlock Grid.Row="2" x:Name="TxtSessionCardDescription"
+                                   Text="Host a table session or join one on your local network"
+                                   Style="{StaticResource SubtitleText}"
+                                   TextWrapping="Wrap" TextAlignment="Center"
+                                   Margin="0,0,0,16" VerticalAlignment="Top"/>
+                        <Button Grid.Row="3" Content="OPEN" Style="{StaticResource GoldButton}"
+                                x:Name="BtnSessions" Click="BtnSessions_Click"/>
+                    </Grid>
+                </Border>
+
+                <!-- Character Blueprint -->
                 <Border x:Name="CardDmTools" Style="{StaticResource GoldCard}" Margin="16,0" Width="220">
                     <Grid>
                         <Grid.RowDefinitions>
@@ -72,7 +90,7 @@
                         </Grid.RowDefinitions>
                         <TextBlock Grid.Row="0" Text="⚔" FontSize="32" HorizontalAlignment="Center"
                                    Foreground="{StaticResource BrushTitle}" Margin="0,0,0,8"/>
-                        <TextBlock Grid.Row="1" Text="CHARACTER GENERATOR"
+                        <TextBlock Grid.Row="1" Text="CHARACTER BLUEPRINT"
                                    Style="{StaticResource TitleText}" FontSize="14"
                                    HorizontalAlignment="Center" TextWrapping="Wrap"
                                    TextAlignment="Center" Margin="0,0,0,8"/>

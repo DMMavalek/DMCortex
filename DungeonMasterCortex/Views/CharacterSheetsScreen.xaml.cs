@@ -60,7 +60,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         {
             SheetPanel.Children.Add(new TextBlock
             {
-                Text = "Select a character from the Character Generator roster, then open Character Sheets to generate a player-ready sheet.",
+                Text = "Select a character from the Character Blueprint roster, then open Character Sheets to generate a player-ready sheet.",
                 Style = (Style)FindResource("BodyText"),
                 TextWrapping = TextWrapping.Wrap,
                 Margin = new Thickness(4, 12, 4, 12),
@@ -126,8 +126,70 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         return string.Join("/", Enumerable.Repeat(level.ToString(), classCount));
     }
 
+    private List<string> ResolveTraitNames(CharacterSheet c)
+    {
+        if (c.Traits.Count > 0)
+        {
+            return c.Traits
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        if (c.SelectedTraitIds.Count == 0)
+            return new List<string>();
+
+        var traitById = _app.CharacterOptions.GetCatalog().Traits
+            .ToDictionary(x => x.Id, x => x.Name, StringComparer.OrdinalIgnoreCase);
+
+        return c.SelectedTraitIds
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Select(id => traitById.TryGetValue(id, out var name) ? name : id)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private List<string> ResolveDisadvantageNames(CharacterSheet c)
+    {
+        if (c.Disadvantages.Count > 0)
+        {
+            return c.Disadvantages
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        if (c.SelectedDisadvantageSeverities.Count == 0)
+            return new List<string>();
+
+        var disadvantagesById = _app.CharacterOptions.GetCatalog().Disadvantages
+            .ToDictionary(x => x.Id, x => x, StringComparer.OrdinalIgnoreCase);
+
+        return c.SelectedDisadvantageSeverities
+            .OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(kv =>
+            {
+                if (!disadvantagesById.TryGetValue(kv.Key, out var disadvantage))
+                    return kv.Key;
+
+                bool isSevere = string.Equals(kv.Value, "severe", StringComparison.OrdinalIgnoreCase)
+                    && disadvantage.SevereBonus.HasValue;
+                return $"{disadvantage.Name} [{(isSevere ? "Severe" : "Moderate")}]";
+            })
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
     private string BuildCharacterSheetText(CharacterSheet c)
     {
+        var traitNames = ResolveTraitNames(c);
+        var disadvantageNames = ResolveDisadvantageNames(c);
+        var saves = BuildSavingThrowRows(c);
+
         var lines = new List<string>
         {
             "=== CHARACTER SHEET ===",
@@ -138,11 +200,16 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             $"Base HP: {c.BaseHitPoints}    Base AC: {c.BaseArmorClass}",
             $"Armor Profile: {c.ArmorProfile}    Rogue Armor Profile: {c.RogueSkillArmorProfile}",
             $"Movement: {c.Movement} (base {c.BaseMovement})",
-            $"Unspent CP: {c.UnspentCharacterPoints}    Spent NWP CP: {c.SpentNwpCharacterPoints}    Spent Weapon CP: {c.SpentWeaponCharacterPoints}",
+            $"THAC0: {c.Thac0}",
             $"Unspent Proficiency Choices: {c.UnspentProficiencyChoices}    Unspent Rogue Skill Points: {c.UnspentRogueSkillPoints}",
             string.Empty,
             "=== ABILITIES ===",
         };
+
+        if (string.Equals(c.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase))
+        {
+            lines.Insert(8, $"Unspent CP: {c.UnspentCharacterPoints}    Spent NWP CP: {c.SpentNwpCharacterPoints}    Spent Weapon CP: {c.SpentWeaponCharacterPoints}");
+        }
 
         if (c.Abilities.Count > 0)
         {
@@ -155,11 +222,11 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         }
 
         lines.Add(string.Empty);
-        lines.Add("=== SUB-ABILITIES ===");
-        if (c.SubAbilities.Count > 0)
+        lines.Add("=== SAVING THROWS ===");
+        if (saves.Count > 0)
         {
-            foreach (var kv in c.SubAbilities.OrderBy(k => k.Key, StringComparer.OrdinalIgnoreCase))
-                lines.Add($"{kv.Key}: {kv.Value}");
+            foreach (var save in saves)
+                lines.Add($"{save.Label}: {save.FinalTarget} (base {save.BaseTarget}{(save.Bonus != 0 ? $", bonus {FormatSigned(save.Bonus)}" : string.Empty)})");
         }
         else
         {
@@ -233,8 +300,8 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
 
         lines.Add(string.Empty);
         lines.Add("=== TRAITS / DISADVANTAGES ===");
-        lines.Add(c.Traits.Count > 0 ? "Traits: " + string.Join(", ", c.Traits.OrderBy(x => x, StringComparer.OrdinalIgnoreCase)) : "Traits: (none)");
-        lines.Add(c.Disadvantages.Count > 0 ? "Disadvantages: " + string.Join(", ", c.Disadvantages.OrderBy(x => x, StringComparer.OrdinalIgnoreCase)) : "Disadvantages: (none)");
+        lines.Add(traitNames.Count > 0 ? "Traits: " + string.Join(", ", traitNames) : "Traits: (none)");
+        lines.Add(disadvantageNames.Count > 0 ? "Disadvantages: " + string.Join(", ", disadvantageNames) : "Disadvantages: (none)");
 
         lines.Add(string.Empty);
         lines.Add("=== NOTES ===");
@@ -424,17 +491,16 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             AddKV(p, "Ruleset",    ruleset);
         }));
 
-        // 2. ABILITY SCORES — one block per ability with full sub-ability stats
+        // 2. ABILITY SCORES
         SheetPanel.Children.Add(BuildSection("ABILITY SCORES", true, p =>
         {
-            bool isPO = c.CharacterMode == "players_option";
             bool first = true;
             foreach (string abilityKey in new[] { "str", "dex", "con", "int", "wis", "cha" })
             {
                 if (!c.Abilities.TryGetValue(abilityKey, out int score)) continue;
                 if (!first) p.Children.Add(new Border { Height = 6 });
                 first = false;
-                AddAbilityBlock(p, c, abilityKey, score, isPO);
+                AddAbilityBlock(p, c, abilityKey, score);
             }
         }));
 
@@ -514,7 +580,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             p.Children.Add(tbl);
         }));
 
-        // 5. SAVING THROWS (effective modifiers and calculated target from base 20)
+        // 5. SAVING THROWS (class table target adjusted by bonuses)
         var saves = BuildSavingThrowRows(c);
         if (saves.Count > 0)
         {
@@ -522,7 +588,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             {
                 foreach (var save in saves)
                 {
-                    string value = $"Bonus {FormatSigned(save.Bonus)}   Target@20: {save.AdjustedTargetFrom20}";
+                    string value = $"Target: {save.FinalTarget}   (base {save.BaseTarget}{(save.Bonus != 0 ? $", bonus {FormatSigned(save.Bonus)}" : string.Empty)})";
                     AddKV(p, save.Label, value);
                 }
             }));
@@ -609,34 +675,39 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         }));
 
         // 11. TRAITS & DISADVANTAGES
-        bool hasTraitData = c.Traits.Count > 0 || c.Disadvantages.Count > 0;
+        var traitNames = ResolveTraitNames(c);
+        var disadvantageNames = ResolveDisadvantageNames(c);
+        bool hasTraitData = traitNames.Count > 0 || disadvantageNames.Count > 0;
         SheetPanel.Children.Add(BuildSection("TRAITS & DISADVANTAGES", hasTraitData, p =>
         {
             if (!hasTraitData) { AddItem(p, "(none)"); return; }
-            if (c.Traits.Count > 0)
+            if (traitNames.Count > 0)
             {
                 AddDivider(p, "Traits");
-                foreach (string t in c.Traits.OrderBy(x => x, StringComparer.OrdinalIgnoreCase))
+                foreach (string t in traitNames)
                     AddItem(p, t);
             }
-            if (c.Disadvantages.Count > 0)
+            if (disadvantageNames.Count > 0)
             {
-                if (c.Traits.Count > 0) p.Children.Add(new Border { Height = 4 });
+                if (traitNames.Count > 0) p.Children.Add(new Border { Height = 4 });
                 AddDivider(p, "Disadvantages");
-                foreach (string d in c.Disadvantages.OrderBy(x => x, StringComparer.OrdinalIgnoreCase))
+                foreach (string d in disadvantageNames)
                     AddItem(p, d);
             }
         }));
 
         // 12. RACIAL & CLASS ABILITIES
-        bool hasAbilities = c.StructuredAbilities.Count > 0 || c.RacialAbilities.Count > 0;
+        var unlockedStructuredAbilities = c.StructuredAbilities
+            .Where(ab => RulesEngine.AbilityUnlockLevel(ab) <= Math.Max(1, c.Level))
+            .ToList();
+        bool hasAbilities = unlockedStructuredAbilities.Count > 0 || c.RacialAbilities.Count > 0;
         if (hasAbilities)
         {
             SheetPanel.Children.Add(BuildSection("ABILITIES & SPECIAL POWERS", false, p =>
             {
-                if (c.StructuredAbilities.Count > 0)
+                if (unlockedStructuredAbilities.Count > 0)
                 {
-                    foreach (var ab in c.StructuredAbilities)
+                    foreach (var ab in unlockedStructuredAbilities)
                     {
                         string name = ab.Id.Replace("_", " ");
                         string desc = string.IsNullOrWhiteSpace(ab.Description) ? string.Empty : $": {ab.Description}";
@@ -1057,7 +1128,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         _ => key.ToUpperInvariant(),
     };
 
-    private void AddAbilityBlock(StackPanel parent, CharacterSheet c, string abilityKey, int score, bool isPO)
+    private void AddAbilityBlock(StackPanel parent, CharacterSheet c, string abilityKey, int score)
     {
         string scoreDisplay = score.ToString();
         if (abilityKey == "str" && c.ExceptionalStrength > 0)
@@ -1102,107 +1173,16 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             Child           = headerGrid,
         };
 
-        // ── Sub-ability rows ──────────────────────────────────────────────────
-        var bodyPanel = new StackPanel { Margin = new Thickness(10, 5, 10, 8) };
-
-        string[] subKeys = GetSubAbilityKeys(abilityKey);
-        foreach (string subKey in subKeys)
+        var bodyPanel = new StackPanel { Margin = new Thickness(10, 6, 10, 8) };
+        bodyPanel.Children.Add(new TextBlock
         {
-            int subScore = c.SubAbilities.TryGetValue(subKey, out int sv) ? sv : score;
-            int exStr    = (subKey == "str_muscle" || subKey == "str_stamina") ? c.ExceptionalStrength : 0;
-            string effect = c.SubAbilityEffects.TryGetValue(subKey, out string? fx) && !string.IsNullOrEmpty(fx)
-                ? fx
-                : SubAbilityTables.GetEffect(subKey, subScore, exStr);
-
-            if (string.IsNullOrWhiteSpace(effect)) continue;
-
-            var rowGrid = new Grid { Margin = new Thickness(0, 3, 0, 0) };
-
-            if (isPO)
-            {
-                // PO: label col + score badge col + effects col
-                rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(90)  });
-                rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(36)  });
-                rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-
-                string subScoreDisplay = subScore.ToString();
-                if (subKey == "str_muscle" && exStr > 0) subScoreDisplay = $"{subScore}/{exStr:D2}";
-
-                var lblText = new TextBlock
-                {
-                    Text       = SubAbilityLabel(subKey),
-                    FontFamily = (FontFamily)FindResource("FontBody"),
-                    FontSize   = 12,
-                    FontWeight = FontWeights.SemiBold,
-                    Foreground = (Brush)FindResource("BrushDim"),
-                    VerticalAlignment = VerticalAlignment.Top,
-                };
-                var scoreCell = new Border
-                {
-                    Background   = (Brush)FindResource("BrushInputBg"),
-                    BorderBrush  = (Brush)FindResource("BrushBorder2"),
-                    BorderThickness = new Thickness(1),
-                    CornerRadius = new CornerRadius(2),
-                    Padding      = new Thickness(4, 1, 4, 1),
-                    Margin       = new Thickness(4, 0, 6, 0),
-                    HorizontalAlignment = HorizontalAlignment.Left,
-                    VerticalAlignment   = VerticalAlignment.Top,
-                    Child = new TextBlock
-                    {
-                        Text       = subScoreDisplay,
-                        FontFamily = (FontFamily)FindResource("FontBody"),
-                        FontSize   = 12,
-                        FontWeight = FontWeights.Bold,
-                        Foreground = (Brush)FindResource("BrushTitle"),
-                    },
-                };
-                var fxText = new TextBlock
-                {
-                    Text         = effect,
-                    FontFamily   = (FontFamily)FindResource("FontBody"),
-                    FontSize     = 12,
-                    Foreground   = (Brush)FindResource("BrushText"),
-                    TextWrapping = TextWrapping.Wrap,
-                    VerticalAlignment = VerticalAlignment.Top,
-                };
-                Grid.SetColumn(lblText,   0);
-                Grid.SetColumn(scoreCell, 1);
-                Grid.SetColumn(fxText,    2);
-                rowGrid.Children.Add(lblText);
-                rowGrid.Children.Add(scoreCell);
-                rowGrid.Children.Add(fxText);
-            }
-            else
-            {
-                // Core Rules: label col (category keyword) + effects col
-                rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(90) });
-                rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-
-                var lblText = new TextBlock
-                {
-                    Text       = SubAbilityLabel(subKey),
-                    FontFamily = (FontFamily)FindResource("FontBody"),
-                    FontSize   = 11,
-                    Foreground = (Brush)FindResource("BrushDim"),
-                    VerticalAlignment = VerticalAlignment.Top,
-                };
-                var fxText = new TextBlock
-                {
-                    Text         = effect,
-                    FontFamily   = (FontFamily)FindResource("FontBody"),
-                    FontSize     = 12,
-                    Foreground   = (Brush)FindResource("BrushText"),
-                    TextWrapping = TextWrapping.Wrap,
-                    VerticalAlignment = VerticalAlignment.Top,
-                };
-                Grid.SetColumn(lblText, 0);
-                Grid.SetColumn(fxText,  1);
-                rowGrid.Children.Add(lblText);
-                rowGrid.Children.Add(fxText);
-            }
-
-            bodyPanel.Children.Add(rowGrid);
-        }
+            Text = $"{AbilityFullName(abilityKey)}: {scoreDisplay}",
+            FontFamily = (FontFamily)FindResource("FontBody"),
+            FontSize = 13,
+            FontWeight = FontWeights.SemiBold,
+            Foreground = (Brush)FindResource("BrushText"),
+            TextWrapping = TextWrapping.Wrap,
+        });
 
         // ── Outer card ────────────────────────────────────────────────────────
         var outer = new StackPanel();
@@ -1548,40 +1528,132 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
 
     private static string BuildStatusText(string prefix) => prefix;
 
-    private sealed record SaveRow(string Label, string CategoryKey, int Bonus, int AdjustedTargetFrom20);
+    private sealed record SaveRow(string Label, string CategoryKey, int BaseTarget, int Bonus, int FinalTarget);
+
+    private sealed record SavingThrowCategory(string Key, string Label, string[] BonusKeys);
+
+    private static readonly SavingThrowCategory[] StandardSavingThrowCategories =
+    {
+        new("death_poison", "Paralyzation / Poison / Death Magic", new[] { "death", "poison" }),
+        new("rod_staff_wand", "Rod / Staff / Wand", new[] { "rod_staff_wand" }),
+        new("petrification_polymorph", "Petrification / Polymorph", new[] { "petrification_polymorph" }),
+        new("breath_weapon", "Breath Weapon", new[] { "breath_weapon" }),
+        new("spell", "Spell", new[] { "spell", "magic" }),
+    };
 
     private List<SaveRow> BuildSavingThrowRows(CharacterSheet character)
     {
         var result = new List<SaveRow>();
-        var allKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            "magic",
-            "spell",
-            "poison",
-            "death",
-            "rod_staff_wand",
-            "petrification_polymorph",
-            "breath_weapon",
-        };
 
-        foreach (string key in character.Bonuses.SaveBonuses.Keys)
-        {
-            if (string.Equals(key, "all", StringComparison.OrdinalIgnoreCase))
-                continue;
-            allKeys.Add(key);
-        }
+        int level = Math.Max(1, character.Level);
+        var classIds = (character.ClassIds is { Count: > 0 }
+                ? character.ClassIds
+                : string.IsNullOrWhiteSpace(character.ClassId)
+                    ? new List<string>()
+                    : new List<string> { character.ClassId })
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (classIds.Count == 0)
+            classIds.Add("fighter");
 
-        foreach (string key in allKeys.OrderBy(x => x, StringComparer.OrdinalIgnoreCase))
+        foreach (var category in StandardSavingThrowCategories)
         {
-            int bonus = CombatModifierService.GetSavingThrowBonus(character.Bonuses, key);
-            int adjusted = CombatModifierService.GetAdjustedSavingThrowTarget(20, character.Bonuses, key);
-            if (bonus == 0 && !character.Bonuses.SaveBonuses.ContainsKey("all"))
-                continue;
+            int baseTarget = classIds
+                .Select(classId => GetBaseSavingThrowTarget(classId, level, category.Key))
+                .Min();
 
-            result.Add(new SaveRow(FormatSavingThrowKey($"save_{key}"), key, bonus, adjusted));
+            int bonus = GetBestApplicableSaveBonus(character.Bonuses, category.BonusKeys);
+            int finalTarget = Math.Clamp(baseTarget - bonus, 1, 30);
+            result.Add(new SaveRow(category.Label, category.Key, baseTarget, bonus, finalTarget));
         }
 
         return result;
+    }
+
+    private static int GetBaseSavingThrowTarget(string classId, int level, string categoryKey)
+    {
+        string token = ResolveClassSaveGroup(classId);
+        int band = SaveLevelBand(level, token);
+
+        return token switch
+        {
+            "warrior" => categoryKey switch
+            {
+                "death_poison" => new[] { 14, 13, 11, 10, 8, 7, 5, 4, 3, 2 }[band],
+                "rod_staff_wand" => new[] { 16, 15, 13, 12, 10, 9, 7, 6, 5, 4 }[band],
+                "petrification_polymorph" => new[] { 15, 14, 12, 11, 9, 8, 6, 5, 4, 3 }[band],
+                "breath_weapon" => new[] { 17, 16, 14, 13, 11, 10, 8, 7, 6, 5 }[band],
+                _ => new[] { 17, 16, 14, 13, 11, 10, 8, 7, 6, 5 }[band],
+            },
+            "priest" => categoryKey switch
+            {
+                "death_poison" => new[] { 10, 9, 7, 6, 5, 4, 3 }[band],
+                "rod_staff_wand" => new[] { 14, 13, 11, 10, 9, 8, 7 }[band],
+                "petrification_polymorph" => new[] { 13, 12, 10, 9, 8, 7, 6 }[band],
+                "breath_weapon" => new[] { 16, 15, 13, 12, 11, 10, 9 }[band],
+                _ => new[] { 15, 14, 12, 11, 10, 9, 8 }[band],
+            },
+            "rogue" => categoryKey switch
+            {
+                "death_poison" => new[] { 13, 12, 11, 10, 9 }[band],
+                "rod_staff_wand" => new[] { 14, 12, 10, 8, 6 }[band],
+                "petrification_polymorph" => new[] { 12, 11, 10, 9, 8 }[band],
+                "breath_weapon" => new[] { 16, 15, 14, 13, 12 }[band],
+                _ => new[] { 15, 13, 11, 9, 7 }[band],
+            },
+            _ => categoryKey switch
+            {
+                "death_poison" => new[] { 14, 13, 11, 10 }[band],
+                "rod_staff_wand" => new[] { 11, 9, 7, 5 }[band],
+                "petrification_polymorph" => new[] { 13, 11, 9, 7 }[band],
+                "breath_weapon" => new[] { 15, 13, 11, 9 }[band],
+                _ => new[] { 12, 10, 8, 6 }[band],
+            },
+        };
+    }
+
+    private static int SaveLevelBand(int level, string group)
+    {
+        int clamped = Math.Clamp(level, 1, 20);
+        return group switch
+        {
+            "warrior" => (clamped - 1) / 2,
+            "priest" => (clamped - 1) / 3,
+            "rogue" => (clamped - 1) / 4,
+            _ => (clamped - 1) / 5,
+        };
+    }
+
+    private static string ResolveClassSaveGroup(string classId)
+    {
+        string token = (classId ?? string.Empty).Trim().ToLowerInvariant();
+        return token switch
+        {
+            "fighter" or "paladin" or "ranger" => "warrior",
+            "cleric" or "druid" => "priest",
+            "thief" or "bard" or "rogue" => "rogue",
+            _ => "wizard",
+        };
+    }
+
+    private static int GetBestApplicableSaveBonus(AbilityBonuses bonuses, IEnumerable<string> bonusKeys)
+    {
+        int allBonus = CombatModifierService.GetSavingThrowBonus(bonuses, "all");
+        int best = int.MinValue;
+
+        foreach (var key in bonusKeys)
+        {
+            int withKey = CombatModifierService.GetSavingThrowBonus(bonuses, key);
+            if (withKey > best)
+                best = withKey;
+        }
+
+        if (best == int.MinValue)
+            return allBonus;
+
+        // Each keyed query already includes any "all" entry; keep the strongest applicable bonus path.
+        return Math.Max(allBonus, best);
     }
 
     private static string FormatSigned(int value)
@@ -1946,38 +2018,71 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
 
     private void EnsureSpellbooksInitialized(CharacterSheet character)
     {
+        bool changed = false;
         character.WizardSpellbooks ??= new List<WizardSpellbook>();
 
+        // Sync any spellbook items from the character's inventory first.
+        if (SpellbookUtility.SyncSpellbooksFromInventory(character))
+            changed = true;
+
+        // Only create a generic fallback if inventory sync did not produce any books.
         if (character.WizardSpellbooks.Count == 0)
         {
-            var pages = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            foreach (string spellId in character.WizardSpellbookIds.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct(StringComparer.OrdinalIgnoreCase))
-            {
-                var spell = _app.Rules.Spells.FirstOrDefault(s => string.Equals(s.Id, spellId, StringComparison.OrdinalIgnoreCase));
-                int level = spell is null || !TryParseSpellLevel(spell.Level, out int parsed) ? 1 : parsed;
-                pages[spellId] = RollSpellPages(level);
-            }
-
-            character.WizardSpellbooks.Add(new WizardSpellbook
-            {
-                Name = "Spellbook 1",
-                CapacityPages = 100,
-                SpellPages = pages,
-            });
+            var defaultBook = SpellbookUtility.CreateSpellbook(SpellbookUtility.TYPE_STANDARD, "Spellbook 1");
+            character.WizardSpellbooks.Add(defaultBook);
+            changed = true;
         }
 
         foreach (var book in character.WizardSpellbooks)
         {
             if (string.IsNullOrWhiteSpace(book.Id))
                 book.Id = Guid.NewGuid().ToString("N");
+
+            if (string.IsNullOrWhiteSpace(book.Type))
+                book.Type = SpellbookUtility.TYPE_STANDARD;
+
             if (string.IsNullOrWhiteSpace(book.Name))
                 book.Name = "Spellbook";
-            if (book.CapacityPages <= 0)
-                book.CapacityPages = 100;
+
+            if (SpellbookUtility.TryGetSpellbookInfo(book.Type, out int pages, out double weight, out string dimensions))
+            {
+                if (book.CapacityPages <= 0)
+                    book.CapacityPages = pages;
+                if (book.WeightLbs <= 0)
+                    book.WeightLbs = weight;
+                if (string.IsNullOrWhiteSpace(book.Dimensions))
+                    book.Dimensions = dimensions;
+            }
+
             book.SpellPages ??= new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         }
 
+        character.WizardSpellbookIds ??= new List<string>();
+        foreach (string spellId in character.WizardSpellbookIds.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            bool alreadyTracked = character.WizardSpellbooks.Any(book => book.SpellPages.ContainsKey(spellId));
+            if (alreadyTracked)
+                continue;
+
+            var spell = _app.Rules.Spells.FirstOrDefault(s => string.Equals(s.Id, spellId, StringComparison.OrdinalIgnoreCase));
+            int level = spell is null || !TryParseSpellLevel(spell.Level, out int parsed) ? 1 : parsed;
+            int pages = RollSpellPages(level);
+
+            var targetBook = character.WizardSpellbooks.FirstOrDefault(book => SpellbookUtility.CanAddSpellToBook(book, pages));
+            if (targetBook is null)
+            {
+                targetBook = SpellbookUtility.CreateSpellbook(SpellbookUtility.TYPE_STANDARD, $"Spellbook {character.WizardSpellbooks.Count + 1}");
+                character.WizardSpellbooks.Add(targetBook);
+            }
+
+            targetBook.SpellPages[spellId] = pages;
+            changed = true;
+        }
+
         UpdateLegacyWizardSpellbookIds(character);
+
+        if (changed)
+            _app.SaveCharacters();
     }
 
     private void UpdateLegacyWizardSpellbookIds(CharacterSheet character)
@@ -1998,13 +2103,26 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
 
     private int RollSpellPages(int spellLevel)
     {
-        int level = Math.Max(1, Math.Min(9, spellLevel));
-        return _rng.Next(1, 7) + (level - 1);
+        int level = Math.Clamp(spellLevel, 0, 9);
+        var range = SpellbookUtility.GetPageRange(level);
+        return _rng.Next(range.Min, range.Max + 1);
     }
 
     private static bool TryParseSpellLevel(string? levelText, out int level)
     {
-        return int.TryParse(levelText?.Trim(), out level) && level > 0;
+        string text = (levelText ?? string.Empty).Trim();
+        if (text.Equals("cantrip", StringComparison.OrdinalIgnoreCase))
+        {
+            level = 0;
+            return true;
+        }
+
+        var match = Regex.Match(text, "\\d+");
+        if (match.Success && int.TryParse(match.Value, out level))
+            return level >= 0;
+
+        level = 0;
+        return false;
     }
 
     private static string FormatSpellCategory(string category)

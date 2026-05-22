@@ -23,6 +23,9 @@ public partial class CharGenSubraceScreen : UserControl, IScreen
     private List<AbilityListItem> _availableItems = new();
     private List<AbilityListItem> _selectedItems = new();
 
+    private bool IsPlayersOptionMode
+        => string.Equals(_app.CharGen.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase);
+
     public CharGenSubraceScreen(MainWindow app)
     {
         _app = app;
@@ -31,11 +34,15 @@ public partial class CharGenSubraceScreen : UserControl, IScreen
 
     public void OnEnter()
     {
-        _app.SetBanner("Character Generator  ›  Subrace");
-        bool isPO_s = _app.CharGen.CharacterMode == "players_option";
-        _app.SetNavBar(4, isPO_s ? 7 : 6, "Subrace & Abilities",
+        _app.SetBanner("Character Blueprint  ›  Subrace");
+        bool isPO_s = IsPlayersOptionMode;
+        _app.SetNavBar(4, isPO_s ? 7 : 5, "Subrace",
             backAction: () => _app.GoTo("chargen_race"),
             nextAction: Advance);
+
+        // Core Rules: hide the racial ability selection panel — the subrace is fixed and prebuilt.
+        if (RacialAbilityPanel != null)
+            RacialAbilityPanel.Visibility = isPO_s ? Visibility.Visible : Visibility.Collapsed;
 
         var baseRaceId = ResolveBaseRaceId();
         if (string.IsNullOrWhiteSpace(baseRaceId))
@@ -154,20 +161,32 @@ public partial class CharGenSubraceScreen : UserControl, IScreen
 
     private void BuildAbilityChoices(RaceDefinition race)
     {
-        _autoAssignedAbilities = race.StructuredAbilities
-            .Where(a => a.AutoGranted)
-            .OrderBy(a => a.PointCost)
-            .ThenBy(a => a.Description)
-            .ToList();
+        if (IsPlayersOptionMode)
+        {
+            _autoAssignedAbilities = race.StructuredAbilities
+                .Where(a => a.AutoGranted)
+                .OrderBy(a => a.PointCost)
+                .ThenBy(a => a.Description)
+                .ToList();
 
-        _optionalAbilities = race.StructuredAbilities
-            .Where(a => !a.AutoGranted)
-            .OrderBy(a => a.PointCost)
-            .ThenBy(a => a.Description)
-            .ToList();
+            _optionalAbilities = race.StructuredAbilities
+                .Where(a => !a.AutoGranted)
+                .OrderBy(a => a.PointCost)
+                .ThenBy(a => a.Description)
+                .ToList();
+        }
+        else
+        {
+            // Core Rules: racial package is fixed and fully granted.
+            _autoAssignedAbilities = race.StructuredAbilities
+                .OrderBy(a => a.PointCost)
+                .ThenBy(a => a.Description)
+                .ToList();
+            _optionalAbilities = new List<AbilityDefinition>();
+        }
 
         _selectedAbilityIds.Clear();
-        if (IsBasicSubrace(race))
+        if (IsPlayersOptionMode && IsBasicSubrace(race))
         {
             var optionalIds = new HashSet<string>(_optionalAbilities.Select(a => a.Id), StringComparer.OrdinalIgnoreCase);
             foreach (var id in _app.CharGen.SelectedRacialAbilityIds.Where(optionalIds.Contains))
@@ -197,13 +216,16 @@ public partial class CharGenSubraceScreen : UserControl, IScreen
         SelectedAbilityList.ItemsSource = _selectedItems;
     }
 
-    private static AbilityListItem ToAbilityItem(AbilityDefinition a)
+    private AbilityListItem ToAbilityItem(AbilityDefinition a)
     {
         var shortName = ToShortAbilityName(a.Description);
+        string label = IsPlayersOptionMode
+            ? $"{shortName} ({a.PointCost} CP)"
+            : shortName;
         return new AbilityListItem
         {
             Id = a.Id,
-            Label = $"{shortName} ({a.PointCost} CP)",
+            Label = label,
             Description = a.Description,
             IsAutoAssigned = a.AutoGranted,
         };
@@ -220,6 +242,9 @@ public partial class CharGenSubraceScreen : UserControl, IScreen
 
     private void BtnAddAbility_Click(object sender, RoutedEventArgs e)
     {
+        if (!IsPlayersOptionMode)
+            return;
+
         if (_activeSubrace is null) return;
         if (AvailableAbilityList.SelectedItem is not AbilityListItem item) return;
         if (EnsureEditableSubrace()) return;
@@ -230,6 +255,9 @@ public partial class CharGenSubraceScreen : UserControl, IScreen
 
     private void BtnRemoveAbility_Click(object sender, RoutedEventArgs e)
     {
+        if (!IsPlayersOptionMode)
+            return;
+
         if (_activeSubrace is null) return;
         if (SelectedAbilityList.SelectedItem is not AbilityListItem item) return;
         if (EnsureEditableSubrace()) return;
@@ -301,6 +329,15 @@ public partial class CharGenSubraceScreen : UserControl, IScreen
 
     private void RefreshBudgetSummary(RaceDefinition race)
     {
+        if (!IsPlayersOptionMode)
+        {
+            BudgetSummary.Text = "Core";
+            BudgetDetail.Text = "Core Rules: default racial abilities are auto-granted.";
+            BudgetSummary.Foreground = new SolidColorBrush(
+                (Color)ColorConverter.ConvertFromString("#C4A468"));
+            return;
+        }
+
         var selectedIds = _selectedAbilityIds.ToList();
         var package = _app.Rules.BuildRacialAbilityPackage(race.Id, selectedIds);
 
@@ -323,28 +360,37 @@ public partial class CharGenSubraceScreen : UserControl, IScreen
         }
 
         var selectedRace = _subraces[idx];
-        var selectedIds = _selectedAbilityIds.ToList();
+        var selectedIds = IsPlayersOptionMode
+            ? _selectedAbilityIds.ToList()
+            : selectedRace.StructuredAbilities
+                .Where(a => !a.AutoGranted)
+                .Select(a => a.Id)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
 
         var package = _app.Rules.BuildRacialAbilityPackage(selectedRace.Id, selectedIds);
-        if (package.remaining < 0)
+        if (IsPlayersOptionMode)
         {
-            MessageBox.Show(
-                $"Selected racial abilities exceed budget by {-package.remaining} points.",
-                "Racial Point Budget",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
-            return;
-        }
-        if (package.remaining > 5)
-        {
-            MessageBox.Show(
-                $"You can carry over at most 5 racial CP into class abilities.\n\n" +
-                $"Current unspent racial CP: {package.remaining}.\n" +
-                "Spend more racial points before continuing.",
-                "Racial CP Carryover Limit",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
-            return;
+            if (package.remaining < 0)
+            {
+                MessageBox.Show(
+                    $"Selected racial abilities exceed budget by {-package.remaining} points.",
+                    "Racial Point Budget",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+            if (package.remaining > 5)
+            {
+                MessageBox.Show(
+                    $"You can carry over at most 5 racial CP into class abilities.\n\n" +
+                    $"Current unspent racial CP: {package.remaining}.\n" +
+                    "Spend more racial points before continuing.",
+                    "Racial CP Carryover Limit",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
         }
 
         var previousModified = _app.CharGen.ModifiedAbilities != null && _app.CharGen.ModifiedAbilities.Count > 0
@@ -353,7 +399,7 @@ public partial class CharGenSubraceScreen : UserControl, IScreen
 
         _app.CharGen.RaceId = selectedRace.Id;
         _app.CharGen.SelectedRacialAbilityIds = selectedIds;
-        _app.CharGen.RacialCarryoverToClassPoints = package.remaining;
+        _app.CharGen.RacialCarryoverToClassPoints = IsPlayersOptionMode ? package.remaining : 0;
         
         // Apply racial ability modifiers to base ability scores
         _app.CharGen.RacialAbilityModifiers = selectedRace.AbilityModifiers ?? new();

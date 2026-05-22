@@ -1,6 +1,7 @@
 <UserControl x:Class="DungeonMasterCortex.Views.CombatTrackerScreen"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:models="clr-namespace:DungeonMasterCortex.Models"
              Background="{StaticResource BrushPanel}">
     <Grid Margin="28,16">
         <Grid.RowDefinitions>
@@ -23,173 +24,406 @@
 
         <!-- Content -->
         <Grid Grid.Row="2">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="280"/>
-                <ColumnDefinition Width="16"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
             <!-- ── Left panel ── -->
-            <StackPanel Grid.Column="0">
+            <ScrollViewer Grid.Row="0"
+                          MaxHeight="210"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
+                <WrapPanel Margin="0,0,0,6">
+                    <Border Background="{StaticResource BrushCard}"
+                            BorderBrush="{StaticResource BrushBorder2}"
+                            BorderThickness="1"
+                            CornerRadius="2"
+                            Padding="8"
+                            Margin="0,0,8,8"
+                            MinWidth="320">
+                        <StackPanel>
+                            <TextBlock Text="Encounter" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="TxtEncName" Grid.Column="0" Style="{StaticResource DarkTextBox}" Text="New Encounter"/>
+                                <Button x:Name="BtnNewEncounter" Grid.Column="2" Content="NEW" Style="{StaticResource GoldButton}" MinWidth="76" Click="BtnNewEncounter_Click"/>
+                                <Button Grid.Column="4" Content="ROLL INIT" Style="{StaticResource GoldButton}" MinWidth="94" Click="BtnRollInitiative_Click"/>
+                                <Button Grid.Column="6" Content="START COMBAT" Style="{StaticResource GoldButton}" MinWidth="122" Click="BtnStartCombat_Click"/>
+                                <Button Grid.Column="8" Content="NEXT ROUND" Style="{StaticResource GoldButton}" MinWidth="110" Click="BtnNextRound_Click"/>
+                                <Button Grid.Column="10" Content="CAST SPELL" Style="{StaticResource GoldButton}" MinWidth="104" Click="BtnCastSpellQuick_Click"/>
+                                <Button Grid.Column="12" Content="END COMBAT" Style="{StaticResource GoldButton}" MinWidth="110" Click="BtnEndCombat_Click"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
 
-                <TextBlock Text="Encounter" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
-                <TextBox x:Name="TxtEncName" Style="{StaticResource DarkTextBox}"
-                         Text="New Encounter" Margin="0,0,0,6"/>
-                <Button Content="⚔  NEW ENCOUNTER" Style="{StaticResource GoldButton}"
-                        Click="BtnNewEncounter_Click" Margin="0,0,0,16"/>
+                    <Border Background="{StaticResource BrushCard}"
+                            BorderBrush="{StaticResource BrushBorder2}"
+                            BorderThickness="1"
+                            CornerRadius="2"
+                            Padding="8"
+                            Margin="0,0,8,8"
+                            MinWidth="350">
+                        <StackPanel>
+                            <TextBlock Text="Add Party / Character" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <ComboBox x:Name="PartyPicker" Grid.Column="0" Style="{StaticResource DarkComboBox}"/>
+                                <ComboBox x:Name="CharacterPicker" Grid.Column="2" Style="{StaticResource DarkComboBox}" SelectionChanged="CharacterPicker_SelectionChanged"/>
+                            </Grid>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Button Grid.Column="0" Content="ADD PARTY" Style="{StaticResource GoldButton}" Click="BtnAddParty_Click"/>
+                                <Button Grid.Column="2" Content="ADD CHARACTER" Style="{StaticResource GoldButton}" Click="BtnAddCharacter_Click"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
 
-                <Rectangle Height="1" Fill="{StaticResource BrushBorder2}" Margin="0,0,0,12"/>
+                    <Border Background="{StaticResource BrushCard}"
+                            BorderBrush="{StaticResource BrushBorder2}"
+                            BorderThickness="1"
+                            CornerRadius="2"
+                            Padding="8"
+                            Margin="0,0,0,8"
+                            MinWidth="360">
+                        <StackPanel>
+                            <TextBlock Text="Add Monster Group" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="2*"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="70"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="90"/>
+                                </Grid.ColumnDefinitions>
+                                <ComboBox x:Name="MonsterPicker"
+                                          Grid.Column="0"
+                                          Style="{StaticResource DarkComboBox}"
+                                          IsEditable="True"
+                                          IsTextSearchEnabled="True"
+                                          SelectionChanged="MonsterPicker_SelectionChanged"/>
+                                <TextBox x:Name="MonsterQtyBox" Grid.Column="2" Style="{StaticResource DarkTextBox}" Text="1"/>
+                                <TextBox x:Name="MonsterAttackPatternBox" Grid.Column="4" Style="{StaticResource DarkTextBox}" Text="1"/>
+                            </Grid>
+                            <Button Content="ADD MONSTER GROUP" Style="{StaticResource GoldButton}" Click="BtnAddMonsterGroup_Click"/>
+                        </StackPanel>
+                    </Border>
 
-                <TextBlock Text="Add Combatant" Style="{StaticResource LabelText}" Margin="0,0,0,8"/>
+                    <Border Background="{StaticResource BrushCard}"
+                            BorderBrush="{StaticResource BrushBorder2}"
+                            BorderThickness="1"
+                            CornerRadius="2"
+                            Padding="8"
+                            Margin="0,0,0,8"
+                            MinWidth="360">
+                        <StackPanel>
+                            <TextBlock Text="Add NPC" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="2*"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="60"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="NpcNameBox" Grid.Column="0" Style="{StaticResource DarkTextBox}" Text="NPC"/>
+                                <TextBox x:Name="NpcHpBox" Grid.Column="2" Style="{StaticResource DarkTextBox}" Text="10"/>
+                                <TextBox x:Name="NpcAcBox" Grid.Column="4" Style="{StaticResource DarkTextBox}" Text="10"/>
+                                <TextBox x:Name="NpcThac0Box" Grid.Column="6" Style="{StaticResource DarkTextBox}" Text="20"/>
+                            </Grid>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="HP:" Style="{StaticResource SubtitleText}" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="AC:" Style="{StaticResource SubtitleText}" Margin="64,0,4,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="THAC0:" Style="{StaticResource SubtitleText}" Margin="56,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <Button Content="ADD NPC" Style="{StaticResource GoldButton}" Click="BtnAddNpc_Click" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Border>
+                </WrapPanel>
 
-                <TextBlock Text="Name:" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
-                <TextBox x:Name="TxtCombName" Style="{StaticResource DarkTextBox}" Margin="0,0,0,6"/>
+                <Expander Header="Manual Add / Legacy Attack Controls" IsExpanded="False" Margin="0,0,0,6" Visibility="Collapsed">
+                    <StackPanel Margin="6,6,6,0">
+                        <TextBlock Text="Add Combatant" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="110"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="TxtCombName" Grid.Column="0" Style="{StaticResource DarkTextBox}"/>
+                            <TextBox x:Name="TxtInit" Grid.Column="2" Style="{StaticResource DarkTextBox}"/>
+                            <TextBox x:Name="TxtHp" Grid.Column="4" Style="{StaticResource DarkTextBox}"/>
+                            <Button Grid.Column="6" Content="ADD COMBATANT" Style="{StaticResource GoldButton}" Click="BtnAdd_Click"/>
+                        </Grid>
 
-                <Grid Margin="0,0,0,6">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition/>
-                        <ColumnDefinition Width="10"/>
-                        <ColumnDefinition/>
-                    </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="0">
-                        <TextBlock Text="Initiative:" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
-                        <TextBox x:Name="TxtInit" Style="{StaticResource DarkTextBox}"/>
+                        <TextBlock Text="Attack Controls" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="90"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="90"/>
+                            </Grid.ColumnDefinitions>
+                            <ComboBox x:Name="CombatActionAttackerPicker" Grid.Column="0" Style="{StaticResource DarkComboBox}" SelectionChanged="CombatActionAttackerPicker_SelectionChanged"/>
+                            <ComboBox x:Name="CombatActionTargetPicker" Grid.Column="2" Style="{StaticResource DarkComboBox}" SelectionChanged="CombatActionTargetPicker_SelectionChanged"/>
+                            <Button Grid.Column="4" Content="HIT" Style="{StaticResource GoldButton}" Click="BtnHit_Click"/>
+                            <Button Grid.Column="6" Content="MISS" Style="{StaticResource GoldButton}" Click="BtnMiss_Click"/>
+                        </Grid>
+
+                        <TextBlock x:Name="CombatActionInfo"
+                                   Style="{StaticResource SubtitleText}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,8"
+                                   Text="Select an attacker, assign a target by drag-and-drop or the target picker, then click HIT or MISS."/>
                     </StackPanel>
-                    <StackPanel Grid.Column="2">
-                        <TextBlock Text="HP:" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
-                        <TextBox x:Name="TxtHp" Style="{StaticResource DarkTextBox}"/>
+                </Expander>
+
+                <Expander Header="Advanced Resolver / Enemy Modifiers" IsExpanded="False" Visibility="Collapsed">
+                    <StackPanel Margin="6,6,6,0">
+                        <TextBlock Text="Enemy Modifiers" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <ComboBox x:Name="EnemyModCharacterPicker" Grid.Column="0" Style="{StaticResource DarkComboBox}" SelectionChanged="EnemyModCharacterPicker_SelectionChanged"/>
+                            <ComboBox x:Name="EnemyContextPicker" Grid.Column="2" Style="{StaticResource DarkComboBox}" IsEditable="True" IsTextSearchEnabled="True" SelectionChanged="EnemyContextPicker_SelectionChanged"/>
+                        </Grid>
+                        <CheckBox x:Name="ApplyEnemyDamageBonusCheck"
+                                  Content="Apply enemy damage bonus when using APPLY"
+                                  IsChecked="True"
+                                  Margin="0,0,0,4"
+                                  Foreground="{StaticResource BrushText}"/>
+                        <TextBlock x:Name="EnemyModifierInfo"
+                                   Style="{StaticResource SubtitleText}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,8"
+                                   Text="Select a character and enemy context to preview bonuses."/>
+
+                        <TextBlock Text="Attack Resolver (Monsters/NPCs)" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="70"/>
+                            </Grid.ColumnDefinitions>
+                            <ComboBox x:Name="AttackAttackerPicker" Grid.Column="0" Style="{StaticResource DarkComboBox}" SelectionChanged="AttackAttackerPicker_SelectionChanged"/>
+                            <TextBox x:Name="TxtAttackRoll" Grid.Column="2" Style="{StaticResource DarkTextBox}"/>
+                            <TextBox x:Name="TxtAttackThac0" Grid.Column="4" Style="{StaticResource DarkTextBox}" Text="20"/>
+                            <TextBox x:Name="TxtAttackModifier" Grid.Column="6" Style="{StaticResource DarkTextBox}" Text="0"/>
+                            <TextBox x:Name="TxtTargetAc" Grid.Column="8" Style="{StaticResource DarkTextBox}" Text="10"/>
+                        </Grid>
+
+                        <ComboBox x:Name="AttackTargetCharacterPicker"
+                                  Style="{StaticResource DarkComboBox}"
+                                  Margin="0,0,0,4"
+                                  SelectionChanged="AttackTargetCharacterPicker_SelectionChanged"/>
+
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <CheckBox x:Name="AttackUseAscendingAcCheck"
+                                  Grid.Column="0"
+                                  Content="Use ascending AC mode"
+                                  IsChecked="False"
+                                  Margin="0,0,8,0"
+                                  Foreground="{StaticResource BrushText}"/>
+                            <CheckBox x:Name="AttackIncludeEnemyBonusCheck"
+                                  Grid.Column="1"
+                                  Content="Include enemy-context attack bonus"
+                                  IsChecked="True"
+                                  Foreground="{StaticResource BrushText}"/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Button Grid.Column="0" Content="RESOLVE ATTACK" Style="{StaticResource GoldButton}" Click="BtnResolveAttack_Click"/>
+                            <Button Grid.Column="2" Content="RESOLVE + APPLY DAMAGE" Style="{StaticResource GoldButton}" Click="BtnResolveAndApplyDamage_Click"/>
+                        </Grid>
+
+                        <TextBlock x:Name="AttackResolverInfo"
+                                   Style="{StaticResource SubtitleText}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,6"
+                                   Text="Enter monster/NPC roll and THAC0 to auto-check hit or miss."/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                            <TextBox x:Name="TxtDmg" Style="{StaticResource DarkTextBox}" Width="90" Margin="0,0,8,0"/>
+                            <Button Content="APPLY" Style="{StaticResource GoldButton}" Width="90" Click="BtnDamage_Click"/>
+                        </StackPanel>
+                        <TextBlock Text="(select combatant in list first)" Style="{StaticResource SubtitleText}" Margin="0,0,0,4"/>
+
+                        <TextBlock Text="Spell Actions" Style="{StaticResource LabelText}" Margin="0,8,0,4"/>
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <ComboBox x:Name="SpellCasterPicker"
+                                      Grid.Column="0"
+                                      Style="{StaticResource DarkComboBox}"
+                                      SelectionChanged="SpellCasterPicker_SelectionChanged"
+                                      Loaded="SpellCasterPicker_Loaded"
+                                      IsEditable="True"
+                                      IsTextSearchEnabled="False"
+                                      StaysOpenOnEdit="True"/>
+                            <ComboBox x:Name="SpellTargetPicker"
+                                      Grid.Column="2"
+                                      Style="{StaticResource DarkComboBox}"
+                                      SelectionChanged="SpellTargetPicker_SelectionChanged"
+                                      Loaded="SpellTargetPicker_Loaded"
+                                      IsEditable="True"
+                                      IsTextSearchEnabled="False"
+                                      StaysOpenOnEdit="True"/>
+                        </Grid>
+
+                           <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Button x:Name="BtnLoadSpells" Grid.Column="0" Content="Load Spells from Character" Style="{StaticResource GoldButton}" 
+                                Click="BtnLoadSpells_Click"/>
+                            <Button x:Name="BtnQuickCastActive" Grid.Column="2" Content="QUICK CAST (ACTIVE)" Style="{StaticResource GoldButton}"
+                                Click="BtnQuickCastActive_Click"/>
+                           </Grid>
+
+                        <TextBlock Text="Available Spells:" Style="{StaticResource SubtitleText}" Margin="0,0,0,4"/>
+                        <ListBox x:Name="AvailableSpellsList" Height="80" Margin="0,0,0,8"
+                                Style="{StaticResource DarkListBox}" SelectionChanged="AvailableSpellsList_SelectionChanged">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" Foreground="{StaticResource BrushText}"/>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="80"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="TxtSpellName" Grid.Column="0" Style="{StaticResource DarkTextBox}" ToolTip="Spell/effect name (e.g., Bless, Curse, Fireball)"/>
+                            <TextBox x:Name="TxtSpellDamage" Grid.Column="2" Style="{StaticResource DarkTextBox}" Text="" ToolTip="Damage dice or range (e.g., 6d6, 2-8, 5)"/>
+                            <TextBox x:Name="TxtSpellRounds" Grid.Column="4" Style="{StaticResource DarkTextBox}" Text="3" ToolTip="Duration in rounds for status effects"/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <CheckBox x:Name="ChkAoeMode" Grid.Column="0" Content="AOE Mode" 
+                                     VerticalAlignment="Center" Foreground="{StaticResource BrushText}"
+                                     ToolTip="Check to select multiple targets from a popup"/>
+                            <TextBlock Grid.Column="1" Text="(check for multi-target spells)" 
+                                      Foreground="{StaticResource BrushDim}" FontSize="11"
+                                      VerticalAlignment="Center" Margin="8,0,0,0"/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="180"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="90"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <ComboBox x:Name="SpellSaveModePicker"
+                                      Grid.Column="0"
+                                      Style="{StaticResource DarkComboBox}"
+                                      SelectionChanged="SpellSaveModePicker_SelectionChanged"
+                                      ToolTip="Monster save roll mode"/>
+                            <TextBox x:Name="TxtManualMonsterSave"
+                                     Grid.Column="2"
+                                     Style="{StaticResource DarkTextBox}"
+                                     Text="14"
+                                     ToolTip="Manual monster save target (d20 >= target succeeds)"
+                                     LostFocus="TxtManualMonsterSave_LostFocus"/>
+                            <TextBlock Grid.Column="4"
+                                       Text="save mode"
+                                       Foreground="{StaticResource BrushDim}"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Button Grid.Column="0" Content="CAST SPELL DAMAGE" Style="{StaticResource GoldButton}" Click="BtnCastSpellDamage_Click"/>
+                            <Button Grid.Column="2" Content="APPLY SPELL EFFECT" Style="{StaticResource GoldButton}" Click="BtnApplySpellEffect_Click"/>
+                        </Grid>
+
+                        <TextBlock x:Name="SpellActionInfo"
+                                   Style="{StaticResource SubtitleText}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,4"
+                                   Text="Use this for mid-combat spell damage and timed effects (Bless, Curse, etc.)."/>
                     </StackPanel>
-                </Grid>
-
-                <Button Content="+  ADD COMBATANT" Style="{StaticResource GoldButton}"
-                        Click="BtnAdd_Click" Margin="0,0,0,16"/>
-
-                <Rectangle Height="1" Fill="{StaticResource BrushBorder2}" Margin="0,0,0,12"/>
-
-                <TextBlock Text="Enemy Modifiers" Style="{StaticResource LabelText}" Margin="0,0,0,6"/>
-                <TextBlock Text="Attacker Character:" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
-                <ComboBox x:Name="EnemyModCharacterPicker"
-                          Style="{StaticResource DarkComboBox}"
-                          Margin="0,0,0,6"
-                          SelectionChanged="EnemyModCharacterPicker_SelectionChanged"/>
-
-                <TextBlock Text="Enemy Context:" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
-                <ComboBox x:Name="EnemyContextPicker"
-                          Style="{StaticResource DarkComboBox}"
-                          IsEditable="True"
-                          IsTextSearchEnabled="True"
-                          Margin="0,0,0,6"
-                          SelectionChanged="EnemyContextPicker_SelectionChanged"/>
-
-                <CheckBox x:Name="ApplyEnemyDamageBonusCheck"
-                          Content="Apply enemy damage bonus when using APPLY"
-                          IsChecked="True"
-                          Margin="0,0,0,4"
-                          Foreground="{StaticResource BrushText}"/>
-
-                <TextBlock x:Name="EnemyModifierInfo"
-                           Style="{StaticResource SubtitleText}"
-                           TextWrapping="Wrap"
-                           Margin="0,0,0,12"
-                           Text="Select a character and enemy context to preview bonuses."/>
-
-                <Rectangle Height="1" Fill="{StaticResource BrushBorder2}" Margin="0,0,0,12"/>
-
-                <TextBlock Text="Attack Resolver (Monsters/NPCs)" Style="{StaticResource LabelText}" Margin="0,0,0,6"/>
-
-                <TextBlock Text="Attacker (combatant):" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
-                <ComboBox x:Name="AttackAttackerPicker"
-                          Style="{StaticResource DarkComboBox}"
-                          Margin="0,0,0,6"
-                          SelectionChanged="AttackAttackerPicker_SelectionChanged"/>
-
-                <Grid Margin="0,0,0,6">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition/>
-                        <ColumnDefinition Width="10"/>
-                        <ColumnDefinition/>
-                    </Grid.ColumnDefinitions>
-
-                    <StackPanel Grid.Column="0">
-                        <TextBlock Text="Roll (d20):" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
-                        <TextBox x:Name="TxtAttackRoll" Style="{StaticResource DarkTextBox}"/>
-                    </StackPanel>
-
-                    <StackPanel Grid.Column="2">
-                        <TextBlock Text="THAC0:" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
-                        <TextBox x:Name="TxtAttackThac0" Style="{StaticResource DarkTextBox}" Text="20"/>
-                    </StackPanel>
-                </Grid>
-
-                <Grid Margin="0,0,0,6">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition/>
-                        <ColumnDefinition Width="10"/>
-                        <ColumnDefinition/>
-                    </Grid.ColumnDefinitions>
-
-                    <StackPanel Grid.Column="0">
-                        <TextBlock Text="Attack Mod:" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
-                        <TextBox x:Name="TxtAttackModifier" Style="{StaticResource DarkTextBox}" Text="0"/>
-                    </StackPanel>
-
-                    <StackPanel Grid.Column="2">
-                        <TextBlock Text="Target AC:" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
-                        <TextBox x:Name="TxtTargetAc" Style="{StaticResource DarkTextBox}" Text="10"/>
-                    </StackPanel>
-                </Grid>
-
-                <TextBlock Text="Target Character (optional):" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
-                <ComboBox x:Name="AttackTargetCharacterPicker"
-                          Style="{StaticResource DarkComboBox}"
-                          Margin="0,0,0,6"
-                          SelectionChanged="AttackTargetCharacterPicker_SelectionChanged"/>
-
-                <CheckBox x:Name="AttackUseAscendingAcCheck"
-                      Content="Use ascending AC mode"
-                      IsChecked="False"
-                      Margin="0,0,0,3"
-                      Foreground="{StaticResource BrushText}"/>
-
-                <CheckBox x:Name="AttackIncludeEnemyBonusCheck"
-                      Content="Include enemy-context attack bonus"
-                      IsChecked="True"
-                      Margin="0,0,0,6"
-                      Foreground="{StaticResource BrushText}"/>
-
-                <Button Content="RESOLVE ATTACK" Style="{StaticResource GoldButton}"
-                        Click="BtnResolveAttack_Click" Margin="0,0,0,4"/>
-
-                <Button Content="RESOLVE + APPLY DAMAGE" Style="{StaticResource GoldButton}"
-                    Click="BtnResolveAndApplyDamage_Click" Margin="0,0,0,4"/>
-
-                <TextBlock x:Name="AttackResolverInfo"
-                           Style="{StaticResource SubtitleText}"
-                           TextWrapping="Wrap"
-                           Margin="0,0,0,12"
-                           Text="Enter monster/NPC roll and THAC0 to auto-check hit or miss."/>
-
-                <TextBlock Text="Apply Damage" Style="{StaticResource LabelText}" Margin="0,0,0,6"/>
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                    <TextBox x:Name="TxtDmg" Style="{StaticResource DarkTextBox}"
-                             Width="100" Margin="0,0,8,0"/>
-                    <Button Content="APPLY" Style="{StaticResource GoldButton}"
-                            Width="90" Click="BtnDamage_Click"/>
-                </StackPanel>
-                <TextBlock Text="(select combatant in list first)"
-                           Style="{StaticResource SubtitleText}" Margin="0,0,0,14"/>
-
-                <Button Content="▶  NEXT ROUND" Style="{StaticResource GoldButton}"
-                        Click="BtnNextRound_Click"/>
+                </Expander>
             </StackPanel>
+            </ScrollViewer>
 
             <!-- Divider -->
-            <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource BrushBorder2}"
-                       VerticalAlignment="Stretch"/>
+            <Rectangle Grid.Row="1" Height="1" Fill="{StaticResource BrushBorder2}" Margin="0,10,0,10"/>
 
             <!-- ── Right panel ── -->
-            <Grid Grid.Column="2" Margin="16,0,0,0">
+            <Grid Grid.Row="2">
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
@@ -200,19 +434,254 @@
                            Style="{StaticResource TitleText}" FontSize="15"
                            Margin="0,0,0,8"/>
 
-                <ListBox x:Name="CombatantList" Grid.Row="1"
-                         Style="{StaticResource DarkListBox}"
-                         ItemContainerStyle="{StaticResource DarkListBoxItem}"
-                         FontFamily="Consolas" FontSize="13"/>
+                <Border x:Name="RoundCompleteBanner"
+                        Grid.Row="1"
+                        Background="#3A2E4B1A"
+                        BorderBrush="#D3A84F"
+                        BorderThickness="1"
+                        CornerRadius="2"
+                        Padding="10,5"
+                        Margin="0,0,0,8"
+                        Visibility="Collapsed">
+                    <TextBlock x:Name="RoundCompleteBannerText"
+                               Text="Round complete. Ready for next round."
+                               Foreground="{StaticResource BrushTitle}"
+                               FontWeight="SemiBold"/>
+                </Border>
+
+                <Border x:Name="RoundEndingSoonBanner"
+                        Grid.Row="1"
+                        Background="#3A4B3D1A"
+                        BorderBrush="#9CCF8A"
+                        BorderThickness="1"
+                        CornerRadius="2"
+                        Padding="10,5"
+                        Margin="0,0,0,8"
+                        Visibility="Collapsed">
+                    <TextBlock x:Name="RoundEndingSoonBannerText"
+                               Text="Round ending soon."
+                               Foreground="{StaticResource BrushTitle}"
+                               FontWeight="SemiBold"/>
+                </Border>
+
+                <Grid Grid.Row="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0"
+                            Background="{StaticResource BrushCard}"
+                            BorderBrush="{StaticResource BrushBorder2}"
+                            BorderThickness="1"
+                            CornerRadius="2"
+                            Padding="8,5"
+                            Margin="0,0,0,6">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="44"/>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="1.2*"/>
+                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="60"/>
+                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="140"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Init" Style="{StaticResource SubtitleText}" FontWeight="SemiBold"/>
+                            <TextBlock Grid.Column="1" Text="Combatant" Style="{StaticResource SubtitleText}" FontWeight="SemiBold"/>
+                            <TextBlock Grid.Column="2" Text="Type" Style="{StaticResource SubtitleText}" FontWeight="SemiBold"/>
+                            <TextBlock Grid.Column="3" Text="HP" Style="{StaticResource SubtitleText}" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                            <TextBlock Grid.Column="4" Text="AC" Style="{StaticResource SubtitleText}" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                            <TextBlock Grid.Column="5" Text="THAC0" Style="{StaticResource SubtitleText}" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                            <TextBlock Grid.Column="6" Text="Atk/Rnd" Style="{StaticResource SubtitleText}" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                            <TextBlock Grid.Column="7" Text="Target" Style="{StaticResource SubtitleText}" FontWeight="SemiBold"/>
+                            <TextBlock Grid.Column="8" Text="Attack" Style="{StaticResource SubtitleText}" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+
+                    <ListBox x:Name="CombatantList" Grid.Row="1"
+                             Style="{StaticResource DarkListBox}"
+                             FontFamily="Consolas" FontSize="12"
+                             SelectionChanged="CombatantList_SelectionChanged">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem" BasedOn="{StaticResource DarkListBoxItem}">
+                                <Setter Property="AllowDrop" Value="True"/>
+                                <Setter Property="Padding" Value="0"/>
+                                <Setter Property="Margin" Value="0,0,0,2"/>
+                                <Setter Property="Background" Value="Transparent"/>
+                                <EventSetter Event="PreviewMouseLeftButtonDown" Handler="CombatantItem_PreviewMouseLeftButtonDown"/>
+                                <EventSetter Event="PreviewMouseMove" Handler="CombatantItem_PreviewMouseMove"/>
+                                <EventSetter Event="Drop" Handler="CombatantItem_Drop"/>
+                                <EventSetter Event="DragOver" Handler="CombatantItem_DragOver"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsDead}" Value="True">
+                                        <Setter Property="Opacity" Value="0.68"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate DataType="{x:Type models:Combatant}">
+                                <Border BorderBrush="{StaticResource BrushBorder2}"
+                                        BorderThickness="1"
+                                        CornerRadius="2"
+                                    Padding="6,4"
+                                        Background="{StaticResource BrushCard}">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="{StaticResource BrushCard}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HpCurrent}" Value="0">
+                                                    <Setter Property="Background" Value="#2F5A5A22"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsUnconscious}" Value="True">
+                                                    <Setter Property="Background" Value="#2FFFFF00"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsDead}" Value="True">
+                                                    <Setter Property="Background" Value="#2FFF4444"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsActiveTurn}" Value="True">
+                                                    <Setter Property="Background" Value="#3A2E4B1A"/>
+                                                    <Setter Property="BorderBrush" Value="#D3A84F"/>
+                                                    <Setter Property="BorderThickness" Value="2"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="44"/>
+                                            <ColumnDefinition Width="2*"/>
+                                            <ColumnDefinition Width="1.2*"/>
+                                            <ColumnDefinition Width="70"/>
+                                            <ColumnDefinition Width="60"/>
+                                            <ColumnDefinition Width="70"/>
+                                            <ColumnDefinition Width="70"/>
+                                            <ColumnDefinition Width="2*"/>
+                                            <ColumnDefinition Width="140"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBox Grid.Column="0"
+                                                 Text="{Binding Initiative, UpdateSourceTrigger=PropertyChanged}"
+                                                 HorizontalContentAlignment="Center"
+                                                 VerticalContentAlignment="Center"
+                                                 Style="{StaticResource DarkTextBox}"
+                                                 Margin="2,0,4,0"
+                                                 Tag="{Binding}"
+                                                 LostFocus="RowInitiative_LostFocus"
+                                                 KeyDown="RowInitiative_KeyDown"/>
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding DisplayName}"
+                                                   FontFamily="Segoe UI"
+                                                   FontSize="13"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{StaticResource BrushTitle}"
+                                                   VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="2"
+                                                   Text="{Binding DisplayTag}"
+                                                   Style="{StaticResource SubtitleText}"
+                                                   VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="3"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center">
+                                            <Run Text="{Binding HpCurrent}"/>
+                                            <Run Text="/"/>
+                                            <Run Text="{Binding HpMax}"/>
+                                        </TextBlock>
+                                        <TextBlock Grid.Column="4"
+                                                   Text="{Binding ArmorClass}"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="5"
+                                                   Text="{Binding Thac0Display}"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="6"
+                                                   Text="{Binding AttackDisplay}"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                        <ComboBox Grid.Column="7"
+                                                  Margin="2,0,4,0"
+                                                  MinWidth="110"
+                                                  Style="{StaticResource DarkComboBox}"
+                                                  Tag="{Binding}"
+                                                  IsEnabled="{Binding IsAbleToAct}"
+                                                  IsEditable="True"
+                                                  IsReadOnly="True"
+                                                  Text="{Binding AssignedTargetName, TargetNullValue=No target, FallbackValue=No target}"
+                                                  DisplayMemberPath="DisplayName"
+                                                  Loaded="RowTargetPicker_Loaded"
+                                                  DropDownOpened="RowTargetPicker_DropDownOpened"
+                                                  SelectionChanged="RowTargetPicker_SelectionChanged"/>
+
+                                        <StackPanel Grid.Column="8" Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal">
+                                                <StackPanel.Style>
+                                                    <Style TargetType="StackPanel">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsMonster}" Value="False">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </StackPanel.Style>
+                                                <Button Content="HIT"
+                                                        Width="58"
+                                                        Margin="0,0,6,0"
+                                                        Style="{StaticResource GoldButton}"
+                                                        IsEnabled="{Binding IsAbleToAct}"
+                                                        Click="RowHit_Click"/>
+                                                <Button Content="MISS"
+                                                        Width="58"
+                                                        Style="{StaticResource GoldButton}"
+                                                        IsEnabled="{Binding IsAbleToAct}"
+                                                        Click="RowMiss_Click"/>
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal">
+                                                <StackPanel.Style>
+                                                    <Style TargetType="StackPanel">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsMonster}" Value="True">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </StackPanel.Style>
+                                                <TextBox Width="68"
+                                                         Margin="0,0,6,0"
+                                                         Style="{StaticResource DarkTextBox}"
+                                                         Text="{Binding DamageRollExpression, UpdateSourceTrigger=PropertyChanged}"
+                                                         Tag="{Binding}"
+                                                         LostFocus="RowDamageExpression_LostFocus"
+                                                         ToolTip="Damage roll (e.g., 1d8+1, 2-8, 5)"/>
+                                                <Button Content="ROLL"
+                                                        Width="76"
+                                                        IsEnabled="{Binding IsAbleToAct}"
+                                                        Style="{StaticResource GoldButton}"
+                                                        Click="RowRoll_Click"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
 
                 <!-- Status bar -->
-                <Border Grid.Row="2" Background="{StaticResource BrushCard}"
+                <Border Grid.Row="3" Background="{StaticResource BrushCard}"
                         BorderBrush="{StaticResource BrushBorder2}"
                         BorderThickness="1" CornerRadius="2"
                         Padding="12,6" Margin="0,8,0,0">
                     <TextBlock x:Name="StatusBar"
                                Text="Create an encounter to begin."
-                               Style="{StaticResource SubtitleText}"/>
+                               Style="{StaticResource SubtitleText}"
+                               FontSize="16"
+                               FontWeight="SemiBold"/>
                 </Border>
             </Grid>
         </Grid>

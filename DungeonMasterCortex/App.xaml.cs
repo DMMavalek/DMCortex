@@ -23,11 +23,25 @@ public partial class App : Application
 		base.OnStartup(e);
 		WriteStartupDiagnostics();
 
+		if (TryRedirectFromStagingCopy())
+			return;
+
 		bool isPrimaryInstance;
-		_singleInstanceMutex = new Mutex(true, "Global\\DungeonMasterCortex.SingleInstance", out isPrimaryInstance);
-		if (!isPrimaryInstance)
+		try
 		{
-			MessageBox.Show("Dungeon Master Codex is already running.", "Already Running", MessageBoxButton.OK, MessageBoxImage.Information);
+			// Use a unique mutex name to avoid conflicts
+			string mutexName = $"Global\\DungeonMasterCortex.SingleInstance.{Environment.UserName}";
+			_singleInstanceMutex = new Mutex(true, mutexName, out isPrimaryInstance);
+			if (!isPrimaryInstance)
+			{
+				MessageBox.Show("Dungeon Master Codex is already running.", "Already Running", MessageBoxButton.OK, MessageBoxImage.Information);
+				Current.Shutdown();
+				return;
+			}
+		}
+		catch (Exception ex)
+		{
+			MessageBox.Show($"An error occurred while checking for existing instances: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
 			Current.Shutdown();
 			return;
 		}
@@ -50,6 +64,51 @@ public partial class App : Application
 		ShowSplashAndLaunchMain();
 	}
 
+	private static bool TryRedirectFromStagingCopy()
+	{
+		try
+		{
+			string? processPath = Environment.ProcessPath;
+			if (string.IsNullOrWhiteSpace(processPath)
+				|| processPath.IndexOf("DMC Updates", StringComparison.OrdinalIgnoreCase) < 0)
+			{
+				return false;
+			}
+
+			bool isPlayer = AppUpdateService.GetCurrentEdition() == AppEdition.Player;
+			string programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+			string candidate = isPlayer
+				? Path.Combine(programFiles, "PlayerCodex", "PlayerCortex.exe")
+				: Path.Combine(programFiles, "DMCodex", "DungeonMasterCortex.exe");
+
+			if (!File.Exists(candidate))
+				return false;
+
+			if (string.Equals(candidate, processPath, StringComparison.OrdinalIgnoreCase))
+				return false;
+
+			Process.Start(new ProcessStartInfo
+			{
+				FileName = candidate,
+				WorkingDirectory = Path.GetDirectoryName(candidate) ?? programFiles,
+				UseShellExecute = true,
+			});
+
+			MessageBox.Show(
+				$"A staging copy was launched. Opening installed copy instead:\n\n{candidate}",
+				"Redirecting To Installed App",
+				MessageBoxButton.OK,
+				MessageBoxImage.Information);
+
+			Current?.Shutdown();
+			return true;
+		}
+		catch
+		{
+			return false;
+		}
+	}
+
 	private async void ShowSplashAndLaunchMain()
 	{
 		var splash = BuildSplashWindow();
@@ -61,6 +120,68 @@ public partial class App : Application
 		MainWindow = _mainWindow;
 		splash.Close();
 		_mainWindow.Show();
+		_ = CheckForUpdatesOnStartupAsync(_mainWindow);
+	}
+
+	private static async Task CheckForUpdatesOnStartupAsync(Window? owner)
+	{
+		try
+		{
+			if (owner is MainWindow mainWindow && !mainWindow.CheckForUpdatesOnStartup)
+				return;
+
+			await Task.Delay(TimeSpan.FromSeconds(5));
+
+			if (Current is null || owner is null || !owner.IsVisible)
+				return;
+
+			var updateService = new AppUpdateService();
+			var edition = AppUpdateService.GetCurrentEdition();
+			var remote = await updateService.GetLatestPackageAsync(edition).ConfigureAwait(true);
+			if (remote is null || remote.Version is null)
+				return;
+
+			Version current = AppUpdateService.NormalizeVersion(AppUpdateService.GetCurrentVersion());
+			Version latest = AppUpdateService.NormalizeVersion(remote.Version);
+			if (latest <= current)
+				return;
+
+			var result = ShowMessage(owner,
+				$"Version {AppUpdateService.ToDisplayVersionString(latest)} is available.\n\nInstalled: {AppUpdateService.ToDisplayVersionString(current)}\n\nInstall now?",
+				"Update Available",
+				MessageBoxButton.YesNo,
+				MessageBoxImage.Information);
+
+			if (result != MessageBoxResult.Yes)
+				return;
+
+			if (updateService.TryApplyUpdate(remote, out string message))
+			{
+				ShowMessage(owner, message, "Updater", MessageBoxButton.OK, MessageBoxImage.Information);
+
+				try
+				{
+					owner.Close();
+				}
+				catch
+				{
+					// Ignore close errors during updater handoff.
+				}
+
+				try
+				{
+					Current?.Shutdown();
+				}
+				catch
+				{
+					// Ignore shutdown errors during updater handoff.
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			Debug.WriteLine($"Startup update check skipped: {ex.Message}");
+		}
 	}
 
 	private static Window BuildSplashWindow()
@@ -115,7 +236,7 @@ public partial class App : Application
 			if (latest <= current)
 			{
 				ShowMessage(owner,
-					$"You are already on the latest version.\n\nInstalled: {current.ToString(3)}\nLatest: {latest.ToString(3)}",
+					$"You are already on the latest version.\n\nInstalled: {AppUpdateService.ToDisplayVersionString(current)}\nLatest: {AppUpdateService.ToDisplayVersionString(latest)}",
 					"Check for Updates",
 					MessageBoxButton.OK,
 					MessageBoxImage.Information);
@@ -123,7 +244,7 @@ public partial class App : Application
 			}
 
 			var result = ShowMessage(owner,
-				$"Version {latest.ToString(3)} is available.\n\nInstalled: {current.ToString(3)}\n\nInstall now?",
+				$"Version {AppUpdateService.ToDisplayVersionString(latest)} is available.\n\nInstalled: {AppUpdateService.ToDisplayVersionString(current)}\n\nInstall now?",
 				"Update Available",
 				MessageBoxButton.YesNo,
 				MessageBoxImage.Information);
@@ -200,7 +321,9 @@ public partial class App : Application
 
 	private static void OnTaskSchedulerUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
 	{
-		ShowFatalError("Task", e.Exception);
+		if (!IsBenignTaskException(e.Exception))
+			ShowFatalError("Task", e.Exception);
+
 		e.SetObserved();
 	}
 
@@ -214,6 +337,19 @@ public partial class App : Application
 		sb.AppendLine(ex.StackTrace ?? "(no stack trace)");
 
 		MessageBox.Show(sb.ToString(), "Application Error", MessageBoxButton.OK, MessageBoxImage.Error);
+	}
+
+	private static bool IsBenignTaskException(Exception ex)
+	{
+		if (ex is AggregateException aggregate)
+		{
+			var flattened = aggregate.Flatten();
+			return flattened.InnerExceptions.All(IsBenignTaskException);
+		}
+
+		return ex is OperationCanceledException
+			|| ex is ObjectDisposedException
+			|| ex is System.Net.Sockets.SocketException;
 	}
 
 	protected override void OnExit(ExitEventArgs e)
@@ -237,7 +373,7 @@ public partial class App : Application
 		try
 		{
 			string? processPath = Environment.ProcessPath;
-			string version = AppUpdateService.GetCurrentVersion().ToString(3);
+			string version = AppUpdateService.GetCurrentDisplayVersion();
 			string fileVersion = "(unknown)";
 			if (!string.IsNullOrWhiteSpace(processPath) && File.Exists(processPath))
 			{

@@ -208,6 +208,19 @@ public partial class CharGenWizardSpellsScreen : UserControl, IScreen
         public bool ShowLevelDivider { get; init; }
     }
 
+    private sealed class PhysicalBookSpellItem
+    {
+        public string SpellName { get; init; } = string.Empty;
+        public string PagesText { get; init; } = string.Empty;
+    }
+
+    private sealed class PhysicalBookItem
+    {
+        public WizardSpellbook Book { get; init; } = null!;
+        public string Display { get; init; } = string.Empty;
+        public override string ToString() => Display;
+    }
+
     private List<SpellRow> _availableRows = new();
     private List<SpellRow> _knownRows = new();
     private List<SpellRow> _allAccessibleRows = new();
@@ -234,7 +247,7 @@ public partial class CharGenWizardSpellsScreen : UserControl, IScreen
 
         _app.SetBanner(_app.CharGen.IsLevelUpMode
             ? "Character Section  ›  Level Up  ›  Wizard Spells"
-            : "Character Generator  ›  Wizard Spells");
+            : "Character Blueprint  ›  Wizard Spells");
 
         bool isPO = _app.CharGen.CharacterMode == "players_option";
         bool isWizardPO = isPO && string.Equals(_app.CharGen.ClassId, "wizard", StringComparison.OrdinalIgnoreCase);
@@ -274,6 +287,7 @@ public partial class CharGenWizardSpellsScreen : UserControl, IScreen
         RefreshAvailableList();
         RefreshKnownList();
         RefreshSpellLists();
+        RefreshPhysicalBookSelector();
     }
 
     private void BuildRows()
@@ -501,6 +515,9 @@ public partial class CharGenWizardSpellsScreen : UserControl, IScreen
             ? $"Override applied: {row.Spell.Name} learned (roll {roll} vs {learnChance}%)."
             : $"Learned {row.Spell.Name}: roll {roll} ({source}) vs {learnChance}% chance.";
 
+        // Offer to add the spell to a physical spellbook (with page tracking).
+        TryAddLearnedSpellToSpellbook(row.SpellId, row.Spell.Name, ParseSpellLevel(row.Spell.Level));
+
         RefreshAll();
     }
 
@@ -522,6 +539,176 @@ public partial class CharGenWizardSpellsScreen : UserControl, IScreen
 
         LearnRollResult.Text = $"Removed {row.Spell.Name} from spellbook and named lists.";
         RefreshAll();
+    }
+
+    private CharacterSheet? GetCharacterForPhysicalBooks()
+    {
+        if (!_app.CharGen.IsLevelUpMode) return null;
+        int idx = _app.CharGen.LevelUpCharacterIndex;
+        if (idx < 0 || idx >= _app.Characters.Count) return null;
+        return _app.Characters[idx];
+    }
+
+    private void RefreshPhysicalBookSelector()
+    {
+        var character = GetCharacterForPhysicalBooks();
+        if (character is null)
+        {
+            PhysicalSpellbooksSection.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        // Sync spellbook inventory items → WizardSpellbooks before showing the dropdown.
+        if (SpellbookUtility.SyncSpellbooksFromInventory(character))
+            _app.SaveCharacters();
+
+        PhysicalSpellbooksSection.Visibility = character.WizardSpellbooks.Count > 0
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
+        if (character.WizardSpellbooks.Count == 0)
+            return;
+
+        string? prevName = (CmbPhysicalBook.SelectedItem as PhysicalBookItem)?.Book.Name;
+
+        var items = character.WizardSpellbooks
+            .Select(book =>
+            {
+                int used = book.SpellPages?.Values.Sum() ?? 0;
+                int avail = book.GetAvailablePages();
+                return new PhysicalBookItem
+                {
+                    Book = book,
+                    Display = $"{book.Name} ({book.Type}) — {used}/{book.CapacityPages} pages used"
+                };
+            })
+            .ToList();
+
+        CmbPhysicalBook.ItemsSource = items;
+
+        var restore = items.FirstOrDefault(i =>
+            string.Equals(i.Book.Name, prevName, StringComparison.OrdinalIgnoreCase));
+        CmbPhysicalBook.SelectedItem = restore ?? items.FirstOrDefault();
+    }
+
+    private void RefreshPhysicalBookSpells()
+    {
+        if (CmbPhysicalBook.SelectedItem is not PhysicalBookItem item)
+        {
+            PhysicalBookStats.Text = string.Empty;
+            PhysicalBookSpellList.ItemsSource = null;
+            BtnCopyToBook.IsEnabled = false;
+            return;
+        }
+
+        var book = item.Book;
+        book.SpellPages ??= new Dictionary<string, int>();
+
+        int usedPages = book.SpellPages.Values.Sum();
+        int availPages = book.GetAvailablePages();
+        PhysicalBookStats.Text = $"{usedPages} pages used  ·  {availPages} pages remaining of {book.CapacityPages} total";
+
+        var entries = book.SpellPages
+            .Select(kv =>
+            {
+                string name = _spellsById.TryGetValue(kv.Key, out var s) ? s.Name : kv.Key;
+                return new PhysicalBookSpellItem
+                {
+                    SpellName = name,
+                    PagesText = $"{kv.Value}p"
+                };
+            })
+            .OrderBy(e => e.SpellName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        PhysicalBookSpellList.ItemsSource = entries;
+        BtnCopyToBook.IsEnabled = KnownSpellList.SelectedItem is SpellRow;
+    }
+
+    private void CmbPhysicalBook_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        RefreshPhysicalBookSpells();
+    }
+
+    private void BtnCopyToBook_Click(object sender, RoutedEventArgs e)
+    {
+        if (KnownSpellList.SelectedItem is not SpellRow row)
+            return;
+
+        var character = GetCharacterForPhysicalBooks();
+        if (character is null)
+            return;
+
+        character.WizardSpellbooks ??= new List<WizardSpellbook>();
+        if (character.WizardSpellbooks.Count == 0)
+        {
+            MessageBox.Show("This character has no physical spellbooks.", "Copy to Spellbook",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        bool alreadyIn = character.WizardSpellbooks.Any(b =>
+            b.SpellPages is not null && b.SpellPages.ContainsKey(row.SpellId));
+        if (alreadyIn)
+        {
+            MessageBox.Show($"'{row.Spell.Name}' is already recorded in one of this character's spellbooks.",
+                "Already Recorded", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        int spellLevel = ParseSpellLevel(row.Spell.Level);
+        var dialog = new AddSpellToSpellbookDialog(row.SpellId, row.Spell.Name, spellLevel, character.WizardSpellbooks);
+        dialog.Owner = Window.GetWindow(this);
+        bool? result = dialog.ShowDialog();
+
+        if (result == true && dialog.SelectedBook is not null)
+        {
+            SpellbookUtility.TryAddSpellToBook(dialog.SelectedBook, row.SpellId, dialog.SelectedPageCount);
+            _app.SaveCharacters();
+            RefreshPhysicalBookSelector();
+            RefreshPhysicalBookSpells();
+        }
+    }
+
+    private void TryAddLearnedSpellToSpellbook(string spellId, string spellName, int spellLevel)    {
+        if (!_app.CharGen.IsLevelUpMode)
+            return;
+
+        int idx = _app.CharGen.LevelUpCharacterIndex;
+        if (idx < 0 || idx >= _app.Characters.Count)
+            return;
+
+        var character = _app.Characters[idx];
+        character.WizardSpellbooks ??= new List<WizardSpellbook>();
+
+        if (character.WizardSpellbooks.Count == 0)
+        {
+            var result = MessageBox.Show(
+                $"'{spellName}' was learned but no spellbooks exist. Create a default Standard spellbook?",
+                "Add to Spellbook",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+            if (result == MessageBoxResult.Yes)
+                character.WizardSpellbooks.Add(SpellbookUtility.CreateSpellbook(SpellbookUtility.TYPE_STANDARD));
+            else
+                return;
+        }
+
+        // Check if already in a spellbook
+        bool alreadyInBook = character.WizardSpellbooks.Any(b =>
+            b.SpellPages is not null && b.SpellPages.ContainsKey(spellId));
+        if (alreadyInBook)
+            return;
+
+        var dialog = new AddSpellToSpellbookDialog(spellId, spellName, spellLevel, character.WizardSpellbooks);
+        dialog.Owner = Window.GetWindow(this);
+        bool? dialogResult = dialog.ShowDialog();
+
+        if (dialogResult == true && dialog.SelectedBook is not null)
+        {
+            SpellbookUtility.TryAddSpellToBook(dialog.SelectedBook, spellId, dialog.SelectedPageCount);
+            _app.SaveCharacters();
+        }
     }
 
     private void BtnCreateList_Click(object sender, RoutedEventArgs e)
@@ -636,6 +823,8 @@ public partial class CharGenWizardSpellsScreen : UserControl, IScreen
     {
         BtnUnlearnSpell.IsEnabled = KnownSpellList.SelectedItem is SpellRow;
         BtnAddToList.IsEnabled = !string.IsNullOrWhiteSpace(_activeListName) && KnownSpellList.SelectedItem is SpellRow;
+        BtnCopyToBook.IsEnabled = KnownSpellList.SelectedItem is SpellRow
+                                  && CmbPhysicalBook.SelectedItem is PhysicalBookItem;
     }
 
     private void AvailableSpellList_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)

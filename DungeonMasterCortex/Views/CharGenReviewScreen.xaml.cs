@@ -64,19 +64,20 @@ public partial class CharGenReviewScreen : UserControl, IScreen
     {
         _app.SetBanner(_app.CharGen.IsLevelUpMode
             ? "Character Section  ›  Level Up  ›  Review"
-            : "Character Generator  ›  Review");
+            : "Character Blueprint  ›  Review");
         bool isPO_r = _app.CharGen.CharacterMode == "players_option";
         bool isWizardPO_r = isPO_r && string.Equals(_app.CharGen.ClassId, "wizard", StringComparison.OrdinalIgnoreCase);
         bool hasWizardSpecs_r = _app.Rules.Classes.TryGetValue("wizard", out var _wc_r) && _wc_r.Specializations is { Count: > 0 };
-        int baseReviewStep = isPO_r ? (isWizardPO_r && hasWizardSpecs_r ? 13 : 12) : 10;
+        int baseReviewStep = isPO_r ? (isWizardPO_r && hasWizardSpecs_r ? 13 : 12) : 9;
         bool hasWizardSpellStep = IsWizardCasterInCharGen();
         int reviewStep = hasWizardSpellStep ? baseReviewStep + 1 : baseReviewStep;
         _app.SetNavBar(reviewStep, reviewStep, "Review",
             backAction: () => _app.GoTo(hasWizardSpellStep ? "chargen_wizard_spells" : "chargen_equipment", -1),
-            nextAction: Finalise,
+            nextAction: SafeFinalise,
             nextLabel: "FINISH  ✔");
 
         var cg = _app.CharGen;
+        NormalizeCoreClassAbilitySelections(cg);
         _app.Rules.Races.TryGetValue(cg.RaceId,  out var race);
         _app.Rules.Classes.TryGetValue(cg.ClassId, out var cls);
         var effectiveClassIds = GetEffectiveClassIds(cg);
@@ -129,7 +130,9 @@ public partial class CharGenReviewScreen : UserControl, IScreen
         {
             LevelInput.Visibility          = Visibility.Visible;
             MaxHpAtLevelOneCheck.Visibility = Visibility.Visible;
-            CpPerLevelRow.Visibility       = Visibility.Visible;
+            CpPerLevelRow.Visibility       = string.Equals(cg.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase)
+                ? Visibility.Visible
+                : Visibility.Collapsed;
             LevelUpSummary.Visibility      = Visibility.Collapsed;
 
             if (cg.IsExistingCharacterMode)
@@ -156,6 +159,8 @@ public partial class CharGenReviewScreen : UserControl, IScreen
 
             if (cg.ExistingCpPerLevel > 0)
                 CpPerLevelInput.Text = cg.ExistingCpPerLevel.ToString();
+            if (!string.Equals(cg.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase))
+                CpPerLevelInput.Text = "0";
 
             MaxHpAtLevelOneCheck.IsChecked = true;
         }
@@ -163,7 +168,12 @@ public partial class CharGenReviewScreen : UserControl, IScreen
         _suppressCoreStatsRefresh = false;
 
         var selectedPackage = _app.Rules.BuildRacialAbilityPackage(cg.RaceId, cg.SelectedRacialAbilityIds);
-        var classPackage = _app.Rules.BuildClassAbilityPackage(cg.ClassId, cg.SelectedClassAbilityIds, cg.RacialCarryoverToClassPoints, cg.WizardSpecializationId);
+        var classPackage = _app.Rules.BuildClassAbilityPackage(
+            cg.ClassId,
+            cg.SelectedClassAbilityIds,
+            cg.RacialCarryoverToClassPoints,
+            cg.WizardSpecializationId,
+            Math.Max(1, cg.CharacterLevel));
         SumRacialAbilities.ItemsSource = selectedPackage.selectedAbilities.Count > 0
             ? selectedPackage.selectedAbilities.Select(a => a.Description).ToList()
             : new List<string> { "(No racial abilities selected)" };
@@ -492,6 +502,9 @@ public partial class CharGenReviewScreen : UserControl, IScreen
 
     private int GetConfiguredCpPerLevel()
     {
+        if (!string.Equals(_app.CharGen.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase))
+            return 0;
+
         if (int.TryParse(CpPerLevelInput?.Text, out int cp))
             return Math.Max(0, cp);
         return 0;
@@ -603,7 +616,8 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                 classId,
                 selectedAbilityIds,
                 cg.RacialCarryoverToClassPoints,
-                specializationId);
+                specializationId,
+                Math.Max(1, sheet.Level));
 
             classBudget += classPackage.budget;
             classSpent += classPackage.spent;
@@ -733,6 +747,9 @@ public partial class CharGenReviewScreen : UserControl, IScreen
         => _app.GoTo("character_sheets", 1);
 
     private void BtnFinalise_Click(object sender, RoutedEventArgs e)
+        => SafeFinalise();
+
+    private void SafeFinalise()
     {
         try
         {
@@ -765,6 +782,7 @@ public partial class CharGenReviewScreen : UserControl, IScreen
     private void Finalise()
     {
         var cg = _app.CharGen;
+        NormalizeCoreClassAbilitySelections(cg);
 
         if (!cg.IsLevelUpMode && _app.License.IsDemoMode && _app.Characters.Count >= _app.License.DemoMaxCharacters)
         {
@@ -785,7 +803,9 @@ public partial class CharGenReviewScreen : UserControl, IScreen
         }
         cg.Name = name;
 
-        if (!cg.IsLevelUpMode && !ConfirmCpPerLevelSelection())
+        if (!cg.IsLevelUpMode
+            && string.Equals(cg.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase)
+            && !ConfirmCpPerLevelSelection())
             return;
 
         var issues = _app.Rules.Validate(cg.RaceId, cg.ClassId, cg.Abilities);
@@ -829,29 +849,33 @@ public partial class CharGenReviewScreen : UserControl, IScreen
 
             int pendingHpGain = Math.Max(0, cg.LevelUpPendingHitPointGain);
             existing.ExperiencePoints = Math.Max(0, existing.ExperiencePoints) + Math.Max(0, cg.LevelUpPendingExperienceGain);
-            existing.UnspentCharacterPoints = Math.Max(0, existing.UnspentCharacterPoints) + Math.Max(0, cg.LevelUpPendingCharacterPointGain);
+            if (string.Equals(cg.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase))
+                existing.UnspentCharacterPoints = Math.Max(0, existing.UnspentCharacterPoints) + Math.Max(0, cg.LevelUpPendingCharacterPointGain);
 
             var catalog = _app.CharacterOptions.GetCatalog();
             var nwpDefinitions = catalog.NonweaponProficiencies.ToList();
-            int currentNwpCp = CalculateTotalNwpCp(cg, nwpDefinitions);
-            int baselineNwpCp = CalculateTotalNwpCp(cg.BaselineNonweaponProficiencyIds, cg.BaselineNonweaponProficiencyImprovements, nwpDefinitions);
-
-            var classIdsForWeaponCp = currentClassIds.Count > 0 ? currentClassIds : new List<string> { cg.ClassId };
-            int currentWeaponCp = _app.Rules.GetTotalWeaponProficiencyCpUsed(classIdsForWeaponCp, cg.SelectedWeaponProficiencies);
-            int baselineWeaponCp = _app.Rules.GetTotalWeaponProficiencyCpUsed(classIdsForWeaponCp, cg.BaselineWeaponProficiencies);
-
-            int cpSpentThisCycle = Math.Max(0, currentNwpCp - baselineNwpCp) + Math.Max(0, currentWeaponCp - baselineWeaponCp);
-            if (cpSpentThisCycle > existing.UnspentCharacterPoints)
+            if (string.Equals(cg.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase))
             {
-                MessageBox.Show(
-                    $"Not enough Character Points for this level-up.\n\nSpent this cycle: {cpSpentThisCycle}\nAvailable: {existing.UnspentCharacterPoints}",
-                    "Character Points",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                return;
-            }
+                int currentNwpCp = CalculateTotalNwpCp(cg, nwpDefinitions);
+                int baselineNwpCp = CalculateTotalNwpCp(cg.BaselineNonweaponProficiencyIds, cg.BaselineNonweaponProficiencyImprovements, nwpDefinitions);
 
-            existing.UnspentCharacterPoints -= cpSpentThisCycle;
+                var classIdsForWeaponCp = currentClassIds.Count > 0 ? currentClassIds : new List<string> { cg.ClassId };
+                int currentWeaponCp = _app.Rules.GetTotalWeaponProficiencyCpUsed(classIdsForWeaponCp, cg.SelectedWeaponProficiencies);
+                int baselineWeaponCp = _app.Rules.GetTotalWeaponProficiencyCpUsed(classIdsForWeaponCp, cg.BaselineWeaponProficiencies);
+
+                int cpSpentThisCycle = Math.Max(0, currentNwpCp - baselineNwpCp) + Math.Max(0, currentWeaponCp - baselineWeaponCp);
+                if (cpSpentThisCycle > existing.UnspentCharacterPoints)
+                {
+                    MessageBox.Show(
+                        $"Not enough Character Points for this level-up.\n\nSpent this cycle: {cpSpentThisCycle}\nAvailable: {existing.UnspentCharacterPoints}",
+                        "Character Points",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return;
+                }
+
+                existing.UnspentCharacterPoints -= cpSpentThisCycle;
+            }
 
             var advancement = CharacterProgressionService.ApplyLevelAdvancementFromExperience(existing, applyHitPointProgression: false);
             bool hpIgnored = false;
@@ -1005,7 +1029,25 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                 .ThenBy(x => x.ItemName)
                 .Select(x => x.Quantity > 1 ? $"{x.ItemName} x{x.Quantity}" : x.ItemName)
                 .ToList();
+            existing.Traits = catalog.Traits
+                .Where(x => cg.SelectedTraitIds.Contains(x.Id, StringComparer.OrdinalIgnoreCase))
+                .Select(x => x.Name)
+                .OrderBy(x => x)
+                .ToList();
+            existing.Disadvantages = catalog.Disadvantages
+                .Where(x => cg.SelectedDisadvantageSeverities.ContainsKey(x.Id))
+                .OrderBy(x => x.Name)
+                .Select(x =>
+                {
+                    string severity = cg.SelectedDisadvantageSeverities[x.Id];
+                    bool isSevere = string.Equals(severity, "severe", StringComparison.OrdinalIgnoreCase) && x.SevereBonus.HasValue;
+                    return $"{x.Name} [{(isSevere ? "Severe" : "Moderate")}]";
+                })
+                .ToList();
             CharacterArmorService.RecalculateArmorForCharacter(existing, new EquipmentLibraryService().GetEquipmentLibrary());
+
+            // Ensure wizards have at least one spellbook
+            EnsureWizardHasDefaultSpellbook(existing);
 
             _app.SaveCharacters();
             string completion = advancement.LeveledUp
@@ -1039,8 +1081,6 @@ public partial class CharGenReviewScreen : UserControl, IScreen
             cg.ExceptionalStrength,
             cg.RogueSkillArmorProfile);
 
-        RebuildSheetAbilityStateForSelectedClasses(sheet, cg);
-
         int configuredLevel = GetConfiguredLevel();
         if (cg.IsExistingCharacterMode)
         {
@@ -1072,6 +1112,7 @@ public partial class CharGenReviewScreen : UserControl, IScreen
         bool maxHpAtLevelOne = MaxHpAtLevelOneCheck.IsChecked != false;
         int con = cg.ModifiedAbilities.GetValueOrDefault("con", cg.Abilities.GetValueOrDefault("con", 10));
         sheet.Level = configuredLevel;
+        RebuildSheetAbilityStateForSelectedClasses(sheet, cg);
         sheet.HitPoints = CalculateLevelScaledHitPoints(cg.ClassId, configuredLevel, con, maxHpAtLevelOne, sheet.Bonuses);
         sheet.BaseHitPoints = CalculateLevelScaledHitPoints(cg.ClassId, 1, con, maxHpAtLevelOne, sheet.Bonuses);
         sheet.HitPointGainByLevel.Clear();
@@ -1278,6 +1319,9 @@ public partial class CharGenReviewScreen : UserControl, IScreen
             System.Diagnostics.Debug.WriteLine($"  List '{list.Name}' has {list.SpellIds?.Count ?? 0} spells");
         }
 
+        // Ensure wizards have at least one spellbook
+        EnsureWizardHasDefaultSpellbook(sheet);
+
         _app.Characters.Add(sheet);
         _app.SaveCharacters();
 
@@ -1332,6 +1376,36 @@ public partial class CharGenReviewScreen : UserControl, IScreen
             : new List<string> { cg.ClassId };
     }
 
+    private void NormalizeCoreClassAbilitySelections(CharGenState cg)
+    {
+        if (string.Equals(cg.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase))
+            return;
+
+        var classIds = GetEffectiveClassIds(cg);
+        var byClass = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var classId in classIds)
+        {
+            if (!_app.Rules.Classes.TryGetValue(classId, out var cls))
+                continue;
+
+            byClass[classId] = cls.StructuredAbilities
+                .Where(a => a.AutoGranted)
+                .Select(a => a.Id)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        cg.SelectedAbilitiesByClass = byClass;
+
+        string primaryClassId = !string.IsNullOrWhiteSpace(cg.ClassId)
+            ? cg.ClassId
+            : classIds.FirstOrDefault() ?? string.Empty;
+        cg.SelectedClassAbilityIds = byClass.TryGetValue(primaryClassId, out var primaryIds)
+            ? new List<string>(primaryIds)
+            : new List<string>();
+    }
+
     private string BuildClassDisplayName(IEnumerable<string> classIds, string fallback)
     {
         var names = (classIds ?? Array.Empty<string>())
@@ -1345,6 +1419,9 @@ public partial class CharGenReviewScreen : UserControl, IScreen
 
     private bool ConfirmCpPerLevelSelection()
     {
+        if (!string.Equals(_app.CharGen.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase))
+            return true;
+
         int configuredCp = GetConfiguredCpPerLevel();
         if (configuredCp > 0)
             return true;
@@ -1375,16 +1452,17 @@ public partial class CharGenReviewScreen : UserControl, IScreen
 
     private static string FormatNwpSummary(CharGenState cg, NonweaponProficiencyDefinition proficiency)
     {
-        int cpSpent = cg.SelectedNonweaponProficiencyImprovements.TryGetValue(proficiency.Id, out int cp)
+        bool isPo = string.Equals(cg.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase);
+        int cpSpent = isPo && cg.SelectedNonweaponProficiencyImprovements.TryGetValue(proficiency.Id, out int cp)
             ? Math.Max(0, cp)
             : 0;
         int cpPerPoint = proficiency.CpCost > 0 ? proficiency.CpCost : 1;
         int improvement = cpSpent / Math.Max(1, cpPerPoint);
         int familyScore = GetReviewNwpFamilyScore(cg, proficiency);
-        int target = cg.CharacterMode == "players_option"
+        int target = isPo
             ? Math.Max(0, proficiency.PlayersOptionBaseRating) + GetReviewTable44Modifier(familyScore) + improvement
             : familyScore + proficiency.CheckModifier + improvement;
-        string summary = improvement > 0
+        string summary = isPo && improvement > 0
             ? $"{proficiency.Name} {target} (+{cpSpent} CP)"
             : $"{proficiency.Name} {target}";
 
@@ -1405,10 +1483,14 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                 ? new List<string>()
                 : new List<string> { _app.CharGen.ClassId };
 
-        return classIds.Any(id =>
-            string.Equals(id, "wizard", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(id, "mage", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(id, "illusionist", StringComparison.OrdinalIgnoreCase));
+        return classIds.Any(IsWizardClassId);
+    }
+
+    private static bool IsWizardClassId(string classId)
+    {
+        return string.Equals(classId, "wizard", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(classId, "mage", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(classId, "illusionist", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string FormatLanguageSummary(LanguageSelection language)
@@ -1518,7 +1600,8 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                 classId,
                 selectedAbilityIds,
                 cg.RacialCarryoverToClassPoints,
-                specializationId);
+                specializationId,
+                Math.Max(1, cg.CharacterLevel));
 
             var spheres = cg.SpheresByClass.TryGetValue(classId, out var sp) && sp.Count > 0
                 ? sp
@@ -1635,7 +1718,83 @@ public partial class CharGenReviewScreen : UserControl, IScreen
 
         return added;
     }
+
+    /// <summary>
+    /// Ensures a wizard character has at least one default spellbook.
+    /// If the character is a wizard and has no spellbooks, creates a Standard Spellbook.
+    /// </summary>
+    private void EnsureWizardHasDefaultSpellbook(CharacterSheet sheet)
+    {
+        if (sheet == null)
+            return;
+
+        bool isWizard = IsWizardClassId(sheet.ClassId)
+            || (sheet.ClassIds?.Any(IsWizardClassId) ?? false);
+
+        if (!isWizard)
+            return;
+
+        if (sheet.WizardSpellbooks == null)
+            sheet.WizardSpellbooks = new List<Models.WizardSpellbook>();
+        if (sheet.WizardSpellbookIds == null)
+            sheet.WizardSpellbookIds = new List<string>();
+
+        if (sheet.WizardSpellbooks.Count == 0)
+            sheet.WizardSpellbooks.Add(SpellbookUtility.CreateSpellbook(SpellbookUtility.TYPE_STANDARD, "Spellbook 1"));
+
+        foreach (var book in sheet.WizardSpellbooks)
+        {
+            book.SpellPages ??= new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            if (string.IsNullOrWhiteSpace(book.Type))
+                book.Type = SpellbookUtility.TYPE_STANDARD;
+
+            if (SpellbookUtility.TryGetSpellbookInfo(book.Type, out int pages, out double weight, out string dimensions))
+            {
+                if (book.CapacityPages <= 0)
+                    book.CapacityPages = pages;
+                if (book.WeightLbs <= 0)
+                    book.WeightLbs = weight;
+                if (string.IsNullOrWhiteSpace(book.Dimensions))
+                    book.Dimensions = dimensions;
+            }
+        }
+
+        foreach (string spellId in sheet.WizardSpellbookIds.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            bool alreadyTracked = sheet.WizardSpellbooks.Any(book => book.SpellPages.ContainsKey(spellId));
+            if (alreadyTracked)
+                continue;
+
+            var spell = _app.Rules.Spells.FirstOrDefault(s => string.Equals(s.Id, spellId, StringComparison.OrdinalIgnoreCase));
+            int spellLevel = ParseSpellLevelLoose(spell?.Level);
+            int pages = SpellbookUtility.GetDefaultPageCount(spellLevel);
+
+            var targetBook = sheet.WizardSpellbooks.FirstOrDefault(book => SpellbookUtility.CanAddSpellToBook(book, pages));
+            if (targetBook is null)
+            {
+                targetBook = SpellbookUtility.CreateSpellbook(
+                    SpellbookUtility.TYPE_STANDARD,
+                    $"Spellbook {sheet.WizardSpellbooks.Count + 1}");
+                sheet.WizardSpellbooks.Add(targetBook);
+            }
+
+            targetBook.SpellPages[spellId] = pages;
+        }
+    }
+
+    private static int ParseSpellLevelLoose(string? levelText)
+    {
+        if (string.IsNullOrWhiteSpace(levelText))
+            return 1;
+
+        if (levelText.Equals("Cantrip", StringComparison.OrdinalIgnoreCase))
+            return 0;
+
+        var digits = new string(levelText.Where(char.IsDigit).ToArray());
+        return int.TryParse(digits, out int parsed) ? Math.Max(0, parsed) : 1;
+    }
 }
+
 
 public class MechanicsLineViewModel
 {

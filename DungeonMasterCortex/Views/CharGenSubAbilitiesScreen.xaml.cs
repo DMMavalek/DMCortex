@@ -62,7 +62,7 @@ public partial class CharGenSubAbilitiesScreen : UserControl, IScreen
 
     public void OnEnter()
     {
-        _app.SetBanner("Character Generator  ›  Sub-Ability Scores");
+        _app.SetBanner("Character Blueprint  ›  Sub-Ability Scores");
 
         bool isPO   = _app.CharGen.CharacterMode == "players_option";
         bool isWizardPO = isPO && string.Equals(_app.CharGen.ClassId, "wizard",

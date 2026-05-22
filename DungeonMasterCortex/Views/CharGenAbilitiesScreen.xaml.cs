@@ -23,7 +23,7 @@ public partial class CharGenAbilitiesScreen : UserControl, IScreen
 
     public void OnEnter()
     {
-        _app.SetBanner("Character Generator  ›  Ability Scores");
+        _app.SetBanner("Character Blueprint  ›  Ability Scores");
         bool isPO   = _app.CharGen.CharacterMode == "players_option";
         int  total  = isPO ? 7 : 6;
         _app.SetNavBar(2, total, "Ability Scores",

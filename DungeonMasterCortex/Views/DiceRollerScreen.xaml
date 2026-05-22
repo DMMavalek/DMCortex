@@ -93,6 +93,7 @@
                             <DataTemplate>
                                 <Border Background="{StaticResource BrushBtn}" BorderBrush="{StaticResource BrushBorder}"
                                         BorderThickness="1" CornerRadius="4" Padding="10,6" Margin="4"
+                                                ToolTip="{Binding DetailText}"
                                         PreviewMouseLeftButtonDown="Token_PreviewMouseLeftButtonDown"
                                         PreviewMouseMove="Token_PreviewMouseMove"
                                         Cursor="Hand">
@@ -141,6 +142,7 @@
                                     <DataTemplate>
                                         <Border Background="{StaticResource BrushBtn}" BorderBrush="{StaticResource BrushBorder}"
                                                 BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="2"
+                                                ToolTip="{Binding DetailText}"
                                                 PreviewMouseLeftButtonDown="Token_PreviewMouseLeftButtonDown"
                                                 PreviewMouseMove="Token_PreviewMouseMove"
                                                 Cursor="Hand">

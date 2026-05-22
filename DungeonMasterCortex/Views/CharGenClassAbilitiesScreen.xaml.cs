@@ -23,6 +23,9 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
     private List<AbilityListItem> _selectedItems = new();
     private bool _showDisadvantagesTab;
 
+    private bool IsPlayersOptionMode
+        => string.Equals(_app.CharGen.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase);
+
     // Forwarded from CharGenClassScreen (static so the two screens share it)
     internal static readonly Dictionary<string, (int minor, int major)> SphereCosts =
         CharGenClassScreen.SphereCosts;
@@ -83,8 +86,8 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
         try
         {
             _app.CharGen.RecalculateLevelFromExistingExperience();
-            _app.SetBanner("Character Generator  â€º  Class Abilities");
-            bool isPO = _app.CharGen.CharacterMode == "players_option";
+            _app.SetBanner("Character Blueprint  ›  Class Abilities");
+            bool isPO = IsPlayersOptionMode;
             int totalSteps = isPO ? 9 : 8;
             _app.SetNavBar(6, totalSteps, "Class Abilities",
                 backAction: () => _app.GoTo("chargen_class"),
@@ -107,9 +110,13 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
             bool isMulti = _app.CharGen.ClassMode == "multiclass" && _classes.Count > 1;
             MultiClassTabPanel.Visibility = isMulti ? Visibility.Visible : Visibility.Collapsed;
 
-            SubtitleLabel.Text = isMulti
-                ? $"Step 6  Â·  Allocate class ability CP â€” {_classes.Count} classes"
-                : "Step 6  Â·  Allocate class ability CP";
+            SubtitleLabel.Text = isPO
+                ? (isMulti
+                    ? $"Step 6  ·  Allocate class ability CP - {_classes.Count} classes"
+                    : "Step 6  ·  Allocate class ability CP")
+                : (isMulti
+                    ? $"Step 6  ·  Core class package - {_classes.Count} classes"
+                    : "Step 6  ·  Core class package");
 
             if (isMulti)
                 BuildTabButtons();
@@ -121,6 +128,16 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
             if (isMulti) LoadMultiClassState(startClass);
             _showDisadvantagesTab = false;
             SelectClass(startClass);
+            ClassBudgetCard.Visibility = isPO ? Visibility.Visible : Visibility.Collapsed;
+
+            if (!isPO)
+            {
+                BtnAbilitiesTab.Visibility = Visibility.Collapsed;
+                BtnDisadvantagesTab.Visibility = Visibility.Collapsed;
+                AvailableListTitle.Text = "Fixed Core Package";
+                SelectedListTitle.Text = "Granted Core Package";
+                AvailableClassAbilitySummary.Text = "Core Rules has no optional class ability purchasing.";
+            }
         }
         catch (Exception ex)
         {
@@ -212,22 +229,38 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
 
     private void BuildAbilityChoices(ClassDefinition cls)
     {
-        _autoAssignedAbilities = cls.StructuredAbilities
-            .Where(a => a.AutoGranted)
-            .OrderBy(a => a.PointCost).ThenBy(a => a.Description)
-            .ToList();
+        if (IsPlayersOptionMode)
+        {
+            _autoAssignedAbilities = cls.StructuredAbilities
+                .Where(a => a.AutoGranted)
+                .OrderBy(a => a.PointCost).ThenBy(a => a.Description)
+                .ToList();
 
-        var hiddenSpecializationAbilityIds = GetHiddenWizardSpecializationAbilityIds(cls);
-        _optionalAbilities = cls.StructuredAbilities
-            .Where(a => !a.AutoGranted
-                && !IsSelectorManagedAbility(a)
-                && !hiddenSpecializationAbilityIds.Contains(a.Id))
-            .OrderBy(a => a.PointCost).ThenBy(a => a.Description)
-            .ToList();
+            var hiddenSpecializationAbilityIds = GetHiddenWizardSpecializationAbilityIds(cls);
+            _optionalAbilities = cls.StructuredAbilities
+                .Where(a => !a.AutoGranted
+                    && !IsSelectorManagedAbility(a)
+                    && !hiddenSpecializationAbilityIds.Contains(a.Id))
+                .OrderBy(a => a.PointCost).ThenBy(a => a.Description)
+                .ToList();
+        }
+        else
+        {
+            // Core Rules: class package is fixed; grant every class ability by default.
+            _autoAssignedAbilities = cls.StructuredAbilities
+                .OrderBy(a => a.PointCost)
+                .ThenBy(a => a.Description)
+                .ToList();
+            _optionalAbilities = new List<AbilityDefinition>();
+        }
 
         _selectedAbilityIds.Clear();
         var optionalIds = new HashSet<string>(_optionalAbilities.Select(a => a.Id), System.StringComparer.OrdinalIgnoreCase);
-        if (_app.CharGen.ClassMode == "multiclass")
+        if (!IsPlayersOptionMode)
+        {
+            PersistCurrentSelections();
+        }
+        else if (_app.CharGen.ClassMode == "multiclass")
         {
             if (_app.CharGen.SelectedAbilitiesByClass.TryGetValue(cls.Id, out var saved))
                 foreach (var id in saved.Where(optionalIds.Contains)) _selectedAbilityIds.Add(id);
@@ -247,9 +280,11 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
         ClassInfo.Text = cls.AbilityMinimums.Count > 0
             ? "Requirements: " + string.Join(", ", cls.AbilityMinimums.Select(kv => $"{RulesEngine.AbilityLabel(kv.Key)} {kv.Value}"))
             : "";
-        ClassAbilityHint.Text = _optionalAbilities.Count == 0
-            ? "This class has no optional abilities to configure."
-            : "Choose optional abilities on the left and move them into your package on the right.";
+        ClassAbilityHint.Text = !IsPlayersOptionMode
+            ? "Core Rules mode: all class abilities are granted automatically."
+            : _optionalAbilities.Count == 0
+                ? "This class has no optional abilities to configure."
+                : "Choose optional abilities on the left and move them into your package on the right.";
     }
 
     internal static bool IsSelectorManagedAbility(AbilityDefinition ability)
@@ -444,6 +479,15 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
 
     private void RefreshBudgetSummary(ClassDefinition cls)
     {
+        if (!IsPlayersOptionMode)
+        {
+            ClassBudgetSummary.Text = "Core";
+            ClassBudgetDetail.Text = "Core Rules: fixed class package (no class CP budget).";
+            ClassBudgetSummary.Foreground = new SolidColorBrush(
+                (Color)ColorConverter.ConvertFromString("#C4A468"));
+            return;
+        }
+
         var wizSpec = _app.CharGen.ClassMode == "multiclass"
             ? (_app.CharGen.WizardSpecializationById.TryGetValue(cls.Id, out var ws) ? ws : "")
             : _app.CharGen.WizardSpecializationId;
@@ -469,6 +513,12 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
 
     private void RefreshSphereSchoolSummary(ClassDefinition cls)
     {
+        if (!IsPlayersOptionMode)
+        {
+            SphereSchoolSection.Visibility = Visibility.Collapsed;
+            return;
+        }
+
         if (cls.Id == "cleric")
         {
             SphereSchoolSection.Visibility = Visibility.Visible;
@@ -649,6 +699,9 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
 
     private void BtnAddClassAbility_Click(object sender, RoutedEventArgs e)
     {
+        if (!IsPlayersOptionMode)
+            return;
+
         if (_activeClass is null || AvailableClassAbilityList.SelectedItem is not AbilityListItem item) return;
         _selectedAbilityIds.Add(item.Id);
         PersistCurrentSelections();
@@ -659,6 +712,9 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
 
     private void BtnRemoveClassAbility_Click(object sender, RoutedEventArgs e)
     {
+        if (!IsPlayersOptionMode)
+            return;
+
         if (_activeClass is null || SelectedClassAbilityList.SelectedItem is not AbilityListItem item) return;
         if (item.IsAutoAssigned) return;
         _selectedAbilityIds.Remove(item.Id);
@@ -701,6 +757,9 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
 
     private void BtnSelectSpheres_Click(object sender, RoutedEventArgs e)
     {
+        if (!IsPlayersOptionMode)
+            return;
+
         if (_activeClass?.Id != "cleric") return;
         var dialog = new SphereSelectionDialog(CharGenClassScreen.NormalizeSphereSelections(_app.CharGen.SelectedSpheres));
         if (dialog.ShowDialog() == true)
@@ -719,6 +778,9 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
 
     private void BtnSelectWizardSchools_Click(object sender, RoutedEventArgs e)
     {
+        if (!IsPlayersOptionMode)
+            return;
+
         if (_activeClass?.Id != "wizard") return;
         var dialog = new WizardSchoolsDialog(
             _app.CharGen.SelectedWizardSchools,
@@ -749,6 +811,9 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
 
     private void BtnAllocateRogueSkills_Click(object sender, RoutedEventArgs e)
     {
+        if (!IsPlayersOptionMode)
+            return;
+
         if (!IsRogueClass(_activeClass?.Id)) return;
 
         var selectedSkillIds = GetSelectedRogueSkillIds();
@@ -796,6 +861,33 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
     private void Advance()
     {
         if (_activeClass != null) SaveCurrentMultiClassState();
+
+        if (!IsPlayersOptionMode)
+        {
+            foreach (var cls in _classes)
+            {
+                var nonAutoIds = cls.StructuredAbilities
+                    .Where(a => !a.AutoGranted)
+                    .Select(a => a.Id)
+                    .Distinct(System.StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                if (_app.CharGen.ClassMode == "multiclass")
+                    _app.CharGen.SelectedAbilitiesByClass[cls.Id] = nonAutoIds;
+
+                if (string.Equals(cls.Id, _app.CharGen.ClassId, System.StringComparison.OrdinalIgnoreCase))
+                    _app.CharGen.SelectedClassAbilityIds = nonAutoIds;
+            }
+
+            if (_app.CharGen.ClassMode == "multiclass")
+                _app.CharGen.SelectedClassAbilityIds = _app.CharGen.SelectedAbilitiesByClass
+                    .SelectMany(kvp => kvp.Value)
+                    .Distinct(System.StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+            _app.GoTo("chargen_character_options");
+            return;
+        }
 
         var allIssues = new List<string>();
         var configWarnings = new List<string>();

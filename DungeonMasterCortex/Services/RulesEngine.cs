@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Security.Cryptography;
 using ClosedXML.Excel;
 using DungeonMasterCortex.Models;
 using DungeonMasterCortex.Utilities;
@@ -14,6 +15,16 @@ namespace DungeonMasterCortex.Services;
 /// <summary>Loads and exposes AD&amp;D 2e rules from core_2e.json.</summary>
 public class RulesEngine
 {
+    private static readonly Regex ImportedSubraceAbilityRegex =
+        new(@"^\s*Subrace\s*:\s*([^|]+?)\s*\|\s*(.*)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex ImportedSubraceModifierRegex =
+        new(@"([^:;]+)\s*:\s*(Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma)\s*:\s*([+-]?\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    private static readonly Regex AbilityLevelFromIdRegex =
+        new(@"_lvl(\d+)(?:_|$)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex AbilityLevelFromDescriptionRegex =
+        new(@"^\s*level\s+(\d+)\s*:", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
     private static readonly string[] AbilityOrder =
         { "str", "dex", "con", "int", "wis", "cha" };
     private readonly Random _rng = new();
@@ -104,7 +115,8 @@ public class RulesEngine
                 ? budgetEl.GetInt32()
                 : 0;
             var specializations = ParseSpecializations(cp.Value);
-            Classes[cp.Name] = new ClassDefinition(cp.Name, name, mins, allowed, classAbilities, budget, specializations);
+            var source = ParseSourceTag(cp.Value);
+            Classes[cp.Name] = new ClassDefinition(cp.Name, name, mins, allowed, classAbilities, budget, specializations, source);
         }
     }
 
@@ -155,10 +167,30 @@ public class RulesEngine
                 && budgetEl.ValueKind == JsonValueKind.Number
                 ? budgetEl.GetInt32()
                 : InferRaceBudget(mode, rp.Name, structured);
+            var source = ParseSourceTag(rp.Value);
 
             Races[rp.Name] = new RaceDefinition(rp.Name, name, mode, baseRaceId,
-                mins, maxs, mods, legacyStrings, structured, budget);
+                mins, maxs, mods, legacyStrings, structured, budget, source);
         }
+    }
+
+    private static string ParseSourceTag(JsonElement element)
+    {
+        if (element.TryGetProperty("source", out var sourceEl)
+            && sourceEl.ValueKind == JsonValueKind.String)
+        {
+            var source = sourceEl.GetString();
+            if (!string.IsNullOrWhiteSpace(source))
+                return source.Trim().ToLowerInvariant();
+        }
+
+        if (element.TryGetProperty("is_custom", out var customEl))
+        {
+            if (customEl.ValueKind == JsonValueKind.True) return "custom";
+            if (customEl.ValueKind == JsonValueKind.False) return "core";
+        }
+
+        return "core";
     }
 
     private static string? FindRulesDirectory()
@@ -2157,8 +2189,163 @@ public class RulesEngine
 
     private void PostProcessRules()
     {
+        ExpandImportedSubraces();
         NormalizeClassVisibility();
         ExpandClassAbilityCatalogs();
+    }
+
+    private void ExpandImportedSubraces()
+    {
+        var snapshots = Races.Values.ToList();
+        foreach (var race in snapshots)
+        {
+            if (Races.Values.Any(r => !string.Equals(r.Id, race.Id, StringComparison.OrdinalIgnoreCase)
+                                      && string.Equals(r.BaseRaceId, race.BaseRaceId, StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
+
+            var globalAbilities = new List<AbilityDefinition>();
+            var bySubrace = new Dictionary<string, List<AbilityDefinition>>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var ability in race.StructuredAbilities)
+            {
+                var desc = ability.Description ?? string.Empty;
+                var match = ImportedSubraceAbilityRegex.Match(desc);
+                if (!match.Success)
+                {
+                    globalAbilities.Add(CloneAbility(ability));
+                    continue;
+                }
+
+                var subraceName = match.Groups[1].Value.Trim();
+                if (string.IsNullOrWhiteSpace(subraceName))
+                {
+                    globalAbilities.Add(CloneAbility(ability));
+                    continue;
+                }
+
+                if (!bySubrace.TryGetValue(subraceName, out var list))
+                {
+                    list = new List<AbilityDefinition>();
+                    bySubrace[subraceName] = list;
+                }
+
+                var cloned = CloneAbility(ability);
+                var trimmedDescription = match.Groups[2].Value.Trim();
+                if (!string.IsNullOrWhiteSpace(trimmedDescription))
+                    cloned.Description = trimmedDescription;
+                list.Add(cloned);
+            }
+
+            if (bySubrace.Count == 0)
+                continue;
+
+            var subraceModifiers = ParseImportedSubraceModifiers(race.StructuredAbilities);
+
+            var cleanedGlobal = globalAbilities
+                .Where(a => !string.Equals(a.Id, $"{race.Id}_subraces", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            var baseName = race.Name.StartsWith("Basic ", StringComparison.OrdinalIgnoreCase)
+                ? race.Name.Substring(6).Trim()
+                : race.Name;
+
+            var basicAbilities = cleanedGlobal
+                .GroupBy(a => a.Id, StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.First())
+                .ToList();
+
+            Races[race.Id] = race with
+            {
+                Name = race.Name.StartsWith("Basic ", StringComparison.OrdinalIgnoreCase) ? race.Name : $"Basic {baseName}",
+                StructuredAbilities = basicAbilities,
+                RacialAbilities = basicAbilities.Select(a => a.Description).ToList(),
+            };
+
+            foreach (var pair in bySubrace)
+            {
+                var subraceName = pair.Key.Trim();
+                var subraceId = $"{race.Id}-{Slugify(subraceName)}";
+                if (Races.ContainsKey(subraceId))
+                    continue;
+
+                var mergedAbilities = cleanedGlobal
+                    .Concat(pair.Value)
+                    .GroupBy(a => a.Id, StringComparer.OrdinalIgnoreCase)
+                    .Select(g => g.First())
+                    .ToList();
+
+                var combinedModifiers = new Dictionary<string, int>(race.AbilityModifiers, StringComparer.OrdinalIgnoreCase);
+                if (subraceModifiers.TryGetValue(subraceName, out var modifiers))
+                {
+                    foreach (var kv in modifiers)
+                        combinedModifiers[kv.Key] = combinedModifiers.GetValueOrDefault(kv.Key) + kv.Value;
+                }
+
+                Races[subraceId] = new RaceDefinition(
+                    subraceId,
+                    $"{subraceName} {baseName}",
+                    race.CharacterMode,
+                    race.BaseRaceId,
+                    new Dictionary<string, int>(race.AbilityMinimums, StringComparer.OrdinalIgnoreCase),
+                    new Dictionary<string, int>(race.AbilityMaximums, StringComparer.OrdinalIgnoreCase),
+                    combinedModifiers,
+                    mergedAbilities.Select(a => a.Description).ToList(),
+                    mergedAbilities,
+                    race.RacialPointBudget,
+                    race.Source);
+            }
+        }
+    }
+
+    private static Dictionary<string, Dictionary<string, int>> ParseImportedSubraceModifiers(IEnumerable<AbilityDefinition> abilities)
+    {
+        var result = new Dictionary<string, Dictionary<string, int>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var ability in abilities)
+        {
+            if (ability is null || string.IsNullOrWhiteSpace(ability.Description))
+                continue;
+
+            if (!ability.Description.Contains("Subrace ability modifiers", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            foreach (Match match in ImportedSubraceModifierRegex.Matches(ability.Description))
+            {
+                var subraceName = match.Groups[1].Value.Trim();
+                var abilityKey = AbilityKey(match.Groups[2].Value);
+                if (string.IsNullOrWhiteSpace(subraceName) || string.IsNullOrWhiteSpace(abilityKey))
+                    continue;
+
+                if (!int.TryParse(match.Groups[3].Value, out int delta))
+                    continue;
+
+                if (!result.TryGetValue(subraceName, out var map))
+                {
+                    map = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                    result[subraceName] = map;
+                }
+
+                map[abilityKey] = map.GetValueOrDefault(abilityKey) + delta;
+            }
+        }
+
+        return result;
+    }
+
+    private static string AbilityKey(string abilityName)
+    {
+        var value = abilityName?.Trim().ToLowerInvariant() ?? string.Empty;
+        return value switch
+        {
+            "strength" => "str",
+            "dexterity" => "dex",
+            "constitution" => "con",
+            "intelligence" => "int",
+            "wisdom" => "wis",
+            "charisma" => "cha",
+            _ => string.Empty,
+        };
     }
 
     private void NormalizeClassVisibility()
@@ -2522,7 +2709,8 @@ public class RulesEngine
             new Dictionary<string, int>(race.AbilityModifiers),
             legacyList,
             structured,
-            race.RacialPointBudget);
+            race.RacialPointBudget,
+            race.Source);
 
         Races[normalized.Id] = normalized;
         PersistRace(normalized);
@@ -2539,7 +2727,8 @@ public class RulesEngine
                 ? cls.StructuredAbilities
                 : new List<AbilityDefinition>(),
             cls.ClassPointBudget,
-            cls.Specializations is null ? null : new List<WizardSpecialization>(cls.Specializations));
+            cls.Specializations is null ? null : new List<WizardSpecialization>(cls.Specializations),
+            cls.Source);
 
         Classes[normalized.Id] = normalized;
         PersistClass(normalized);
@@ -2650,7 +2839,7 @@ public class RulesEngine
 
     private static JsonObject ToJsonRaceObject(RaceDefinition race)
     {
-        return new JsonObject
+        var obj = new JsonObject
         {
             ["name"]             = race.Name,
             ["character_mode"]   = race.CharacterMode,
@@ -2660,6 +2849,11 @@ public class RulesEngine
             ["racial_point_budget"] = race.RacialPointBudget,
             ["racial_abilities"] = ToJsonAbilityArray(race.StructuredAbilities),
         };
+
+        if (race.IsCustom)
+            obj["source"] = "custom";
+
+        return obj;
     }
 
     private static JsonObject ToJsonClassObject(ClassDefinition cls)
@@ -2672,6 +2866,9 @@ public class RulesEngine
             ["class_point_budget"] = cls.ClassPointBudget,
             ["class_abilities"] = ToJsonAbilityArray(cls.StructuredAbilities),
         };
+
+        if (cls.IsCustom)
+            obj["source"] = "custom";
 
         if (cls.Specializations is { Count: > 0 })
         {
@@ -2694,6 +2891,132 @@ public class RulesEngine
         }
 
         return obj;
+    }
+
+    public void ExportCustomRacesAndClasses(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            throw new ArgumentException("A file path is required.", nameof(path));
+
+        var races = new JsonObject();
+        foreach (var race in Races.Values
+            .Where(r => r.IsCustom)
+            .OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase))
+        {
+            races[race.Id] = ToJsonRaceObject(race);
+        }
+
+        var classes = new JsonObject();
+        foreach (var cls in Classes.Values
+            .Where(c => c.IsCustom)
+            .OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase))
+        {
+            classes[cls.Id] = ToJsonClassObject(cls);
+        }
+
+        var root = new JsonObject
+        {
+            ["format"] = "dmcortex_custom_pack_v1",
+            ["exported_at_utc"] = DateTime.UtcNow.ToString("o"),
+            ["races"] = races,
+            ["classes"] = classes,
+        };
+
+        var options = new JsonSerializerOptions { WriteIndented = true };
+        File.WriteAllText(path, root.ToJsonString(options));
+    }
+
+    public (int racesImported, int classesImported) ImportCustomRacesAndClasses(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            throw new ArgumentException("A file path is required.", nameof(path));
+        if (!File.Exists(path))
+            throw new FileNotFoundException("Custom pack file was not found.", path);
+
+        using var stream = File.OpenRead(path);
+        using var doc = JsonDocument.Parse(stream);
+        var root = doc.RootElement;
+
+        int raceCount = 0;
+        int classCount = 0;
+
+        if (root.TryGetProperty("races", out var racesEl) && racesEl.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var raceProperty in racesEl.EnumerateObject())
+            {
+                var raceId = raceProperty.Name;
+                var raceJson = raceProperty.Value;
+
+                var mins = ParseIntDict(raceJson, "ability_minimums");
+                var maxs = ParseIntDict(raceJson, "ability_maximums");
+                var mods = ParseIntDict(raceJson, "ability_modifiers");
+                var name = raceJson.TryGetProperty("name", out var nEl) ? nEl.GetString() ?? raceId : raceId;
+                var mode = raceJson.TryGetProperty("character_mode", out var modeEl)
+                    ? NormalizeCharacterMode(modeEl.GetString())
+                    : "all";
+                var baseRaceId = raceJson.TryGetProperty("base_race_id", out var baseRaceEl)
+                    ? baseRaceEl.GetString() ?? raceId
+                    : raceId;
+                var structured = ParseStructuredAbilities(raceJson, "racial_abilities");
+                var legacyStrings = structured.Count > 0
+                    ? structured.Select(a => a.Description).ToList()
+                    : ParseStringList(raceJson, "racial_abilities");
+                var budget = raceJson.TryGetProperty("racial_point_budget", out var budgetEl)
+                    && budgetEl.ValueKind == JsonValueKind.Number
+                    ? budgetEl.GetInt32()
+                    : InferRaceBudget(mode, raceId, structured);
+
+                var importedRace = new RaceDefinition(
+                    raceId,
+                    name,
+                    mode,
+                    baseRaceId,
+                    mins,
+                    maxs,
+                    mods,
+                    legacyStrings,
+                    structured,
+                    budget,
+                    "custom");
+
+                SaveRace(importedRace);
+                raceCount += 1;
+            }
+        }
+
+        if (root.TryGetProperty("classes", out var classesEl) && classesEl.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var classProperty in classesEl.EnumerateObject())
+            {
+                var classId = classProperty.Name;
+                var classJson = classProperty.Value;
+
+                var mins = ParseIntDict(classJson, "ability_minimums");
+                var allowed = ParseStringList(classJson, "allowed_races");
+                var name = classJson.TryGetProperty("name", out var nEl) ? nEl.GetString() ?? classId : classId;
+                var classAbilities = ParseStructuredAbilities(classJson, "class_abilities");
+                var budget = classJson.TryGetProperty("class_point_budget", out var budgetEl)
+                    && budgetEl.ValueKind == JsonValueKind.Number
+                    ? budgetEl.GetInt32()
+                    : 0;
+                var specializations = ParseSpecializations(classJson);
+
+                var importedClass = new ClassDefinition(
+                    classId,
+                    name,
+                    mins,
+                    allowed,
+                    classAbilities,
+                    budget,
+                    specializations,
+                    "custom");
+
+                SaveClass(importedClass);
+                classCount += 1;
+            }
+        }
+
+        return (raceCount, classCount);
     }
 
     private static JsonObject ReadOrCreateJsonObject(string path)
@@ -2954,24 +3277,26 @@ public class RulesEngine
         };
     }
 
-    public List<int> GenerateDicePool(string method)
+    public sealed record DiceRollResult(int Total, IReadOnlyList<int> Dice, string DetailText);
+
+    public List<DiceRollResult> GenerateDicePool(string method)
     {
         return method switch
         {
-            "method_i_3d6_in_order" => Enumerable.Range(0, 6).Select(_ => RollDice(3)).ToList(),
+            "method_i_3d6_in_order" => Enumerable.Range(0, 6).Select(_ => RollThreeDice()).ToList(),
             "method_ii_3d6_twice_keep_best" => Enumerable.Range(0, 6)
-                .Select(_ => Math.Max(RollDice(3), RollDice(3))).ToList(),
-            "method_iii_3d6_arrange" => Enumerable.Range(0, 6).Select(_ => RollDice(3)).ToList(),
-            "method_iv_3d6_12_choose_6" => Enumerable.Range(0, 12).Select(_ => RollDice(3))
-                .OrderByDescending(v => v).Take(6).ToList(),
+                .Select(_ => RollThreeDiceTwiceKeepBest()).ToList(),
+            "method_iii_3d6_arrange" => Enumerable.Range(0, 6).Select(_ => RollThreeDice()).ToList(),
+            "method_iv_3d6_12_choose_6" => Enumerable.Range(0, 12).Select(_ => RollThreeDice())
+                .OrderByDescending(v => v.Total).Take(6).ToList(),
             "method_v_4d6_drop_lowest" => Enumerable.Range(0, 6)
-                .Select(_ => RollDiceKeepHighest(4, 3, rerollOnes: false)).ToList(),
-            "method_vi_8_plus_7d6" => Enumerable.Range(0, 7).Select(_ => RollDie(rerollOnes: false)).ToList(),
+                .Select(_ => RollDiceKeepHighestDetailed(4, 3, rerollOnes: false)).ToList(),
+            "method_vi_8_plus_7d6" => Enumerable.Range(0, 7).Select(_ => RollSingleDieDetailed(rerollOnes: false)).ToList(),
             "homebrew_4d6_reroll_1s" => Enumerable.Range(0, 6)
-                .Select(_ => RollDiceKeepHighest(4, 3, rerollOnes: true)).ToList(),
-            "standard_array" => StandardArray.ToList(),
+                .Select(_ => RollDiceKeepHighestDetailed(4, 3, rerollOnes: true)).ToList(),
+            "standard_array" => StandardArray.Select(value => new DiceRollResult(value, new[] { value }, $"Standard array: {value}")).ToList(),
             _ => Enumerable.Range(0, 6)
-                .Select(_ => RollDiceKeepHighest(4, 3, rerollOnes: false)).ToList(),
+                .Select(_ => RollDiceKeepHighestDetailed(4, 3, rerollOnes: false)).ToList(),
         };
     }
 
@@ -2994,20 +3319,20 @@ public class RulesEngine
     public static bool UsesDistributedDice(string method) => method == "method_vi_8_plus_7d6";
 
     private Dictionary<string, int> RollInOrder3d6() =>
-        BuildFromScores(Enumerable.Range(0, 6).Select(_ => RollDice(3)).ToList());
+        BuildFromScores(Enumerable.Range(0, 6).Select(_ => RollThreeDice().Total).ToList());
 
     private Dictionary<string, int> RollInOrder3d6BestOfTwo() =>
-        BuildFromScores(Enumerable.Range(0, 6).Select(_ => Math.Max(RollDice(3), RollDice(3))).ToList());
+        BuildFromScores(Enumerable.Range(0, 6).Select(_ => RollThreeDiceTwiceKeepBest().Total).ToList());
 
     private Dictionary<string, int> RollArrange3d6()
     {
-        var scores = Enumerable.Range(0, 6).Select(_ => RollDice(3)).OrderByDescending(v => v).ToList();
+        var scores = Enumerable.Range(0, 6).Select(_ => RollThreeDice().Total).OrderByDescending(v => v).ToList();
         return BuildFromScores(scores);
     }
 
     private Dictionary<string, int> RollBest6Of12Arrange()
     {
-        var scores = Enumerable.Range(0, 12).Select(_ => RollDice(3))
+        var scores = Enumerable.Range(0, 12).Select(_ => RollThreeDice().Total)
             .OrderByDescending(v => v).Take(6).ToList();
         return BuildFromScores(scores);
     }
@@ -3015,7 +3340,7 @@ public class RulesEngine
     private Dictionary<string, int> Roll4d6DropLowestArrange()
     {
         var scores = Enumerable.Range(0, 6)
-            .Select(_ => RollDiceKeepHighest(4, 3, rerollOnes: false))
+            .Select(_ => RollDiceKeepHighestDetailed(4, 3, rerollOnes: false).Total)
             .OrderByDescending(v => v).ToList();
         return BuildFromScores(scores);
     }
@@ -3023,7 +3348,7 @@ public class RulesEngine
     private Dictionary<string, int> Roll4d6DropLowestRerollOnesArrange()
     {
         var scores = Enumerable.Range(0, 6)
-            .Select(_ => RollDiceKeepHighest(4, 3, rerollOnes: true))
+            .Select(_ => RollDiceKeepHighestDetailed(4, 3, rerollOnes: true).Total)
             .OrderByDescending(v => v).ToList();
         return BuildFromScores(scores);
     }
@@ -3059,6 +3384,39 @@ public class RulesEngine
         return result;
     }
 
+    private DiceRollResult RollThreeDice()
+    {
+        var dice = Enumerable.Range(0, 3).Select(_ => RollDie(rerollOnes: false)).ToList();
+        return new DiceRollResult(dice.Sum(), dice, $"3d6: {string.Join(", ", dice)} = {dice.Sum()}");
+    }
+
+    private DiceRollResult RollThreeDiceTwiceKeepBest()
+    {
+        var first = Enumerable.Range(0, 3).Select(_ => RollDie(rerollOnes: false)).ToList();
+        var second = Enumerable.Range(0, 3).Select(_ => RollDie(rerollOnes: false)).ToList();
+        int firstTotal = first.Sum();
+        int secondTotal = second.Sum();
+        var kept = firstTotal >= secondTotal ? first : second;
+        int keptTotal = Math.Max(firstTotal, secondTotal);
+        return new DiceRollResult(keptTotal, kept, $"3d6 twice: [{string.Join(", ", first)}] = {firstTotal}; [{string.Join(", ", second)}] = {secondTotal} -> keep {keptTotal}");
+    }
+
+    private DiceRollResult RollDiceKeepHighestDetailed(int count, int keep, bool rerollOnes)
+    {
+        var dice = new List<int>();
+        for (int i = 0; i < count; i++) dice.Add(RollDie(rerollOnes));
+        var ordered = dice.OrderByDescending(d => d).ToList();
+        int total = ordered.Take(keep).Sum();
+        string rerollText = rerollOnes ? " (reroll 1s)" : string.Empty;
+        return new DiceRollResult(total, dice, $"{count}d6{rerollText}: [{string.Join(", ", dice)}] -> keep {string.Join(", ", ordered.Take(keep))} = {total}");
+    }
+
+    private DiceRollResult RollSingleDieDetailed(bool rerollOnes)
+    {
+        int value = RollDie(rerollOnes);
+        return new DiceRollResult(value, new[] { value }, $"1d6: {value}");
+    }
+
     private int RollDice(int count)
     {
         int total = 0;
@@ -3066,18 +3424,11 @@ public class RulesEngine
         return total;
     }
 
-    private int RollDiceKeepHighest(int count, int keep, bool rerollOnes)
-    {
-        var dice = new List<int>();
-        for (int i = 0; i < count; i++) dice.Add(RollDie(rerollOnes));
-        return dice.OrderByDescending(d => d).Take(keep).Sum();
-    }
-
     private int RollDie(bool rerollOnes)
     {
-        int value = _rng.Next(1, 7);
+        int value = RandomNumberGenerator.GetInt32(1, 7);
         if (rerollOnes)
-            while (value == 1) value = _rng.Next(1, 7);
+            while (value == 1) value = RandomNumberGenerator.GetInt32(1, 7);
         return value;
     }
 
@@ -3146,7 +3497,8 @@ public class RulesEngine
         BuildClassAbilityPackage(string classId,
                                  IEnumerable<string>? selectedOptionalClassAbilityIds = null,
                                  int classAbilityCarryoverPoints = 0,
-                                 string? specializationId = null)
+                                 string? specializationId = null,
+                                 int characterLevel = int.MaxValue)
     {
         if (!Classes.TryGetValue(classId, out var cls))
             return (0, 0, 0, new List<AbilityDefinition>());
@@ -3169,7 +3521,7 @@ public class RulesEngine
             (selectedOptionalClassAbilityIds ?? Enumerable.Empty<string>()).Concat(specAutoIds),
             StringComparer.OrdinalIgnoreCase);
 
-        var selected = SelectClassAbilities(cls, mergedIds);
+        var selected = SelectClassAbilities(cls, mergedIds, characterLevel);
         var spent = selected.Sum(a => a.PointCost);
         var carryover = Math.Clamp(classAbilityCarryoverPoints, 0, 5);
         var budget = Math.Max(0, classBudget) + carryover;
@@ -3197,20 +3549,51 @@ public class RulesEngine
     }
 
     private static List<AbilityDefinition> SelectClassAbilities(ClassDefinition cls,
-        IEnumerable<string>? selectedOptionalAbilityIds)
+        IEnumerable<string>? selectedOptionalAbilityIds,
+        int characterLevel)
     {
         var selected = new List<AbilityDefinition>();
+        int effectiveLevel = characterLevel <= 0 ? int.MaxValue : characterLevel;
 
-        selected.AddRange(cls.StructuredAbilities.Where(a => a.AutoGranted));
+        selected.AddRange(cls.StructuredAbilities
+            .Where(a => a.AutoGranted)
+            .Where(a => AbilityUnlockLevel(a) <= effectiveLevel));
 
         var optionalIds = new HashSet<string>(selectedOptionalAbilityIds ?? Enumerable.Empty<string>(),
             StringComparer.OrdinalIgnoreCase);
-        selected.AddRange(cls.StructuredAbilities.Where(a => !a.AutoGranted && optionalIds.Contains(a.Id)));
+        selected.AddRange(cls.StructuredAbilities
+            .Where(a => !a.AutoGranted && optionalIds.Contains(a.Id))
+            .Where(a => AbilityUnlockLevel(a) <= effectiveLevel));
 
         return selected
             .GroupBy(a => a.Id, StringComparer.OrdinalIgnoreCase)
             .Select(g => g.First())
             .ToList();
+    }
+
+    public static int AbilityUnlockLevel(AbilityDefinition ability)
+    {
+        if (ability is null) return 1;
+        return AbilityUnlockLevel(ability.Id, ability.Description);
+    }
+
+    public static int AbilityUnlockLevel(string? abilityId, string? description)
+    {
+        if (!string.IsNullOrWhiteSpace(abilityId))
+        {
+            var idMatch = AbilityLevelFromIdRegex.Match(abilityId);
+            if (idMatch.Success && int.TryParse(idMatch.Groups[1].Value, out int idLevel))
+                return Math.Max(1, idLevel);
+        }
+
+        if (!string.IsNullOrWhiteSpace(description))
+        {
+            var descMatch = AbilityLevelFromDescriptionRegex.Match(description);
+            if (descMatch.Success && int.TryParse(descMatch.Groups[1].Value, out int descLevel))
+                return Math.Max(1, descLevel);
+        }
+
+        return 1;
     }
 
     public CharacterSheet BuildCharacter(string name, string raceId, string classId,
@@ -3221,7 +3604,8 @@ public class RulesEngine
                                           string? specializationId = null,
                                           Dictionary<string, int>? subAbilities = null,
                                           int exceptionalStrength = 0,
-                                          string? armorProfile = null)
+                                          string? armorProfile = null,
+                                          int characterLevel = 1)
     {
         Races.TryGetValue(raceId, out var race);
         Classes.TryGetValue(classId, out var cls);
@@ -3252,7 +3636,12 @@ public class RulesEngine
         }
         if (cls is not null)
         {
-            var classPackage = BuildClassAbilityPackage(classId, selectedOptionalClassAbilityIds, classAbilityCarryoverPoints, specializationId);
+            var classPackage = BuildClassAbilityPackage(
+                classId,
+                selectedOptionalClassAbilityIds,
+                classAbilityCarryoverPoints,
+                specializationId,
+                characterLevel);
             selectedClass = classPackage.selectedAbilities;
             classBudget = classPackage.budget;
             classSpent = classPackage.spent;
@@ -3380,7 +3769,7 @@ public class RulesEngine
             RaceId        = raceId,
             ClassId       = classId,
             CharacterMode = race?.CharacterMode == "players_option" ? "players_option" : "core_rules",
-            Level         = 1,
+            Level         = Math.Max(1, characterLevel),
             BaseHitPoints = baseHp,
             HitPoints     = effectiveHp,
             BaseArmorClass = 10,
@@ -3498,6 +3887,7 @@ public class RulesEngine
                 new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "fighter", "wizard" },
                 new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "fighter", "thief" },
                 new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "wizard", "thief" },
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "wizard", "bard" },
                 new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "fighter", "wizard", "cleric" },
                 new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "fighter", "wizard", "thief" },
                 new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "druid", "fighter" },  // Dragon Magazine

@@ -11,7 +11,7 @@ public static class SubAbilityTables
 {
     // ── Public entry-point ──────────────────────────────────────────────────
     /// <summary>
-    /// Returns a compact effect string for display in the character generator.
+    /// Returns a compact effect string for display in the character blueprint.
     /// <paramref name="subKey"/> is e.g. "str_muscle", "wis_perception".
     /// <paramref name="exceptionalStr"/> is 1–100 for warriors with STR 18, else 0.
     /// </summary>

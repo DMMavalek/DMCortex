@@ -38,16 +38,20 @@ public static class CharacterArmorService
 
     private static int CalculateCurrentAcBonus(CharacterSheet character, bool isUnarmored, CustomEquipmentData? equippedArmor)
     {
-        if (character.StructuredAbilities.Count == 0)
+        var unlockedStructuredAbilities = character.StructuredAbilities
+            .Where(a => RulesEngine.AbilityUnlockLevel(a) <= Math.Max(1, character.Level))
+            .ToList();
+
+        if (unlockedStructuredAbilities.Count == 0)
             return character.Bonuses?.AcBonus ?? GetDexterityAcAdjustment(character.Abilities.GetValueOrDefault("dex", 10));
 
-        var currentBonuses = RulesEngine.AggregateEffects(character.StructuredAbilities, isUnarmored);
+        var currentBonuses = RulesEngine.AggregateEffects(unlockedStructuredAbilities, isUnarmored);
         var subTotals = SubAbilityTables.CalculateTotals(character.SubAbilities, character.ExceptionalStrength, character.ClassId);
 
         int acBonus = currentBonuses.AcBonus + subTotals.ArmorClassAdjustment;
 
         // Tough hide grants natural AC 8 while unarmored and a smaller benefit in very light armor.
-        if (character.StructuredAbilities.Any(a => string.Equals(a.Id, "human_tough_hide", StringComparison.OrdinalIgnoreCase))
+        if (unlockedStructuredAbilities.Any(a => string.Equals(a.Id, "human_tough_hide", StringComparison.OrdinalIgnoreCase))
             && equippedArmor is not null
             && equippedArmor.ArmorClassValue >= 8)
         {

@@ -129,8 +129,10 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
                     <TextBlock x:Name="CharDetailTitle" Grid.Row="0"
@@ -176,8 +178,81 @@
                         </ItemsControl>
                     </StackPanel>
 
+                        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,10">
+                        <Button x:Name="TabBtnCharHealing"
+                            Content="Healing"
+                            Style="{StaticResource GoldButton}"
+                            Width="130"
+                            Margin="0,0,8,0"
+                            Click="TabBtnCharHealing_Click"/>
+                        <Button x:Name="TabBtnCharUpdate"
+                            Content="Character Update"
+                            Style="{StaticResource GoldButton}"
+                            Width="170"
+                            Click="TabBtnCharUpdate_Click"/>
+                        </StackPanel>
+
+                        <!-- Character Health editor -->
+                        <Border x:Name="CharHealingPanel" Grid.Row="3" Background="{StaticResource BrushBtn}" BorderBrush="{StaticResource BrushBorder2}" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,10">
+                        <StackPanel>
+                            <TextBlock Text="Character Health" Style="{StaticResource LabelText}" Margin="0,0,0,8"/>
+
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Current HP" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                    <TextBlock x:Name="CharCurrentHp" Style="{StaticResource BodyText}" Margin="0,0,0,2"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Max HP" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                    <TextBlock x:Name="CharMaxHp" Style="{StaticResource BodyText}" Margin="0,0,0,2"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="4">
+                                    <TextBlock Text="Heal Amount" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                    <TextBox x:Name="CharHealInput" Style="{StaticResource DarkTextBox}" Text="0"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <Button Content="💚  HEAL CHARACTER" Style="{StaticResource GoldButton}" Width="190" HorizontalAlignment="Left" Click="BtnHealCharacter_Click"/>
+
+                            <TextBlock Text="Use Healing Spell" Style="{StaticResource SubtitleText}" Margin="0,10,0,4"/>
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="2*"/>
+                                    <ColumnDefinition Width="10"/>
+                                    <ColumnDefinition Width="90"/>
+                                    <ColumnDefinition Width="10"/>
+                                    <ColumnDefinition Width="170"/>
+                                </Grid.ColumnDefinitions>
+                                <ComboBox x:Name="CharHealingSpellPicker" Grid.Column="0" Style="{StaticResource DarkComboBox}" MinWidth="220"/>
+                                <TextBox x:Name="CharSpellHealAmount" Grid.Column="2" Style="{StaticResource DarkTextBox}" Text="0"/>
+                                <Button Grid.Column="4" Content="CAST HEALING SPELL" Style="{StaticResource GoldButton}" Click="BtnHealFromSpell_Click"/>
+                            </Grid>
+
+                            <TextBlock Text="Use Healing Item (Inventory)" Style="{StaticResource SubtitleText}" Margin="0,0,0,4"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="2*"/>
+                                    <ColumnDefinition Width="10"/>
+                                    <ColumnDefinition Width="90"/>
+                                    <ColumnDefinition Width="10"/>
+                                    <ColumnDefinition Width="170"/>
+                                </Grid.ColumnDefinitions>
+                                <ComboBox x:Name="CharHealingItemPicker" Grid.Column="0" Style="{StaticResource DarkComboBox}" MinWidth="220"/>
+                                <TextBox x:Name="CharItemHealAmount" Grid.Column="2" Style="{StaticResource DarkTextBox}" Text="0"/>
+                                <Button Grid.Column="4" Content="USE ITEM TO HEAL" Style="{StaticResource GoldButton}" Click="BtnHealFromItem_Click"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
                     <!-- Level-up / progression editor -->
-                    <Border Grid.Row="2" Background="{StaticResource BrushBtn}" BorderBrush="{StaticResource BrushBorder2}" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,10">
+                    <Border x:Name="CharUpdatePanel" Grid.Row="4" Background="{StaticResource BrushBtn}" BorderBrush="{StaticResource BrushBorder2}" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,10">
                         <StackPanel>
                             <TextBlock Text="Level-Up &amp; CP Spending" Style="{StaticResource LabelText}" Margin="0,0,0,8"/>
 
@@ -246,7 +321,7 @@
                     </Border>
 
                     <!-- Notes editor -->
-                    <StackPanel Grid.Row="3">
+                    <StackPanel x:Name="CharNotesPanel" Grid.Row="5">
                         <TextBlock Text="Notes:" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
                         <TextBox x:Name="CharNotes"
                                  Style="{StaticResource DarkTextBox}"
@@ -255,7 +330,7 @@
                                  Height="124"/>
                     </StackPanel>
 
-                    <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,10,0,0">
+                    <StackPanel x:Name="CharNotesActionsPanel" Grid.Row="6" Orientation="Horizontal" Margin="0,10,0,0">
                         <Button Content="💾  SAVE NOTES"
                                 Style="{StaticResource GoldButton}"
                                 HorizontalAlignment="Left"
@@ -283,6 +358,10 @@
                             Margin="0,6,0,0" Click="BtnSaveRace_Click"/>
                     <Button Content="🗑  DELETE" Style="{StaticResource DangerButton}"
                             Margin="0,6,0,0" Click="BtnDeleteRace_Click"/>
+                        <Button Content="📤  EXPORT CUSTOM PACK" Style="{StaticResource GoldButton}"
+                            Margin="0,12,0,0" Click="BtnExportCustomPack_Click"/>
+                        <Button Content="📥  IMPORT CUSTOM PACK" Style="{StaticResource GoldButton}"
+                            Margin="0,6,0,0" Click="BtnImportCustomPack_Click"/>
                 </StackPanel>
 
                 <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource BrushBorder2}"
@@ -884,7 +963,10 @@
                         Margin="0,0,8,0" Click="EquipmentRegularTabBtn_Click"/>
                     <Button x:Name="EquipmentMagicalTabBtn" Content="Magical"
                         Style="{StaticResource GoldButton}" Width="110"
-                        Click="EquipmentMagicalTabBtn_Click"/>
+                        Margin="0,0,8,0" Click="EquipmentMagicalTabBtn_Click"/>
+                    <Button x:Name="EquipmentTreasureTabBtn" Content="Treasure"
+                        Style="{StaticResource GoldButton}" Width="110"
+                        Click="EquipmentTreasureTabBtn_Click"/>
                     </StackPanel>
                     <TextBox Grid.Row="2" x:Name="EquipmentSearchBox" Style="{StaticResource DarkTextBox}"
                          Margin="0,0,0,6" TextChanged="EquipmentSearchBox_TextChanged"/>
@@ -1120,6 +1202,10 @@
                     <Button Content="＋  NEW CLASS" Style="{StaticResource GoldButton}" Margin="0,8,0,0" Click="BtnNewClassDefinition_Click"/>
                     <Button Content="💾  SAVE CLASS" Style="{StaticResource GoldButton}" Margin="0,6,0,0" Click="BtnSaveClassDefinition_Click"/>
                     <Button x:Name="BtnDeleteClassDefinition" Content="🗑  DELETE CLASS" Style="{StaticResource DangerButton}" Margin="0,6,0,0" Click="BtnDeleteClassDefinition_Click"/>
+                    <Button Content="📤  EXPORT CUSTOM PACK" Style="{StaticResource GoldButton}"
+                        Margin="0,12,0,0" Click="BtnExportCustomPack_Click"/>
+                    <Button Content="📥  IMPORT CUSTOM PACK" Style="{StaticResource GoldButton}"
+                        Margin="0,6,0,0" Click="BtnImportCustomPack_Click"/>
                 </StackPanel>
 
                 <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource BrushBorder2}" VerticalAlignment="Stretch"/>
@@ -1151,23 +1237,25 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <StackPanel Grid.Column="0">
-                    <TextBlock Text="Classes" Style="{StaticResource LabelText}" Margin="0,0,0,6"/>
-                    <ListBox x:Name="ClassListEditor" Style="{StaticResource DarkListBox}"
-                             ItemContainerStyle="{StaticResource DarkListBoxItem}"
-                             Height="180" SelectionChanged="ClassListEditor_SelectionChanged"/>
-                    <Button Content="＋  NEW CLASS" Style="{StaticResource GoldButton}"
-                            Margin="0,8,0,0" Click="BtnNewClassAbilityClass_Click"/>
-                    <Button Content="💾  SAVE CLASS ABILITIES" Style="{StaticResource GoldButton}"
-                            Margin="0,6,0,0" Click="BtnSaveClass_Click"/>
-                        <TextBlock Text="Copy Selected Ability To" Style="{StaticResource SubtitleText}"
-                               Margin="0,10,0,2"/>
-                        <ComboBox x:Name="ClassCopyTarget" Style="{StaticResource DarkComboBox}"/>
-                        <Button Content="⇢  COPY ABILITY" Style="{StaticResource GoldButton}"
-                            Margin="0,6,0,0" Click="BtnCopyClassAbilityToClass_Click"/>
-                    <TextBlock x:Name="ClassEditorInfo" Style="{StaticResource SubtitleText}"
-                               Margin="0,8,0,0" TextWrapping="Wrap"/>
-                </StackPanel>
+                <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel>
+                        <TextBlock Text="Classes" Style="{StaticResource LabelText}" Margin="0,0,0,6"/>
+                        <ListBox x:Name="ClassListEditor" Style="{StaticResource DarkListBox}"
+                                 ItemContainerStyle="{StaticResource DarkListBoxItem}"
+                                 Height="210" SelectionChanged="ClassListEditor_SelectionChanged"/>
+                        <Button Content="＋  NEW CLASS" Style="{StaticResource GoldButton}"
+                                Margin="0,8,0,0" Click="BtnNewClassAbilityClass_Click"/>
+                        <Button Content="💾  SAVE CLASS ABILITIES" Style="{StaticResource GoldButton}"
+                                Margin="0,6,0,0" Click="BtnSaveClass_Click"/>
+                            <TextBlock Text="Copy Selected Ability To" Style="{StaticResource SubtitleText}"
+                                   Margin="0,10,0,2"/>
+                            <ComboBox x:Name="ClassCopyTarget" Style="{StaticResource DarkComboBox}"/>
+                            <Button Content="⇢  COPY ABILITY" Style="{StaticResource GoldButton}"
+                                Margin="0,6,0,0" Click="BtnCopyClassAbilityToClass_Click"/>
+                        <TextBlock x:Name="ClassEditorInfo" Style="{StaticResource SubtitleText}"
+                                   Margin="0,8,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </ScrollViewer>
 
                 <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource BrushBorder2}" VerticalAlignment="Stretch"/>
 
@@ -1359,35 +1447,37 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <StackPanel Grid.Column="0">
-                    <TextBlock Text="Races" Style="{StaticResource LabelText}" Margin="0,0,0,6"/>
-                    <ListBox x:Name="RaceAbilityListEditor" Style="{StaticResource DarkListBox}"
-                             ItemContainerStyle="{StaticResource DarkListBoxItem}"
-                             Height="150" SelectionChanged="RaceAbilityListEditor_SelectionChanged"/>
-                    <Button Content="＋  NEW RACE" Style="{StaticResource GoldButton}"
-                            Margin="0,8,0,0" Click="BtnNewRacialAbilityRace_Click"/>
-                    <Button Content="💾  SAVE RACIAL ABILITIES" Style="{StaticResource GoldButton}"
-                            Margin="0,6,0,0" Click="BtnSaveRacialAbilities_Click"/>
-                        <TextBlock Text="Copy Selected Ability To" Style="{StaticResource SubtitleText}"
-                               Margin="0,10,0,2"/>
-                        <ComboBox x:Name="RaceCopyTarget" Style="{StaticResource DarkComboBox}"/>
-                        <Button Content="⇢  COPY ABILITY" Style="{StaticResource GoldButton}"
-                            Margin="0,6,0,0" Click="BtnCopyRacialAbilityToRace_Click"/>
-                        <TextBlock Text="Copy To Selected Races" Style="{StaticResource SubtitleText}"
-                               Margin="0,10,0,2"/>
-                        <ListBox x:Name="RaceCopyTargetList" Style="{StaticResource DarkListBox}"
-                             ItemContainerStyle="{StaticResource DarkListBoxItem}"
-                             Height="90" SelectionMode="Extended"/>
-                        <Button Content="⇢  COPY TO SELECTED" Style="{StaticResource GoldButton}"
-                            Margin="0,6,0,0" Click="BtnCopyRacialAbilityToSelectedRaces_Click"/>
-                        <TextBlock Text="Copy To Matching Family (id/name/base)" Style="{StaticResource SubtitleText}"
-                               Margin="0,10,0,2"/>
-                        <TextBox x:Name="RaceCopyFamilyKey" Style="{StaticResource DarkTextBox}"/>
-                        <Button Content="⇢  COPY TO MATCHING RACES" Style="{StaticResource GoldButton}"
-                            Margin="0,6,0,0" Click="BtnCopyRacialAbilityToFamily_Click"/>
-                    <TextBlock x:Name="RacialAbilityEditorInfo" Style="{StaticResource SubtitleText}"
-                               Margin="0,8,0,0" TextWrapping="Wrap"/>
-                </StackPanel>
+                <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel>
+                        <TextBlock Text="Races" Style="{StaticResource LabelText}" Margin="0,0,0,6"/>
+                        <ListBox x:Name="RaceAbilityListEditor" Style="{StaticResource DarkListBox}"
+                                 ItemContainerStyle="{StaticResource DarkListBoxItem}"
+                                 Height="180" SelectionChanged="RaceAbilityListEditor_SelectionChanged"/>
+                        <Button Content="＋  NEW RACE" Style="{StaticResource GoldButton}"
+                                Margin="0,8,0,0" Click="BtnNewRacialAbilityRace_Click"/>
+                        <Button Content="💾  SAVE RACIAL ABILITIES" Style="{StaticResource GoldButton}"
+                                Margin="0,6,0,0" Click="BtnSaveRacialAbilities_Click"/>
+                            <TextBlock Text="Copy Selected Ability To" Style="{StaticResource SubtitleText}"
+                                   Margin="0,10,0,2"/>
+                            <ComboBox x:Name="RaceCopyTarget" Style="{StaticResource DarkComboBox}"/>
+                            <Button Content="⇢  COPY ABILITY" Style="{StaticResource GoldButton}"
+                                Margin="0,6,0,0" Click="BtnCopyRacialAbilityToRace_Click"/>
+                            <TextBlock Text="Copy To Selected Races" Style="{StaticResource SubtitleText}"
+                                   Margin="0,10,0,2"/>
+                            <ListBox x:Name="RaceCopyTargetList" Style="{StaticResource DarkListBox}"
+                                 ItemContainerStyle="{StaticResource DarkListBoxItem}"
+                                 Height="100" SelectionMode="Extended"/>
+                            <Button Content="⇢  COPY TO SELECTED" Style="{StaticResource GoldButton}"
+                                Margin="0,6,0,0" Click="BtnCopyRacialAbilityToSelectedRaces_Click"/>
+                            <TextBlock Text="Copy To Matching Family (id/name/base)" Style="{StaticResource SubtitleText}"
+                                   Margin="0,10,0,2"/>
+                            <TextBox x:Name="RaceCopyFamilyKey" Style="{StaticResource DarkTextBox}"/>
+                            <Button Content="⇢  COPY TO MATCHING RACES" Style="{StaticResource GoldButton}"
+                                Margin="0,6,0,0" Click="BtnCopyRacialAbilityToFamily_Click"/>
+                        <TextBlock x:Name="RacialAbilityEditorInfo" Style="{StaticResource SubtitleText}"
+                                   Margin="0,8,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </ScrollViewer>
 
                 <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource BrushBorder2}" VerticalAlignment="Stretch"/>
 
@@ -1618,6 +1708,8 @@
                             BorderThickness="0,0,0,1" Padding="0,6,12,6" Margin="0,0,0,0">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="Monster Editor" Style="{StaticResource TitleText}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                            <Button Content="⚔ Add To Combat Tracker" Style="{StaticResource GoldButton}" Width="190"
+                                Click="BtnAddMonsterToCombatTracker_Click" Margin="0,0,6,0"/>
                             <Button Content="💾 Save" Style="{StaticResource GoldButton}" Width="90"
                                     Click="BtnSaveMonster_Click" Margin="0,0,6,0"/>
                             <TextBlock x:Name="MonsterSavedIndicator" Text="✓ Saved" Foreground="#88DD88"
@@ -1875,14 +1967,14 @@
                     <ListBox x:Name="SpellListEditor" Grid.Row="2" Style="{StaticResource DarkListBox}"
                              DisplayMemberPath="Name"
                              SelectionChanged="SpellListEditor_SelectionChanged"/>
-                        <WrapPanel Grid.Row="3" Orientation="Horizontal" Margin="0,6,0,0" ItemHeight="28">
-                        <Button Content="＋ New" Style="{StaticResource GoldButton}" Width="80"
+                        <WrapPanel Grid.Row="3" Orientation="Horizontal" Margin="0,6,0,0">
+                        <Button Content="＋ New" Style="{StaticResource GoldButton}" MinWidth="92"
                                 Click="BtnNewSpell_Click" Margin="0,0,6,0"/>
-                        <Button Content="✕ Delete" Style="{StaticResource DangerButton}" Width="80"
+                        <Button Content="✕ Delete" Style="{StaticResource DangerButton}" MinWidth="92"
                                 Click="BtnDeleteSpell_Click" Margin="0,0,6,0"/>
-                        <Button Content="📤 Export" Style="{StaticResource GoldButton}" Width="80"
+                        <Button Content="📤 Export" Style="{StaticResource GoldButton}" MinWidth="92"
                                 Click="BtnExportSpells_Click" Margin="0,0,6,0"/>
-                        <Button Content="📥 Import" Style="{StaticResource GoldButton}" Width="80"
+                        <Button Content="📥 Import" Style="{StaticResource GoldButton}" MinWidth="92"
                                 Click="BtnImportSpells_Click"/>
                         </WrapPanel>
                 </Grid>

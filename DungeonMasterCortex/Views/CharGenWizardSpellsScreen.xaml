@@ -132,6 +132,8 @@
                         <RowDefinition Height="8"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="8"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="8"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
@@ -171,7 +173,41 @@
                         </ListBox.ItemTemplate>
                     </ListBox>
 
-                    <Border Grid.Row="4" BorderBrush="{StaticResource BrushBorder2}" BorderThickness="1" Padding="8">
+                    <!-- Physical spellbooks viewer (level-up mode only) -->
+                    <Border Grid.Row="4" x:Name="PhysicalSpellbooksSection"
+                            BorderBrush="{StaticResource BrushBorder2}" BorderThickness="1" Padding="8">
+                        <StackPanel>
+                            <TextBlock Text="Physical spellbooks" Style="{StaticResource SubtitleText}" Margin="0,0,0,6"/>
+                            <ComboBox x:Name="CmbPhysicalBook"
+                                      Style="{StaticResource DarkComboBox}"
+                                      SelectionChanged="CmbPhysicalBook_SelectionChanged"
+                                      Margin="0,0,0,4"/>
+                            <TextBlock x:Name="PhysicalBookStats"
+                                       Style="{StaticResource BodyText}"
+                                       TextWrapping="Wrap" Margin="0,0,0,6"/>
+                            <ListBox x:Name="PhysicalBookSpellList" Height="100" Margin="0,0,0,6"
+                                     Background="Transparent">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="2,1">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="8"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="{Binding SpellName}" Style="{StaticResource BodyText}" TextWrapping="Wrap"/>
+                                            <TextBlock Grid.Column="2" Text="{Binding PagesText}" Style="{StaticResource BodyText}" Foreground="{StaticResource BrushDim}"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                            <Button x:Name="BtnCopyToBook" Content="COPY KNOWN SPELL TO THIS BOOK"
+                                    Style="{StaticResource GoldButton}"
+                                    Click="BtnCopyToBook_Click" IsEnabled="False"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Row="6" BorderBrush="{StaticResource BrushBorder2}" BorderThickness="1" Padding="8">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>

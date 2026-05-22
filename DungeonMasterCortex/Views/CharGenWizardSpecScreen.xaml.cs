@@ -25,7 +25,7 @@ public partial class CharGenWizardSpecScreen : UserControl, IScreen
 
     public void OnEnter()
     {
-        _app.SetBanner("Character Generator  ›  Wizard Specialization");
+        _app.SetBanner("Character Blueprint  ›  Wizard Specialization");
         _app.SetNavBar(9, 12, "Wizard Specialization",
             backAction: () => _app.GoTo("chargen_subabilities", -1),
             nextAction: Advance);

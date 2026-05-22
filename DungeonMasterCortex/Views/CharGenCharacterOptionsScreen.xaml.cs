@@ -40,6 +40,9 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
         Array.Empty<TraitDefinition>(),
         Array.Empty<DisadvantageDefinition>());
 
+    private bool IsPlayersOptionMode
+        => string.Equals(_app.CharGen.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase);
+
     public UIElement View => this;
 
     public CharGenCharacterOptionsScreen(MainWindow app)
@@ -52,10 +55,10 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
     {
         _app.SetBanner(_app.CharGen.IsLevelUpMode
             ? "Character Section  ›  Level Up  ›  Character Options"
-            : "Character Generator  ›  Character Options");
+            : "Character Blueprint  ›  Character Options");
         bool isPO = _app.CharGen.CharacterMode == "players_option";
-        _app.SetNavBar(isPO ? 9 : 7, isPO ? 11 : 9, "Character Options",
-            backAction: () => _app.GoTo(isPO ? "chargen_subabilities" : "chargen_class_abilities", -1),
+        _app.SetNavBar(isPO ? 9 : 6, isPO ? 11 : 8, "Character Options",
+            backAction: () => _app.GoTo(isPO ? "chargen_subabilities" : "chargen_class", -1),
             nextAction: Advance);
 
         EnsureSubAbilitiesSeeded();
@@ -66,6 +69,12 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
         _catalog = _app.CharacterOptions.GetCatalog();
         if (!_app.CharGen.IsLevelUpMode)
             SeedKitNwps();
+
+        if (OverallCpPanel != null)
+            OverallCpPanel.Visibility = IsPlayersOptionMode ? Visibility.Visible : Visibility.Collapsed;
+        if (NwpAdjustmentButtons != null)
+            NwpAdjustmentButtons.Visibility = IsPlayersOptionMode ? Visibility.Visible : Visibility.Collapsed;
+
         RefreshAll();
     }
 
@@ -181,7 +190,7 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
 
         OverallNwpSummary.Text = hasOptionsCpBudget
             ? $"{selectedNwps.Count} selected • {nwpPurchaseCp} CP purchases • {nwpImprovementCp} CP improvements"
-            : $"{selectedNwps.Count} selected • {nwpSlots}/{nwpSlotBudget} slots • {nwpImprovementCp} CP improvements";
+            : $"{selectedNwps.Count} selected • {nwpSlots}/{nwpSlotBudget} slots";
         OverallTraitSummary.Text = hasOptionsCpBudget
             ? $"{selectedTraits.Count} selected • {traitCost} CP"
             : $"{selectedTraits.Count} selected • {traitCost} CP";
@@ -296,14 +305,15 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
         TraitSummaryText.Text = selected.Count == 0
             ? hasOptionsCpBudget
                 ? $"No traits selected yet. Options CP remaining: {cpRemaining}."
-                : "No traits selected yet."
+                : $"No traits selected yet."
             : hasOptionsCpBudget
                 ? $"Selected {selected.Count} traits costing {GetSelectedTraits().Sum(x => x.Cost)} CP total. Options CP remaining: {cpRemaining}."
-                : $"Selected {selected.Count} traits costing {GetSelectedTraits().Sum(x => x.Cost)} CP total.";
+                : $"Selected {selected.Count} traits.";
     }
 
     private void RefreshDisadvantageLists()
     {
+        bool hasOptionsCpBudget = IsPlayersOptionMode;
         var selectedIds = new HashSet<string>(_app.CharGen.SelectedDisadvantageSeverities.Keys, StringComparer.OrdinalIgnoreCase);
         var available = _catalog.Disadvantages
             .Where(x => !selectedIds.Contains(x.Id))
@@ -320,7 +330,9 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
         SelectedDisadvantageList.ItemsSource = selected;
         DisadvantageSummaryText.Text = selected.Count == 0
             ? "No disadvantages selected yet."
-            : $"Selected {selected.Count} disadvantages granting +{GetSelectedDisadvantages().Sum(x => x.Bonus)} CP total.";
+            : hasOptionsCpBudget
+                ? $"Selected {selected.Count} disadvantages granting +{GetSelectedDisadvantages().Sum(x => x.Bonus)} CP total."
+                : $"Selected {selected.Count} disadvantages.";
     }
 
     private static bool MatchesSearch(params string[] values)
@@ -358,6 +370,9 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
 
     private int GetTotalNwpImprovementCp()
     {
+        if (!IsPlayersOptionMode)
+            return 0;
+
         var selectedDistinct = _app.CharGen.SelectedNonweaponProficiencyIds
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -402,9 +417,11 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
     }
 
     private int GetNwpImprovementCp(string proficiencyId)
-        => _app.CharGen.SelectedNonweaponProficiencyImprovements.TryGetValue(proficiencyId, out int allocatedCp)
-            ? Math.Max(0, allocatedCp)
-            : 0;
+        => !IsPlayersOptionMode
+            ? 0
+            : _app.CharGen.SelectedNonweaponProficiencyImprovements.TryGetValue(proficiencyId, out int allocatedCp)
+                ? Math.Max(0, allocatedCp)
+                : 0;
 
     private int GetNwpImprovement(string proficiencyId)
     {
@@ -1107,9 +1124,7 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
         int slotCostCore = GetEffectiveNwpSlotCost(proficiency);
         string crossoverTagCore = HasNwpCrossoverPenalty(proficiency) ? " (includes crossover penalty)" : string.Empty;
            return $"Group: {proficiency.Category}  |  Source: {proficiency.Source}\n"
-             + (proficiency.CpCost > 0
-                 ? $"Cost: {slotCostCore} slot{(slotCostCore == 1 ? "" : "s")}{crossoverTagCore}  |  1 CP per improvement\n"
-                 : $"Cost: {slotCostCore} slot{(slotCostCore == 1 ? "" : "s")}{crossoverTagCore}\n")
+                         + $"Cost: {slotCostCore} slot{(slotCostCore == 1 ? "" : "s")}{crossoverTagCore}\n"
              + checkLine + "\n\n"
                + proficiency.Description
                + noteSuffix;
@@ -1354,6 +1369,16 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
         if (SelectedNwpList.SelectedItem is not CatalogListItem item)
             return;
 
+        if (!IsPlayersOptionMode)
+        {
+            MessageBox.Show(
+                "Core Rules does not use Character Point improvements for NWPs.",
+                "Core Rules",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
         if (IsLockedNwp(item.Id))
         {
             MessageBox.Show(
@@ -1365,13 +1390,6 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
         }
 
         string selectedId = item.Id;
-
-        if (!string.Equals(_app.CharGen.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase))
-        {
-            _app.CharGen.SelectedNonweaponProficiencyImprovements[item.Id] = GetNwpImprovementCp(item.Id) + 1;
-            RefreshAll();
-            return;
-        }
 
         int cpRemaining = GetOptionsCpRemaining();
         if (cpRemaining <= 0)
@@ -1412,6 +1430,16 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
     {
         if (SelectedNwpList.SelectedItem is not CatalogListItem item)
             return;
+
+        if (!IsPlayersOptionMode)
+        {
+            MessageBox.Show(
+                "Core Rules does not use Character Point improvements for NWPs.",
+                "Core Rules",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
 
         if (IsLockedNwp(item.Id))
         {
@@ -1615,9 +1643,7 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
         int coreSlotCost = GetEffectiveNwpSlotCost(proficiency);
         string coreCrossoverTag = HasNwpCrossoverPenalty(proficiency) ? " + crossover" : string.Empty;
 
-        string coreCostLabel = proficiency.CpCost > 0
-            ? $"{coreSlotCost} slot(s){coreCrossoverTag}, 1 CP/point"
-            : $"{coreSlotCost} slot(s){coreCrossoverTag}";
+        string coreCostLabel = $"{coreSlotCost} slot(s){coreCrossoverTag}";
         return $"{proficiency.Name} ({coreCostLabel}), base {baseScore}, bonus {FormatSigned(totalBonus)} ({bonusBreakdown}), target {target}{noteSuffix}{kitTag}";
     }
 

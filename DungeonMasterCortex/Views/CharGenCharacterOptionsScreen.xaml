@@ -73,7 +73,7 @@
 
                 <Rectangle Grid.Column="7" Width="1" Fill="{StaticResource BrushBorder2}" Margin="0,2"/>
 
-                <StackPanel Grid.Column="8">
+                <StackPanel x:Name="OverallCpPanel" Grid.Column="8">
                     <TextBlock Text="REMAINING CP" Style="{StaticResource SubtitleText}" FontSize="10"/>
                     <TextBlock x:Name="OverallCpSummary" Style="{StaticResource BodyText}" Margin="0,4,0,0" Foreground="{StaticResource BrushText}"/>
                 </StackPanel>
@@ -171,7 +171,7 @@
                                 </Grid>
                             </Border>
 
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="8,0">
+                            <StackPanel x:Name="NwpAdjustmentButtons" Grid.Column="1" VerticalAlignment="Center" Margin="8,0">
                                 <Button x:Name="BtnAddNwp" Content="&#x276F;" Style="{StaticResource GoldButton}" Height="36" Margin="0,0,0,8" Click="BtnAddNwp_Click"/>
                                 <Button x:Name="BtnRemoveNwp" Content="&#x276E;" Style="{StaticResource GoldButton}" Height="36" Margin="0,0,0,18" Click="BtnRemoveNwp_Click"/>
                                 <Button x:Name="BtnIncreaseNwp" Content="+1 CP" Style="{StaticResource GoldButton}" Height="32" Margin="0,0,0,8" Click="BtnIncreaseNwp_Click"/>

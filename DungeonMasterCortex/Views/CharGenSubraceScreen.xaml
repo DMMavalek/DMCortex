@@ -69,7 +69,7 @@
             </StackPanel>
         </Grid>
 
-        <Border Grid.Row="2"
+        <Border Grid.Row="2" x:Name="RacialAbilityPanel"
                 Background="{StaticResource BrushCard}"
                 BorderBrush="{StaticResource BrushBorder2}"
                 BorderThickness="1" CornerRadius="2" Padding="14">

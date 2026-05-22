@@ -1,0 +1,77 @@
+<Window x:Class="DungeonMasterCortex.Views.ReleaseNotesDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="What's New and Changelog" 
+        Width="600" 
+        Height="500"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
+        Background="#1e1e1e"
+        Foreground="#d4af37">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Content -->
+        <ScrollViewer Grid.Row="0" Padding="20" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!-- Title -->
+                <TextBlock x:Name="TxtDialogTitle"
+                           Text="Dungeon Master Cortex - Changelog" 
+                           FontSize="24" 
+                           FontWeight="Bold"
+                           Foreground="#d4af37"
+                           Margin="0,0,0,20"/>
+
+                <TextBlock Text="Scroll to view all version updates, newest first."
+                           FontSize="12"
+                           Foreground="#e0e0e0"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,12"/>
+
+                <Border BorderBrush="#3d3d3d" BorderThickness="1" CornerRadius="4" Padding="10">
+                    <TextBox x:Name="TxtChangelog"
+                             IsReadOnly="True"
+                             BorderThickness="0"
+                             Background="#1e1e1e"
+                             Foreground="#c0c0c0"
+                             FontFamily="Consolas"
+                             FontSize="12"
+                             TextWrapping="Wrap"
+                             AcceptsReturn="True"
+                             VerticalScrollBarVisibility="Auto"
+                             HorizontalScrollBarVisibility="Disabled"
+                             MinHeight="260"/>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Checkbox -->
+        <Border Grid.Row="1" 
+                BorderThickness="0,1,0,0" 
+                BorderBrush="#3d3d3d"
+                Padding="20,10,20,10">
+            <CheckBox x:Name="ChkDoNotShowAgain" 
+                      Content="Do not show again"
+                      Foreground="#d4af37"
+                      Background="#1e1e1e"
+                      VerticalAlignment="Center"/>
+        </Border>
+
+        <!-- Button -->
+        <Border Grid.Row="2" 
+                BorderThickness="0,1,0,0" 
+                BorderBrush="#3d3d3d"
+                Padding="20">
+            <Button Content="Close" 
+                    Click="BtnClose_Click"
+                    Style="{StaticResource GoldButton}"
+                    Width="100"
+                    HorizontalAlignment="Right"/>
+        </Border>
+    </Grid>
+</Window>

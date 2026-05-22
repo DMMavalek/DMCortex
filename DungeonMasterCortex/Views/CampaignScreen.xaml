@@ -12,10 +12,24 @@
 
         <!-- Header -->
         <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
             <TextBlock Text="CAMPAIGN TRACKER" Style="{StaticResource TitleText}"
-                       FontSize="20" VerticalAlignment="Center"/>
+                   FontSize="20" VerticalAlignment="Center" Grid.Column="0"/>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+            <TextBlock Text="Campaign:" Style="{StaticResource LabelText}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+            <ComboBox x:Name="CmbCampaignSelect" Style="{StaticResource DarkComboBox}" Width="170"
+                  Margin="0,0,6,0" SelectionChanged="CmbCampaignSelect_SelectionChanged"/>
+            <TextBox x:Name="TxtNewCampaignName" Style="{StaticResource DarkTextBox}" Width="130" Margin="0,0,6,0"/>
+            <Button Content="+ New" Style="{StaticResource GoldButton}" Width="70" Margin="0,0,6,0"
+                Click="BtnCreateCampaign_Click"/>
+            <Button Content="Delete" Style="{StaticResource DangerButton}" Width="70" Margin="0,0,8,0"
+                Click="BtnDeleteCampaign_Click"/>
             <Button Content="◀  BACK TO HUB" Style="{StaticResource GoldButton}"
-                    HorizontalAlignment="Right" Width="160" Click="BtnHub_Click"/>
+                Width="160" Click="BtnHub_Click"/>
+            </StackPanel>
         </Grid>
         <Rectangle Grid.Row="1" Height="1" Fill="{StaticResource BrushBorder}" Margin="0,10,0,12"/>
 
@@ -29,10 +43,165 @@
                 Click="CampTabNpcs_Click" Margin="0,0,8,0"/>
             <Button x:Name="CampTabBtnLocations" Content="Locations"
                 Style="{StaticResource GoldButton}" Width="120"
-                Click="CampTabLocations_Click"/>
+                Click="CampTabLocations_Click" Margin="0,0,8,0"/>
+            <Button x:Name="CampTabBtnLoot" Content="Party Loot"
+                Style="{StaticResource GoldButton}" Width="120"
+                Click="CampTabLoot_Click" Margin="0,0,8,0"/>
+            <Button x:Name="CampTabBtnParty" Content="Party Management"
+                Style="{StaticResource GoldButton}" Width="160"
+                Click="CampTabParty_Click" Margin="0,0,8,0"/>
+            <Button x:Name="CampTabBtnCalendar" Content="Calendar"
+                Style="{StaticResource GoldButton}" Width="120"
+                Click="CampTabCalendar_Click"/>
         </StackPanel>
 
+        <!-- ═══ PARTY MANAGEMENT TAB ═══ -->
+        <Grid x:Name="CampTabParty" Grid.Row="3" Visibility="Collapsed">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Party selector -->
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,12">
+                <TextBlock Text="Party:" Style="{StaticResource LabelText}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <ComboBox x:Name="CmbPartySelector" Style="{StaticResource DarkComboBox}" Width="200" SelectionChanged="CmbPartySelector_SelectionChanged"/>
+            </StackPanel>
+
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="280"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Party member list -->
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Party Members" Style="{StaticResource LabelText}" Margin="0,0,0,6"/>
+                    <ListBox x:Name="PartyMemberList" Style="{StaticResource DarkListBox}"
+                             ItemContainerStyle="{StaticResource DarkListBoxItem}"
+                             Height="280" SelectionChanged="PartyMemberList_SelectionChanged"/>
+                </StackPanel>
+
+                <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource BrushBorder2}"
+                           VerticalAlignment="Stretch"/>
+
+                <!-- Character detail panel with spell casting -->
+                <Grid Grid.Column="2" Margin="16,0,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Character header -->
+                    <TextBlock x:Name="PartyMemberDetail" Grid.Row="0" Style="{StaticResource LabelText}" Margin="0,0,0,10"/>
+
+                    <!-- HP Display -->
+                    <Border Grid.Row="1" Background="{StaticResource BrushCard}" BorderBrush="{StaticResource BrushBorder2}" BorderThickness="1" CornerRadius="2" Padding="8" Margin="0,0,0,10">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Current HP" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                <TextBlock x:Name="PartyCharHp" Style="{StaticResource BodyText}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Max HP" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                <TextBlock x:Name="PartyCharMaxHp" Style="{StaticResource BodyText}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="4">
+                                <TextBlock Text="Heal Amount" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                <TextBox x:Name="PartyHealInput" Style="{StaticResource DarkTextBox}" Text="0"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <Button Grid.Row="2" Content="💚  HEAL MEMBER" Style="{StaticResource GoldButton}" Width="160" HorizontalAlignment="Left" Margin="0,0,0,12" Click="BtnHealPartyMember_Click"/>
+
+                    <!-- Spell casting section -->
+                    <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Text="Cast Spell" Style="{StaticResource SubtitleText}" Margin="0,0,0,8"/>
+                            
+                            <!-- Spell filters -->
+                            <StackPanel Margin="0,0,0,8">
+                                <CheckBox x:Name="ChkCastAnySpell" Content="Cast any spell" Foreground="{StaticResource BrushText}" Checked="ChkCastAnySpell_Changed" Unchecked="ChkCastAnySpell_Changed"/>
+                                <CheckBox x:Name="ChkHealingOnly" Content="Healing spells only" Foreground="{StaticResource BrushText}" Checked="ChkSpellFilter_Changed" Unchecked="ChkSpellFilter_Changed" Margin="0,4,0,0"/>
+                                <CheckBox x:Name="ChkBuffsOnly" Content="Buffs only" Foreground="{StaticResource BrushText}" Checked="ChkSpellFilter_Changed" Unchecked="ChkSpellFilter_Changed" Margin="0,4,0,0"/>
+                            </StackPanel>
+
+                            <TextBlock Text="Spell" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                            <ComboBox x:Name="CmbSpellToCast" Style="{StaticResource DarkComboBox}" Margin="0,0,0,8"/>
+
+                            <TextBlock Text="Target" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                            <ComboBox x:Name="CmbSpellTarget" Style="{StaticResource DarkComboBox}" Margin="0,0,0,8"/>
+
+                            <TextBlock Text="HP Delta (optional, +heal / -damage)" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                            <TextBox x:Name="TxtSpellHpDelta" Style="{StaticResource DarkTextBox}" Text="0" Margin="0,0,0,8"/>
+
+                            <TextBlock Text="Cast Note (optional)" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                            <TextBox x:Name="TxtSpellCastNote" Style="{StaticResource DarkTextBox}" AcceptsReturn="True" TextWrapping="Wrap" Height="60" Margin="0,0,0,8"/>
+
+                            <Button Content="CAST SPELL" Style="{StaticResource GoldButton}" Click="BtnCastPartySpell_Click"/>
+
+                            <!-- Notes -->
+                            <TextBlock Text="Notes:" Style="{StaticResource LabelText}" Margin="0,12,0,4"/>
+                            <TextBox x:Name="PartyCharNotes" Style="{StaticResource DarkTextBox}" AcceptsReturn="True" TextWrapping="Wrap" Height="120" VerticalScrollBarVisibility="Auto"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Grid>
+        </Grid>
+
         <!-- ═══ SESSION LOG TAB ═══ -->
+                <!-- ═══ PARTY LOOT TAB ═══ -->
+                <Grid x:Name="CampTabLoot" Grid.Row="3" Visibility="Collapsed">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="280"/>
+                        <ColumnDefinition Width="16"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Loot list -->
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Party Loot" Style="{StaticResource LabelText}" Margin="0,0,0,6"/>
+                        <ListBox x:Name="LootList" Style="{StaticResource DarkListBox}"
+                                 ItemContainerStyle="{StaticResource DarkListBoxItem}"
+                                 Height="280" SelectionChanged="LootList_SelectionChanged"/>
+                        <Button Content="+  ADD LOOT" Style="{StaticResource GoldButton}"
+                                Margin="0,8,0,0" Click="BtnAddLoot_Click"/>
+                        <Button Content="🗑  DELETE" Style="{StaticResource DangerButton}"
+                                Margin="0,6,0,0" Click="BtnDeleteLoot_Click"/>
+                    </StackPanel>
+
+                    <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource BrushBorder2}"
+                               VerticalAlignment="Stretch"/>
+
+                    <!-- Loot editor -->
+                    <StackPanel Grid.Column="2" Margin="16,0,0,0">
+                        <TextBlock Text="Name:" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                        <TextBox x:Name="LootName" Style="{StaticResource DarkTextBox}" Margin="0,0,0,10"/>
+                        <TextBlock Text="Description:" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                        <TextBox x:Name="LootDescription" Style="{StaticResource DarkTextBox}" Margin="0,0,0,10"/>
+                        <TextBlock Text="Quantity:" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                        <TextBox x:Name="LootQuantity" Style="{StaticResource DarkTextBox}" Margin="0,0,0,10"/>
+                        <TextBlock Text="Source:" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                        <TextBox x:Name="LootSource" Style="{StaticResource DarkTextBox}" Margin="0,0,0,10"/>
+                        <TextBlock Text="Session ID:" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                        <TextBox x:Name="LootSessionId" Style="{StaticResource DarkTextBox}" Margin="0,0,0,10"/>
+                        <TextBlock Text="Notes:" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                        <TextBox x:Name="LootNotes" Style="{StaticResource DarkTextBox}" Margin="0,0,0,10"/>
+                        <Button Content="💾  SAVE LOOT" Style="{StaticResource GoldButton}"
+                                HorizontalAlignment="Left" Click="BtnSaveLoot_Click"/>
+                    </StackPanel>
+                </Grid>
         <Grid x:Name="CampTabLog" Grid.Row="3">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="280"/>
@@ -44,6 +213,29 @@
             <StackPanel Grid.Column="0">
                 <TextBlock Text="Session ID:" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
                 <TextBox x:Name="TxtSessionId" Style="{StaticResource DarkTextBox}" Margin="0,0,0,10"/>
+                <TextBlock Text="Campaign Date (for this entry):" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                    <TextBlock Text="M:" Style="{StaticResource LabelText}" VerticalAlignment="Center" FontSize="11"/>
+                    <ComboBox x:Name="CmbEntryMonth" Style="{StaticResource DarkComboBox}" Width="98" Margin="4,0,6,0"/>
+                    <TextBlock Text="D:" Style="{StaticResource LabelText}" VerticalAlignment="Center" FontSize="11"/>
+                    <TextBox x:Name="TxtEntryDay" Style="{StaticResource DarkTextBox}" Width="34" Margin="4,0,6,0"/>
+                    <TextBlock Text="Y:" Style="{StaticResource LabelText}" VerticalAlignment="Center" FontSize="11"/>
+                    <TextBox x:Name="TxtEntryYear" Style="{StaticResource DarkTextBox}" Width="48" Margin="4,0,6,0"/>
+                    <TextBlock Text="Era:" Style="{StaticResource LabelText}" VerticalAlignment="Center" FontSize="11"/>
+                    <ComboBox x:Name="CmbEntryEra" Style="{StaticResource DarkComboBox}" Width="64" Margin="4,0,0,0" IsEditable="True">
+                        <ComboBoxItem Content="BC"/>
+                        <ComboBoxItem Content="PC"/>
+                        <ComboBoxItem Content="EDD"/>
+                    </ComboBox>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <TextBlock Text="H:" Style="{StaticResource LabelText}" VerticalAlignment="Center" FontSize="11"/>
+                    <TextBox x:Name="TxtEntryHour" Style="{StaticResource DarkTextBox}" Width="34" Margin="4,0,6,0"/>
+                    <TextBlock Text="Min:" Style="{StaticResource LabelText}" VerticalAlignment="Center" FontSize="11"/>
+                    <TextBox x:Name="TxtEntryMinute" Style="{StaticResource DarkTextBox}" Width="40" Margin="4,0,10,0"/>
+                    <Button Content="Use Current Date" Style="{StaticResource GoldButton}"
+                            Width="124" Height="28" Click="BtnUseCurrentCampaignDate_Click"/>
+                </StackPanel>
                 <TextBlock Text="Title:" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
                 <TextBox x:Name="TxtTitle" Style="{StaticResource DarkTextBox}" Margin="0,0,0,10"/>
                 <TextBlock Text="Notes:" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
@@ -165,6 +357,132 @@
                 <Button Content="💾  SAVE LOCATION" Style="{StaticResource GoldButton}"
                         HorizontalAlignment="Left" Click="BtnSaveLocation_Click"/>
             </StackPanel>
+        </Grid>
+
+        <!-- ═══ CALENDAR TAB ═══ -->
+        <Grid x:Name="CampTabCalendar" Grid.Row="3" Visibility="Collapsed">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="280"/>
+                <ColumnDefinition Width="16"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Left: Configuration and controls -->
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="Calendar Setup" Style="{StaticResource LabelText}" Margin="0,0,0,6"/>
+                <TextBlock Text="Months:" Style="{StaticResource LabelText}" Margin="0,0,0,2" FontSize="11"/>
+                <TextBox x:Name="CalMonthCount" Style="{StaticResource DarkTextBox}" Margin="0,0,0,8"/>
+                <TextBlock Text="Days/Week:" Style="{StaticResource LabelText}" Margin="0,0,0,2" FontSize="11"/>
+                <TextBox x:Name="CalDaysPerWeek" Style="{StaticResource DarkTextBox}" Margin="0,0,0,8"/>
+                <TextBlock Text="Hours/Day:" Style="{StaticResource LabelText}" Margin="0,0,0,2" FontSize="11"/>
+                <TextBox x:Name="CalHoursPerDay" Style="{StaticResource DarkTextBox}" Margin="0,0,0,8"/>
+                <TextBlock Text="Current Year:" Style="{StaticResource LabelText}" Margin="0,0,0,2" FontSize="11"/>
+                <TextBox x:Name="CalCurrentYear" Style="{StaticResource DarkTextBox}" Margin="0,0,0,8"/>
+                <TextBlock Text="Year Suffix (Era):" Style="{StaticResource LabelText}" Margin="0,0,0,2" FontSize="11"/>
+                <TextBox x:Name="CalYearEra" Style="{StaticResource DarkTextBox}" Margin="0,0,0,8"/>
+                <TextBlock Text="Calendar Source:" Style="{StaticResource LabelText}" Margin="0,0,0,2" FontSize="11"/>
+                <ComboBox x:Name="CalCalendarSource" Style="{StaticResource DarkComboBox}" Margin="0,0,0,8"
+                      SelectionChanged="CalCalendarSource_SelectionChanged"/>
+                <Button Content="📝 Edit Names..." Style="{StaticResource GoldButton}"
+                        Margin="0,0,0,6" Click="BtnEditCalendarNames_Click" FontSize="12"/>
+                <Button Content="📅 Edit Month Days..." Style="{StaticResource GoldButton}"
+                        Margin="0,0,0,12" Click="BtnEditMonthDays_Click" FontSize="12"/>
+                <TextBlock Text="Moons:" Style="{StaticResource LabelText}" Margin="0,0,0,6"/>
+                <ListBox x:Name="MoonList" Style="{StaticResource DarkListBox}"
+                         ItemContainerStyle="{StaticResource DarkListBoxItem}"
+                         Height="120" SelectionChanged="MoonList_SelectionChanged" Margin="0,0,0,8"/>
+                <Button Content="+  ADD MOON" Style="{StaticResource GoldButton}"
+                        Margin="0,0,0,6" Click="BtnAddMoon_Click" Width="120" HorizontalAlignment="Left"/>
+                <Button Content="🗑  DEL MOON" Style="{StaticResource DangerButton}"
+                        Margin="0,0,0,8" Click="BtnDeleteMoon_Click" Width="120" HorizontalAlignment="Left"/>
+                <Button Content="💾  SAVE CONFIG" Style="{StaticResource GoldButton}"
+                        Margin="0,0,0,0" Click="BtnSaveCalConfig_Click"/>
+            </StackPanel>
+
+            <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource BrushBorder2}"
+                       VerticalAlignment="Stretch"/>
+
+            <!-- Right: Calendar view and date info -->
+            <Grid Grid.Column="2" Margin="16,0,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Current date and controls -->
+                <StackPanel Grid.Row="0" Margin="0,0,0,12">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Current Date &amp; Time: " Style="{StaticResource LabelText}" Margin="0,0,4,0"/>
+                        <TextBlock x:Name="CalCurrentDate" Text="" Style="{StaticResource LabelText}" Foreground="{StaticResource BrushGold}"/>
+                    </StackPanel>
+                    <!-- Day navigation -->
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,4">
+                        <Button Content="◀  PREV DAY" Style="{StaticResource GoldButton}" Width="100"
+                                Margin="0,0,6,0" Click="BtnPrevDay_Click"/>
+                        <Button Content="NEXT DAY  ▶" Style="{StaticResource GoldButton}" Width="100"
+                                Margin="0,0,6,0" Click="BtnNextDay_Click"/>
+                        <Button Content="SET DATE..." Style="{StaticResource GoldButton}" Width="100"
+                                Click="BtnSetDate_Click"/>
+                    </StackPanel>
+                    <!-- Advance time controls -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,0">
+                        <TextBlock Text="Advance by:" Style="{StaticResource LabelText}" VerticalAlignment="Center" Margin="0,0,6,0" FontSize="11"/>
+                        <TextBox x:Name="CalAdvanceAmount" Style="{StaticResource DarkTextBox}" Width="50" Text="1" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                        <Button Content="+ Min" Style="{StaticResource GoldButton}" Width="56"
+                                Margin="0,0,4,0" Click="BtnAdvanceMinutes_Click"/>
+                        <Button Content="+ Hour" Style="{StaticResource GoldButton}" Width="56"
+                                Margin="0,0,4,0" Click="BtnAdvanceHours_Click"/>
+                        <Button Content="+ Days" Style="{StaticResource GoldButton}" Width="56"
+                                Click="BtnAdvanceDays_Click"/>
+                    </StackPanel>
+                        <CheckBox x:Name="CalShowAllCampaigns" Content="Show all campaigns on this calendar"
+                              Margin="0,8,0,0" Checked="CalShowAllCampaigns_Changed" Unchecked="CalShowAllCampaigns_Changed"/>
+                </StackPanel>
+
+                <!-- Moon information -->
+                <Border Grid.Row="1" Background="{StaticResource BrushCard}" BorderBrush="{StaticResource BrushBorder2}"
+                        BorderThickness="1" CornerRadius="2" Padding="12" Margin="0,0,0,12">
+                    <StackPanel x:Name="MoonInfoPanel">
+                        <TextBlock Text="Moons" Style="{StaticResource LabelText}" Margin="0,0,0,8"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Month calendar grid -->
+                <StackPanel Grid.Row="2" Margin="0,0,0,12">
+                    <TextBlock x:Name="CalMonthDisplay" Text="" Style="{StaticResource LabelText}" Margin="0,0,0,8"/>
+                    <Grid x:Name="CalendarGridPanel" Background="{StaticResource BrushCard}">
+                    </Grid>
+                </StackPanel>
+
+                <!-- Date details and timeline -->
+                <StackPanel Grid.Row="3" Orientation="Horizontal">
+                    <!-- Selected date events -->
+                    <Border Background="{StaticResource BrushCard}" BorderBrush="{StaticResource BrushBorder2}"
+                            BorderThickness="1" CornerRadius="2" Padding="12" Margin="0,0,6,0">
+                        <StackPanel Width="200">
+                            <TextBlock Text="Date Events:" Style="{StaticResource LabelText}" Margin="0,0,0,8" FontSize="12"/>
+                            <ListBox x:Name="DateEventsList" Style="{StaticResource DarkListBox}"
+                                     ItemContainerStyle="{StaticResource DarkListBoxItem}" Height="150"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Campaign timeline -->
+                    <Border Background="{StaticResource BrushCard}" BorderBrush="{StaticResource BrushBorder2}"
+                            BorderThickness="1" CornerRadius="2" Padding="12" Margin="0,0,0,0">
+                        <StackPanel>
+                            <TextBlock Text="Campaign Timeline:" Style="{StaticResource LabelText}" Margin="0,0,0,8" FontSize="12"/>
+                            <ListBox x:Name="TimelineList" Style="{StaticResource DarkListBox}"
+                                     ItemContainerStyle="{StaticResource DarkListBoxItem}" Height="150" Width="250"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Grid>
+            </Grid>
+            </ScrollViewer>
         </Grid>
     </Grid>
 </UserControl>

@@ -95,6 +95,37 @@ public partial class EditInfoScreen : UserControl, IScreen
     private const string EquipmentAllCategories = "(All Categories)";
     private bool _showMagicalEquipment = false;
     private bool _demoViewOnlyNoticeShown;
+    private string _activeCharacterEditorSubTab = "update";
+
+    private sealed class HealingSpellOption
+    {
+        public SpellDefinition Spell { get; }
+        public int SpellLevel { get; }
+        public string Display { get; }
+
+        public HealingSpellOption(SpellDefinition spell, int spellLevel, string display)
+        {
+            Spell = spell;
+            SpellLevel = spellLevel;
+            Display = display;
+        }
+
+        public override string ToString() => Display;
+    }
+
+    private sealed class HealingItemOption
+    {
+        public string ItemId { get; }
+        public string Display { get; }
+
+        public HealingItemOption(string itemId, string display)
+        {
+            ItemId = itemId;
+            Display = display;
+        }
+
+        public override string ToString() => Display;
+    }
 
     private sealed record ClassCopyTargetOption(string Id, string Name)
     {
@@ -197,6 +228,8 @@ public partial class EditInfoScreen : UserControl, IScreen
     private void TabSpellsArcane_Click(object sender, RoutedEventArgs e) => ShowTab("spells_arcane");
     private void TabSpellsDivine_Click(object sender, RoutedEventArgs e) => ShowTab("spells_divine");
     private void TabSpellsPsionic_Click(object sender, RoutedEventArgs e) => ShowTab("spells_psionic");
+    private void TabBtnCharHealing_Click(object sender, RoutedEventArgs e) => ShowCharacterEditorSubTab("healing");
+    private void TabBtnCharUpdate_Click(object sender, RoutedEventArgs e) => ShowCharacterEditorSubTab("update");
 
     private void ShowTab(string tab)
     {
@@ -273,6 +306,7 @@ public partial class EditInfoScreen : UserControl, IScreen
         TabBtnSpellsPsionic.Background = tab == "spells_psionic" ? active : inactive;
 
         if (tab == "chars")     RefreshCharList();
+        if (tab == "chars")     ShowCharacterEditorSubTab(_activeCharacterEditorSubTab);
         if (tab == "races")     RefreshRaceList();
         if (tab == "nwps")      RefreshNwpList();
         if (tab == "traits")    RefreshTraitEditorList();
@@ -299,6 +333,24 @@ public partial class EditInfoScreen : UserControl, IScreen
         }
         if (inSpells)
             RefreshSpellEditor();
+    }
+
+    private void ShowCharacterEditorSubTab(string subTab)
+    {
+        _activeCharacterEditorSubTab = string.Equals(subTab, "healing", System.StringComparison.OrdinalIgnoreCase)
+            ? "healing"
+            : "update";
+
+        bool showHealing = _activeCharacterEditorSubTab == "healing";
+        CharHealingPanel.Visibility = showHealing ? Visibility.Visible : Visibility.Collapsed;
+        CharUpdatePanel.Visibility = showHealing ? Visibility.Collapsed : Visibility.Visible;
+        CharNotesPanel.Visibility = showHealing ? Visibility.Collapsed : Visibility.Visible;
+        CharNotesActionsPanel.Visibility = showHealing ? Visibility.Collapsed : Visibility.Visible;
+
+        var active = (System.Windows.Media.Brush)FindResource("BrushBtnAct");
+        var inactive = (System.Windows.Media.Brush)FindResource("BrushBtn");
+        TabBtnCharHealing.Background = showHealing ? active : inactive;
+        TabBtnCharUpdate.Background = showHealing ? inactive : active;
     }
 
     private void BtnBack_Click(object sender, RoutedEventArgs e) =>
@@ -484,12 +536,268 @@ public partial class EditInfoScreen : UserControl, IScreen
         NewEquipmentEditorEntry();
     }
 
+    private void EquipmentTreasureTabBtn_Click(object sender, RoutedEventArgs e)
+    {
+        ShowTreasureTableEditor();
+    }
+
     private void ApplyEquipmentTypeTabStyles()
     {
         var active = (System.Windows.Media.Brush)FindResource("BrushBtnAct");
         var inactive = (System.Windows.Media.Brush)FindResource("BrushBtn");
         EquipmentRegularTabBtn.Background = _showMagicalEquipment ? inactive : active;
         EquipmentMagicalTabBtn.Background = _showMagicalEquipment ? active : inactive;
+        EquipmentTreasureTabBtn.Background = inactive;
+    }
+
+    private sealed class TreasureTableEditorRow
+    {
+        public string Type { get; set; } = string.Empty;
+        public string Copper { get; set; } = string.Empty;
+        public string CopperChance { get; set; } = string.Empty;
+        public string Silver { get; set; } = string.Empty;
+        public string SilverChance { get; set; } = string.Empty;
+        public string Electrum { get; set; } = string.Empty;
+        public string ElectrumChance { get; set; } = string.Empty;
+        public string Gold { get; set; } = string.Empty;
+        public string GoldChance { get; set; } = string.Empty;
+        public string Platinum { get; set; } = string.Empty;
+        public string PlatinumChance { get; set; } = string.Empty;
+        public string Gems { get; set; } = string.Empty;
+        public string GemsChance { get; set; } = string.Empty;
+        public string Jewelry { get; set; } = string.Empty;
+        public string JewelryChance { get; set; } = string.Empty;
+        public string MagicItems { get; set; } = string.Empty;
+        public string MagicItemsChance { get; set; } = string.Empty;
+    }
+
+    private void ShowTreasureTableEditor()
+    {
+        var allTables = DmgTreasureTable.GetAllTables();
+
+        var window = new Window
+        {
+            Title = "Treasure Table Editor",
+            Width = 1320,
+            Height = 860,
+            MinWidth = 1120,
+            MinHeight = 680,
+            ResizeMode = ResizeMode.CanResize,
+            WindowStartupLocation = WindowStartupLocation.CenterScreen,
+            ShowInTaskbar = false,
+            Owner = Window.GetWindow(this),
+        };
+
+        var root = new Grid { Margin = new Thickness(14) };
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+        var help = new TextBlock
+        {
+            Text = "Edit DMG treasure table entries (A-Z): amounts and percentile availability chances.",
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 0, 0, 10)
+        };
+        root.Children.Add(help);
+        Grid.SetRow(help, 0);
+
+        var grid = new DataGrid
+        {
+            AutoGenerateColumns = false,
+            CanUserAddRows = false,
+            CanUserDeleteRows = false,
+            IsReadOnly = false,
+            ItemsSource = allTables
+                .OrderBy(kvp => kvp.Key, StringComparer.OrdinalIgnoreCase)
+                .Select(kvp => new TreasureTableEditorRow
+                {
+                    Type = kvp.Key,
+                    Copper = kvp.Value.Copper,
+                    CopperChance = kvp.Value.CopperChance,
+                    Silver = kvp.Value.Silver,
+                    SilverChance = kvp.Value.SilverChance,
+                    Electrum = kvp.Value.Electrum,
+                    ElectrumChance = kvp.Value.ElectrumChance,
+                    Gold = kvp.Value.Gold,
+                    GoldChance = kvp.Value.GoldChance,
+                    Platinum = kvp.Value.Platinum,
+                    PlatinumChance = kvp.Value.PlatinumChance,
+                    Gems = kvp.Value.Gems,
+                    GemsChance = kvp.Value.GemsChance,
+                    Jewelry = kvp.Value.Jewelry,
+                    JewelryChance = kvp.Value.JewelryChance,
+                    MagicItems = kvp.Value.MagicItems
+                    ,MagicItemsChance = kvp.Value.MagicItemsChance
+                })
+                .ToList()
+        };
+
+        grid.Columns.Add(new DataGridTextColumn
+        {
+            Header = "Type",
+            Binding = new System.Windows.Data.Binding("Type"),
+            IsReadOnly = true,
+            Width = new DataGridLength(70)
+        });
+        grid.Columns.Add(new DataGridTextColumn
+        {
+            Header = "CP",
+            Binding = new System.Windows.Data.Binding("Copper"),
+            Width = new DataGridLength(90)
+        });
+        grid.Columns.Add(new DataGridTextColumn
+        {
+            Header = "CP %",
+            Binding = new System.Windows.Data.Binding("CopperChance"),
+            Width = new DataGridLength(70)
+        });
+        grid.Columns.Add(new DataGridTextColumn
+        {
+            Header = "SP",
+            Binding = new System.Windows.Data.Binding("Silver"),
+            Width = new DataGridLength(90)
+        });
+        grid.Columns.Add(new DataGridTextColumn
+        {
+            Header = "SP %",
+            Binding = new System.Windows.Data.Binding("SilverChance"),
+            Width = new DataGridLength(70)
+        });
+        grid.Columns.Add(new DataGridTextColumn
+        {
+            Header = "EP",
+            Binding = new System.Windows.Data.Binding("Electrum"),
+            Width = new DataGridLength(90)
+        });
+        grid.Columns.Add(new DataGridTextColumn
+        {
+            Header = "EP %",
+            Binding = new System.Windows.Data.Binding("ElectrumChance"),
+            Width = new DataGridLength(70)
+        });
+        grid.Columns.Add(new DataGridTextColumn
+        {
+            Header = "GP",
+            Binding = new System.Windows.Data.Binding("Gold"),
+            Width = new DataGridLength(90)
+        });
+        grid.Columns.Add(new DataGridTextColumn
+        {
+            Header = "GP %",
+            Binding = new System.Windows.Data.Binding("GoldChance"),
+            Width = new DataGridLength(70)
+        });
+        grid.Columns.Add(new DataGridTextColumn
+        {
+            Header = "PP",
+            Binding = new System.Windows.Data.Binding("Platinum"),
+            Width = new DataGridLength(90)
+        });
+        grid.Columns.Add(new DataGridTextColumn
+        {
+            Header = "PP %",
+            Binding = new System.Windows.Data.Binding("PlatinumChance"),
+            Width = new DataGridLength(70)
+        });
+        grid.Columns.Add(new DataGridTextColumn
+        {
+            Header = "Gems",
+            Binding = new System.Windows.Data.Binding("Gems"),
+            Width = new DataGridLength(1, DataGridLengthUnitType.Star)
+        });
+        grid.Columns.Add(new DataGridTextColumn
+        {
+            Header = "Gems %",
+            Binding = new System.Windows.Data.Binding("GemsChance"),
+            Width = new DataGridLength(70)
+        });
+        grid.Columns.Add(new DataGridTextColumn
+        {
+            Header = "Jewelry",
+            Binding = new System.Windows.Data.Binding("Jewelry"),
+            Width = new DataGridLength(1, DataGridLengthUnitType.Star)
+        });
+        grid.Columns.Add(new DataGridTextColumn
+        {
+            Header = "Art %",
+            Binding = new System.Windows.Data.Binding("JewelryChance"),
+            Width = new DataGridLength(70)
+        });
+        grid.Columns.Add(new DataGridTextColumn
+        {
+            Header = "Magic Items",
+            Binding = new System.Windows.Data.Binding("MagicItems"),
+            Width = new DataGridLength(1, DataGridLengthUnitType.Star)
+        });
+        grid.Columns.Add(new DataGridTextColumn
+        {
+            Header = "Magic %",
+            Binding = new System.Windows.Data.Binding("MagicItemsChance"),
+            Width = new DataGridLength(80)
+        });
+
+        root.Children.Add(grid);
+        Grid.SetRow(grid, 1);
+
+        var footer = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Margin = new Thickness(0, 10, 0, 0)
+        };
+
+        var saveBtn = new Button { Content = "Save", Width = 110, Margin = new Thickness(0, 0, 8, 0) };
+        saveBtn.Click += (_, _) =>
+        {
+            if (grid.ItemsSource is not List<TreasureTableEditorRow> rows)
+                return;
+
+            int updatedCount = 0;
+            foreach (var row in rows)
+            {
+                if (DmgTreasureTable.TryUpdateTreasureTable(
+                    row.Type,
+                    new DmgTreasureRoll
+                    {
+                        Copper = row.Copper,
+                        CopperChance = row.CopperChance,
+                        Silver = row.Silver,
+                        SilverChance = row.SilverChance,
+                        Electrum = row.Electrum,
+                        ElectrumChance = row.ElectrumChance,
+                        Gold = row.Gold,
+                        GoldChance = row.GoldChance,
+                        Platinum = row.Platinum,
+                        PlatinumChance = row.PlatinumChance,
+                        Gems = row.Gems,
+                        GemsChance = row.GemsChance,
+                        Jewelry = row.Jewelry,
+                        JewelryChance = row.JewelryChance,
+                        MagicItems = row.MagicItems,
+                        MagicItemsChance = row.MagicItemsChance,
+                    }))
+                    updatedCount++;
+            }
+
+            EquipmentEditorInfo.Text = $"Saved {updatedCount} treasure table entries for this session.";
+            MessageBox.Show(
+                $"Saved {updatedCount} treasure table entries for this session.",
+                "Treasure Table",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        };
+        footer.Children.Add(saveBtn);
+
+        var closeBtn = new Button { Content = "Close", Width = 110 };
+        closeBtn.Click += (_, _) => window.Close();
+        footer.Children.Add(closeBtn);
+
+        root.Children.Add(footer);
+        Grid.SetRow(footer, 2);
+
+        window.Content = root;
+        window.ShowDialog();
     }
 
     private void EquipmentSearchBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -797,6 +1105,14 @@ public partial class EditInfoScreen : UserControl, IScreen
             ? c.RacialAbilities
             : c.Notes.Where(n => n.StartsWith("Racial Ability: ")).Select(n => n[16..]).ToList();
 
+        // Display current HP and max HP
+        CharCurrentHp.Text = $"{c.CurrentHitPoints}";
+        CharMaxHp.Text = $"{c.HitPoints}";
+        CharHealInput.Text = "0";
+        CharSpellHealAmount.Text = "0";
+        CharItemHealAmount.Text = "0";
+        RefreshCharacterHealingSources(c);
+
         CharXpGainInput.Text = "0";
         CharHpGainInput.Text = "0";
         CharCpGainInput.Text = "0";
@@ -820,6 +1136,278 @@ public partial class EditInfoScreen : UserControl, IScreen
             });
         }
         CharAbilityDisplay.ItemsSource = items;
+    }
+
+    private void BtnHealCharacter_Click(object sender, RoutedEventArgs e)
+    {
+        int idx = CharList.SelectedIndex;
+        if (idx < 0 || idx >= _app.Characters.Count)
+            return;
+
+        var c = _app.Characters[idx];
+        int healAmount = ParseNonNegativeInt(CharHealInput.Text);
+        
+        if (healAmount <= 0)
+        {
+            MessageBox.Show("Enter a positive healing amount.", "Heal", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        int oldHp = c.CurrentHitPoints;
+        c.CurrentHitPoints = Math.Min(c.HitPoints, c.CurrentHitPoints + healAmount);
+        
+        c.Revision += 1;
+        c.LastModified = System.DateTime.Now;
+        _app.SaveCharacters();
+
+        CharCurrentHp.Text = $"{c.CurrentHitPoints}";
+        CharHealInput.Text = "0";
+        
+        MessageBox.Show(
+            $"{c.Name} healed from {oldHp} to {c.CurrentHitPoints} HP.",
+            "Healing",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+    }
+
+    private void BtnHealFromSpell_Click(object sender, RoutedEventArgs e)
+    {
+        int idx = CharList.SelectedIndex;
+        if (idx < 0 || idx >= _app.Characters.Count)
+            return;
+
+        var c = _app.Characters[idx];
+        if (CharHealingSpellPicker.SelectedItem is not HealingSpellOption selected)
+        {
+            MessageBox.Show("Select a healing spell first.", "Healing", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        int healAmount = ParseNonNegativeInt(CharSpellHealAmount.Text);
+        if (healAmount <= 0)
+        {
+            MessageBox.Show("Enter a positive healing amount.", "Healing", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        if (c.CurrentHitPoints >= c.HitPoints)
+        {
+            MessageBox.Show($"{c.Name} is already at full HP.", "Healing", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        if (c.SpellTracking is not null)
+        {
+            bool isDivine = string.Equals(selected.Spell.Category, "divine", System.StringComparison.OrdinalIgnoreCase);
+            var availableSlots = c.SpellTracking.GetAvailableSpellSlots(isDivine);
+            if (selected.SpellLevel > 0
+                && (!availableSlots.TryGetValue(selected.SpellLevel, out int slotsRemaining) || slotsRemaining <= 0))
+            {
+                MessageBox.Show(
+                    $"No level {selected.SpellLevel} {selected.Spell.Category.ToLowerInvariant()} spell slots remain.",
+                    "Healing",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            int preparedIndex = c.SpellTracking.CurrentDayTracking.PreparedSpells.FindIndex(p =>
+                !p.IsCast && string.Equals(p.SpellId, selected.Spell.Id, System.StringComparison.OrdinalIgnoreCase));
+            if (preparedIndex >= 0)
+                c.SpellTracking.CastPreparedSpell(preparedIndex);
+
+            c.SpellTracking.CastSpell(selected.Spell.Id, selected.Spell.Name, selected.SpellLevel, $"Healing applied to {c.Name}");
+        }
+
+        int oldHp = c.CurrentHitPoints;
+        c.CurrentHitPoints = System.Math.Min(c.HitPoints, c.CurrentHitPoints + healAmount);
+
+        c.Notes.Add($"Cast {selected.Spell.Name} for healing: +{healAmount} HP ({oldHp} -> {c.CurrentHitPoints}).");
+        c.Revision += 1;
+        c.LastModified = System.DateTime.Now;
+        _app.SaveCharacters();
+
+        CharCurrentHp.Text = $"{c.CurrentHitPoints}";
+        CharSpellHealAmount.Text = "0";
+        CharNotes.Text = string.Join("\n", c.Notes);
+        RefreshCharacterProgressSummary(c);
+
+        MessageBox.Show(
+            $"{selected.Spell.Name} healed {c.Name} from {oldHp} to {c.CurrentHitPoints} HP.",
+            "Healing",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+    }
+
+    private void BtnHealFromItem_Click(object sender, RoutedEventArgs e)
+    {
+        int idx = CharList.SelectedIndex;
+        if (idx < 0 || idx >= _app.Characters.Count)
+            return;
+
+        var c = _app.Characters[idx];
+        if (CharHealingItemPicker.SelectedItem is not HealingItemOption selected)
+        {
+            MessageBox.Show("Select a healing item first.", "Healing", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        int healAmount = ParseNonNegativeInt(CharItemHealAmount.Text);
+        if (healAmount <= 0)
+        {
+            MessageBox.Show("Enter a positive healing amount.", "Healing", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        if (c.CurrentHitPoints >= c.HitPoints)
+        {
+            MessageBox.Show($"{c.Name} is already at full HP.", "Healing", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        string targetId = EquipmentLibraryService.CanonicalizeId(selected.ItemId);
+        var existing = c.EquipmentSelections.FirstOrDefault(x =>
+            string.Equals(EquipmentLibraryService.CanonicalizeId(x.ItemId), targetId, System.StringComparison.OrdinalIgnoreCase));
+
+        if (existing is null || existing.Quantity <= 0)
+        {
+            MessageBox.Show("That healing item is no longer available in inventory.", "Healing", MessageBoxButton.OK, MessageBoxImage.Warning);
+            RefreshCharacterHealingSources(c);
+            return;
+        }
+
+        int oldHp = c.CurrentHitPoints;
+        c.CurrentHitPoints = System.Math.Min(c.HitPoints, c.CurrentHitPoints + healAmount);
+
+        existing.Quantity = System.Math.Max(0, existing.Quantity - 1);
+        if (existing.Quantity == 0)
+            c.EquipmentSelections.Remove(existing);
+
+        c.Equipment = c.EquipmentSelections
+            .OrderBy(x => x.Category)
+            .ThenBy(x => x.ItemName)
+            .Select(x => x.Quantity > 1 ? $"{x.ItemName} x{x.Quantity}" : x.ItemName)
+            .ToList();
+
+        c.Notes.Add($"Used {existing.ItemName} for healing: +{healAmount} HP ({oldHp} -> {c.CurrentHitPoints}).");
+        c.Revision += 1;
+        c.LastModified = System.DateTime.Now;
+        _app.SaveCharacters();
+
+        CharCurrentHp.Text = $"{c.CurrentHitPoints}";
+        CharItemHealAmount.Text = "0";
+        CharNotes.Text = string.Join("\n", c.Notes);
+        RefreshCharacterProgressSummary(c);
+        RefreshCharacterHealingSources(c);
+
+        MessageBox.Show(
+            $"{existing.ItemName} used. {c.Name} healed from {oldHp} to {c.CurrentHitPoints} HP.",
+            "Healing",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+    }
+
+    private void RefreshCharacterHealingSources(CharacterSheet character)
+    {
+        CharHealingSpellPicker.Items.Clear();
+        foreach (var spell in GetCharacterHealingSpells(character))
+        {
+            int level = ParseSpellLevelOrDefault(spell.Level);
+            CharHealingSpellPicker.Items.Add(new HealingSpellOption(
+                spell,
+                level,
+                $"{spell.Name} (L{level}, {spell.Category})"));
+        }
+
+        CharHealingSpellPicker.SelectedIndex = CharHealingSpellPicker.Items.Count > 0 ? 0 : -1;
+
+        CharHealingItemPicker.Items.Clear();
+        foreach (var item in character.EquipmentSelections
+                     .Where(x => x.Quantity > 0 && IsLikelyHealingItem(x.ItemName))
+                     .OrderBy(x => x.ItemName, System.StringComparer.OrdinalIgnoreCase))
+        {
+            CharHealingItemPicker.Items.Add(new HealingItemOption(
+                item.ItemId,
+                item.Quantity > 1 ? $"{item.ItemName} x{item.Quantity}" : item.ItemName));
+        }
+
+        CharHealingItemPicker.SelectedIndex = CharHealingItemPicker.Items.Count > 0 ? 0 : -1;
+    }
+
+    private List<SpellDefinition> GetCharacterHealingSpells(CharacterSheet character)
+    {
+        var knownIds = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+
+        foreach (string id in character.TrackedSpellIds)
+            if (!string.IsNullOrWhiteSpace(id))
+                knownIds.Add(id);
+
+        foreach (string id in character.WizardSpellbookIds)
+            if (!string.IsNullOrWhiteSpace(id))
+                knownIds.Add(id);
+
+        if (character.SpellTracking is not null)
+        {
+            foreach (var prepared in character.SpellTracking.CurrentDayTracking.PreparedSpells)
+                if (!string.IsNullOrWhiteSpace(prepared.SpellId))
+                    knownIds.Add(prepared.SpellId);
+            foreach (var cast in character.SpellTracking.CurrentDayTracking.CastSpells)
+                if (!string.IsNullOrWhiteSpace(cast.SpellId))
+                    knownIds.Add(cast.SpellId);
+        }
+
+        return _app.Rules.Spells
+            .Where(s => s.IsHealing)
+            .Where(s => knownIds.Contains(s.Id))
+            .OrderBy(s => ParseSpellLevelOrDefault(s.Level))
+            .ThenBy(s => s.Name, System.StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private static int ParseSpellLevelOrDefault(string? levelText)
+    {
+        if (string.IsNullOrWhiteSpace(levelText))
+            return 1;
+
+        string trimmed = levelText.Trim();
+        int start = -1;
+        int end = -1;
+        for (int i = 0; i < trimmed.Length; i++)
+        {
+            if (char.IsDigit(trimmed[i]))
+            {
+                if (start < 0)
+                    start = i;
+                end = i;
+            }
+            else if (start >= 0)
+            {
+                break;
+            }
+        }
+
+        if (start >= 0 && end >= start)
+        {
+            string numeric = trimmed[start..(end + 1)];
+            if (int.TryParse(numeric, out int parsed) && parsed >= 0)
+                return parsed;
+        }
+
+        return 1;
+    }
+
+    private static bool IsLikelyHealingItem(string? itemName)
+    {
+        string text = (itemName ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(text))
+            return false;
+
+        return text.Contains("heal", System.StringComparison.OrdinalIgnoreCase)
+            || text.Contains("healing", System.StringComparison.OrdinalIgnoreCase)
+            || text.Contains("cure", System.StringComparison.OrdinalIgnoreCase)
+            || text.Contains("potion", System.StringComparison.OrdinalIgnoreCase)
+            || text.Contains("elixir", System.StringComparison.OrdinalIgnoreCase)
+            || text.Contains("balm", System.StringComparison.OrdinalIgnoreCase);
     }
 
     private void BtnApplyLevelUpdate_Click(object sender, RoutedEventArgs e)
@@ -1423,7 +2011,7 @@ public partial class EditInfoScreen : UserControl, IScreen
     {
         RaceListEditor.Items.Clear();
         foreach (var race in _app.Rules.Races.Values.OrderBy(r => r.Name))
-            RaceListEditor.Items.Add($"{race.Name}  [{ModeLabel(race.CharacterMode)}]");
+            RaceListEditor.Items.Add(FormatRaceEditorLabel(race));
 
         if (!string.IsNullOrEmpty(_selectedRaceId) && _app.Rules.Races.ContainsKey(_selectedRaceId))
         {
@@ -1517,7 +2105,8 @@ public partial class EditInfoScreen : UserControl, IScreen
                     .Where(a => a.Length > 0)
                     .ToList(),
                 ParseAbilityDefs(RaceAbilityDefs.Text, existingEffects),
-                ParseIntOrDefault(RacePointBudget.Text, 0));
+                ParseIntOrDefault(RacePointBudget.Text, 0),
+                existingRace?.Source ?? "custom");
 
             var autoAssignedSpent = race.StructuredAbilities
                 .Where(a => a.AutoGranted)
@@ -1719,6 +2308,78 @@ public partial class EditInfoScreen : UserControl, IScreen
         "players_option" => "Player's Option",
         _ => "All Characters",
     };
+
+    private static string SourceLabel(string source)
+        => string.Equals(source, "custom", System.StringComparison.OrdinalIgnoreCase)
+            ? "CUSTOM"
+            : "CORE";
+
+    private static string FormatRaceEditorLabel(RaceDefinition race)
+        => $"{race.Name}  [{ModeLabel(race.CharacterMode)}]  [{SourceLabel(race.Source)}]";
+
+    private static string FormatClassEditorLabel(ClassDefinition cls)
+        => $"{cls.Name} [{cls.Id}] [{SourceLabel(cls.Source)}]";
+
+    private void BtnExportCustomPack_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = "Export Custom Races and Classes",
+            Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*",
+            FileName = "dmcortex_custom_pack.json",
+            AddExtension = true,
+            DefaultExt = ".json",
+        };
+
+        if (dlg.ShowDialog() != true)
+            return;
+
+        try
+        {
+            _app.Rules.ExportCustomRacesAndClasses(dlg.FileName);
+            MessageBox.Show($"Custom pack exported to:\n{dlg.FileName}",
+                "Export Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (System.Exception ex)
+        {
+            MessageBox.Show($"Export failed: {ex.Message}",
+                "Export Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void BtnImportCustomPack_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Import Custom Races and Classes",
+            Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*",
+            CheckFileExists = true,
+            Multiselect = false,
+        };
+
+        if (dlg.ShowDialog() != true)
+            return;
+
+        try
+        {
+            var (racesImported, classesImported) = _app.Rules.ImportCustomRacesAndClasses(dlg.FileName);
+            RefreshRaceList();
+            RefreshClassEditorList();
+            RefreshClassAbilityEditorList();
+            RefreshRacialAbilityEditorList();
+
+            MessageBox.Show(
+                $"Import complete.\n\nRaces imported: {racesImported}\nClasses imported: {classesImported}",
+                "Import Complete",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (System.Exception ex)
+        {
+            MessageBox.Show($"Import failed: {ex.Message}",
+                "Import Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
 
     // ── Traits tab ───────────────────────────────────────────────────────────
 
@@ -2209,7 +2870,7 @@ public partial class EditInfoScreen : UserControl, IScreen
     private void RefreshClassEditorList()
     {
         ClassDefListEditor.ItemsSource = GetOrderedClasses()
-            .Select(c => $"{c.Name} [{c.Id}]")
+            .Select(FormatClassEditorLabel)
             .ToList();
 
         if (!string.IsNullOrWhiteSpace(_selectedClassId))
@@ -2291,7 +2952,8 @@ public partial class EditInfoScreen : UserControl, IScreen
                 allowed,
                 existingClass?.StructuredAbilities ?? new List<AbilityDefinition>(),
                 budget,
-                existingClass?.Specializations));
+                existingClass?.Specializations,
+                existingClass?.Source ?? "custom"));
             _selectedClassId = id;
             ClassDefEditorInfo.Text = $"Saved class: {name}";
             RefreshClassEditorList();
@@ -2319,7 +2981,7 @@ public partial class EditInfoScreen : UserControl, IScreen
     private void RefreshClassAbilityEditorList()
     {
         ClassListEditor.ItemsSource = GetOrderedClasses()
-            .Select(c => $"{c.Name} [{c.Id}]")
+            .Select(FormatClassEditorLabel)
             .ToList();
 
         if (!string.IsNullOrWhiteSpace(_selectedClassId))
@@ -2394,7 +3056,8 @@ public partial class EditInfoScreen : UserControl, IScreen
                 existingClass?.AllowedRaces ?? new List<string>(),
                 _workingClassAbilities,
                 existingClass?.ClassPointBudget ?? 0,
-                existingClass?.Specializations));
+                existingClass?.Specializations,
+                existingClass?.Source ?? "custom"));
 
             int updatedCharacters = ReapplyAbilityMechanicsToMatchingCharacters(classId: id, raceId: null);
             _selectedClassId = id;
@@ -2474,7 +3137,8 @@ public partial class EditInfoScreen : UserControl, IScreen
             targetClass.AllowedRaces,
             targetAbilities,
             targetClass.ClassPointBudget,
-            targetClass.Specializations));
+            targetClass.Specializations,
+            targetClass.Source));
 
         int updatedCharacters = ReapplyAbilityMechanicsToMatchingCharacters(classId: targetClass.Id, raceId: null);
 
@@ -2489,7 +3153,7 @@ public partial class EditInfoScreen : UserControl, IScreen
     {
         RaceAbilityListEditor.ItemsSource = _app.Rules.Races.Values
             .OrderBy(r => r.Name)
-            .Select(r => $"{r.Name} [{r.Id}]")
+            .Select(r => $"{r.Name} [{r.Id}] [{SourceLabel(r.Source)}]")
             .ToList();
 
         if (!string.IsNullOrWhiteSpace(_selectedRaceAbilityId))
@@ -2569,7 +3233,8 @@ public partial class EditInfoScreen : UserControl, IScreen
                     new Dictionary<string, int>(),
                     defs.Select(d => d.Description).ToList(),
                     defs,
-                    0);
+                    0,
+                    race?.Source ?? "custom");
 
             _app.Rules.SaveRace(updated);
             int updatedCharacters = ReapplyAbilityMechanicsToMatchingCharacters(classId: null, raceId: updated.Id);
@@ -2789,7 +3454,8 @@ public partial class EditInfoScreen : UserControl, IScreen
             character.WizardSpecializationId,
             character.SubAbilities,
             character.ExceptionalStrength,
-            character.RogueSkillArmorProfile);
+            character.RogueSkillArmorProfile,
+            Math.Max(1, character.Level));
 
         character.StructuredAbilities = rebuilt.StructuredAbilities
             .Select(CloneAbilityDefinition)
@@ -4529,6 +5195,82 @@ public partial class EditInfoScreen : UserControl, IScreen
             BtnSaveMonster_Click(sender, e);
             e.Handled = true;
         }
+    }
+
+    private void BtnAddMonsterToCombatTracker_Click(object sender, RoutedEventArgs e)
+    {
+        var selectedMonster = MonsterListEditor.SelectedItem as MonsterDefinition
+            ?? _monsterItems.FirstOrDefault(m => string.Equals(m.Id, _selectedMonsterId, System.StringComparison.OrdinalIgnoreCase));
+
+        if (selectedMonster is null)
+        {
+            MessageBox.Show(
+                "Select a monster first.",
+                "Monsters",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        int quantity = 1;
+        var quantityWindow = new Window
+        {
+            Title = "Add Monster To Combat Tracker",
+            Width = 360,
+            Height = 190,
+            ResizeMode = ResizeMode.NoResize,
+            WindowStartupLocation = WindowStartupLocation.CenterScreen,
+            ShowInTaskbar = false,
+        };
+
+        var panel = new StackPanel { Margin = new Thickness(14) };
+        panel.Children.Add(new TextBlock
+        {
+            Text = $"How many '{selectedMonster.Name}' should be added?",
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 0, 0, 8),
+        });
+
+        var quantityBox = new TextBox
+        {
+            Text = "1",
+            Padding = new Thickness(6, 3, 6, 3),
+            Margin = new Thickness(0, 0, 0, 10),
+        };
+        panel.Children.Add(quantityBox);
+
+        var buttons = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+        };
+
+        var cancel = new Button { Content = "Cancel", Width = 80, Margin = new Thickness(0, 0, 8, 0) };
+        cancel.Click += (_, _) => quantityWindow.DialogResult = false;
+        buttons.Children.Add(cancel);
+
+        var add = new Button { Content = "Add", Width = 80, IsDefault = true };
+        add.Click += (_, _) =>
+        {
+            if (!int.TryParse(quantityBox.Text.Trim(), out quantity) || quantity < 1)
+            {
+                MessageBox.Show("Enter a quantity of 1 or greater.", "Monsters", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            quantityWindow.DialogResult = true;
+        };
+        buttons.Children.Add(add);
+
+        panel.Children.Add(buttons);
+        quantityWindow.Content = panel;
+
+        if (quantityWindow.ShowDialog() != true)
+            return;
+
+        _app.PendingCombatMonsterId = selectedMonster.Id;
+        _app.PendingCombatMonsterQuantity = quantity;
+        _app.GoTo("combat_tracker");
     }
 
     private void BtnDeleteMonster_Click(object sender, RoutedEventArgs e)

@@ -1,0 +1,76 @@
+<Window x:Class="DungeonMasterCortex.Views.AoeTargetSelectorDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:models="clr-namespace:DungeonMasterCortex.Models"
+        Title="AOE Target Selector" Width="420" Height="480"
+        ResizeMode="NoResize" WindowStartupLocation="CenterScreen" ShowInTaskbar="False"
+        Background="{StaticResource BrushPanel}">
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <TextBlock Grid.Row="0" Text="Select AOE Targets" Style="{StaticResource TitleText}" Margin="0,0,0,12"/>
+
+        <!-- Target List -->
+        <Border Grid.Row="1" Background="{StaticResource BrushCard}"
+                BorderBrush="{StaticResource BrushBorder2}" BorderThickness="1"
+                CornerRadius="2" Padding="0" Margin="0,0,0,12">
+            <ListBox x:Name="TargetList" Style="{StaticResource DarkListBox}"
+                     BorderThickness="0" Padding="0" Background="Transparent">
+                <ListBox.ItemTemplate>
+                    <DataTemplate DataType="{x:Type models:Combatant}">
+                        <Border Background="Transparent" Padding="8,6">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <CheckBox x:Name="TargetCheckBox" Grid.Column="0"
+                                         VerticalAlignment="Center" Margin="0,0,8,0"
+                                         Tag="{Binding CombatantId}"
+                                         Checked="TargetCheckBox_Checked"
+                                         Unchecked="TargetCheckBox_Unchecked"/>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding DisplayName}" 
+                                              Foreground="{StaticResource BrushText}" FontWeight="Bold"/>
+                                    <TextBlock Text="{Binding DisplayTag}" 
+                                              Foreground="{StaticResource BrushDim}" FontSize="11"/>
+                                </StackPanel>
+                                <TextBlock Grid.Column="2" 
+                                          Text="{Binding HpCurrent, StringFormat=HP {0}}" 
+                                          Foreground="{StaticResource BrushDim}"
+                                          VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Border>
+
+        <!-- Selection Count -->
+        <TextBlock Grid.Row="2" x:Name="SelectionCountLabel"
+                  Text="0 targets selected"
+                  Foreground="{StaticResource BrushDim}"
+                  Margin="0,0,0,8" FontSize="12"/>
+
+        <!-- Buttons -->
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="0" Content="Select All" Click="BtnSelectAll_Click" Style="{StaticResource GoldButton}"/>
+            <Button Grid.Column="2" Content="Clear" Click="BtnClear_Click" Style="{StaticResource GoldButton}"/>
+            <Button Grid.Column="4" Content="Apply" Click="BtnApply_Click" Style="{StaticResource GoldButton}" IsDefault="True"/>
+        </Grid>
+    </Grid>
+</Window>

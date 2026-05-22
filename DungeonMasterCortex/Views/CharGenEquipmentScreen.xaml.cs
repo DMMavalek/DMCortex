@@ -32,14 +32,14 @@ public partial class CharGenEquipmentScreen : UserControl, IScreen
     {
         _app.SetBanner(_app.CharGen.IsLevelUpMode
             ? "Character Section  ›  Level Up  ›  Equipment"
-            : "Character Generator  ›  Equipment");
+            : "Character Blueprint  ›  Equipment");
 
         bool isPO = _app.CharGen.CharacterMode == "players_option";
         bool isWizardPO = isPO && string.Equals(_app.CharGen.ClassId, "wizard", StringComparison.OrdinalIgnoreCase);
         bool hasWizardSpecs = _app.Rules.Classes.TryGetValue("wizard", out var wc) && wc.Specializations is { Count: > 0 };
         int baseStepTotal = isPO
             ? (isWizardPO && hasWizardSpecs ? 13 : 12)
-            : 10;
+            : 9;
         bool hasWizardStep = IsWizardCasterInCharGen();
         int stepTotal = hasWizardStep ? baseStepTotal + 1 : baseStepTotal;
         int stepCurrent = hasWizardStep ? stepTotal - 2 : stepTotal - 1;
@@ -215,6 +215,7 @@ public partial class CharGenEquipmentScreen : UserControl, IScreen
     {
         bool hasSelection = SelectedList.SelectedItem is SelectedRow row;
         BtnRemove.IsEnabled = hasSelection;
+        BtnSetQuantity.IsEnabled = hasSelection;
 
         if (SelectedList.SelectedItem is SelectedRow sel)
         {
@@ -229,6 +230,98 @@ public partial class CharGenEquipmentScreen : UserControl, IScreen
         {
             BtnEquip.IsEnabled = false;
         }
+    }
+
+    private void BtnSetQuantity_Click(object sender, RoutedEventArgs e)
+    {
+        if (SelectedList.SelectedItem is not SelectedRow row)
+            return;
+
+        if (!TryPromptQuantity(Math.Max(1, row.Selection.Quantity), out int quantity))
+            return;
+
+        row.Selection.Quantity = Math.Max(1, quantity);
+        RefreshLists();
+    }
+
+    private bool TryPromptQuantity(int currentQuantity, out int quantity)
+    {
+        int selectedQuantity = Math.Max(1, currentQuantity);
+        quantity = selectedQuantity;
+
+        var window = new Window
+        {
+            Title = "Set Quantity",
+            Width = 320,
+            Height = 170,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            ResizeMode = ResizeMode.NoResize,
+            WindowStyle = WindowStyle.ToolWindow,
+            Owner = Window.GetWindow(this),
+        };
+
+        var panel = new StackPanel { Margin = new Thickness(14) };
+        panel.Children.Add(new TextBlock
+        {
+            Text = "Enter quantity (1 or greater):",
+            Margin = new Thickness(0, 0, 0, 8),
+        });
+
+        var quantityBox = new TextBox
+        {
+            Text = Math.Max(1, currentQuantity).ToString(CultureInfo.InvariantCulture),
+            Margin = new Thickness(0, 0, 0, 10),
+        };
+        panel.Children.Add(quantityBox);
+
+        var buttonRow = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+        };
+
+        var ok = new Button
+        {
+            Content = "OK",
+            Width = 70,
+            Margin = new Thickness(0, 0, 8, 0),
+            IsDefault = true,
+        };
+        var cancel = new Button
+        {
+            Content = "Cancel",
+            Width = 70,
+            IsCancel = true,
+        };
+
+        cancel.Click += (_, _) => window.DialogResult = false;
+        ok.Click += (_, _) =>
+        {
+            if (!int.TryParse(quantityBox.Text.Trim(), out int parsed) || parsed < 1)
+            {
+                MessageBox.Show(
+                    "Quantity must be 1 or greater.",
+                    "Set Quantity",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                quantityBox.Focus();
+                quantityBox.SelectAll();
+                return;
+            }
+
+            selectedQuantity = parsed;
+            window.DialogResult = true;
+        };
+
+        buttonRow.Children.Add(ok);
+        buttonRow.Children.Add(cancel);
+        panel.Children.Add(buttonRow);
+
+        window.Content = panel;
+        bool accepted = window.ShowDialog() == true;
+        if (accepted)
+            quantity = selectedQuantity;
+        return accepted;
     }
 
     private void BtnEquip_Click(object sender, RoutedEventArgs e)
