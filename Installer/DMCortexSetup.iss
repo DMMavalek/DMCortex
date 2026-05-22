@@ -11,7 +11,7 @@
 #ifndef OutputDir
 #define OutputDir "C:\Users\kelava\Documents\Projects\DMC Updates\DMCodex"
 #endif
-#define MyIconFile "C:\Users\kelava\Documents\Projects\Dungeon Master Cortex\Assets\Icons\DM Codex Icon.ico"
+#define MyIconFile "..\\Assets\\Icons\\DM Codex Icon.ico"
 
 #ifnexist AddBackslash(BuildSourceDir) + MyAppExeName
 	#error BuildSourceDir does not contain {#MyAppExeName}. Run build-installers.ps1 before compiling installer.
