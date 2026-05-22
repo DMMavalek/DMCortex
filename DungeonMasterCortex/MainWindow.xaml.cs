@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Shapes;
 using DungeonMasterCortex.Models;
@@ -14,6 +15,45 @@ namespace DungeonMasterCortex;
 
 public partial class MainWindow : Window
 {
+    private const double DefaultUiFontSize = 14;
+    private const double DefaultWindowWidth = 980;
+    private const double DefaultWindowHeight = 700;
+    private bool _autoResizeWindow = true;
+    private bool _checkForUpdatesOnStartup = true;
+
+    public bool AutoResizeWindow
+    {
+        get => _autoResizeWindow;
+        set => _autoResizeWindow = value;
+    }
+
+    public bool CheckForUpdatesOnStartup
+    {
+        get => _checkForUpdatesOnStartup;
+        set => _checkForUpdatesOnStartup = value;
+    }
+
+    // Set global font size for the application
+    public void SetGlobalFontSize(double fontSize)
+    {
+        FontSize = fontSize;
+
+        if (Content is FrameworkElement root)
+        {
+            double scale = Math.Clamp(fontSize / DefaultUiFontSize, 0.75, 2.0);
+            root.LayoutTransform = new ScaleTransform(scale, scale);
+            if (_autoResizeWindow && WindowState != WindowState.Maximized)
+            {
+                Width = Math.Max(MinWidth, DefaultWindowWidth * scale);
+                Height = Math.Max(MinHeight, DefaultWindowHeight * scale);
+            }
+        }
+
+        foreach (Window window in Application.Current.Windows)
+        {
+            window.FontSize = fontSize;
+        }
+    }
     private static readonly JsonSerializerOptions CharacterSaveJsonOptions = new()
     {
         WriteIndented = true
@@ -24,13 +64,37 @@ public partial class MainWindow : Window
         "DungeonMasterCortex");
 
     private static readonly string CharacterSavePath = System.IO.Path.Combine(CharacterSaveDirectory, "characters.json");
+    private static readonly string VersionSettingsPath = System.IO.Path.Combine(CharacterSaveDirectory, "version.json");
+
+    private sealed class VersionSettingsData
+    {
+        public string LastSeenVersion { get; set; } = "0.0.0";
+        public List<string> DoNotShowReleaseNotesForVersions { get; set; } = new();
+        public bool UseFullscreen { get; set; } = false;
+        public double PreferredFontSize { get; set; } = 14;
+        public bool AutoResizeWindow { get; set; } = true;
+        public bool CheckForUpdatesOnStartup { get; set; } = true;
+        public Dictionary<string, List<string>> GlobalSpellTags { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    }
 
     // ── Shared services ───────────────────────────────────────────────────────
     public readonly RulesEngine                  Rules            = new();
     public readonly CharacterOptionCatalogService CharacterOptions = new();
     public readonly CombatService                Combat           = new();
-    public readonly CampaignService              Campaign         = new();
+    public readonly SessionService               Sessions         = new(GetBuildEdition());
     public readonly LicenseService               License          = new(GetBuildEdition());
+
+    private readonly Dictionary<string, CampaignService> _campaigns = new(StringComparer.OrdinalIgnoreCase);
+    public string ActiveCampaignId { get; private set; } = "default";
+    public CampaignService Campaign
+    {
+        get
+        {
+            var campaign = _campaigns[ActiveCampaignId];
+            SyncLinkedCampaignCalendar(campaign);
+            return campaign;
+        }
+    }
 
     public CharGenState CharGen    { get; } = new();
     public List<Models.CharacterSheet> Characters { get; } = new();
@@ -40,12 +104,19 @@ public partial class MainWindow : Window
     private string  _currentScreen = "";
     private Action? _backAction;
     private Action? _nextAction;
+    private Window? _spellTrackerWindow;
+    private Views.SpellTrackerScreen? _spellTrackerScreen;
+    private bool _suppressSpellTrackerCloseNavigation;
+    private readonly Dictionary<string, List<string>> _globalSpellTags = new(StringComparer.OrdinalIgnoreCase);
 
     // Optional requested initial tab when navigating into Edit Information.
     public string PendingEditInfoTab { get; set; } = "";
     public int PendingEditCharacterIndex { get; set; } = -1;
     public bool PendingCharacterLevelUpMode { get; set; } = false;
     public int PendingCharacterSheetIndex { get; set; } = -1;
+    public int PendingSpellTrackerCharacterIndex { get; set; } = -1;
+    public string PendingCombatMonsterId { get; set; } = "";
+    public int PendingCombatMonsterQuantity { get; set; } = 1;
 
     private static readonly string[] CharGenOrder =
     {
@@ -60,7 +131,11 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         Title = License.Edition == AppEdition.Player ? "Player Codex" : "Dungeon Master Codex";
-        BannerVersion.Text = $"v{AppUpdateService.GetCurrentVersion().ToString(3)}";
+        BannerVersion.Text = $"v{AppUpdateService.GetCurrentDisplayVersion()}";
+        ApplyUiPreferencesFromSettings();
+        LoadGlobalSpellTagsFromSettings();
+
+        InitializeCampaigns();
 
         _screens = new()
         {
@@ -81,16 +156,210 @@ public partial class MainWindow : Window
             ["chargen_wizard_spec"] = new Lazy<IScreen>(() => new CharGenWizardSpecScreen(this)),
             ["chargen_review"]    = new Lazy<IScreen>(() => new CharGenReviewScreen(this)),
             ["dm_tools"]          = new Lazy<IScreen>(() => new DmToolsScreen(this)),
+            ["sessions"]          = new Lazy<IScreen>(() => new SessionScreen(this)),
             ["campaign"]          = new Lazy<IScreen>(() => new CampaignScreen(this)),
             ["character_sheets"]  = new Lazy<IScreen>(() => new CharacterSheetsScreen(this)),
+            ["spell_tracker"]     = new Lazy<IScreen>(() => new SpellTrackerScreen(this)),
             ["combat_tracker"]    = new Lazy<IScreen>(() => new CombatTrackerScreen(this)),
             ["edit_info"]         = new Lazy<IScreen>(() => new EditInfoScreen(this)),
+            ["options"]           = new Lazy<IScreen>(() => new OptionsScreen(this)),
         };
 
         LoadCharacters();
         Closing += (_, _) => SaveCharacters();
+        Loaded += MainWindow_Loaded;
 
         GoTo("hub");
+    }
+
+    public void SaveUiPreferences()
+    {
+        try
+        {
+            if (!Directory.Exists(CharacterSaveDirectory))
+                Directory.CreateDirectory(CharacterSaveDirectory);
+
+            var settings = ReadVersionSettings();
+            settings.UseFullscreen = WindowState == WindowState.Maximized;
+            settings.PreferredFontSize = FontSize;
+            settings.AutoResizeWindow = _autoResizeWindow;
+            settings.CheckForUpdatesOnStartup = _checkForUpdatesOnStartup;
+            WriteVersionSettings(settings);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error saving UI preferences: {ex.Message}");
+        }
+    }
+
+    private void ApplyUiPreferencesFromSettings()
+    {
+        try
+        {
+            var settings = ReadVersionSettings();
+
+            double fontSize = settings.PreferredFontSize;
+            if (fontSize < 10 || fontSize > 40)
+                fontSize = 14;
+
+            _autoResizeWindow = settings.AutoResizeWindow;
+            _checkForUpdatesOnStartup = settings.CheckForUpdatesOnStartup;
+            SetGlobalFontSize(fontSize);
+            WindowState = settings.UseFullscreen ? WindowState.Maximized : WindowState.Normal;
+
+            if (_autoResizeWindow && WindowState != WindowState.Maximized)
+            {
+                double scale = Math.Clamp(fontSize / DefaultUiFontSize, 0.75, 2.0);
+                Width = Math.Max(MinWidth, DefaultWindowWidth * scale);
+                Height = Math.Max(MinHeight, DefaultWindowHeight * scale);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error applying UI preferences: {ex.Message}");
+        }
+    }
+
+    private void InitializeCampaigns()
+    {
+        _campaigns.Clear();
+        var defaultCampaign = new CampaignService
+        {
+            CampaignId = "default",
+            CampaignName = "Default Campaign"
+        };
+        _campaigns[defaultCampaign.CampaignId] = defaultCampaign;
+        ActiveCampaignId = defaultCampaign.CampaignId;
+    }
+
+    public IReadOnlyList<CampaignService> GetCampaigns()
+    {
+        return _campaigns.Values
+            .OrderBy(c => c.CampaignName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    public CampaignService? GetCampaignById(string campaignId)
+    {
+        if (string.IsNullOrWhiteSpace(campaignId))
+            return null;
+        return _campaigns.TryGetValue(campaignId, out var campaign) ? campaign : null;
+    }
+
+    private void SyncLinkedCampaignCalendar(CampaignService campaign)
+    {
+        string sourceId = (campaign.SharedCalendarSourceCampaignId ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(sourceId))
+            return;
+        if (string.Equals(sourceId, campaign.CampaignId, StringComparison.OrdinalIgnoreCase))
+            return;
+        if (!_campaigns.TryGetValue(sourceId, out var source))
+            return;
+
+        var targetCal = campaign.Calendar;
+        var sourceCal = source.Calendar;
+
+        targetCal.Config.MonthCount = sourceCal.Config.MonthCount;
+        targetCal.Config.DaysPerWeek = sourceCal.Config.DaysPerWeek;
+        targetCal.Config.HoursPerDay = sourceCal.Config.HoursPerDay;
+        targetCal.Config.MonthNames = new List<string>(sourceCal.Config.MonthNames);
+        targetCal.Config.DayNames = new List<string>(sourceCal.Config.DayNames);
+        targetCal.Config.DaysPerMonth = new List<int>(sourceCal.Config.DaysPerMonth);
+        targetCal.Config.Moons = sourceCal.Config.Moons
+            .Select(m => new MoonDefinition
+            {
+                Name = m.Name,
+                CycleLengthDays = m.CycleLengthDays,
+                DayInCycle = m.DayInCycle,
+            })
+            .ToList();
+
+        targetCal.CurrentYear = sourceCal.CurrentYear;
+        targetCal.CurrentEra = sourceCal.CurrentEra;
+        targetCal.CurrentMonth = sourceCal.CurrentMonth;
+        targetCal.CurrentDay = sourceCal.CurrentDay;
+        targetCal.CurrentHour = sourceCal.CurrentHour;
+        targetCal.CurrentMinute = sourceCal.CurrentMinute;
+        targetCal.TotalDaysElapsed = sourceCal.TotalDaysElapsed;
+        targetCal.TotalMinutesElapsed = sourceCal.TotalMinutesElapsed;
+    }
+
+    public bool CreateCampaign(string name, out string message)
+    {
+        name = (name ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            message = "Campaign name is required.";
+            return false;
+        }
+
+        string baseId = BuildCampaignId(name);
+        string id = baseId;
+        int suffix = 2;
+        while (_campaigns.ContainsKey(id))
+        {
+            id = $"{baseId}-{suffix}";
+            suffix++;
+        }
+
+        _campaigns[id] = new CampaignService
+        {
+            CampaignId = id,
+            CampaignName = name
+        };
+
+        ActiveCampaignId = id;
+        message = "Campaign created.";
+        return true;
+    }
+
+    public bool SwitchCampaign(string campaignId)
+    {
+        if (!_campaigns.ContainsKey(campaignId))
+            return false;
+        ActiveCampaignId = campaignId;
+        return true;
+    }
+
+    public bool DeleteCampaign(string campaignId, out string message)
+    {
+        if (!_campaigns.ContainsKey(campaignId))
+        {
+            message = "Campaign not found.";
+            return false;
+        }
+
+        if (_campaigns.Count <= 1)
+        {
+            message = "At least one campaign must exist.";
+            return false;
+        }
+
+        _campaigns.Remove(campaignId);
+
+        foreach (var campaign in _campaigns.Values)
+        {
+            if (string.Equals(campaign.SharedCalendarSourceCampaignId, campaignId, StringComparison.OrdinalIgnoreCase))
+                campaign.SharedCalendarSourceCampaignId = string.Empty;
+        }
+
+        if (string.Equals(ActiveCampaignId, campaignId, StringComparison.OrdinalIgnoreCase))
+        {
+            ActiveCampaignId = _campaigns.Keys.OrderBy(k => k, StringComparer.OrdinalIgnoreCase).First();
+        }
+
+        message = "Campaign deleted.";
+        return true;
+    }
+
+    private static string BuildCampaignId(string name)
+    {
+        var chars = name.Trim().ToLowerInvariant().Select(ch => char.IsLetterOrDigit(ch) ? ch : '-').ToArray();
+        string raw = new string(chars);
+        while (raw.Contains("--", StringComparison.Ordinal))
+            raw = raw.Replace("--", "-", StringComparison.Ordinal);
+        raw = raw.Trim('-');
+        return string.IsNullOrWhiteSpace(raw) ? "campaign" : raw;
     }
 
     private static AppEdition GetBuildEdition()
@@ -333,6 +602,19 @@ public partial class MainWindow : Window
 
     public void GoTo(string name, int direction = 1)
     {
+        if (string.Equals(name, "hub", StringComparison.OrdinalIgnoreCase))
+            CloseSpellTrackerWindow();
+
+        if (string.Equals(name, "sessions", StringComparison.OrdinalIgnoreCase))
+        {
+            MessageBox.Show(
+                "Session Manager is hidden in this release.",
+                "Feature Hidden",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
         if (!IsScreenAllowedForEdition(name))
         {
             MessageBox.Show(
@@ -446,7 +728,7 @@ public partial class MainWindow : Window
     }
 
     private void BtnJumpClassAbilities_Click(object sender, RoutedEventArgs e) => GoTo("chargen_class_abilities");
-    private void BtnJumpOptions_Click(object sender, RoutedEventArgs e) => GoTo("chargen_character_options");
+    private void BtnJumpOptions_Click(object sender, RoutedEventArgs e) => GoTo("options");
     private void BtnJumpWeaponProf_Click(object sender, RoutedEventArgs e) => GoTo("chargen_weapon_prof");
     private void BtnJumpEquipment_Click(object sender, RoutedEventArgs e) => GoTo("chargen_equipment");
     private void BtnJumpSpells_Click(object sender, RoutedEventArgs e)
@@ -544,6 +826,70 @@ public partial class MainWindow : Window
         GoTo("character_sheets");
     }
 
+    public void OpenSpellTracker(int characterIndex)
+    {
+        if (_spellTrackerWindow is null || _spellTrackerScreen is null)
+        {
+            _spellTrackerScreen = new Views.SpellTrackerScreen(this);
+            _spellTrackerWindow = new Window
+            {
+                Title = "Spell Tracker",
+                Content = _spellTrackerScreen,
+                Owner = this,
+                Width = 1180,
+                Height = 760,
+                MinWidth = 980,
+                MinHeight = 620,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Background = (Brush)FindResource("BrushBg")
+            };
+
+            _spellTrackerWindow.Closed += (_, _) =>
+            {
+                bool shouldReturnToCharacters = !_suppressSpellTrackerCloseNavigation;
+                _suppressSpellTrackerCloseNavigation = false;
+                _spellTrackerWindow = null;
+                _spellTrackerScreen = null;
+
+                if (shouldReturnToCharacters)
+                {
+                    GoTo("characters", -1);
+                    Activate();
+                    Focus();
+                }
+            };
+        }
+
+        _spellTrackerScreen.LoadCharacter(characterIndex);
+        _spellTrackerWindow.Show();
+        if (_spellTrackerWindow.WindowState == WindowState.Minimized)
+            _spellTrackerWindow.WindowState = WindowState.Normal;
+        _spellTrackerWindow.Activate();
+    }
+
+    private void CloseSpellTrackerWindow()
+    {
+        if (_spellTrackerWindow is null)
+            return;
+
+        _suppressSpellTrackerCloseNavigation = true;
+        _spellTrackerWindow.Close();
+    }
+
+    public void CloseSpellTrackerAndFocusCharacters()
+    {
+        if (_spellTrackerWindow is not null)
+        {
+            _suppressSpellTrackerCloseNavigation = false;
+            _spellTrackerWindow.Close();
+            return;
+        }
+
+        GoTo("characters", -1);
+        Activate();
+        Focus();
+    }
+
     public void StartPlayerLevelUp(int characterIndex, int xpGain, int hpGain, int cpGain)
     {
         if (characterIndex < 0 || characterIndex >= Characters.Count)
@@ -554,12 +900,14 @@ public partial class MainWindow : Window
         CharGen.Clear();
         CharGen.IsLevelUpMode = true;
         CharGen.LevelUpCharacterIndex = characterIndex;
+        CharGen.ExistingStartingExperience = Math.Max(0, character.ExperiencePoints);
         CharGen.LevelUpPendingExperienceGain = Math.Max(0, xpGain);
         CharGen.LevelUpPendingHitPointGain = Math.Max(0, hpGain);
-        CharGen.LevelUpPendingCharacterPointGain = Math.Max(0, cpGain);
+        bool isPlayersOption = string.Equals(character.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase);
+        CharGen.LevelUpPendingCharacterPointGain = isPlayersOption ? Math.Max(0, cpGain) : 0;
 
         CharGen.Name = character.Name;
-        CharGen.CharacterMode = string.IsNullOrWhiteSpace(character.CharacterMode) ? "players_option" : character.CharacterMode;
+        CharGen.CharacterMode = string.IsNullOrWhiteSpace(character.CharacterMode) ? "core_rules" : character.CharacterMode;
         CharGen.RaceId = character.RaceId;
         CharGen.BaseRaceId = character.RaceId;
         CharGen.ClassId = character.ClassId;
@@ -698,241 +1046,254 @@ public partial class MainWindow : Window
             SizeClassEach = string.IsNullOrWhiteSpace(selection.SizeClassEach) ? "Medium" : selection.SizeClassEach,
             WeightEach = Math.Max(0, selection.WeightEach),
         };
-}
 
-// ── Shared chargen state ──────────────────────────────────────────────────────
-public class CharGenState
-{
-    public string Name         { get; set; } = "";
-    public string CharacterMode { get; set; } = "players_option";
-    public string Method       { get; set; } = "method_v_4d6_drop_lowest";
-    public Dictionary<string, int> Abilities    { get; set; } = new();
-    // Modified abilities: rolled scores + racial modifiers applied
-    public Dictionary<string, int> ModifiedAbilities { get; set; } = new();
-    // Racial ability modifiers (delta) applied during race selection: e.g. {str: 0, dex: 0, con: +1, int: 0, wis: 0, cha: -1}
-    public Dictionary<string, int> RacialAbilityModifiers { get; set; } = new();
-    // PO sub-abilities: keys e.g. "str_muscle", "str_stamina", "dex_aim" …
-    public Dictionary<string, int> SubAbilities { get; set; } = new();
-    // Exceptional strength percentile (warriors with STR 18): 0=none, 1-100
-    public int ExceptionalStrength { get; set; } = 0;
-    public bool ExceptionalStrengthLocked { get; set; } = false;
-    public string BaseRaceId { get; set; } = "";
-    public string RaceId  { get; set; } = "";
-
-    // Player level-up mode context.
-    public bool IsLevelUpMode { get; set; } = false;
-    public int LevelUpCharacterIndex { get; set; } = -1;
-    public int LevelUpPendingExperienceGain { get; set; } = 0;
-    public int LevelUpPendingHitPointGain { get; set; } = 0;
-    public int LevelUpPendingCharacterPointGain { get; set; } = 0;
-    public List<string> LockedNonweaponProficiencyIds { get; set; } = new();
-    public List<string> LockedWeaponProficiencyIds { get; set; } = new();
-    public List<string> BaselineNonweaponProficiencyIds { get; set; } = new();
-    public Dictionary<string, int> BaselineNonweaponProficiencyImprovements { get; set; } = new();
-    public List<string> BaselineWeaponProficiencyIds { get; set; } = new();
-    public List<WeaponProficiencySelection> BaselineWeaponProficiencies { get; set; } = new();
-
-    // Existing-character onboarding mode context (roster -> add existing).
-    public bool IsExistingCharacterMode { get; set; } = false;
-    public int ExistingStartingExperience { get; set; } = 0;
-    public bool ExistingExperienceIsGrandTotalForMulticlass { get; set; } = true;
-    public int ExistingStartingUnspentCharacterPoints { get; set; } = 0;
-    public int ExistingCpPerLevel { get; set; } = 0;
-    
-    // ── Class Selection (Multi/Dual-class support) ──
-    public string ClassId { get; set; } = "";  // For single-class / legacy; derived from SelectedClassIds[0]
-    public List<string> SelectedClassIds { get; set; } = new();  // Primary: all selected class IDs
-    public string ClassMode { get; set; } = "";  // "" = single-class, "multiclass", "dualclass"
-    public int DualClassSwitchLevel { get; set; } = 0;  // For dual-class mode: level when switching
-    // Kit selection from Complete Books of Races
-    public string KitId { get; set; } = "";
-    public List<string> KitFreeNwpIds { get; set; } = new();
-    public List<string> KitRequiredNwpIds { get; set; } = new();
-    
-    public int RacialCarryoverToClassPoints { get; set; } = 0;
-    public List<string> SelectedRacialAbilityIds { get; set; } = new();
-    
-    // ── Per-class selections (new) ──
-    public Dictionary<string, List<string>> SelectedAbilitiesByClass { get; set; } = new();
-    public Dictionary<string, string> WizardSpecializationById { get; set; } = new();
-    public Dictionary<string, Dictionary<string, string>> SpheresByClass { get; set; } = new();
-    public Dictionary<string, Dictionary<string, bool>> SchoolsByClass { get; set; } = new();
-    public Dictionary<string, Dictionary<string, int>> RogueSkillPointsByClass { get; set; } = new();
-    public Dictionary<string, string> RogueSkillArmorByClass { get; set; } = new();
-    
-    // ── Legacy single-class selections (for backwards compat) ──
-    public List<string> SelectedClassAbilityIds { get; set; } = new();
-    public string WizardSpecializationId { get; set; } = "";
-    // Sphere selections: key=sphere name (e.g. "All", "Healing"), value="minor"/"major"/"both"
-    public Dictionary<string, string> SelectedSpheres { get; set; } = new();
-    // Wizard school selections: key=school name (e.g. "Abjuration"), value=true if selected
-    public Dictionary<string, bool> SelectedWizardSchools { get; set; } = new();
-    // Rogue skill allocations: key=skill id (e.g. "pick_pockets"), value=allocated discretionary points
-    public Dictionary<string, int> SelectedRogueSkillPoints { get; set; } = new();
-    // Rogue armor profile for thieving skill adjustments
-    public string RogueSkillArmorProfile { get; set; } = "no_armor";
-    public List<string> SelectedNonweaponProficiencyIds { get; set; } = new();
-    public Dictionary<string, int> SelectedNonweaponProficiencyImprovements { get; set; } = new();
-    public Dictionary<string, string> SelectedNonweaponProficiencyNotes { get; set; } = new();
-    public List<LanguageSelection> SelectedLanguages { get; set; } = new();
-    public List<string> SelectedTraitIds { get; set; } = new();
-    public Dictionary<string, string> SelectedDisadvantageSeverities { get; set; } = new();
-    // Chargen level baseline for per-level point calculations (defaults to 1st level)
-    public int CharacterLevel { get; set; } = 1;
-    // Weapon proficiency selections
-    public List<WeaponProficiencySelection> SelectedWeaponProficiencies { get; set; } = new();
-    public List<EquipmentSelection> SelectedEquipment { get; set; } = new();
-    public List<string> WizardSpellbookIds { get; set; } = new();
-    public List<NamedSpellList> WizardSpellLists { get; set; } = new();
-    // Explicitly equipped slots (set on the equipment screen).
-    public string EquippedArmorId  { get; set; } = "";
-    public string EquippedShieldId { get; set; } = "";
-    public string EquippedWeaponId { get; set; } = "";
-
-    public void Clear()
+    private void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
-        Name = ""; CharacterMode = "players_option"; Method = "method_v_4d6_drop_lowest";
-        Abilities = new(); ModifiedAbilities = new(); RacialAbilityModifiers = new(); SubAbilities = new(); ExceptionalStrength = 0; ExceptionalStrengthLocked = false;
-        BaseRaceId = ""; RaceId = ""; ClassId = ""; ClassMode = ""; KitId = ""; KitFreeNwpIds = new(); KitRequiredNwpIds = new();
-        IsLevelUpMode = false;
-        LevelUpCharacterIndex = -1;
-        LevelUpPendingExperienceGain = 0;
-        LevelUpPendingHitPointGain = 0;
-        LevelUpPendingCharacterPointGain = 0;
-        LockedNonweaponProficiencyIds = new();
-        LockedWeaponProficiencyIds = new();
-        BaselineNonweaponProficiencyIds = new();
-        BaselineNonweaponProficiencyImprovements = new();
-        BaselineWeaponProficiencyIds = new();
-        BaselineWeaponProficiencies = new();
-        IsExistingCharacterMode = false;
-        ExistingStartingExperience = 0;
-        ExistingExperienceIsGrandTotalForMulticlass = true;
-        ExistingStartingUnspentCharacterPoints = 0;
-        ExistingCpPerLevel = 0;
-        SelectedClassIds = new();
-        DualClassSwitchLevel = 0;
-        RacialCarryoverToClassPoints = 0;
-        SelectedRacialAbilityIds = new();
-        SelectedAbilitiesByClass = new();
-        WizardSpecializationById = new();
-        SpheresByClass = new();
-        SchoolsByClass = new();
-        RogueSkillPointsByClass = new();
-        RogueSkillArmorByClass = new();
-        SelectedClassAbilityIds = new();
-        WizardSpecializationId = "";
-        SelectedSpheres = new();
-        SelectedWizardSchools = new();
-        SelectedRogueSkillPoints = new();
-        RogueSkillArmorProfile = "no_armor";
-        SelectedNonweaponProficiencyIds = new();
-        SelectedNonweaponProficiencyImprovements = new();
-        SelectedNonweaponProficiencyNotes = new();
-        SelectedLanguages = new();
-        SelectedTraitIds = new();
-        SelectedDisadvantageSeverities = new();
-        CharacterLevel = 1;
-        SelectedWeaponProficiencies = new();
-        SelectedEquipment = new();
-        WizardSpellbookIds = new();
-        WizardSpellLists = new();
-        EquippedArmorId = "";
-        EquippedShieldId = "";
-        EquippedWeaponId = "";
+        CheckAndShowReleaseNotes();
     }
 
-    /// <summary>
-    /// Sync legacy single-class fields from the new multi-class structures.
-    /// Used when transitioning from new multi-class UI back to legacy screens.
-    /// </summary>
-    public void SyncLegacyFieldsFromNew()
+    private void CheckAndShowReleaseNotes()
     {
-        if (SelectedClassIds.Count == 0)
+        try
         {
-            ClassId = "";
-            SelectedClassAbilityIds = new();
-            WizardSpecializationId = "";
-            SelectedSpheres = new();
-            SelectedWizardSchools = new();
+            var currentVersion = AppUpdateService.GetCurrentVersion();
+            var storedVersion = GetStoredVersion();
+
+            // If current version is newer, check if user opted out
+            if (currentVersion > storedVersion)
+            {
+                if (HasUserOptedOutOfReleaseNotes(currentVersion))
+                {
+                    SaveStoredVersion(currentVersion);
+                    return;
+                }
+
+                var dialog = new ReleaseNotesDialog(currentVersion)
+                {
+                    Owner = this
+                };
+                dialog.ShowDialog();
+
+                SaveStoredVersion(currentVersion, dialog.DoNotShowAgain);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error checking release notes: {ex.Message}");
+        }
+    }
+
+    private Version GetStoredVersion()
+    {
+        try
+        {
+            var settings = ReadVersionSettings();
+            if (Version.TryParse(settings.LastSeenVersion, out var parsedVersion))
+                return parsedVersion;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error reading stored version: {ex.Message}");
+        }
+
+        return new Version(0, 0, 0, 0);
+    }
+
+    private void SaveStoredVersion(Version version, bool doNotShowAgain = false)
+    {
+        try
+        {
+            if (!Directory.Exists(CharacterSaveDirectory))
+                Directory.CreateDirectory(CharacterSaveDirectory);
+
+            var settings = ReadVersionSettings();
+            settings.LastSeenVersion = AppUpdateService.ToDisplayVersionString(version);
+            settings.DoNotShowReleaseNotesForVersions = GetDoNotShowVersions(version, doNotShowAgain);
+            WriteVersionSettings(settings);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error saving version: {ex.Message}");
+        }
+    }
+
+    private bool HasUserOptedOutOfReleaseNotes(Version version)
+    {
+        try
+        {
+            var settings = ReadVersionSettings();
+            foreach (var versionStr in settings.DoNotShowReleaseNotesForVersions)
+            {
+                if (string.Equals(versionStr, AppUpdateService.ToDisplayVersionString(version), StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error checking release notes opt-out: {ex.Message}");
+        }
+
+        return false;
+    }
+
+    private List<string> GetDoNotShowVersions(Version currentVersion, bool addCurrentVersion)
+    {
+        var versions = new List<string>();
+
+        try
+        {
+            versions = ReadVersionSettings()
+                .DoNotShowReleaseNotesForVersions
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+        catch { }
+
+        if (addCurrentVersion)
+        {
+            string currentVersionStr = AppUpdateService.ToDisplayVersionString(currentVersion);
+            if (!versions.Contains(currentVersionStr))
+                versions.Add(currentVersionStr);
+        }
+
+        return versions;
+    }
+
+    private VersionSettingsData ReadVersionSettings()
+    {
+        try
+        {
+            if (!Directory.Exists(CharacterSaveDirectory) || !File.Exists(VersionSettingsPath))
+                return new VersionSettingsData();
+
+            var json = File.ReadAllText(VersionSettingsPath);
+            var data = JsonSerializer.Deserialize<VersionSettingsData>(json);
+            return data ?? new VersionSettingsData();
+        }
+        catch
+        {
+            return new VersionSettingsData();
+        }
+    }
+
+    private void WriteVersionSettings(VersionSettingsData data)
+    {
+        var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
+        File.WriteAllText(VersionSettingsPath, json);
+    }
+
+    private void LoadGlobalSpellTagsFromSettings()
+    {
+        _globalSpellTags.Clear();
+
+        try
+        {
+            var settings = ReadVersionSettings();
+            if (settings.GlobalSpellTags is null)
+                return;
+
+            foreach (var kv in settings.GlobalSpellTags)
+            {
+                string spellId = (kv.Key ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(spellId))
+                    continue;
+
+                var tags = (kv.Value ?? new List<string>())
+                    .Where(t => !string.IsNullOrWhiteSpace(t))
+                    .Select(t => t.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(t => t, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                if (tags.Count > 0)
+                    _globalSpellTags[spellId] = tags;
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error loading global spell tags: {ex.Message}");
+        }
+    }
+
+    private void SaveGlobalSpellTagsToSettings()
+    {
+        var settings = ReadVersionSettings();
+        settings.GlobalSpellTags = new Dictionary<string, List<string>>(_globalSpellTags, StringComparer.OrdinalIgnoreCase);
+        WriteVersionSettings(settings);
+    }
+
+    public List<string> GetGlobalSpellTags(string spellId)
+    {
+        string id = (spellId ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(id))
+            return new List<string>();
+
+        if (!_globalSpellTags.TryGetValue(id, out var tags))
+            return new List<string>();
+
+        return tags.ToList();
+    }
+
+    public bool AddGlobalSpellTag(string spellId, string tag)
+    {
+        string id = (spellId ?? string.Empty).Trim();
+        string cleanedTag = (tag ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(cleanedTag))
+            return false;
+
+        if (!_globalSpellTags.TryGetValue(id, out var tags))
+        {
+            tags = new List<string>();
+            _globalSpellTags[id] = tags;
+        }
+
+        if (tags.Contains(cleanedTag, StringComparer.OrdinalIgnoreCase))
+            return false;
+
+        tags.Add(cleanedTag);
+        tags.Sort(StringComparer.OrdinalIgnoreCase);
+        SaveGlobalSpellTagsToSettings();
+        return true;
+    }
+
+    public bool RemoveGlobalSpellTag(string spellId, string tag)
+    {
+        string id = (spellId ?? string.Empty).Trim();
+        string cleanedTag = (tag ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(cleanedTag))
+            return false;
+
+        if (!_globalSpellTags.TryGetValue(id, out var tags))
+            return false;
+
+        int removed = tags.RemoveAll(t => string.Equals(t, cleanedTag, StringComparison.OrdinalIgnoreCase));
+        if (removed <= 0)
+            return false;
+
+        if (tags.Count == 0)
+            _globalSpellTags.Remove(id);
+
+        SaveGlobalSpellTagsToSettings();
+        return true;
+    }
+
+    // Navigate back to the previous screen
+    public void GoToPreviousScreen()
+    {
+        if (_backAction != null)
+        {
+            _backAction.Invoke();
         }
         else
         {
-            string primaryClassId = SelectedClassIds[0];
-            ClassId = primaryClassId;
-            SelectedClassAbilityIds = SelectedAbilitiesByClass.TryGetValue(primaryClassId, out var abilities) 
-                ? new List<string>(abilities) 
-                : new();
-            WizardSpecializationId = WizardSpecializationById.TryGetValue(primaryClassId, out var spec)
-                ? spec
-                : "";
-            SelectedSpheres = SpheresByClass.TryGetValue(primaryClassId, out var spheres)
-                ? new Dictionary<string, string>(spheres)
-                : new();
-            SelectedWizardSchools = SchoolsByClass.TryGetValue(primaryClassId, out var schools)
-                ? new Dictionary<string, bool>(schools)
-                : new();
-            SelectedRogueSkillPoints = RogueSkillPointsByClass.TryGetValue(primaryClassId, out var roguePoints)
-                ? new Dictionary<string, int>(roguePoints)
-                : new();
-            RogueSkillArmorProfile = RogueSkillArmorByClass.TryGetValue(primaryClassId, out var armor)
-                ? armor
-                : "no_armor";
+            MessageBox.Show("No previous screen to navigate to.", "Navigation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 
-    /// <summary>
-    /// Sync new multi-class fields from legacy single-class structures.
-    /// Used during initial conversion or when working in single-class mode.
-    /// </summary>
-    public void SyncNewFieldsFromLegacy()
+
+    public void SetBackAction(Action backAction)
     {
-        if (!string.IsNullOrEmpty(ClassId))
-        {
-            SelectedClassIds = new List<string> { ClassId };
-            SelectedAbilitiesByClass[ClassId] = new List<string>(SelectedClassAbilityIds);
-            if (!string.IsNullOrEmpty(WizardSpecializationId))
-                WizardSpecializationById[ClassId] = WizardSpecializationId;
-            if (SelectedSpheres.Count > 0)
-                SpheresByClass[ClassId] = new Dictionary<string, string>(SelectedSpheres);
-            if (SelectedWizardSchools.Count > 0)
-                SchoolsByClass[ClassId] = new Dictionary<string, bool>(SelectedWizardSchools);
-            if (SelectedRogueSkillPoints.Count > 0)
-                RogueSkillPointsByClass[ClassId] = new Dictionary<string, int>(SelectedRogueSkillPoints);
-            if (!string.IsNullOrWhiteSpace(RogueSkillArmorProfile))
-                RogueSkillArmorByClass[ClassId] = RogueSkillArmorProfile;
-        }
-    }
-
-    /// <summary>
-    /// Recompute CharacterLevel from existing-character XP context.
-    /// For multiclass with total-XP mode, XP is split evenly per class.
-    /// </summary>
-    public void RecalculateLevelFromExistingExperience()
-    {
-        if (!IsExistingCharacterMode)
-        {
-            CharacterLevel = Math.Max(1, CharacterLevel);
-            return;
-        }
-
-        var classIds = SelectedClassIds
-            .Where(id => !string.IsNullOrWhiteSpace(id))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
-        if (classIds.Count == 0 && !string.IsNullOrWhiteSpace(ClassId))
-            classIds.Add(ClassId);
-
-        int enteredXp = Math.Max(0, ExistingStartingExperience);
-        int effectiveXp = enteredXp;
-        if (classIds.Count > 1 && ExistingExperienceIsGrandTotalForMulticlass)
-            effectiveXp = Math.Max(0, enteredXp / classIds.Count);
-
-        string classIdForProgression = !string.IsNullOrWhiteSpace(ClassId)
-            ? ClassId
-            : classIds.FirstOrDefault() ?? string.Empty;
-
-        int derived = CharacterProgressionService.GetLevelForExperience(classIdForProgression, effectiveXp);
-        CharacterLevel = Math.Max(1, derived);
+        _backAction = backAction;
     }
 }
