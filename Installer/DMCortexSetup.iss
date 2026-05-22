@@ -2,7 +2,7 @@
 ; Build source expected in C:\Users\kelava\Documents\Projects\DMC Updates\DMCodex
 
 #define MyAppName "Dungeon Master Codex"
-#define MyAppVersion "1.3.13"
+#define MyAppVersion "1.3.14"
 #define MyAppPublisher "Dungeon Master Codex"
 #define MyAppExeName "DungeonMasterCortex.exe"
 #ifndef BuildSourceDir
@@ -26,7 +26,7 @@ DefaultDirName={autopf}\DMCodex
 DefaultGroupName=Dungeon Master Codex
 DisableProgramGroupPage=yes
 OutputDir={#OutputDir}
-OutputBaseFilename=DMCodex-Setup-1.3.13
+OutputBaseFilename=DMCodex-Setup-1.3.14
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern

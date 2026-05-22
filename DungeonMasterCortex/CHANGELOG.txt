@@ -1,6 +1,11 @@
 Dungeon Master Cortex - Running Changelog
 ========================================
 
+v1.3.14 (2026-05-21)
+- Automatic GitHub release pipeline validation update.
+- Future releases now publish from version bumps on master without manual tag pushes.
+- Networking features remain hidden in offline release builds.
+
 v1.3.13 (2026-05-21)
 - Updater source moved from Google Drive to GitHub Releases.
 - Release automation now publishes DM and Player installers to GitHub on version tags.

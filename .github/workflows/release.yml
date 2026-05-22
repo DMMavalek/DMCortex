@@ -2,8 +2,12 @@ name: Build And Publish Release
 
 on:
   push:
-    tags:
-      - "v*"
+    branches:
+      - master
+    paths:
+      - 'DungeonMasterCortex/DungeonMasterCortex.csproj'
+      - 'build-installers.ps1'
+      - 'Installer/**'
   workflow_dispatch:
 
 permissions:
@@ -16,6 +20,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read Version
+        id: version
+        shell: pwsh
+        run: |
+          [xml]$xml = Get-Content .\DungeonMasterCortex\DungeonMasterCortex.csproj
+          $version = ($xml.Project.PropertyGroup.Version | Select-Object -First 1).Trim()
+          if ([string]::IsNullOrWhiteSpace($version)) {
+            throw 'Could not determine version from DungeonMasterCortex.csproj.'
+          }
+
+          $tag = "v$version"
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
@@ -36,6 +56,9 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.tag }}
+          target_commitish: ${{ github.sha }}
           files: |
             artifacts/github-release/dm/DMCodex-Setup-*.exe
             artifacts/github-release/player/PlayerCodex-Setup-*.exe
