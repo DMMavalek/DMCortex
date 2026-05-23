@@ -1,6 +1,22 @@
 Dungeon Master Cortex - Running Changelog
 ========================================
 
+v1.3.19 (2026-05-23)
+- Added reusable class-ability catalog support so abilities can be assigned across multiple classes.
+- Added class ability metadata for repeatable picks, required selection text, and creation-only purchase gating.
+- Improved activation request reliability with SMTP hardening and manual email fallback.
+
+v1.3.18 (2026-05-22)
+- Moved everything to GitHub
+- Activation should be working now
+- Generated the next installer build line for DM and Player editions.
+- Networking features remain disabled in this offline build.
+
+v1.3.17 (2026-05-22)
+- Added missing source files required by the CI and release builds.
+- Restored the options page routing for the 1.3.17 release line.
+- Kept the release pipeline aligned with the updated source file set.
+
 v1.3.15 (2026-05-21)
 - Updater download validation now trusts the downloaded installer bytes instead of relying on GitHub response metadata.
 - Existing valid installer downloads in the updater temp folder are reused on retry.
