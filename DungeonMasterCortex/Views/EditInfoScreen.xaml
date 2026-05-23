@@ -89,6 +89,16 @@
                         Click="TabClassAbilities_Click"/>
                                 </WrapPanel>
 
+                                <WrapPanel x:Name="RulesModeFilterStrip" Visibility="Collapsed" Margin="0,0,0,4">
+                    <TextBlock Text="Editor Mode:" Style="{StaticResource SubtitleText}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <ToggleButton x:Name="RulesModeToggle"
+                                  Content="Showing Core Rules"
+                                  Width="190"
+                                  Padding="10,4"
+                                  Checked="RulesModeToggle_Changed"
+                                  Unchecked="RulesModeToggle_Changed"/>
+                                </WrapPanel>
+
                                 <WrapPanel x:Name="SpellsSubTabStrip" Visibility="Collapsed" Margin="0,0,0,4">
                     <Button x:Name="TabBtnSpellsArcane" Content="Arcane"
                         Style="{StaticResource GoldButton}" Width="120"
@@ -829,6 +839,12 @@
                         <TextBox x:Name="KitEditName" Style="{StaticResource DarkTextBox}" Margin="0,0,0,8"/>
                         <TextBlock Text="Source" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
                         <TextBox x:Name="KitEditSource" Style="{StaticResource DarkTextBox}" Margin="0,0,0,8"/>
+                        <TextBlock Text="Rules Mode" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                        <ComboBox x:Name="KitEditRulesMode" Style="{StaticResource DarkComboBox}" Margin="0,0,0,8">
+                            <ComboBoxItem Content="All Characters" Tag="all"/>
+                            <ComboBoxItem Content="Core Rules Only" Tag="core_rules"/>
+                            <ComboBoxItem Content="Player's Option Only" Tag="players_option"/>
+                        </ComboBox>
                         <TextBlock Text="Allowed Races" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
                         <TextBlock Text="Race IDs, comma-separated. Blank = available to all races."
                                    Style="{StaticResource SubtitleText}" FontSize="10"
@@ -844,6 +860,7 @@
                                  AcceptsReturn="True" TextWrapping="Wrap"
                                  Height="200" VerticalScrollBarVisibility="Auto" Margin="0,0,0,10"/>
                         <Button Content="💾  SAVE KIT" Style="{StaticResource GoldButton}" Click="BtnSaveKit_Click"/>
+                        <Button Content="🛠  MIGRATE KIT RULES MODES" Style="{StaticResource GoldButton}" Margin="0,6,0,0" Click="BtnMigrateKitRulesModes_Click"/>
                         <TextBlock x:Name="KitEditorInfo" Style="{StaticResource SubtitleText}"
                                    Margin="0,8,0,0" TextWrapping="Wrap"/>
                     </StackPanel>
@@ -1217,6 +1234,12 @@
                         <TextBox x:Name="ClassDefIdEditor" Style="{StaticResource DarkTextBox}" Margin="0,0,0,8"/>
                         <TextBlock Text="Class Name" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
                         <TextBox x:Name="ClassDefNameEditor" Style="{StaticResource DarkTextBox}" Margin="0,0,0,8"/>
+                        <TextBlock Text="Rules Mode" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                        <ComboBox x:Name="ClassDefRulesMode" Style="{StaticResource DarkComboBox}" Margin="0,0,0,8" SelectedIndex="0">
+                            <ComboBoxItem Content="All Characters" Tag="all"/>
+                            <ComboBoxItem Content="Core Rules Only" Tag="core_rules"/>
+                            <ComboBoxItem Content="Player's Option Only" Tag="players_option"/>
+                        </ComboBox>
                         <TextBlock Text="Class Point Budget" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
                         <TextBox x:Name="ClassDefBudgetEditor" Style="{StaticResource DarkTextBox}" Margin="0,0,0,8"/>
                         <TextBlock Text="Allowed Races (comma separated ids)" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
@@ -1252,6 +1275,8 @@
                             <ComboBox x:Name="ClassCopyTarget" Style="{StaticResource DarkComboBox}"/>
                             <Button Content="⇢  COPY ABILITY" Style="{StaticResource GoldButton}"
                                 Margin="0,6,0,0" Click="BtnCopyClassAbilityToClass_Click"/>
+                            <Button Content="⇢  COPY ABILITY TO ALL CLASSES" Style="{StaticResource GoldButton}"
+                                Margin="0,6,0,0" Click="BtnCopyClassAbilityToAllClasses_Click"/>
                         <TextBlock x:Name="ClassEditorInfo" Style="{StaticResource SubtitleText}"
                                    Margin="0,8,0,0" TextWrapping="Wrap"/>
                     </StackPanel>
@@ -1315,7 +1340,15 @@
                                 <StackPanel Grid.Column="2">
                                     <TextBlock Text="Point Cost" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
                                     <TextBox x:Name="CaCost" Style="{StaticResource DarkTextBox}" Margin="0,0,0,6"/>
+                                    <TextBlock Text="Unlock Level" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                    <TextBox x:Name="CaUnlockLevel" Style="{StaticResource DarkTextBox}" Margin="0,0,0,6" Text="1"/>
                                     <CheckBox x:Name="CaAuto" Content="Auto Granted"
+                                              Foreground="{StaticResource BrushText}" Margin="0,2,0,0"/>
+                                    <CheckBox x:Name="CaAllowMultiple" Content="Allow Multiple Selections"
+                                              Foreground="{StaticResource BrushText}" Margin="0,2,0,0"/>
+                                    <CheckBox x:Name="CaRequiresText" Content="Requires Selection Text"
+                                              Foreground="{StaticResource BrushText}" Margin="0,2,0,0"/>
+                                    <CheckBox x:Name="CaAllowPostLevelOne" Content="Allow Purchase After Level 1"
                                               Foreground="{StaticResource BrushText}" Margin="0,2,0,0"/>
                                 </StackPanel>
                             </Grid>

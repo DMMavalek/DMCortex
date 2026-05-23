@@ -31,6 +31,7 @@
         ["fighter", "wizard"],
         ["fighter", "thief"],
         ["wizard", "thief"],
+        ["wizard", "bard"],
         ["fighter", "wizard", "cleric"],
         ["fighter", "wizard", "thief"],
         ["druid", "fighter"],

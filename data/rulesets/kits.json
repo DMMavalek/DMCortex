@@ -1,58 +1,1236 @@
 ﻿{
-  "kits": [
-    { "id": "elf_herbalist", "name": "Herbalist", "source": "Complete Book of Elves", "description": "Elf priests who are masters of natural healing. Even without spells, the Herbalist can soothe fevers and mend wounds. Must choose a terrain specialty; abilities are less effective outside it. Bonus proficiencies: Healing and Herbalism. Bonus weapon: Sickle.", "allowed_races": ["elf", "high_elf", "grey_elf", "sylvan_elf", "aquatic_elf", "half_elf"], "allowed_classes": ["priest"], "free_nwps": ["nwp_healing", "nwp_herbalism"], "required_nwps": [] },
-    { "id": "elf_archer", "name": "Archer", "source": "Complete Book of Elves", "description": "The epitome of elven skill with the bow. The Archer can make impossible shots through wind or around concealment. Bonus: Two weapon proficiency slots with long or short bow. Bonus proficiencies: Bowyer/Fletcher, Hunting. Secondary skill: Bowyer/Fletcher.", "allowed_races": ["elf", "high_elf", "grey_elf", "sylvan_elf", "aquatic_elf", "half_elf"], "allowed_classes": ["fighter"], "free_nwps": ["nwp_bowyer_fletcher", "nwp_hunting"], "required_nwps": [] },
-    { "id": "elf_wilderness_runner", "name": "Wilderness Runner", "source": "Complete Book of Elves", "description": "Rangers who have cast aside the trappings of elven society to serve the needs of the wood. Scouts or advance guards for elf cities who will not willingly enter civilization. Bonus weapon proficiencies: Quarterstaff, long bow. Bonus proficiencies: Endurance, Running, Set Snares.", "allowed_races": ["elf", "high_elf", "grey_elf", "sylvan_elf", "aquatic_elf", "half_elf"], "allowed_classes": ["ranger"], "free_nwps": ["nwp_endurance", "nwp_running", "nwp_set_snares"], "required_nwps": [] },
-    { "id": "elf_windrider", "name": "Windrider", "source": "Complete Book of Elves", "description": "Elite mounted cavalry of the elf forces, the knights of the air. Windriders defend elf lands against aerial attacks and serve as shock troops and scouts. Requires a flying mount. Bonus weapon: Lance. Bonus proficiencies: Air-Based Riding, Animal Handling, Animal Training.", "allowed_races": ["elf", "high_elf", "grey_elf", "sylvan_elf", "aquatic_elf"], "allowed_classes": ["fighter"], "free_nwps": ["nwp_air_based_riding", "nwp_animal_handling", "nwp_animal_training"], "required_nwps": [] },
-    { "id": "elf_spellfilcher", "name": "Spellfilcher", "source": "Complete Book of Elves", "description": "A mage/thief adept at breaking into wizard domiciles to steal magical goods, particularly spellbooks. Has an innate ability to locate and disarm magical traps. Bonus proficiencies: Appraising, Spellcraft, Tightrope Walking.", "allowed_races": ["elf", "high_elf", "grey_elf", "sylvan_elf", "aquatic_elf", "half_elf"], "allowed_classes": ["fighter/mage", "mage/thief", "fighter/mage/thief"], "free_nwps": ["nwp_appraising", "nwp_spellcraft", "nwp_tightrope_walking"], "required_nwps": [] },
-    { "id": "elf_bladesinger", "name": "Bladesinger", "source": "Complete Book of Elves", "description": "Masters of weapon and spell combined. Bladesingers have spent their lives studying their chosen weapons and can cast spells while engaged in combat. Requires STR 13, CON 13, DEX 15, INT 15. Bonus proficiencies: Blind-Fighting, Dancing. Acts as diplomat and one-elf army.", "allowed_races": ["elf", "high_elf", "grey_elf", "sylvan_elf"], "allowed_classes": ["fighter/mage", "fighter/mage/thief"], "free_nwps": ["nwp_blind_fighting", "nwp_dancing"], "required_nwps": [] },
-    { "id": "elf_war_wizard", "name": "War Wizard", "source": "Complete Book of Elves", "description": "Devoted to defending elf lands against hostile races. The War Wizard is the person in charge of defense for an elf town. Bonus weapons: Long bow, long sword. Bonus proficiencies: Spellcraft plus Engineering or Survival (player's choice).", "allowed_races": ["elf", "high_elf", "grey_elf", "sylvan_elf", "aquatic_elf"], "allowed_classes": ["fighter/mage", "fighter/mage/thief"], "free_nwps": ["nwp_spellcraft"], "required_nwps": [] },
-    { "id": "elf_huntsman", "name": "Huntsman", "source": "Complete Book of Elves", "description": "At home in both city and wilderness, the Huntsman tracks down wrongdoers and brings them to justice. Chief joy is the hunt. Bonus weapon: Net. Bonus proficiencies: Hunting, Tracking.", "allowed_races": ["elf", "high_elf", "grey_elf", "sylvan_elf", "aquatic_elf", "half_elf"], "allowed_classes": ["fighter/thief"], "free_nwps": ["nwp_hunting", "nwp_tracking"], "required_nwps": [] },
-    { "id": "elf_collector", "name": "Collector", "source": "Complete Book of Elves", "description": "Retrieves items from dangerous places - stolen elven artifacts, historical objects, items too dangerous for short-lived races. Combines thief skills with archaeology. Requires INT 13, CHA 15. Bonus proficiencies: Appraising, Ancient History.", "allowed_races": ["elf", "high_elf", "grey_elf", "sylvan_elf", "aquatic_elf", "half_elf"], "allowed_classes": ["fighter/mage/thief"], "free_nwps": ["nwp_appraising", "nwp_ancient_history"], "required_nwps": [] },
-    { "id": "elf_infiltrator", "name": "Infiltrator", "source": "Complete Book of Elves", "description": "The model of an elf scout. Master of stealth and disguise in urban or wilderness settings. When elves need quick and reliable information with minimum fuss, they call an Infiltrator. Bonus proficiencies: Disguise, Forgery, Information Gathering, Observation, Tightrope Walking.", "allowed_races": ["elf", "high_elf", "grey_elf", "sylvan_elf", "aquatic_elf", "half_elf"], "allowed_classes": ["fighter/mage/thief"], "free_nwps": ["nwp_disguise", "nwp_forgery", "nwp_information_gathering", "nwp_observation", "nwp_tightrope_walking"], "required_nwps": [] },
-    { "id": "elf_undead_slayer", "name": "Undead Slayer", "source": "Complete Book of Elves", "description": "A kit available to any elf class. Every elf has an innate revulsion toward undead and some channel this into dedicated purpose. Undead Slayers are hunters of the unliving, committed to ending the unnatural existence of the undead. Required proficiency: Religion.", "allowed_races": ["elf", "high_elf", "grey_elf", "sylvan_elf", "aquatic_elf", "half_elf"], "allowed_classes": [], "free_nwps": [], "required_nwps": ["nwp_religion"] },
-    { "id": "dwarf_animal_master", "name": "Animal Master", "source": "Complete Book of Dwarves", "description": "A dwarf warrior who has mastered the use of animals in battle. Specializes in training and using animals as companions and battle allies. Unusual among dwarves for their affinity with animals. Bonus proficiencies: Animal Handling, Animal Training, Veterinary Healing.", "allowed_races": ["dwarf", "hill_dwarf", "mountain_dwarf"], "allowed_classes": ["fighter"], "free_nwps": ["nwp_animal_handling", "nwp_animal_training", "nwp_veterinary_healing"], "required_nwps": [] },
-    { "id": "dwarf_axe_for_hire", "name": "Axe For Hire", "source": "Complete Book of Dwarves", "description": "A mercenary dwarf warrior who sells martial skills to the highest bidder. Experienced in all forms of combat. Bonus proficiency: Direction Sense. Required proficiency: Gaming.", "allowed_races": ["dwarf", "hill_dwarf", "mountain_dwarf", "deep_dwarf"], "allowed_classes": ["fighter"], "free_nwps": ["nwp_direction_sense"], "required_nwps": ["nwp_gaming"] },
-    { "id": "dwarf_clansdwarf", "name": "Clansdwarf", "source": "Complete Book of Dwarves", "description": "Deeply tied to clan and tradition, the Clansdwarf fights to protect and advance clan interests. Draws strength from clan bonds and obligations. Bonus proficiency: Endurance.", "allowed_races": ["dwarf", "hill_dwarf", "mountain_dwarf"], "allowed_classes": ["fighter"], "free_nwps": ["nwp_endurance"], "required_nwps": [] },
-    { "id": "dwarf_hearth_guard", "name": "Hearth Guard", "source": "Complete Book of Dwarves", "description": "Elite protectors of the dwarf stronghold and its people. Responsible for the safety of the clan's home and loved ones. They are the last line of defense. Bonus proficiencies: Engineering, Mining.", "allowed_races": ["dwarf", "hill_dwarf", "mountain_dwarf"], "allowed_classes": ["fighter"], "free_nwps": ["nwp_engineering", "nwp_mining"], "required_nwps": [] },
-    { "id": "dwarf_battlerager", "name": "Battlerager", "source": "Complete Book of Dwarves", "description": "Dwarves consumed by battle rage who fight with frightening ferocity. The Battlerager enters a berserk fury in combat, gaining combat bonuses but losing tactical judgment. They wear spiked armor and fight with reckless abandon. Feared by enemies and respected by allies.", "allowed_races": ["dwarf", "hill_dwarf", "mountain_dwarf"], "allowed_classes": ["fighter"], "free_nwps": [], "required_nwps": [] },
-    { "id": "dwarf_highborn", "name": "Highborn", "source": "Complete Book of Dwarves", "description": "A dwarf of noble blood with additional responsibilities and privileges. Trained in leadership, diplomacy, and clan history. Bonus proficiencies: Etiquette, Heraldry.", "allowed_races": ["dwarf", "hill_dwarf", "mountain_dwarf"], "allowed_classes": ["fighter"], "free_nwps": ["nwp_etiquette", "nwp_heraldry"], "required_nwps": [] },
-    { "id": "dwarf_outcast", "name": "Outcast", "source": "Complete Book of Dwarves", "description": "A dwarf expelled from clan or community who now seeks redemption or simply survival. Has developed skills of independence and resourcefulness out of necessity. Bonus proficiency: Survival.", "allowed_races": ["dwarf", "hill_dwarf", "mountain_dwarf", "deep_dwarf", "duergar"], "allowed_classes": ["fighter"], "free_nwps": ["nwp_survival"], "required_nwps": [] },
-    { "id": "dwarf_rapid_response_rider", "name": "Rapid Response Rider", "source": "Complete Book of Dwarves", "description": "Mounted dwarf warriors who provide fast cavalry for the clan. Despite dwarves general distaste for horses these warriors have mastered mounted combat to provide quick-strike capability. Bonus proficiency: Riding (Land-Based).", "allowed_races": ["dwarf", "hill_dwarf", "mountain_dwarf"], "allowed_classes": ["fighter"], "free_nwps": ["nwp_riding_land_based"], "required_nwps": [] },
-    { "id": "dwarf_sharpshooter", "name": "Sharpshooter", "source": "Complete Book of Dwarves", "description": "A dwarf warrior specializing in ranged combat. The Sharpshooter has mastered crossbow or thrown weapons and provides covering fire for advancing warriors. Bonus proficiency: Engineering.", "allowed_races": ["dwarf", "hill_dwarf", "mountain_dwarf"], "allowed_classes": ["fighter"], "free_nwps": ["nwp_engineering"], "required_nwps": [] },
-    { "id": "dwarf_craft_priest", "name": "Craft Priest", "source": "Complete Book of Dwarves", "description": "A priest devoted to the dwarven gods of craft and creation. Combines divine power with mastery of smithing, stonework, and other crafts. Can bless crafted items. Bonus proficiencies: Engineering, Mining.", "allowed_races": ["dwarf", "hill_dwarf", "mountain_dwarf"], "allowed_classes": ["priest"], "free_nwps": ["nwp_engineering", "nwp_mining"], "required_nwps": [] },
-    { "id": "dwarf_pariah", "name": "Pariah", "source": "Complete Book of Dwarves", "description": "A dwarf priest who serves an unpopular or misunderstood deity. The Pariah walks alone, often mistrusted by fellow dwarves but driven by genuine faith. Bonus proficiency: Survival.", "allowed_races": ["dwarf", "hill_dwarf", "mountain_dwarf", "deep_dwarf"], "allowed_classes": ["priest"], "free_nwps": ["nwp_survival"], "required_nwps": [] },
-    { "id": "dwarf_patrician", "name": "Patrician", "source": "Complete Book of Dwarves", "description": "A dwarf priest of noble blood who serves as both spiritual leader and political figure. Wields influence in both religious and secular affairs. Bonus proficiencies: Etiquette, Heraldry.", "allowed_races": ["dwarf", "hill_dwarf", "mountain_dwarf"], "allowed_classes": ["priest"], "free_nwps": ["nwp_etiquette", "nwp_heraldry"], "required_nwps": [] },
-    { "id": "dwarf_ritual_priest", "name": "Ritual Priest", "source": "Complete Book of Dwarves", "description": "A dwarf priest who specializes in the preservation and performance of ancient ceremonies. The keeper of tradition, ensuring that sacred rites are performed exactly as they have been for generations. Required proficiency: Brewing (or Pottery / Weaving).", "allowed_races": ["dwarf", "hill_dwarf", "mountain_dwarf"], "allowed_classes": ["priest"], "free_nwps": [], "required_nwps": ["nwp_brewing"] },
-    { "id": "dwarf_champion", "name": "Champion", "source": "Complete Book of Dwarves", "description": "A warrior-priest who combines martial excellence with divine calling. The Champion fights in the name of the dwarven gods, serving as both a fearsome combatant and a symbol of divine favor on the battlefield. Bonus proficiencies: Endurance, Riding (Land-Based).", "allowed_races": ["dwarf", "hill_dwarf", "mountain_dwarf"], "allowed_classes": ["fighter", "priest"], "free_nwps": ["nwp_endurance", "nwp_riding_land_based"], "required_nwps": [] },
-    { "id": "dwarf_temple_guard", "name": "Temple Guard", "source": "Complete Book of Dwarves", "description": "Warrior-priests who dedicate themselves to the protection of dwarven holy places. Combines martial training with religious devotion, serving as the divine sanctuaries first and last defense. Bonus proficiency: Engineering.", "allowed_races": ["dwarf", "hill_dwarf", "mountain_dwarf"], "allowed_classes": ["fighter", "priest"], "free_nwps": ["nwp_engineering"], "required_nwps": [] },
-    { "id": "dwarf_vindicator", "name": "Vindicator", "source": "Complete Book of Dwarves", "description": "A warrior-priest who hunts down the enemies of the dwarven gods, delivering divine retribution. Pursues ancient grudges and sacred vendettas with religious fervor, often targeting goblinoids and giants. Bonus proficiency: Tracking.", "allowed_races": ["dwarf", "hill_dwarf", "mountain_dwarf"], "allowed_classes": ["fighter", "priest"], "free_nwps": ["nwp_tracking"], "required_nwps": [] },
-    { "id": "dwarf_diplomat", "name": "Diplomat", "source": "Complete Book of Dwarves", "description": "A dwarf thief who specializes in social manipulation and negotiation rather than physical stealth. Uses charm, persuasion, and careful observation to achieve goals that other thieves accomplish through lockpicks and shadows. Bonus proficiencies: Etiquette, Local History.", "allowed_races": ["dwarf", "hill_dwarf", "mountain_dwarf"], "allowed_classes": ["thief"], "free_nwps": ["nwp_etiquette", "nwp_local_history"], "required_nwps": [] },
-    { "id": "dwarf_entertainer", "name": "Entertainer", "source": "Complete Book of Dwarves", "description": "A dwarf thief who uses performance, storytelling, and revelry as cover for their true activities. Moves freely through dwarven and human society gathering information behind a cheerful facade. Bonus proficiency: Artistic Ability.", "allowed_races": ["dwarf", "hill_dwarf", "mountain_dwarf"], "allowed_classes": ["thief"], "free_nwps": ["nwp_artistic_ability"], "required_nwps": [] },
-    { "id": "dwarf_locksmith", "name": "Locksmith", "source": "Complete Book of Dwarves", "description": "A dwarf thief who has elevated the opening of locks to a high art. Combining dwarven craftsmanship knowledge with thief skills, the Locksmith can open virtually any lock. Bonus proficiency: Engineering.", "allowed_races": ["dwarf", "hill_dwarf", "mountain_dwarf"], "allowed_classes": ["thief"], "free_nwps": ["nwp_engineering"], "required_nwps": [] },
-    { "id": "dwarf_pest_controller", "name": "Pest Controller", "source": "Complete Book of Dwarves", "description": "A dwarf thief who specializes in eliminating vermin and unwanted creatures from tunnels and strongholds. Expert at hunting creatures in confined spaces. Bonus proficiency: Set Snares.", "allowed_races": ["dwarf", "hill_dwarf", "mountain_dwarf", "deep_dwarf"], "allowed_classes": ["thief"], "free_nwps": ["nwp_set_snares"], "required_nwps": [] },
-    { "id": "dwarf_ghetto_fighter", "name": "Ghetto Fighter", "source": "Complete Book of Dwarves", "description": "A dwarf who has survived by their wits and fists in the rougher quarters of mixed-race cities. Combines warrior toughness with thief cunning, expert at street fighting and urban survival. Bonus proficiency: Survival.", "allowed_races": ["dwarf", "hill_dwarf", "mountain_dwarf"], "allowed_classes": ["fighter", "thief"], "free_nwps": ["nwp_survival"], "required_nwps": [] },
-    { "id": "dwarf_trader", "name": "Trader", "source": "Complete Book of Dwarves", "description": "A dwarf warrior-thief who has made commerce their profession. Uses warrior ability to protect goods and thief skills to assess value and spot fakes. Bonus proficiency: Appraising.", "allowed_races": ["dwarf", "hill_dwarf", "mountain_dwarf"], "allowed_classes": ["fighter", "thief"], "free_nwps": ["nwp_appraising"], "required_nwps": [] },
-    { "id": "dwarf_vermin_slayer", "name": "Vermin Slayer", "source": "Complete Book of Dwarves", "description": "A dwarf warrior-thief who hunts the creatures that plague dwarven tunnels: giant insects, kobolds, rats, and worse. Specialized techniques for fighting in tight underground spaces. Bonus proficiencies: Set Snares, Tracking.", "allowed_races": ["dwarf", "hill_dwarf", "mountain_dwarf", "deep_dwarf"], "allowed_classes": ["fighter", "thief"], "free_nwps": ["nwp_set_snares", "nwp_tracking"], "required_nwps": [] },
-    { "id": "dwarf_wayfinder", "name": "Wayfinder", "source": "Complete Book of Dwarves", "description": "A dwarf warrior-thief who serves as guide and pathfinder through underground passages and mountain terrain. Knows routes others would never find and can navigate the most complex tunnel systems. Bonus proficiencies: Direction Sense, Navigation, Survival.", "allowed_races": ["dwarf", "hill_dwarf", "mountain_dwarf", "deep_dwarf"], "allowed_classes": ["fighter", "thief"], "free_nwps": ["nwp_direction_sense", "nwp_navigation", "nwp_survival"], "required_nwps": [] },
-    { "id": "gnome_goblinsticker", "name": "Goblinsticker", "source": "Complete Book of Gnomes & Halflings", "description": "A gnome fighter who has dedicated their life to fighting goblinoids - the traditional enemies of gnomekind. Uses gnome size and cunning to defeat larger foes. Bonus proficiencies: Endurance, Set Snares.", "allowed_races": ["gnome", "rock_gnome", "deep_gnome", "forest_gnome"], "allowed_classes": ["fighter"], "free_nwps": ["nwp_endurance", "nwp_set_snares"], "required_nwps": [] },
-    { "id": "gnome_tumbler", "name": "Tumbler", "source": "Complete Book of Gnomes & Halflings", "description": "A gnome thief who uses acrobatic skills to great effect. The Tumbler's gymnastic abilities make them exceptionally hard to hit and give them unique combat options. Bonus proficiency: Tumbling.", "allowed_races": ["gnome", "rock_gnome", "forest_gnome"], "allowed_classes": ["thief"], "free_nwps": ["nwp_tumbling"], "required_nwps": [] },
-    { "id": "gnome_vanisher", "name": "Vanisher", "source": "Complete Book of Gnomes & Halflings", "description": "A gnome illusionist who specializes in invisibility and misdirection. The Vanisher has elevated the art of disappearing to perfection, using illusion magic to become truly undetectable when they choose. Bonus proficiency: Spellcraft.", "allowed_races": ["gnome", "rock_gnome", "forest_gnome"], "allowed_classes": ["illusionist", "mage"], "free_nwps": ["nwp_spellcraft"], "required_nwps": [] },
-    { "id": "gnome_stalker", "name": "Stalker", "source": "Complete Book of Gnomes & Halflings", "description": "A gnome fighter/thief who uses combined combat and stealth abilities to hunt specific targets. Patiently tracks prey and strikes when the moment is perfect. Bonus proficiencies: Tracking, Endurance.", "allowed_races": ["gnome", "rock_gnome", "forest_gnome"], "allowed_classes": ["fighter", "thief"], "free_nwps": ["nwp_tracking", "nwp_endurance"], "required_nwps": [] },
-    { "id": "gnome_treetender", "name": "Treetender", "source": "Complete Book of Gnomes & Halflings", "description": "A gnome priest devoted to forest spirits and the natural world. Serves as guardian of woodland groves and communicates with the spirits of trees and animals. Bonus proficiencies: Herbalism, Healing.", "allowed_races": ["gnome", "forest_gnome", "rock_gnome"], "allowed_classes": ["priest"], "free_nwps": ["nwp_herbalism", "nwp_healing"], "required_nwps": [] },
-    { "id": "halfling_forestwalker", "name": "Forestwalker", "source": "Complete Book of Gnomes & Halflings", "description": "A halfling fighter who is at home in forests and rural areas. Combines halfling stealth and agility with wilderness survival skills, serving as a guardian of the village's surrounding territory. Bonus proficiencies: Survival, Tracking.", "allowed_races": ["halfling", "hairfoot", "stout", "tallfellow"], "allowed_classes": ["fighter"], "free_nwps": ["nwp_survival", "nwp_tracking"], "required_nwps": [] },
-    { "id": "halfling_homesteader", "name": "Homesteader", "source": "Complete Book of Gnomes & Halflings", "description": "A halfling fighter who defends hearth and home with determination. Deeply tied to the halfling village community and fights to protect it from any threat. Bonus proficiencies: Animal Handling, Animal Training.", "allowed_races": ["halfling", "hairfoot", "stout", "tallfellow"], "allowed_classes": ["fighter"], "free_nwps": ["nwp_animal_handling", "nwp_animal_training"], "required_nwps": [] },
-    { "id": "halfling_mercenary", "name": "Mercenary", "source": "Complete Book of Gnomes & Halflings", "description": "A halfling fighter who sells martial skills for coin. Unusual among halflings who prefer settled lives, the Mercenary has embraced the adventuring life. Bonus proficiency: Direction Sense.", "allowed_races": ["halfling", "hairfoot", "stout", "tallfellow"], "allowed_classes": ["fighter"], "free_nwps": ["nwp_direction_sense"], "required_nwps": [] },
-    { "id": "halfling_sheriff", "name": "Sheriff", "source": "Complete Book of Gnomes & Halflings", "description": "A halfling fighter who serves as the law keeper for a halfling community. Trusted to deal with troublemakers, settle disputes, and protect the shire from outside threats. Bonus proficiencies: Tracking, Direction Sense.", "allowed_races": ["halfling", "hairfoot", "stout", "tallfellow"], "allowed_classes": ["fighter"], "free_nwps": ["nwp_tracking", "nwp_direction_sense"], "required_nwps": [] },
-    { "id": "halfling_squire", "name": "Squire", "source": "Complete Book of Gnomes & Halflings", "description": "A halfling fighter who serves a larger warrior, learning the ways of knighthood and combat. Has adopted the customs of human or other races martial traditions, aspiring to be a proper warrior. Bonus proficiencies: Etiquette, Heraldry.", "allowed_races": ["halfling", "hairfoot", "tallfellow"], "allowed_classes": ["fighter"], "free_nwps": ["nwp_etiquette", "nwp_heraldry"], "required_nwps": [] },
-    { "id": "halfling_tunnelrat", "name": "Tunnelrat", "source": "Complete Book of Gnomes & Halflings", "description": "A halfling fighter who specializes in underground combat. Stout halflings especially excel at this, using small size to fight effectively in cramped tunnels. Bonus proficiencies: Direction Sense, Endurance.", "allowed_races": ["halfling", "stout"], "allowed_classes": ["fighter"], "free_nwps": ["nwp_direction_sense", "nwp_endurance"], "required_nwps": [] },
-    { "id": "halfling_bilker", "name": "Bilker", "source": "Complete Book of Gnomes & Halflings", "description": "A halfling thief who specializes in con games and swindles. Uses halfling charm and innocent appearances to separate marks from their coin through elaborate deceptions. Bonus proficiencies: Disguise, Gaming.", "allowed_races": ["halfling", "hairfoot", "tallfellow"], "allowed_classes": ["thief"], "free_nwps": ["nwp_disguise", "nwp_gaming"], "required_nwps": [] },
-    { "id": "halfling_burglar", "name": "Burglar", "source": "Complete Book of Gnomes & Halflings", "description": "A halfling thief who specializes in breaking and entering. Uses halfling stealth and small size to access places larger thieves cannot. Bonus proficiency: Tightrope Walking.", "allowed_races": ["halfling", "hairfoot", "stout", "tallfellow"], "allowed_classes": ["thief"], "free_nwps": ["nwp_tightrope_walking"], "required_nwps": [] },
-    { "id": "halfling_smuggler", "name": "Smuggler", "source": "Complete Book of Gnomes & Halflings", "description": "A halfling thief who specializes in moving contraband across borders and through checkpoints. Uses halfling innocuous appearances and network of contacts to move goods where they are not supposed to go. Bonus proficiency: Direction Sense.", "allowed_races": ["halfling", "hairfoot", "stout", "tallfellow"], "allowed_classes": ["thief"], "free_nwps": ["nwp_direction_sense"], "required_nwps": [] },
-    { "id": "halfling_urchin", "name": "Urchin", "source": "Complete Book of Gnomes & Halflings", "description": "A halfling thief who grew up on the streets of a city, developing survival skills from a young age. Knows every alley and rooftop, using urban knowledge and halfling agility to stay one step ahead. Bonus proficiency: Survival.", "allowed_races": ["halfling", "hairfoot", "tallfellow"], "allowed_classes": ["thief"], "free_nwps": ["nwp_survival"], "required_nwps": [] },
-    { "id": "halfling_trader", "name": "Trader", "source": "Complete Book of Gnomes & Halflings", "description": "A halfling fighter/thief who has combined martial training with mercantile skills. Travels the roads buying, selling, and trading goods, capable of defending merchandise and negotiating favorable deals. Bonus proficiency: Appraising.", "allowed_races": ["halfling", "hairfoot", "stout", "tallfellow"], "allowed_classes": ["fighter", "thief"], "free_nwps": ["nwp_appraising"], "required_nwps": [] },
-    { "id": "halfling_traveler", "name": "Traveler", "source": "Complete Book of Gnomes & Halflings", "description": "A halfling fighter/thief driven by wanderlust to explore the wide world. Has seen more of the world than most halflings will in a lifetime, collecting experiences and useful skills along the way. Bonus proficiencies: Direction Sense, Navigation.", "allowed_races": ["halfling", "hairfoot", "stout", "tallfellow"], "allowed_classes": ["fighter", "thief"], "free_nwps": ["nwp_direction_sense", "nwp_navigation"], "required_nwps": [] },
-    { "id": "halfling_leaftender", "name": "Leaftender", "source": "Complete Book of Gnomes & Halflings", "description": "A halfling cleric devoted to nature and the halfling agricultural tradition. Tends sacred groves and fields, calling on divine power to ensure good harvests and the health of community plants. Bonus proficiencies: Herbalism, Healing.", "allowed_races": ["halfling", "hairfoot", "stout", "tallfellow"], "allowed_classes": ["priest"], "free_nwps": ["nwp_herbalism", "nwp_healing"], "required_nwps": [] },
-    { "id": "halfling_oracle", "name": "Oracle", "source": "Complete Book of Gnomes & Halflings", "description": "A halfling cleric with prophetic gifts. Interprets omens, gives guidance, and sometimes foresees the future. Halfling communities treasure their Oracles, consulting them before major decisions. Bonus proficiencies: Religion, Astrology.", "allowed_races": ["halfling", "hairfoot", "tallfellow"], "allowed_classes": ["priest"], "free_nwps": ["nwp_religion", "nwp_astrology"], "required_nwps": [] }
-  ]
+    "kits":  [
+                 {
+                     "id":  "elf_herbalist",
+                     "name":  "Herbalist",
+                     "source":  "Complete Book of Elves",
+                     "description":  "Elf priests who are masters of natural healing. Even without spells, the Herbalist can soothe fevers and mend wounds. Must choose a terrain specialty; abilities are less effective outside it. Bonus proficiencies: Healing and Herbalism. Bonus weapon: Sickle.",
+                     "allowed_races":  [
+                                           "elf",
+                                           "high_elf",
+                                           "grey_elf",
+                                           "sylvan_elf",
+                                           "aquatic_elf",
+                                           "half_elf"
+                                       ],
+                     "allowed_classes":  [
+                                             "priest"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_healing",
+                                       "nwp_herbalism"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "elf_archer",
+                     "name":  "Archer",
+                     "source":  "Complete Book of Elves",
+                     "description":  "The epitome of elven skill with the bow. The Archer can make impossible shots through wind or around concealment. Bonus: Two weapon proficiency slots with long or short bow. Bonus proficiencies: Bowyer/Fletcher, Hunting. Secondary skill: Bowyer/Fletcher.",
+                     "allowed_races":  [
+                                           "elf",
+                                           "high_elf",
+                                           "grey_elf",
+                                           "sylvan_elf",
+                                           "aquatic_elf",
+                                           "half_elf"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_bowyer_fletcher",
+                                       "nwp_hunting"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "elf_wilderness_runner",
+                     "name":  "Wilderness Runner",
+                     "source":  "Complete Book of Elves",
+                     "description":  "Rangers who have cast aside the trappings of elven society to serve the needs of the wood. Scouts or advance guards for elf cities who will not willingly enter civilization. Bonus weapon proficiencies: Quarterstaff, long bow. Bonus proficiencies: Endurance, Running, Set Snares.",
+                     "allowed_races":  [
+                                           "elf",
+                                           "high_elf",
+                                           "grey_elf",
+                                           "sylvan_elf",
+                                           "aquatic_elf",
+                                           "half_elf"
+                                       ],
+                     "allowed_classes":  [
+                                             "ranger"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_endurance",
+                                       "nwp_running",
+                                       "nwp_set_snares"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "elf_windrider",
+                     "name":  "Windrider",
+                     "source":  "Complete Book of Elves",
+                     "description":  "Elite mounted cavalry of the elf forces, the knights of the air. Windriders defend elf lands against aerial attacks and serve as shock troops and scouts. Requires a flying mount. Bonus weapon: Lance. Bonus proficiencies: Air-Based Riding, Animal Handling, Animal Training.",
+                     "allowed_races":  [
+                                           "elf",
+                                           "high_elf",
+                                           "grey_elf",
+                                           "sylvan_elf",
+                                           "aquatic_elf"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_air_based_riding",
+                                       "nwp_animal_handling",
+                                       "nwp_animal_training"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "elf_spellfilcher",
+                     "name":  "Spellfilcher",
+                     "source":  "Complete Book of Elves",
+                     "description":  "A mage/thief adept at breaking into wizard domiciles to steal magical goods, particularly spellbooks. Has an innate ability to locate and disarm magical traps. Bonus proficiencies: Appraising, Spellcraft, Tightrope Walking.",
+                     "allowed_races":  [
+                                           "elf",
+                                           "high_elf",
+                                           "grey_elf",
+                                           "sylvan_elf",
+                                           "aquatic_elf",
+                                           "half_elf"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter/mage",
+                                             "mage/thief",
+                                             "fighter/mage/thief"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_appraising",
+                                       "nwp_spellcraft",
+                                       "nwp_tightrope_walking"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "elf_bladesinger",
+                     "name":  "Bladesinger",
+                     "source":  "Complete Book of Elves",
+                     "description":  "Masters of weapon and spell combined. Bladesingers have spent their lives studying their chosen weapons and can cast spells while engaged in combat. Requires STR 13, CON 13, DEX 15, INT 15. Bonus proficiencies: Blind-Fighting, Dancing. Acts as diplomat and one-elf army.",
+                     "allowed_races":  [
+                                           "elf",
+                                           "high_elf",
+                                           "grey_elf",
+                                           "sylvan_elf"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter/mage",
+                                             "fighter/mage/thief"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_blind_fighting",
+                                       "nwp_dancing"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "elf_war_wizard",
+                     "name":  "War Wizard",
+                     "source":  "Complete Book of Elves",
+                     "description":  "Devoted to defending elf lands against hostile races. The War Wizard is the person in charge of defense for an elf town. Bonus weapons: Long bow, long sword. Bonus proficiencies: Spellcraft plus Engineering or Survival (player\u0027s choice).",
+                     "allowed_races":  [
+                                           "elf",
+                                           "high_elf",
+                                           "grey_elf",
+                                           "sylvan_elf",
+                                           "aquatic_elf"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter/mage",
+                                             "fighter/mage/thief"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_spellcraft"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "elf_huntsman",
+                     "name":  "Huntsman",
+                     "source":  "Complete Book of Elves",
+                     "description":  "At home in both city and wilderness, the Huntsman tracks down wrongdoers and brings them to justice. Chief joy is the hunt. Bonus weapon: Net. Bonus proficiencies: Hunting, Tracking.",
+                     "allowed_races":  [
+                                           "elf",
+                                           "high_elf",
+                                           "grey_elf",
+                                           "sylvan_elf",
+                                           "aquatic_elf",
+                                           "half_elf"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter/thief"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_hunting",
+                                       "nwp_tracking"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "elf_collector",
+                     "name":  "Collector",
+                     "source":  "Complete Book of Elves",
+                     "description":  "Retrieves items from dangerous places - stolen elven artifacts, historical objects, items too dangerous for short-lived races. Combines thief skills with archaeology. Requires INT 13, CHA 15. Bonus proficiencies: Appraising, Ancient History.",
+                     "allowed_races":  [
+                                           "elf",
+                                           "high_elf",
+                                           "grey_elf",
+                                           "sylvan_elf",
+                                           "aquatic_elf",
+                                           "half_elf"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter/mage/thief"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_appraising",
+                                       "nwp_ancient_history"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "elf_infiltrator",
+                     "name":  "Infiltrator",
+                     "source":  "Complete Book of Elves",
+                     "description":  "The model of an elf scout. Master of stealth and disguise in urban or wilderness settings. When elves need quick and reliable information with minimum fuss, they call an Infiltrator. Bonus proficiencies: Disguise, Forgery, Information Gathering, Observation, Tightrope Walking.",
+                     "allowed_races":  [
+                                           "elf",
+                                           "high_elf",
+                                           "grey_elf",
+                                           "sylvan_elf",
+                                           "aquatic_elf",
+                                           "half_elf"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter/mage/thief"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_disguise",
+                                       "nwp_forgery",
+                                       "nwp_information_gathering",
+                                       "nwp_observation",
+                                       "nwp_tightrope_walking"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "elf_undead_slayer",
+                     "name":  "Undead Slayer",
+                     "source":  "Complete Book of Elves",
+                     "description":  "A kit available to any elf class. Every elf has an innate revulsion toward undead and some channel this into dedicated purpose. Undead Slayers are hunters of the unliving, committed to ending the unnatural existence of the undead. Required proficiency: Religion.",
+                     "allowed_races":  [
+                                           "elf",
+                                           "high_elf",
+                                           "grey_elf",
+                                           "sylvan_elf",
+                                           "aquatic_elf",
+                                           "half_elf"
+                                       ],
+                     "allowed_classes":  [
+
+                                         ],
+                     "free_nwps":  [
+
+                                   ],
+                     "required_nwps":  [
+                                           "nwp_religion"
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "dwarf_animal_master",
+                     "name":  "Animal Master",
+                     "source":  "Complete Book of Dwarves",
+                     "description":  "A dwarf warrior who has mastered the use of animals in battle. Specializes in training and using animals as companions and battle allies. Unusual among dwarves for their affinity with animals. Bonus proficiencies: Animal Handling, Animal Training, Veterinary Healing.",
+                     "allowed_races":  [
+                                           "dwarf",
+                                           "hill_dwarf",
+                                           "mountain_dwarf"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_animal_handling",
+                                       "nwp_animal_training",
+                                       "nwp_veterinary_healing"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "dwarf_axe_for_hire",
+                     "name":  "Axe For Hire",
+                     "source":  "Complete Book of Dwarves",
+                     "description":  "A mercenary dwarf warrior who sells martial skills to the highest bidder. Experienced in all forms of combat. Bonus proficiency: Direction Sense. Required proficiency: Gaming.",
+                     "allowed_races":  [
+                                           "dwarf",
+                                           "hill_dwarf",
+                                           "mountain_dwarf",
+                                           "deep_dwarf"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_direction_sense"
+                                   ],
+                     "required_nwps":  [
+                                           "nwp_gaming"
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "dwarf_clansdwarf",
+                     "name":  "Clansdwarf",
+                     "source":  "Complete Book of Dwarves",
+                     "description":  "Deeply tied to clan and tradition, the Clansdwarf fights to protect and advance clan interests. Draws strength from clan bonds and obligations. Bonus proficiency: Endurance.",
+                     "allowed_races":  [
+                                           "dwarf",
+                                           "hill_dwarf",
+                                           "mountain_dwarf"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_endurance"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "dwarf_hearth_guard",
+                     "name":  "Hearth Guard",
+                     "source":  "Complete Book of Dwarves",
+                     "description":  "Elite protectors of the dwarf stronghold and its people. Responsible for the safety of the clan\u0027s home and loved ones. They are the last line of defense. Bonus proficiencies: Engineering, Mining.",
+                     "allowed_races":  [
+                                           "dwarf",
+                                           "hill_dwarf",
+                                           "mountain_dwarf"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_engineering",
+                                       "nwp_mining"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "dwarf_battlerager",
+                     "name":  "Battlerager",
+                     "source":  "Complete Book of Dwarves",
+                     "description":  "Dwarves consumed by battle rage who fight with frightening ferocity. The Battlerager enters a berserk fury in combat, gaining combat bonuses but losing tactical judgment. They wear spiked armor and fight with reckless abandon. Feared by enemies and respected by allies.",
+                     "allowed_races":  [
+                                           "dwarf",
+                                           "hill_dwarf",
+                                           "mountain_dwarf"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter"
+                                         ],
+                     "free_nwps":  [
+
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "dwarf_highborn",
+                     "name":  "Highborn",
+                     "source":  "Complete Book of Dwarves",
+                     "description":  "A dwarf of noble blood with additional responsibilities and privileges. Trained in leadership, diplomacy, and clan history. Bonus proficiencies: Etiquette, Heraldry.",
+                     "allowed_races":  [
+                                           "dwarf",
+                                           "hill_dwarf",
+                                           "mountain_dwarf"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_etiquette",
+                                       "nwp_heraldry"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "dwarf_outcast",
+                     "name":  "Outcast",
+                     "source":  "Complete Book of Dwarves",
+                     "description":  "A dwarf expelled from clan or community who now seeks redemption or simply survival. Has developed skills of independence and resourcefulness out of necessity. Bonus proficiency: Survival.",
+                     "allowed_races":  [
+                                           "dwarf",
+                                           "hill_dwarf",
+                                           "mountain_dwarf",
+                                           "deep_dwarf",
+                                           "duergar"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_survival"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "dwarf_rapid_response_rider",
+                     "name":  "Rapid Response Rider",
+                     "source":  "Complete Book of Dwarves",
+                     "description":  "Mounted dwarf warriors who provide fast cavalry for the clan. Despite dwarves general distaste for horses these warriors have mastered mounted combat to provide quick-strike capability. Bonus proficiency: Riding (Land-Based).",
+                     "allowed_races":  [
+                                           "dwarf",
+                                           "hill_dwarf",
+                                           "mountain_dwarf"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_riding_land_based"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "dwarf_sharpshooter",
+                     "name":  "Sharpshooter",
+                     "source":  "Complete Book of Dwarves",
+                     "description":  "A dwarf warrior specializing in ranged combat. The Sharpshooter has mastered crossbow or thrown weapons and provides covering fire for advancing warriors. Bonus proficiency: Engineering.",
+                     "allowed_races":  [
+                                           "dwarf",
+                                           "hill_dwarf",
+                                           "mountain_dwarf"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_engineering"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "dwarf_craft_priest",
+                     "name":  "Craft Priest",
+                     "source":  "Complete Book of Dwarves",
+                     "description":  "A priest devoted to the dwarven gods of craft and creation. Combines divine power with mastery of smithing, stonework, and other crafts. Can bless crafted items. Bonus proficiencies: Engineering, Mining.",
+                     "allowed_races":  [
+                                           "dwarf",
+                                           "hill_dwarf",
+                                           "mountain_dwarf"
+                                       ],
+                     "allowed_classes":  [
+                                             "priest"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_engineering",
+                                       "nwp_mining"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "dwarf_pariah",
+                     "name":  "Pariah",
+                     "source":  "Complete Book of Dwarves",
+                     "description":  "A dwarf priest who serves an unpopular or misunderstood deity. The Pariah walks alone, often mistrusted by fellow dwarves but driven by genuine faith. Bonus proficiency: Survival.",
+                     "allowed_races":  [
+                                           "dwarf",
+                                           "hill_dwarf",
+                                           "mountain_dwarf",
+                                           "deep_dwarf"
+                                       ],
+                     "allowed_classes":  [
+                                             "priest"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_survival"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "dwarf_patrician",
+                     "name":  "Patrician",
+                     "source":  "Complete Book of Dwarves",
+                     "description":  "A dwarf priest of noble blood who serves as both spiritual leader and political figure. Wields influence in both religious and secular affairs. Bonus proficiencies: Etiquette, Heraldry.",
+                     "allowed_races":  [
+                                           "dwarf",
+                                           "hill_dwarf",
+                                           "mountain_dwarf"
+                                       ],
+                     "allowed_classes":  [
+                                             "priest"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_etiquette",
+                                       "nwp_heraldry"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "dwarf_ritual_priest",
+                     "name":  "Ritual Priest",
+                     "source":  "Complete Book of Dwarves",
+                     "description":  "A dwarf priest who specializes in the preservation and performance of ancient ceremonies. The keeper of tradition, ensuring that sacred rites are performed exactly as they have been for generations. Required proficiency: Brewing (or Pottery / Weaving).",
+                     "allowed_races":  [
+                                           "dwarf",
+                                           "hill_dwarf",
+                                           "mountain_dwarf"
+                                       ],
+                     "allowed_classes":  [
+                                             "priest"
+                                         ],
+                     "free_nwps":  [
+
+                                   ],
+                     "required_nwps":  [
+                                           "nwp_brewing"
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "dwarf_champion",
+                     "name":  "Champion",
+                     "source":  "Complete Book of Dwarves",
+                     "description":  "A warrior-priest who combines martial excellence with divine calling. The Champion fights in the name of the dwarven gods, serving as both a fearsome combatant and a symbol of divine favor on the battlefield. Bonus proficiencies: Endurance, Riding (Land-Based).",
+                     "allowed_races":  [
+                                           "dwarf",
+                                           "hill_dwarf",
+                                           "mountain_dwarf"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter",
+                                             "priest"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_endurance",
+                                       "nwp_riding_land_based"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "dwarf_temple_guard",
+                     "name":  "Temple Guard",
+                     "source":  "Complete Book of Dwarves",
+                     "description":  "Warrior-priests who dedicate themselves to the protection of dwarven holy places. Combines martial training with religious devotion, serving as the divine sanctuaries first and last defense. Bonus proficiency: Engineering.",
+                     "allowed_races":  [
+                                           "dwarf",
+                                           "hill_dwarf",
+                                           "mountain_dwarf"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter",
+                                             "priest"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_engineering"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "dwarf_vindicator",
+                     "name":  "Vindicator",
+                     "source":  "Complete Book of Dwarves",
+                     "description":  "A warrior-priest who hunts down the enemies of the dwarven gods, delivering divine retribution. Pursues ancient grudges and sacred vendettas with religious fervor, often targeting goblinoids and giants. Bonus proficiency: Tracking.",
+                     "allowed_races":  [
+                                           "dwarf",
+                                           "hill_dwarf",
+                                           "mountain_dwarf"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter",
+                                             "priest"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_tracking"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "dwarf_diplomat",
+                     "name":  "Diplomat",
+                     "source":  "Complete Book of Dwarves",
+                     "description":  "A dwarf thief who specializes in social manipulation and negotiation rather than physical stealth. Uses charm, persuasion, and careful observation to achieve goals that other thieves accomplish through lockpicks and shadows. Bonus proficiencies: Etiquette, Local History.",
+                     "allowed_races":  [
+                                           "dwarf",
+                                           "hill_dwarf",
+                                           "mountain_dwarf"
+                                       ],
+                     "allowed_classes":  [
+                                             "thief"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_etiquette",
+                                       "nwp_local_history"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "dwarf_entertainer",
+                     "name":  "Entertainer",
+                     "source":  "Complete Book of Dwarves",
+                     "description":  "A dwarf thief who uses performance, storytelling, and revelry as cover for their true activities. Moves freely through dwarven and human society gathering information behind a cheerful facade. Bonus proficiency: Artistic Ability.",
+                     "allowed_races":  [
+                                           "dwarf",
+                                           "hill_dwarf",
+                                           "mountain_dwarf"
+                                       ],
+                     "allowed_classes":  [
+                                             "thief"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_artistic_ability"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "dwarf_locksmith",
+                     "name":  "Locksmith",
+                     "source":  "Complete Book of Dwarves",
+                     "description":  "A dwarf thief who has elevated the opening of locks to a high art. Combining dwarven craftsmanship knowledge with thief skills, the Locksmith can open virtually any lock. Bonus proficiency: Engineering.",
+                     "allowed_races":  [
+                                           "dwarf",
+                                           "hill_dwarf",
+                                           "mountain_dwarf"
+                                       ],
+                     "allowed_classes":  [
+                                             "thief"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_engineering"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "dwarf_pest_controller",
+                     "name":  "Pest Controller",
+                     "source":  "Complete Book of Dwarves",
+                     "description":  "A dwarf thief who specializes in eliminating vermin and unwanted creatures from tunnels and strongholds. Expert at hunting creatures in confined spaces. Bonus proficiency: Set Snares.",
+                     "allowed_races":  [
+                                           "dwarf",
+                                           "hill_dwarf",
+                                           "mountain_dwarf",
+                                           "deep_dwarf"
+                                       ],
+                     "allowed_classes":  [
+                                             "thief"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_set_snares"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "dwarf_ghetto_fighter",
+                     "name":  "Ghetto Fighter",
+                     "source":  "Complete Book of Dwarves",
+                     "description":  "A dwarf who has survived by their wits and fists in the rougher quarters of mixed-race cities. Combines warrior toughness with thief cunning, expert at street fighting and urban survival. Bonus proficiency: Survival.",
+                     "allowed_races":  [
+                                           "dwarf",
+                                           "hill_dwarf",
+                                           "mountain_dwarf"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter",
+                                             "thief"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_survival"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "dwarf_trader",
+                     "name":  "Trader",
+                     "source":  "Complete Book of Dwarves",
+                     "description":  "A dwarf warrior-thief who has made commerce their profession. Uses warrior ability to protect goods and thief skills to assess value and spot fakes. Bonus proficiency: Appraising.",
+                     "allowed_races":  [
+                                           "dwarf",
+                                           "hill_dwarf",
+                                           "mountain_dwarf"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter",
+                                             "thief"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_appraising"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "dwarf_vermin_slayer",
+                     "name":  "Vermin Slayer",
+                     "source":  "Complete Book of Dwarves",
+                     "description":  "A dwarf warrior-thief who hunts the creatures that plague dwarven tunnels: giant insects, kobolds, rats, and worse. Specialized techniques for fighting in tight underground spaces. Bonus proficiencies: Set Snares, Tracking.",
+                     "allowed_races":  [
+                                           "dwarf",
+                                           "hill_dwarf",
+                                           "mountain_dwarf",
+                                           "deep_dwarf"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter",
+                                             "thief"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_set_snares",
+                                       "nwp_tracking"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "dwarf_wayfinder",
+                     "name":  "Wayfinder",
+                     "source":  "Complete Book of Dwarves",
+                     "description":  "A dwarf warrior-thief who serves as guide and pathfinder through underground passages and mountain terrain. Knows routes others would never find and can navigate the most complex tunnel systems. Bonus proficiencies: Direction Sense, Navigation, Survival.",
+                     "allowed_races":  [
+                                           "dwarf",
+                                           "hill_dwarf",
+                                           "mountain_dwarf",
+                                           "deep_dwarf"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter",
+                                             "thief"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_direction_sense",
+                                       "nwp_navigation",
+                                       "nwp_survival"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "gnome_goblinsticker",
+                     "name":  "Goblinsticker",
+                     "source":  "Complete Book of Gnomes \u0026 Halflings",
+                     "description":  "A gnome fighter who has dedicated their life to fighting goblinoids - the traditional enemies of gnomekind. Uses gnome size and cunning to defeat larger foes. Bonus proficiencies: Endurance, Set Snares.",
+                     "allowed_races":  [
+                                           "gnome",
+                                           "rock_gnome",
+                                           "deep_gnome",
+                                           "forest_gnome"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_endurance",
+                                       "nwp_set_snares"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "gnome_tumbler",
+                     "name":  "Tumbler",
+                     "source":  "Complete Book of Gnomes \u0026 Halflings",
+                     "description":  "A gnome thief who uses acrobatic skills to great effect. The Tumbler\u0027s gymnastic abilities make them exceptionally hard to hit and give them unique combat options. Bonus proficiency: Tumbling.",
+                     "allowed_races":  [
+                                           "gnome",
+                                           "rock_gnome",
+                                           "forest_gnome"
+                                       ],
+                     "allowed_classes":  [
+                                             "thief"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_tumbling"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "gnome_vanisher",
+                     "name":  "Vanisher",
+                     "source":  "Complete Book of Gnomes \u0026 Halflings",
+                     "description":  "A gnome illusionist who specializes in invisibility and misdirection. The Vanisher has elevated the art of disappearing to perfection, using illusion magic to become truly undetectable when they choose. Bonus proficiency: Spellcraft.",
+                     "allowed_races":  [
+                                           "gnome",
+                                           "rock_gnome",
+                                           "forest_gnome"
+                                       ],
+                     "allowed_classes":  [
+                                             "illusionist",
+                                             "mage"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_spellcraft"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "gnome_stalker",
+                     "name":  "Stalker",
+                     "source":  "Complete Book of Gnomes \u0026 Halflings",
+                     "description":  "A gnome fighter/thief who uses combined combat and stealth abilities to hunt specific targets. Patiently tracks prey and strikes when the moment is perfect. Bonus proficiencies: Tracking, Endurance.",
+                     "allowed_races":  [
+                                           "gnome",
+                                           "rock_gnome",
+                                           "forest_gnome"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter",
+                                             "thief"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_tracking",
+                                       "nwp_endurance"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "gnome_treetender",
+                     "name":  "Treetender",
+                     "source":  "Complete Book of Gnomes \u0026 Halflings",
+                     "description":  "A gnome priest devoted to forest spirits and the natural world. Serves as guardian of woodland groves and communicates with the spirits of trees and animals. Bonus proficiencies: Herbalism, Healing.",
+                     "allowed_races":  [
+                                           "gnome",
+                                           "forest_gnome",
+                                           "rock_gnome"
+                                       ],
+                     "allowed_classes":  [
+                                             "priest"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_herbalism",
+                                       "nwp_healing"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "halfling_forestwalker",
+                     "name":  "Forestwalker",
+                     "source":  "Complete Book of Gnomes \u0026 Halflings",
+                     "description":  "A halfling fighter who is at home in forests and rural areas. Combines halfling stealth and agility with wilderness survival skills, serving as a guardian of the village\u0027s surrounding territory. Bonus proficiencies: Survival, Tracking.",
+                     "allowed_races":  [
+                                           "halfling",
+                                           "hairfoot",
+                                           "stout",
+                                           "tallfellow"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_survival",
+                                       "nwp_tracking"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "halfling_homesteader",
+                     "name":  "Homesteader",
+                     "source":  "Complete Book of Gnomes \u0026 Halflings",
+                     "description":  "A halfling fighter who defends hearth and home with determination. Deeply tied to the halfling village community and fights to protect it from any threat. Bonus proficiencies: Animal Handling, Animal Training.",
+                     "allowed_races":  [
+                                           "halfling",
+                                           "hairfoot",
+                                           "stout",
+                                           "tallfellow"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_animal_handling",
+                                       "nwp_animal_training"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "halfling_mercenary",
+                     "name":  "Mercenary",
+                     "source":  "Complete Book of Gnomes \u0026 Halflings",
+                     "description":  "A halfling fighter who sells martial skills for coin. Unusual among halflings who prefer settled lives, the Mercenary has embraced the adventuring life. Bonus proficiency: Direction Sense.",
+                     "allowed_races":  [
+                                           "halfling",
+                                           "hairfoot",
+                                           "stout",
+                                           "tallfellow"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_direction_sense"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "halfling_sheriff",
+                     "name":  "Sheriff",
+                     "source":  "Complete Book of Gnomes \u0026 Halflings",
+                     "description":  "A halfling fighter who serves as the law keeper for a halfling community. Trusted to deal with troublemakers, settle disputes, and protect the shire from outside threats. Bonus proficiencies: Tracking, Direction Sense.",
+                     "allowed_races":  [
+                                           "halfling",
+                                           "hairfoot",
+                                           "stout",
+                                           "tallfellow"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_tracking",
+                                       "nwp_direction_sense"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "halfling_squire",
+                     "name":  "Squire",
+                     "source":  "Complete Book of Gnomes \u0026 Halflings",
+                     "description":  "A halfling fighter who serves a larger warrior, learning the ways of knighthood and combat. Has adopted the customs of human or other races martial traditions, aspiring to be a proper warrior. Bonus proficiencies: Etiquette, Heraldry.",
+                     "allowed_races":  [
+                                           "halfling",
+                                           "hairfoot",
+                                           "tallfellow"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_etiquette",
+                                       "nwp_heraldry"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "halfling_tunnelrat",
+                     "name":  "Tunnelrat",
+                     "source":  "Complete Book of Gnomes \u0026 Halflings",
+                     "description":  "A halfling fighter who specializes in underground combat. Stout halflings especially excel at this, using small size to fight effectively in cramped tunnels. Bonus proficiencies: Direction Sense, Endurance.",
+                     "allowed_races":  [
+                                           "halfling",
+                                           "stout"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_direction_sense",
+                                       "nwp_endurance"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "halfling_bilker",
+                     "name":  "Bilker",
+                     "source":  "Complete Book of Gnomes \u0026 Halflings",
+                     "description":  "A halfling thief who specializes in con games and swindles. Uses halfling charm and innocent appearances to separate marks from their coin through elaborate deceptions. Bonus proficiencies: Disguise, Gaming.",
+                     "allowed_races":  [
+                                           "halfling",
+                                           "hairfoot",
+                                           "tallfellow"
+                                       ],
+                     "allowed_classes":  [
+                                             "thief"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_disguise",
+                                       "nwp_gaming"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "halfling_burglar",
+                     "name":  "Burglar",
+                     "source":  "Complete Book of Gnomes \u0026 Halflings",
+                     "description":  "A halfling thief who specializes in breaking and entering. Uses halfling stealth and small size to access places larger thieves cannot. Bonus proficiency: Tightrope Walking.",
+                     "allowed_races":  [
+                                           "halfling",
+                                           "hairfoot",
+                                           "stout",
+                                           "tallfellow"
+                                       ],
+                     "allowed_classes":  [
+                                             "thief"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_tightrope_walking"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "halfling_smuggler",
+                     "name":  "Smuggler",
+                     "source":  "Complete Book of Gnomes \u0026 Halflings",
+                     "description":  "A halfling thief who specializes in moving contraband across borders and through checkpoints. Uses halfling innocuous appearances and network of contacts to move goods where they are not supposed to go. Bonus proficiency: Direction Sense.",
+                     "allowed_races":  [
+                                           "halfling",
+                                           "hairfoot",
+                                           "stout",
+                                           "tallfellow"
+                                       ],
+                     "allowed_classes":  [
+                                             "thief"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_direction_sense"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "halfling_urchin",
+                     "name":  "Urchin",
+                     "source":  "Complete Book of Gnomes \u0026 Halflings",
+                     "description":  "A halfling thief who grew up on the streets of a city, developing survival skills from a young age. Knows every alley and rooftop, using urban knowledge and halfling agility to stay one step ahead. Bonus proficiency: Survival.",
+                     "allowed_races":  [
+                                           "halfling",
+                                           "hairfoot",
+                                           "tallfellow"
+                                       ],
+                     "allowed_classes":  [
+                                             "thief"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_survival"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "halfling_trader",
+                     "name":  "Trader",
+                     "source":  "Complete Book of Gnomes \u0026 Halflings",
+                     "description":  "A halfling fighter/thief who has combined martial training with mercantile skills. Travels the roads buying, selling, and trading goods, capable of defending merchandise and negotiating favorable deals. Bonus proficiency: Appraising.",
+                     "allowed_races":  [
+                                           "halfling",
+                                           "hairfoot",
+                                           "stout",
+                                           "tallfellow"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter",
+                                             "thief"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_appraising"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "halfling_traveler",
+                     "name":  "Traveler",
+                     "source":  "Complete Book of Gnomes \u0026 Halflings",
+                     "description":  "A halfling fighter/thief driven by wanderlust to explore the wide world. Has seen more of the world than most halflings will in a lifetime, collecting experiences and useful skills along the way. Bonus proficiencies: Direction Sense, Navigation.",
+                     "allowed_races":  [
+                                           "halfling",
+                                           "hairfoot",
+                                           "stout",
+                                           "tallfellow"
+                                       ],
+                     "allowed_classes":  [
+                                             "fighter",
+                                             "thief"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_direction_sense",
+                                       "nwp_navigation"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "halfling_leaftender",
+                     "name":  "Leaftender",
+                     "source":  "Complete Book of Gnomes \u0026 Halflings",
+                     "description":  "A halfling cleric devoted to nature and the halfling agricultural tradition. Tends sacred groves and fields, calling on divine power to ensure good harvests and the health of community plants. Bonus proficiencies: Herbalism, Healing.",
+                     "allowed_races":  [
+                                           "halfling",
+                                           "hairfoot",
+                                           "stout",
+                                           "tallfellow"
+                                       ],
+                     "allowed_classes":  [
+                                             "priest"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_herbalism",
+                                       "nwp_healing"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 },
+                 {
+                     "id":  "halfling_oracle",
+                     "name":  "Oracle",
+                     "source":  "Complete Book of Gnomes \u0026 Halflings",
+                     "description":  "A halfling cleric with prophetic gifts. Interprets omens, gives guidance, and sometimes foresees the future. Halfling communities treasure their Oracles, consulting them before major decisions. Bonus proficiencies: Religion, Astrology.",
+                     "allowed_races":  [
+                                           "halfling",
+                                           "hairfoot",
+                                           "tallfellow"
+                                       ],
+                     "allowed_classes":  [
+                                             "priest"
+                                         ],
+                     "free_nwps":  [
+                                       "nwp_religion",
+                                       "nwp_astrology"
+                                   ],
+                     "required_nwps":  [
+
+                                       ],
+                     "rules_mode":  "players_option"
+                 }
+             ]
 }

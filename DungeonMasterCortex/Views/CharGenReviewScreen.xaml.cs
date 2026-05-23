@@ -471,7 +471,9 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                 cg.WizardSpecializationId,
                 cg.SubAbilities,
                 cg.ExceptionalStrength,
-                cg.RogueSkillArmorProfile);
+                cg.RogueSkillArmorProfile,
+                1,
+                cg.CharacterMode);
         }
         catch (Exception ex)
         {
@@ -1079,7 +1081,9 @@ public partial class CharGenReviewScreen : UserControl, IScreen
             cg.WizardSpecializationId,
             cg.SubAbilities,
             cg.ExceptionalStrength,
-            cg.RogueSkillArmorProfile);
+            cg.RogueSkillArmorProfile,
+            Math.Max(1, cg.CharacterLevel),
+            cg.CharacterMode);
 
         int configuredLevel = GetConfiguredLevel();
         if (cg.IsExistingCharacterMode)

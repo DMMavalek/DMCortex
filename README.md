@@ -67,7 +67,8 @@ dmcortex preview-profile --profile core_only.json --constraints data/import/adnd
 
 ## Project Structure
 
-- `docs/` product and architecture planning
+- `docs/` product, architecture, and release planning
+- `docs/RELEASE_CHECKLIST.md` release-publish checklist
 - `data/rulesets/` editable rules data
 - `data/import/` generated indexes from local assets
 - `src/dmcortex/` application modules

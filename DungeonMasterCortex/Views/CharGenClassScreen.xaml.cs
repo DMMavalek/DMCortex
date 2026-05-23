@@ -156,7 +156,7 @@ public partial class CharGenClassScreen : UserControl, IScreen
                 }
             }
 
-            _eligible = new List<ClassDefinition>(_app.Rules.EligibleClasses(_app.CharGen.RaceId));
+            _eligible = new List<ClassDefinition>(_app.Rules.EligibleClasses(_app.CharGen.RaceId, _app.CharGen.CharacterMode));
 
             // Update race-filtered labels
             if (_app.Rules.Races.TryGetValue(_app.CharGen.RaceId, out var raceForLabel))
@@ -234,7 +234,7 @@ public partial class CharGenClassScreen : UserControl, IScreen
         string raceId   = _app.CharGen.RaceId ?? "";
         string classId  = _app.CharGen.ClassId ?? "";
 
-        _availableKits = _app.Rules.KitsFor(raceId, classId);
+        _availableKits = _app.Rules.KitsFor(raceId, classId, _app.CharGen.CharacterMode);
 
         if (_availableKits.Count == 0)
         {

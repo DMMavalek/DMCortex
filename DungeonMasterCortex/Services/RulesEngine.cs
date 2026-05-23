@@ -15,6 +15,8 @@ namespace DungeonMasterCortex.Services;
 /// <summary>Loads and exposes AD&amp;D 2e rules from core_2e.json.</summary>
 public class RulesEngine
 {
+    private const string ClassAbilitySelectionTextDelimiter = "::text::";
+
     private static readonly Regex ImportedSubraceAbilityRegex =
         new(@"^\s*Subrace\s*:\s*([^|]+?)\s*\|\s*(.*)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex ImportedSubraceModifierRegex =
@@ -33,6 +35,7 @@ public class RulesEngine
 
     public Dictionary<string, RaceDefinition>  Races   { get; } = new();
     public Dictionary<string, ClassDefinition> Classes { get; } = new();
+    public Dictionary<string, AbilityDefinition> ClassAbilityLibrary { get; } = new(StringComparer.OrdinalIgnoreCase);
     public List<KitDefinition>                 Kits    { get; } = new();
     public List<MultiClassComboGroup>          MultiClassCombos { get; } = new();
     public List<MonsterDefinition>             Monsters { get; } = new();
@@ -85,7 +88,9 @@ public class RulesEngine
             if (root.TryGetProperty("classes", out var classesEl))
             {
                 Classes.Clear();
-                LoadClasses(classesEl);
+                ClassAbilityLibrary.Clear();
+                LoadClassAbilityLibrary(root);
+                LoadClasses(classesEl, "core_rules");
             }
 
             var overlayPath = FindPlayersOptionOverlayPath();
@@ -93,16 +98,17 @@ public class RulesEngine
             {
                 using var overlayStream = File.OpenRead(overlayPath);
                 var overlayDoc = JsonDocument.Parse(overlayStream);
+                LoadClassAbilityLibrary(overlayDoc.RootElement);
                 if (overlayDoc.RootElement.TryGetProperty("races", out var overlayRacesEl))
                     LoadRaces(overlayRacesEl);
                 if (overlayDoc.RootElement.TryGetProperty("classes", out var overlayClassesEl))
-                    LoadClasses(overlayClassesEl);
+                    LoadClasses(overlayClassesEl, "players_option");
             }
         }
         catch { /* keep fallback data */ }
     }
 
-    private void LoadClasses(JsonElement classesEl)
+    private void LoadClasses(JsonElement classesEl, string defaultRulesMode = "all")
     {
         foreach (var cp in classesEl.EnumerateObject())
         {
@@ -110,14 +116,94 @@ public class RulesEngine
             var allowed = ParseStringList(cp.Value, "allowed_races");
             var name = cp.Value.TryGetProperty("name", out var nEl) ? nEl.GetString() ?? cp.Name : cp.Name;
             var classAbilities = ParseStructuredAbilities(cp.Value, "class_abilities");
+            var classAbilityIds = ParseStringList(cp.Value, "class_ability_ids")
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .ToList();
+            foreach (var abilityId in classAbilityIds)
+            {
+                if (!ClassAbilityLibrary.TryGetValue(abilityId, out var sharedAbility))
+                    continue;
+                if (classAbilities.Any(a => string.Equals(a.Id, sharedAbility.Id, StringComparison.OrdinalIgnoreCase)))
+                    continue;
+                classAbilities.Add(CloneAbilityDefinition(sharedAbility));
+            }
+
+            RegisterClassAbilitiesInLibrary(classAbilities);
+
             var budget = cp.Value.TryGetProperty("class_point_budget", out var budgetEl)
                 && budgetEl.ValueKind == JsonValueKind.Number
                 ? budgetEl.GetInt32()
                 : 0;
             var specializations = ParseSpecializations(cp.Value);
             var source = ParseSourceTag(cp.Value);
-            Classes[cp.Name] = new ClassDefinition(cp.Name, name, mins, allowed, classAbilities, budget, specializations, source);
+            var rulesMode = ParseClassRulesMode(cp.Value, budget, classAbilities, defaultRulesMode);
+            Classes[cp.Name] = new ClassDefinition(cp.Name, name, mins, allowed, classAbilities, budget, specializations, source, rulesMode);
         }
+    }
+
+    private void LoadClassAbilityLibrary(JsonElement root)
+    {
+        if (!root.TryGetProperty("class_ability_library", out var libraryEl))
+            return;
+
+        if (libraryEl.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var abilityProperty in libraryEl.EnumerateObject())
+            {
+                var parsed = ParseAbilityDefinition(abilityProperty.Value, abilityProperty.Name);
+                if (parsed is null || string.IsNullOrWhiteSpace(parsed.Id))
+                    continue;
+
+                foreach (var variant in ExpandMultiCostAbility(parsed))
+                    ClassAbilityLibrary[variant.Id] = variant;
+            }
+            return;
+        }
+
+        if (libraryEl.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in libraryEl.EnumerateArray())
+            {
+                var parsed = ParseAbilityDefinition(item);
+                if (parsed is null || string.IsNullOrWhiteSpace(parsed.Id))
+                    continue;
+
+                foreach (var variant in ExpandMultiCostAbility(parsed))
+                    ClassAbilityLibrary[variant.Id] = variant;
+            }
+        }
+    }
+
+    private void RegisterClassAbilitiesInLibrary(IEnumerable<AbilityDefinition> abilities)
+    {
+        foreach (var ability in abilities)
+        {
+            if (ability is null || string.IsNullOrWhiteSpace(ability.Id))
+                continue;
+
+            if (!ClassAbilityLibrary.ContainsKey(ability.Id))
+                ClassAbilityLibrary[ability.Id] = CloneAbilityDefinition(ability);
+        }
+    }
+
+    private static string ParseClassRulesMode(JsonElement classEl, int classPointBudget, List<AbilityDefinition> classAbilities, string defaultRulesMode = "all")
+    {
+        if (classEl.TryGetProperty("rules_mode", out var rulesModeEl))
+            return NormalizeCharacterMode(rulesModeEl.GetString());
+
+        if (classEl.TryGetProperty("character_mode", out var characterModeEl))
+            return NormalizeCharacterMode(characterModeEl.GetString());
+
+        var normalizedDefault = NormalizeCharacterMode(defaultRulesMode);
+        if (normalizedDefault == "core_rules" || normalizedDefault == "players_option")
+            return normalizedDefault;
+
+        bool hasCore = classAbilities.Any(a => a.AutoGranted && a.PointCost <= 0);
+        bool hasPlayersOption = classPointBudget > 0 || classAbilities.Any(a => !a.AutoGranted || a.PointCost > 0);
+
+        if (hasCore && !hasPlayersOption) return "core_rules";
+        if (!hasCore && hasPlayersOption) return "players_option";
+        return "all";
     }
 
     private static List<WizardSpecialization>? ParseSpecializations(JsonElement classEl)
@@ -196,14 +282,27 @@ public class RulesEngine
     private static string? FindRulesDirectory()
     {
         var dir = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
+        string? nearestCandidate = null;
+
         for (int i = 0; i < 8; i++)
         {
             var candidate = Path.Combine(dir.FullName, "data", "rulesets");
-            if (Directory.Exists(candidate)) return candidate;
+            if (Directory.Exists(candidate))
+            {
+                nearestCandidate ??= candidate;
+
+                // Prefer the repository rules directory when running from bin/obj outputs.
+                // If we can see a solution file at this level, this is the workspace root.
+                bool hasSolutionFile = Directory.EnumerateFiles(dir.FullName, "*.sln", SearchOption.TopDirectoryOnly).Any();
+                if (hasSolutionFile)
+                    return candidate;
+            }
+
             if (dir.Parent is null) break;
             dir = dir.Parent;
         }
-        return null;
+
+        return nearestCandidate;
     }
 
     private static string? FindBaseRulesetPath()
@@ -667,6 +766,7 @@ public class RulesEngine
             writer.WriteString("id", k.Id);
             writer.WriteString("name", k.Name);
             writer.WriteString("source", k.Source);
+            writer.WriteString("rules_mode", NormalizeCharacterMode(k.RulesMode));
             writer.WriteString("description", k.Description);
             writer.WriteStartArray("allowed_races");
             foreach (var r in k.AllowedRaces) writer.WriteStringValue(r);
@@ -710,6 +810,10 @@ public class RulesEngine
                 string name        = k.TryGetProperty("name",        out var nEl)    ? nEl.GetString()    ?? "" : "";
                 string description = k.TryGetProperty("description", out var dEl)    ? dEl.GetString()    ?? "" : "";
                 string source      = k.TryGetProperty("source",      out var srcEl)  ? srcEl.GetString()  ?? "" : "";
+                string rulesMode   = k.TryGetProperty("rules_mode",  out var rmEl)   ? rmEl.GetString()   ?? "" : "";
+                if (string.IsNullOrWhiteSpace(rulesMode))
+                    rulesMode = InferKitRulesModeFromSource(source);
+                rulesMode = NormalizeCharacterMode(rulesMode);
 
                 var allowedRaces = new List<string>();
                 if (k.TryGetProperty("allowed_races", out var racesEl))
@@ -732,10 +836,78 @@ public class RulesEngine
                         if (n.GetString() is string rs) requiredNwpIds.Add(rs);
 
                 if (!string.IsNullOrEmpty(id))
-                    Kits.Add(new KitDefinition(id, name, description, source, allowedRaces, allowedClasses, freeNwpIds, requiredNwpIds));
+                    Kits.Add(new KitDefinition(id, name, description, source, allowedRaces, allowedClasses, freeNwpIds, requiredNwpIds, rulesMode));
             }
         }
         catch { /* non-fatal: kits are optional */ }
+    }
+
+    private static string InferKitRulesModeFromSource(string source)
+    {
+        var src = (source ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(src)) return "all";
+
+        if (src.IndexOf("core", StringComparison.OrdinalIgnoreCase) >= 0
+            && src.IndexOf("player", StringComparison.OrdinalIgnoreCase) >= 0)
+            return "all";
+
+        if (src.IndexOf("player", StringComparison.OrdinalIgnoreCase) >= 0
+            && src.IndexOf("option", StringComparison.OrdinalIgnoreCase) >= 0)
+            return "players_option";
+
+        if (src.IndexOf("core", StringComparison.OrdinalIgnoreCase) >= 0)
+            return "core_rules";
+
+        if (string.Equals(src, "custom", StringComparison.OrdinalIgnoreCase))
+            return "all";
+
+        if (src.IndexOf("complete book", StringComparison.OrdinalIgnoreCase) >= 0)
+            return "players_option";
+
+        // Unknown supplement-style sources default to PO for Character Options content.
+        return "players_option";
+    }
+
+    /// <summary>
+    /// One-time migration utility: ensure each kit in kits.json has an explicit rules_mode.
+    /// Existing rules_mode values are preserved; only missing/blank entries are written.
+    /// </summary>
+    public (int updated, int total) MigrateKitRulesModesInFile()
+    {
+        var path = FindKitsDataPath();
+        if (path is null)
+            throw new InvalidOperationException("Unable to locate kits.json.");
+
+        var root = ReadOrCreateJsonObject(path);
+        if (root["kits"] is not JsonArray kitsArray)
+            return (0, 0);
+
+        int updated = 0;
+        int total = 0;
+
+        foreach (var node in kitsArray)
+        {
+            if (node is not JsonObject kitObj)
+                continue;
+
+            total += 1;
+            var existingMode = kitObj["rules_mode"]?.GetValue<string>() ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(existingMode))
+                continue;
+
+            var source = kitObj["source"]?.GetValue<string>() ?? string.Empty;
+            var inferred = NormalizeCharacterMode(InferKitRulesModeFromSource(source));
+            kitObj["rules_mode"] = inferred;
+            updated += 1;
+        }
+
+        if (updated > 0)
+        {
+            WriteJsonObject(path, root);
+            TryLoadKits();
+        }
+
+        return (updated, total);
     }
 
     private static string? FindMonstersDataPath()
@@ -1059,13 +1231,20 @@ public class RulesEngine
     }
 
     /// <summary>Returns kits available for the given race and class combination.</summary>
-    public List<KitDefinition> KitsFor(string raceId, string classId = "")
+    public List<KitDefinition> KitsFor(string raceId, string classId = "", string characterMode = "")
     {
         if (!Races.TryGetValue(raceId, out var race)) return new List<KitDefinition>();
         string baseRaceId = race.BaseRaceId ?? "";
+        string mode = NormalizeCharacterMode(characterMode);
 
         return Kits.Where(kit =>
         {
+            string kitMode = NormalizeCharacterMode(kit.RulesMode);
+            bool modeOk = string.IsNullOrWhiteSpace(characterMode)
+                || kitMode == "all"
+                || kitMode == mode;
+            if (!modeOk) return false;
+
             bool raceOk = kit.AllowedRaces.Count == 0
                 || kit.AllowedRaces.Contains(raceId, StringComparer.OrdinalIgnoreCase)
                 || (!string.IsNullOrEmpty(baseRaceId) && kit.AllowedRaces.Contains(baseRaceId, StringComparer.OrdinalIgnoreCase));
@@ -1742,79 +1921,99 @@ public class RulesEngine
 
         foreach (var item in arrEl.EnumerateArray())
         {
-            if (item.ValueKind == JsonValueKind.String)
-            {
-                // Legacy plain string – no mechanical effect
-                var s = item.GetString() ?? "";
-                result.Add(new AbilityDefinition
-                {
-                    Id = Slugify(s),
-                    Description = s,
-                    PointCost = 0,
-                    AutoGranted = true,
-                });
-            }
-            else if (item.ValueKind == JsonValueKind.Object)
-            {
-                var id   = item.TryGetProperty("id",          out var idEl)  ? idEl.GetString()   ?? "" : "";
-                var desc = item.TryGetProperty("description", out var descEl) ? descEl.GetString() ?? "" : "";
-                var effect = new AbilityEffect();
+            var parsedAbility = ParseAbilityDefinition(item);
+            if (parsedAbility is null)
+                continue;
 
-                if (item.TryGetProperty("mechanics", out var mech))
-                {
-                    effect.AcBonus            = GetInt(mech, "ac_bonus");
-                    effect.AcBonusRequiresNoArmor = GetBool(mech, "ac_bonus_requires_no_armor") || GetBool(mech, "requires_no_armor");
-                    effect.AttackBonus        = GetInt(mech, "attack_bonus");
-                    effect.DamageBonus        = GetInt(mech, "damage_bonus");
-                    effect.MovementBonus      = GetInt(mech, "movement_bonus");
-                    effect.XpModifierPercent  = GetInt(mech, "xp_modifier_percent");
-                    effect.HpPerLevel         = GetInt(mech, "hp_per_level");
-                    effect.HpFlatBonus        = GetInt(mech, "hp_flat_bonus");
-                    effect.HpDiceExpression   = GetString(mech, "hp_dice_expression");
-                    effect.NwpSlotBonus       = GetInt(mech, "nwp_slot_bonus");
-                    effect.NwpCostReduction   = GetInt(mech, "nwp_cost_reduction");
-                    effect.NwpCheckBonus      = GetInt(mech, "nwp_check_bonus");
-                    effect.SurpriseBonus      = GetInt(mech, "surprise_bonus");
-                    effect.InfravisionFeet    = GetInt(mech, "infravision_feet");
-                    effect.MagicResistPercent = GetInt(mech, "magic_resist_percent");
-                    effect.ReactionBonus      = GetInt(mech, "reaction_bonus");
-                    effect.GrantsStealth      = GetBool(mech, "grants_stealth");
-                    effect.DetectSecretDoors  = GetBool(mech, "detect_secret_doors");
-                    effect.DetectStonework    = GetBool(mech, "detect_stonework");
-                    effect.SaveBonuses        = ParseIntDict(mech, "save_bonuses");
-                    effect.SubAbilityBonuses  = ParseIntDict(mech, "subability_bonuses");
-                    effect.EnemyAttackBonuses = ParseIntDict(mech, "enemy_attack_bonuses");
-                    effect.EnemyDamageBonuses = ParseIntDict(mech, "enemy_damage_bonuses");
-                    effect.WeaponAttackBonuses = ParseIntDict(mech, "weapon_attack_bonuses");
-                    effect.WeaponDamageBonuses = ParseIntDict(mech, "weapon_damage_bonuses");
-                }
-
-                var explicitCost = item.TryGetProperty("point_cost", out var costEl)
-                    && costEl.ValueKind == JsonValueKind.Number
-                    ? costEl.GetInt32()
-                    : int.MinValue;
-
-                var explicitAuto = item.TryGetProperty("auto_granted", out var autoEl)
-                    && (autoEl.ValueKind == JsonValueKind.True || autoEl.ValueKind == JsonValueKind.False)
-                    ? autoEl.GetBoolean()
-                    : InferAutoGranted(desc);
-
-                var resolvedCost = explicitCost != int.MinValue ? explicitCost : EstimatePointCost(effect, desc);
-
-                var parsedAbility = new AbilityDefinition
-                {
-                    Id = id,
-                    Description = desc,
-                    PointCost = resolvedCost,
-                    AutoGranted = explicitAuto,
-                    Effect = effect,
-                };
-
-                foreach (var variant in ExpandMultiCostAbility(parsedAbility))
-                    result.Add(variant);
-            }
+            foreach (var variant in ExpandMultiCostAbility(parsedAbility))
+                result.Add(variant);
         }
         return result;
+    }
+
+    private static AbilityDefinition? ParseAbilityDefinition(JsonElement item, string? fallbackId = null)
+    {
+        if (item.ValueKind == JsonValueKind.String)
+        {
+            // Legacy plain string – no mechanical effect
+            var s = item.GetString() ?? "";
+            return new AbilityDefinition
+            {
+                Id = Slugify(s),
+                Description = s,
+                PointCost = 0,
+                AutoGranted = true,
+            };
+        }
+
+        if (item.ValueKind != JsonValueKind.Object)
+            return null;
+
+        var id = item.TryGetProperty("id", out var idEl) ? idEl.GetString() ?? "" : "";
+        if (string.IsNullOrWhiteSpace(id) && !string.IsNullOrWhiteSpace(fallbackId))
+            id = fallbackId.Trim();
+
+        var desc = item.TryGetProperty("description", out var descEl) ? descEl.GetString() ?? "" : "";
+        var effect = new AbilityEffect();
+
+        if (item.TryGetProperty("mechanics", out var mech))
+        {
+            effect.AcBonus            = GetInt(mech, "ac_bonus");
+            effect.AcBonusRequiresNoArmor = GetBool(mech, "ac_bonus_requires_no_armor") || GetBool(mech, "requires_no_armor");
+            effect.AttackBonus        = GetInt(mech, "attack_bonus");
+            effect.DamageBonus        = GetInt(mech, "damage_bonus");
+            effect.MovementBonus      = GetInt(mech, "movement_bonus");
+            effect.XpModifierPercent  = GetInt(mech, "xp_modifier_percent");
+            effect.HpPerLevel         = GetInt(mech, "hp_per_level");
+            effect.HpFlatBonus        = GetInt(mech, "hp_flat_bonus");
+            effect.HpDiceExpression   = GetString(mech, "hp_dice_expression");
+            effect.NwpSlotBonus       = GetInt(mech, "nwp_slot_bonus");
+            effect.NwpCostReduction   = GetInt(mech, "nwp_cost_reduction");
+            effect.NwpCheckBonus      = GetInt(mech, "nwp_check_bonus");
+            effect.SurpriseBonus      = GetInt(mech, "surprise_bonus");
+            effect.InfravisionFeet    = GetInt(mech, "infravision_feet");
+            effect.MagicResistPercent = GetInt(mech, "magic_resist_percent");
+            effect.ReactionBonus      = GetInt(mech, "reaction_bonus");
+            effect.GrantsStealth      = GetBool(mech, "grants_stealth");
+            effect.DetectSecretDoors  = GetBool(mech, "detect_secret_doors");
+            effect.DetectStonework    = GetBool(mech, "detect_stonework");
+            effect.SaveBonuses        = ParseIntDict(mech, "save_bonuses");
+            effect.SubAbilityBonuses  = ParseIntDict(mech, "subability_bonuses");
+            effect.EnemyAttackBonuses = ParseIntDict(mech, "enemy_attack_bonuses");
+            effect.EnemyDamageBonuses = ParseIntDict(mech, "enemy_damage_bonuses");
+            effect.WeaponAttackBonuses = ParseIntDict(mech, "weapon_attack_bonuses");
+            effect.WeaponDamageBonuses = ParseIntDict(mech, "weapon_damage_bonuses");
+        }
+
+        var explicitCost = item.TryGetProperty("point_cost", out var costEl)
+            && costEl.ValueKind == JsonValueKind.Number
+            ? costEl.GetInt32()
+            : int.MinValue;
+
+        var explicitAuto = item.TryGetProperty("auto_granted", out var autoEl)
+            && (autoEl.ValueKind == JsonValueKind.True || autoEl.ValueKind == JsonValueKind.False)
+            ? autoEl.GetBoolean()
+            : InferAutoGranted(desc);
+
+        var resolvedCost = explicitCost != int.MinValue ? explicitCost : EstimatePointCost(effect, desc);
+
+        return new AbilityDefinition
+        {
+            Id = id,
+            Description = desc,
+            PointCost = resolvedCost,
+            AutoGranted = explicitAuto,
+            AllowMultiple = item.TryGetProperty("allow_multiple", out var multiEl)
+                && (multiEl.ValueKind == JsonValueKind.True || multiEl.ValueKind == JsonValueKind.False)
+                && multiEl.GetBoolean(),
+            RequiresPlayerText = item.TryGetProperty("requires_player_text", out var textEl)
+                && (textEl.ValueKind == JsonValueKind.True || textEl.ValueKind == JsonValueKind.False)
+                && textEl.GetBoolean(),
+            AllowPurchaseAfterLevelOne = !item.TryGetProperty("allow_purchase_after_level_one", out var postLevelOneEl)
+                || !((postLevelOneEl.ValueKind == JsonValueKind.True) || (postLevelOneEl.ValueKind == JsonValueKind.False))
+                || postLevelOneEl.GetBoolean(),
+            Effect = effect,
+        };
     }
 
     private static IEnumerable<AbilityDefinition> ExpandMultiCostAbility(AbilityDefinition ability)
@@ -1850,6 +2049,9 @@ public class RulesEngine
                 PointCost = cost,
                 AutoGranted = false,
                 Category = ability.Category,
+                AllowMultiple = ability.AllowMultiple,
+                RequiresPlayerText = ability.RequiresPlayerText,
+                AllowPurchaseAfterLevelOne = ability.AllowPurchaseAfterLevelOne,
                 Effect = CloneEffect(ability.Effect),
             });
         }
@@ -1893,6 +2095,59 @@ public class RulesEngine
             DetectSecretDoors = src.DetectSecretDoors,
             DetectStonework = src.DetectStonework,
         };
+    }
+
+    private static AbilityDefinition CloneAbilityDefinition(AbilityDefinition source)
+    {
+        return new AbilityDefinition
+        {
+            Id = source.Id,
+            Description = source.Description,
+            Category = source.Category,
+            PointCost = source.PointCost,
+            AutoGranted = source.AutoGranted,
+            AllowMultiple = source.AllowMultiple,
+            RequiresPlayerText = source.RequiresPlayerText,
+            AllowPurchaseAfterLevelOne = source.AllowPurchaseAfterLevelOne,
+            Effect = CloneEffect(source.Effect),
+        };
+    }
+
+    public static string BuildClassAbilitySelectionEntry(string abilityId, string? playerText)
+    {
+        string baseId = (abilityId ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(baseId))
+            return string.Empty;
+
+        string text = (playerText ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(text))
+            return baseId;
+
+        text = text.Replace(ClassAbilitySelectionTextDelimiter, " ");
+        return $"{baseId}{ClassAbilitySelectionTextDelimiter}{text}";
+    }
+
+    public static string ExtractClassAbilityBaseId(string? selectionEntry)
+    {
+        if (string.IsNullOrWhiteSpace(selectionEntry))
+            return string.Empty;
+
+        int split = selectionEntry.IndexOf(ClassAbilitySelectionTextDelimiter, StringComparison.Ordinal);
+        return split < 0
+            ? selectionEntry.Trim()
+            : selectionEntry[..split].Trim();
+    }
+
+    public static string ExtractClassAbilityPlayerText(string? selectionEntry)
+    {
+        if (string.IsNullOrWhiteSpace(selectionEntry))
+            return string.Empty;
+
+        int split = selectionEntry.IndexOf(ClassAbilitySelectionTextDelimiter, StringComparison.Ordinal);
+        if (split < 0)
+            return string.Empty;
+
+        return selectionEntry[(split + ClassAbilitySelectionTextDelimiter.Length)..].Trim();
     }
 
     private static bool InferAutoGranted(string description)
@@ -2082,6 +2337,26 @@ public class RulesEngine
             string.Equals(baseId, "halfling", StringComparison.OrdinalIgnoreCase))
         {
             subraces = MergeHalflingOptionsIntoBasic(subraces);
+        }
+
+        // Core rules fallback: if the base dataset has no explicit subraces,
+        // surface Player's Option subraces as selectable lineage entries.
+        // Character mode remains core when the sheet is built from char-gen state.
+        if (subraces.Count == 0 && string.Equals(mode, "core_rules", StringComparison.OrdinalIgnoreCase))
+        {
+            subraces = Races.Values
+                .Where(r => string.Equals(r.BaseRaceId, baseId, StringComparison.OrdinalIgnoreCase))
+                .Where(r => r.CharacterMode == "players_option" || r.CharacterMode == "all")
+                .GroupBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
+                .Select(group => group
+                    .OrderByDescending(r => r.CharacterMode == "players_option")
+                    .ThenByDescending(r => r.CharacterMode == "all")
+                    .ThenBy(r => r.Name.StartsWith("Basic ", StringComparison.OrdinalIgnoreCase) ? 1 : 0)
+                    .ThenBy(r => r.Name)
+                    .First())
+                .OrderBy(r => r.Name.StartsWith("Basic ", StringComparison.OrdinalIgnoreCase) ? 1 : 0)
+                .ThenBy(r => r.Name)
+                .ToList();
         }
 
         if (subraces.Count > 0) return subraces;
@@ -2728,7 +3003,8 @@ public class RulesEngine
                 : new List<AbilityDefinition>(),
             cls.ClassPointBudget,
             cls.Specializations is null ? null : new List<WizardSpecialization>(cls.Specializations),
-            cls.Source);
+            cls.Source,
+            NormalizeCharacterMode(cls.RulesMode));
 
         Classes[normalized.Id] = normalized;
         PersistClass(normalized);
@@ -2776,12 +3052,24 @@ public class RulesEngine
         RemoveClassFromFile(basePath, cls.Id);
         RemoveClassFromFile(overlayPath, cls.Id);
 
-        // Class data is currently persisted in base ruleset file by default.
-        var root = ReadOrCreateJsonObject(basePath);
+        var targetPath = string.Equals(cls.RulesMode, "players_option", StringComparison.OrdinalIgnoreCase)
+            ? overlayPath
+            : basePath;
+
+        var root = ReadOrCreateJsonObject(targetPath);
+        UpsertClassAbilityLibrary(root, cls.StructuredAbilities);
         var classesObject = root["classes"]?.AsObject() ?? new JsonObject();
-        classesObject[cls.Id] = ToJsonClassObject(cls);
+        classesObject[cls.Id] = ToJsonClassObject(cls, includeInlineClassAbilities: false);
         root["classes"] = classesObject;
-        WriteJsonObject(basePath, root);
+        WriteJsonObject(targetPath, root);
+    }
+
+    private static void UpsertClassAbilityLibrary(JsonObject root, IEnumerable<AbilityDefinition> abilities)
+    {
+        var library = root["class_ability_library"]?.AsObject() ?? new JsonObject();
+        foreach (var ability in abilities.Where(a => !string.IsNullOrWhiteSpace(a.Id)))
+            library[ability.Id] = ToJsonAbilityObject(ability, includeId: false);
+        root["class_ability_library"] = library;
     }
 
     private static JsonObject ToJsonObject(Dictionary<string, int> values)
@@ -2795,46 +3083,55 @@ public class RulesEngine
     {
         var arr = new JsonArray();
         foreach (var ab in abilities)
-        {
-            var e = ab.Effect;
-            var mech = new JsonObject();
-            if (e.AcBonus            != 0) mech["ac_bonus"]              = e.AcBonus;
-            if (e.AttackBonus        != 0) mech["attack_bonus"]          = e.AttackBonus;
-            if (e.DamageBonus        != 0) mech["damage_bonus"]          = e.DamageBonus;
-            if (e.MovementBonus      != 0) mech["movement_bonus"]        = e.MovementBonus;
-            if (e.XpModifierPercent  != 0) mech["xp_modifier_percent"]   = e.XpModifierPercent;
-            if (e.HpPerLevel         != 0) mech["hp_per_level"]          = e.HpPerLevel;
-            if (e.HpFlatBonus        != 0) mech["hp_flat_bonus"]         = e.HpFlatBonus;
-            if (!string.IsNullOrWhiteSpace(e.HpDiceExpression)) mech["hp_dice_expression"] = e.HpDiceExpression;
-            if (e.AcBonusRequiresNoArmor) mech["ac_bonus_requires_no_armor"] = true;
-            if (e.NwpSlotBonus       != 0) mech["nwp_slot_bonus"]        = e.NwpSlotBonus;
-            if (e.NwpCostReduction   != 0) mech["nwp_cost_reduction"]    = e.NwpCostReduction;
-            if (e.NwpCheckBonus      != 0) mech["nwp_check_bonus"]       = e.NwpCheckBonus;
-            if (e.SurpriseBonus      != 0) mech["surprise_bonus"]        = e.SurpriseBonus;
-            if (e.InfravisionFeet    != 0) mech["infravision_feet"]      = e.InfravisionFeet;
-            if (e.MagicResistPercent != 0) mech["magic_resist_percent"]  = e.MagicResistPercent;
-            if (e.ReactionBonus      != 0) mech["reaction_bonus"]        = e.ReactionBonus;
-            if (e.GrantsStealth)           mech["grants_stealth"]        = true;
-            if (e.DetectSecretDoors)       mech["detect_secret_doors"]   = true;
-            if (e.DetectStonework)         mech["detect_stonework"]      = true;
-            if (e.SaveBonuses.Count         > 0) mech["save_bonuses"]          = ToJsonObject(e.SaveBonuses);
-            if (e.SubAbilityBonuses.Count   > 0) mech["subability_bonuses"]    = ToJsonObject(e.SubAbilityBonuses);
-            if (e.EnemyAttackBonuses.Count  > 0) mech["enemy_attack_bonuses"]  = ToJsonObject(e.EnemyAttackBonuses);
-            if (e.EnemyDamageBonuses.Count  > 0) mech["enemy_damage_bonuses"]  = ToJsonObject(e.EnemyDamageBonuses);
-            if (e.WeaponAttackBonuses.Count > 0) mech["weapon_attack_bonuses"] = ToJsonObject(e.WeaponAttackBonuses);
-            if (e.WeaponDamageBonuses.Count > 0) mech["weapon_damage_bonuses"] = ToJsonObject(e.WeaponDamageBonuses);
-
-            var obj = new JsonObject
-            {
-                ["id"]          = ab.Id,
-                ["description"] = ab.Description,
-                ["point_cost"]  = ab.PointCost,
-                ["auto_granted"] = ab.AutoGranted,
-            };
-            if (mech.Count > 0) obj["mechanics"] = mech;
-            arr.Add(obj);
-        }
+            arr.Add(ToJsonAbilityObject(ab, includeId: true));
         return arr;
+    }
+
+    private static JsonObject ToJsonAbilityObject(AbilityDefinition ab, bool includeId)
+    {
+        var e = ab.Effect;
+        var mech = new JsonObject();
+        if (e.AcBonus            != 0) mech["ac_bonus"]              = e.AcBonus;
+        if (e.AttackBonus        != 0) mech["attack_bonus"]          = e.AttackBonus;
+        if (e.DamageBonus        != 0) mech["damage_bonus"]          = e.DamageBonus;
+        if (e.MovementBonus      != 0) mech["movement_bonus"]        = e.MovementBonus;
+        if (e.XpModifierPercent  != 0) mech["xp_modifier_percent"]   = e.XpModifierPercent;
+        if (e.HpPerLevel         != 0) mech["hp_per_level"]          = e.HpPerLevel;
+        if (e.HpFlatBonus        != 0) mech["hp_flat_bonus"]         = e.HpFlatBonus;
+        if (!string.IsNullOrWhiteSpace(e.HpDiceExpression)) mech["hp_dice_expression"] = e.HpDiceExpression;
+        if (e.AcBonusRequiresNoArmor) mech["ac_bonus_requires_no_armor"] = true;
+        if (e.NwpSlotBonus       != 0) mech["nwp_slot_bonus"]        = e.NwpSlotBonus;
+        if (e.NwpCostReduction   != 0) mech["nwp_cost_reduction"]    = e.NwpCostReduction;
+        if (e.NwpCheckBonus      != 0) mech["nwp_check_bonus"]       = e.NwpCheckBonus;
+        if (e.SurpriseBonus      != 0) mech["surprise_bonus"]        = e.SurpriseBonus;
+        if (e.InfravisionFeet    != 0) mech["infravision_feet"]      = e.InfravisionFeet;
+        if (e.MagicResistPercent != 0) mech["magic_resist_percent"]  = e.MagicResistPercent;
+        if (e.ReactionBonus      != 0) mech["reaction_bonus"]        = e.ReactionBonus;
+        if (e.GrantsStealth)           mech["grants_stealth"]        = true;
+        if (e.DetectSecretDoors)       mech["detect_secret_doors"]   = true;
+        if (e.DetectStonework)         mech["detect_stonework"]      = true;
+        if (e.SaveBonuses.Count         > 0) mech["save_bonuses"]          = ToJsonObject(e.SaveBonuses);
+        if (e.SubAbilityBonuses.Count   > 0) mech["subability_bonuses"]    = ToJsonObject(e.SubAbilityBonuses);
+        if (e.EnemyAttackBonuses.Count  > 0) mech["enemy_attack_bonuses"]  = ToJsonObject(e.EnemyAttackBonuses);
+        if (e.EnemyDamageBonuses.Count  > 0) mech["enemy_damage_bonuses"]  = ToJsonObject(e.EnemyDamageBonuses);
+        if (e.WeaponAttackBonuses.Count > 0) mech["weapon_attack_bonuses"] = ToJsonObject(e.WeaponAttackBonuses);
+        if (e.WeaponDamageBonuses.Count > 0) mech["weapon_damage_bonuses"] = ToJsonObject(e.WeaponDamageBonuses);
+
+        var obj = new JsonObject
+        {
+            ["description"] = ab.Description,
+            ["point_cost"]  = ab.PointCost,
+            ["auto_granted"] = ab.AutoGranted,
+            ["allow_multiple"] = ab.AllowMultiple,
+            ["requires_player_text"] = ab.RequiresPlayerText,
+            ["allow_purchase_after_level_one"] = ab.AllowPurchaseAfterLevelOne,
+        };
+        if (includeId)
+            obj["id"] = ab.Id;
+        if (mech.Count > 0)
+            obj["mechanics"] = mech;
+
+        return obj;
     }
 
     private static JsonObject ToJsonRaceObject(RaceDefinition race)
@@ -2856,16 +3153,26 @@ public class RulesEngine
         return obj;
     }
 
-    private static JsonObject ToJsonClassObject(ClassDefinition cls)
+    private static JsonObject ToJsonClassObject(ClassDefinition cls, bool includeInlineClassAbilities = true)
     {
+        var classAbilityIds = cls.StructuredAbilities
+            .Select(a => a.Id)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
         var obj = new JsonObject
         {
             ["name"] = cls.Name,
             ["ability_minimums"] = ToJsonObject(cls.AbilityMinimums),
             ["allowed_races"] = new JsonArray(cls.AllowedRaces.Select(r => (JsonNode)r).ToArray()),
+            ["rules_mode"] = NormalizeCharacterMode(cls.RulesMode),
             ["class_point_budget"] = cls.ClassPointBudget,
-            ["class_abilities"] = ToJsonAbilityArray(cls.StructuredAbilities),
+            ["class_ability_ids"] = new JsonArray(classAbilityIds.Select(id => (JsonNode)id).ToArray()),
         };
+
+        if (includeInlineClassAbilities)
+            obj["class_abilities"] = ToJsonAbilityArray(cls.StructuredAbilities);
 
         if (cls.IsCustom)
             obj["source"] = "custom";
@@ -2907,11 +3214,14 @@ public class RulesEngine
         }
 
         var classes = new JsonObject();
+        var classAbilityLibrary = new JsonObject();
         foreach (var cls in Classes.Values
             .Where(c => c.IsCustom)
             .OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase))
         {
-            classes[cls.Id] = ToJsonClassObject(cls);
+            classes[cls.Id] = ToJsonClassObject(cls, includeInlineClassAbilities: false);
+            foreach (var ability in cls.StructuredAbilities.Where(a => !string.IsNullOrWhiteSpace(a.Id)))
+                classAbilityLibrary[ability.Id] = ToJsonAbilityObject(ability, includeId: false);
         }
 
         var root = new JsonObject
@@ -2920,6 +3230,7 @@ public class RulesEngine
             ["exported_at_utc"] = DateTime.UtcNow.ToString("o"),
             ["races"] = races,
             ["classes"] = classes,
+            ["class_ability_library"] = classAbilityLibrary,
         };
 
         var options = new JsonSerializerOptions { WriteIndented = true };
@@ -2939,6 +3250,33 @@ public class RulesEngine
 
         int raceCount = 0;
         int classCount = 0;
+
+        var importClassAbilityLibrary = new Dictionary<string, AbilityDefinition>(StringComparer.OrdinalIgnoreCase);
+        if (root.TryGetProperty("class_ability_library", out var importLibraryEl))
+        {
+            if (importLibraryEl.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var abilityProperty in importLibraryEl.EnumerateObject())
+                {
+                    var parsed = ParseAbilityDefinition(abilityProperty.Value, abilityProperty.Name);
+                    if (parsed is null || string.IsNullOrWhiteSpace(parsed.Id))
+                        continue;
+                    foreach (var variant in ExpandMultiCostAbility(parsed))
+                        importClassAbilityLibrary[variant.Id] = variant;
+                }
+            }
+            else if (importLibraryEl.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var abilityEl in importLibraryEl.EnumerateArray())
+                {
+                    var parsed = ParseAbilityDefinition(abilityEl);
+                    if (parsed is null || string.IsNullOrWhiteSpace(parsed.Id))
+                        continue;
+                    foreach (var variant in ExpandMultiCostAbility(parsed))
+                        importClassAbilityLibrary[variant.Id] = variant;
+                }
+            }
+        }
 
         if (root.TryGetProperty("races", out var racesEl) && racesEl.ValueKind == JsonValueKind.Object)
         {
@@ -2995,11 +3333,25 @@ public class RulesEngine
                 var allowed = ParseStringList(classJson, "allowed_races");
                 var name = classJson.TryGetProperty("name", out var nEl) ? nEl.GetString() ?? classId : classId;
                 var classAbilities = ParseStructuredAbilities(classJson, "class_abilities");
+                foreach (var abilityId in ParseStringList(classJson, "class_ability_ids"))
+                {
+                    if (string.IsNullOrWhiteSpace(abilityId))
+                        continue;
+                    if (!importClassAbilityLibrary.TryGetValue(abilityId, out var ability)
+                        && !ClassAbilityLibrary.TryGetValue(abilityId, out ability))
+                    {
+                        continue;
+                    }
+
+                    if (!classAbilities.Any(a => string.Equals(a.Id, ability.Id, StringComparison.OrdinalIgnoreCase)))
+                        classAbilities.Add(CloneAbilityDefinition(ability));
+                }
                 var budget = classJson.TryGetProperty("class_point_budget", out var budgetEl)
                     && budgetEl.ValueKind == JsonValueKind.Number
                     ? budgetEl.GetInt32()
                     : 0;
                 var specializations = ParseSpecializations(classJson);
+                var rulesMode = ParseClassRulesMode(classJson, budget, classAbilities);
 
                 var importedClass = new ClassDefinition(
                     classId,
@@ -3009,7 +3361,8 @@ public class RulesEngine
                     classAbilities,
                     budget,
                     specializations,
-                    "custom");
+                    "custom",
+                    rulesMode);
 
                 SaveClass(importedClass);
                 classCount += 1;
@@ -3517,11 +3870,12 @@ public class RulesEngine
             }
         }
 
-        var mergedIds = new HashSet<string>(
-            (selectedOptionalClassAbilityIds ?? Enumerable.Empty<string>()).Concat(specAutoIds),
-            StringComparer.OrdinalIgnoreCase);
+        var mergedEntries = new List<string>();
+        if (selectedOptionalClassAbilityIds is not null)
+            mergedEntries.AddRange(selectedOptionalClassAbilityIds.Where(id => !string.IsNullOrWhiteSpace(id)));
+        mergedEntries.AddRange(specAutoIds.Where(id => !string.IsNullOrWhiteSpace(id)));
 
-        var selected = SelectClassAbilities(cls, mergedIds, characterLevel);
+        var selected = SelectClassAbilities(cls, mergedEntries, characterLevel);
         var spent = selected.Sum(a => a.PointCost);
         var carryover = Math.Clamp(classAbilityCarryoverPoints, 0, 5);
         var budget = Math.Max(0, classBudget) + carryover;
@@ -3549,26 +3903,52 @@ public class RulesEngine
     }
 
     private static List<AbilityDefinition> SelectClassAbilities(ClassDefinition cls,
-        IEnumerable<string>? selectedOptionalAbilityIds,
+        IEnumerable<string>? selectedOptionalAbilityEntries,
         int characterLevel)
     {
         var selected = new List<AbilityDefinition>();
         int effectiveLevel = characterLevel <= 0 ? int.MaxValue : characterLevel;
+        var byId = cls.StructuredAbilities
+            .GroupBy(a => a.Id, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
         selected.AddRange(cls.StructuredAbilities
             .Where(a => a.AutoGranted)
             .Where(a => AbilityUnlockLevel(a) <= effectiveLevel));
 
-        var optionalIds = new HashSet<string>(selectedOptionalAbilityIds ?? Enumerable.Empty<string>(),
-            StringComparer.OrdinalIgnoreCase);
-        selected.AddRange(cls.StructuredAbilities
-            .Where(a => !a.AutoGranted && optionalIds.Contains(a.Id))
-            .Where(a => AbilityUnlockLevel(a) <= effectiveLevel));
+        foreach (var entry in selectedOptionalAbilityEntries ?? Enumerable.Empty<string>())
+        {
+            string baseId = ExtractClassAbilityBaseId(entry);
+            if (string.IsNullOrWhiteSpace(baseId))
+                continue;
+            if (!byId.TryGetValue(baseId, out var ability))
+                continue;
+            if (ability.AutoGranted)
+                continue;
+            if (AbilityUnlockLevel(ability) > effectiveLevel)
+                continue;
 
-        return selected
-            .GroupBy(a => a.Id, StringComparer.OrdinalIgnoreCase)
-            .Select(g => g.First())
-            .ToList();
+            var cloned = new AbilityDefinition
+            {
+                Id = ability.Id,
+                Description = ability.Description,
+                Category = ability.Category,
+                PointCost = ability.PointCost,
+                AutoGranted = ability.AutoGranted,
+                AllowMultiple = ability.AllowMultiple,
+                RequiresPlayerText = ability.RequiresPlayerText,
+                AllowPurchaseAfterLevelOne = ability.AllowPurchaseAfterLevelOne,
+                Effect = CloneEffect(ability.Effect),
+            };
+
+            string playerText = ExtractClassAbilityPlayerText(entry);
+            if (!string.IsNullOrWhiteSpace(playerText) && ability.RequiresPlayerText)
+                cloned.Description = $"{ability.Description} [Selection: {playerText}]";
+
+            selected.Add(cloned);
+        }
+
+        return selected;
     }
 
     public static int AbilityUnlockLevel(AbilityDefinition ability)
@@ -3605,7 +3985,8 @@ public class RulesEngine
                                           Dictionary<string, int>? subAbilities = null,
                                           int exceptionalStrength = 0,
                                           string? armorProfile = null,
-                                          int characterLevel = 1)
+                                          int characterLevel = 1,
+                                          string? characterMode = null)
     {
         Races.TryGetValue(raceId, out var race);
         Classes.TryGetValue(classId, out var cls);
@@ -3763,12 +4144,15 @@ public class RulesEngine
         if (classBudget > 0 && classRemaining < 0)
             throw new InvalidOperationException($"Class ability cost exceeds budget for {cls?.Name ?? classId}: spent {classSpent}, budget {classBudget}.");
 
+        string resolvedCharacterMode = NormalizeCharacterMode(
+            string.IsNullOrWhiteSpace(characterMode) ? race?.CharacterMode : characterMode);
+
         return new CharacterSheet
         {
             Name          = name,
             RaceId        = raceId,
             ClassId       = classId,
-            CharacterMode = race?.CharacterMode == "players_option" ? "players_option" : "core_rules",
+            CharacterMode = resolvedCharacterMode == "players_option" ? "players_option" : "core_rules",
             Level         = Math.Max(1, characterLevel),
             BaseHitPoints = baseHp,
             HitPoints     = effectiveHp,
@@ -3846,15 +4230,26 @@ public class RulesEngine
 
     // ── Class eligibility for a given race ───────────────────────────────────
 
-    public IEnumerable<ClassDefinition> EligibleClasses(string raceId)
+    public IEnumerable<ClassDefinition> EligibleClasses(string raceId, string? characterMode = null)
     {
+        var mode = NormalizeCharacterMode(characterMode);
+
+        bool ClassModeAllowed(ClassDefinition cls)
+        {
+            var classMode = NormalizeCharacterMode(cls.RulesMode);
+            return classMode == "all" || classMode == mode;
+        }
+
         if (!Races.TryGetValue(raceId, out var race)) 
-            return Classes.Values;
+            return Classes.Values.Where(ClassModeAllowed);
         
-        return Classes.Values.Where(c => 
-            (c.AllowedRaces == null || c.AllowedRaces.Count == 0) ||
-            (c.AllowedRaces != null && c.AllowedRaces.Contains(raceId)) ||
-            (!string.IsNullOrEmpty(race.BaseRaceId) && c.AllowedRaces != null && c.AllowedRaces.Contains(race.BaseRaceId)));
+        return Classes.Values.Where(c =>
+            ClassModeAllowed(c) &&
+            (
+                (c.AllowedRaces == null || c.AllowedRaces.Count == 0) ||
+                (c.AllowedRaces != null && c.AllowedRaces.Contains(raceId)) ||
+                (!string.IsNullOrEmpty(race.BaseRaceId) && c.AllowedRaces != null && c.AllowedRaces.Contains(race.BaseRaceId))
+            ));
     }
 
     // ── Multi-class combination rules ────────────────────────────────────────
@@ -4127,8 +4522,9 @@ public class RulesEngine
     public static List<string> GetRogueSkillIdsForAbilitySelection(IEnumerable<string> selectedAbilityIds)
     {
         var result = new List<string>();
-        foreach (var abilityId in selectedAbilityIds ?? Enumerable.Empty<string>())
+        foreach (var selectionEntry in selectedAbilityIds ?? Enumerable.Empty<string>())
         {
+            var abilityId = ExtractClassAbilityBaseId(selectionEntry);
             if (RogueSkillAbilityToSkillId.TryGetValue(abilityId, out var skillId) && !result.Contains(skillId))
                 result.Add(skillId);
         }

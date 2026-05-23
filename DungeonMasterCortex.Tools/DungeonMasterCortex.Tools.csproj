@@ -13,6 +13,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DungeonMasterCortex\DungeonMasterCortex.csproj" />
+    <Content Include="smtp_activation.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
     <Content Include="..\Assets\Icons\License Activation Icon.ico">
       <Link>Assets\Icons\License Activation Icon.ico</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

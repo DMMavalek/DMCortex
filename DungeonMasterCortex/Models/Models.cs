@@ -101,6 +101,9 @@ public class AbilityDefinition
     public string         Category    { get; set; } = "";   // for grouping/sorting in UI
     public int            PointCost   { get; set; } = 0;
     public bool           AutoGranted { get; set; } = true;
+    public bool           AllowMultiple { get; set; } = false;
+    public bool           RequiresPlayerText { get; set; } = false;
+    public bool           AllowPurchaseAfterLevelOne { get; set; } = false;
     public AbilityEffect  Effect      { get; set; } = new();
 }
 
@@ -180,7 +183,8 @@ public record ClassDefinition(
     List<AbilityDefinition> StructuredAbilities,   // class abilities with mechanics
     int                     ClassPointBudget = 0,
     List<WizardSpecialization>? Specializations = null,
-    string                  Source = "core"
+    string                  Source = "core",
+    string                  RulesMode = "all"
 )
 {
     public bool IsCustom => string.Equals(Source, "custom", StringComparison.OrdinalIgnoreCase);
@@ -322,7 +326,8 @@ public record KitDefinition(
     List<string> AllowedRaces,
     List<string> AllowedClasses,
     List<string> FreeNwpIds,      // NWPs granted at no slot/CP cost
-    List<string> RequiredNwpIds   // NWPs the character must take (costs normally)
+    List<string> RequiredNwpIds,  // NWPs the character must take (costs normally)
+    string RulesMode = "all"     // all | core_rules | players_option
 );
 
 public record MultiClassComboGroup(

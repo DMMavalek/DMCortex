@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Mail;
@@ -348,6 +349,16 @@ static Window BuildActivationWindow()
     };
     activationPanel.Children.Add(sendEmailButton);
 
+    var smtpSettingsButton = new Button
+    {
+        Content = "SMTP Settings",
+        Width = 180,
+        Height = 30,
+        HorizontalAlignment = HorizontalAlignment.Left,
+        Margin = new Thickness(0, 8, 0, 0),
+    };
+    activationPanel.Children.Add(smtpSettingsButton);
+
     var historyGrid = BuildActivationHistoryGrid();
     var historyEntries = LoadActivationLogEntries();
     historyGrid.ItemsSource = historyEntries;
@@ -492,6 +503,12 @@ static Window BuildActivationWindow()
             return;
         }
 
+        if (!IsValidEmailAddress(email))
+        {
+            MessageBox.Show("Email format is invalid.", "Activation Tool", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(fullResponseCode))
         {
             MessageBox.Show("Generate a response code first.", "Activation Tool", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -502,6 +519,11 @@ static Window BuildActivationWindow()
             MessageBox.Show(sendMessage, "Activation Tool", MessageBoxButton.OK, MessageBoxImage.Information);
         else
             MessageBox.Show(sendMessage, "Activation Tool", MessageBoxButton.OK, MessageBoxImage.Warning);
+    };
+
+    smtpSettingsButton.Click += (_, _) =>
+    {
+        ShowSmtpSettingsDialog(window);
     };
 
     activateTab.Content = new ScrollViewer
@@ -719,6 +741,269 @@ static string GetSmtpSettingsPath()
     return Path.Combine(root, "smtp_activation.json");
 }
 
+static string GetPackagedSmtpSettingsPath()
+{
+    string baseDirectory = AppContext.BaseDirectory;
+    return Path.Combine(baseDirectory, "smtp_activation.json");
+}
+
+static string GetPreferredWritableSmtpSettingsPath()
+{
+    string packagedPath = GetPackagedSmtpSettingsPath();
+    if (File.Exists(packagedPath))
+        return packagedPath;
+
+    return GetSmtpSettingsPath();
+}
+
+static bool IsValidEmailAddress(string value)
+{
+    try
+    {
+        _ = new MailAddress(value);
+        return true;
+    }
+    catch
+    {
+        return false;
+    }
+}
+
+static void EnsureSmtpSettingsTemplateFile()
+{
+    string settingsPath = GetPreferredWritableSmtpSettingsPath();
+    if (File.Exists(settingsPath))
+        return;
+
+    string? directory = Path.GetDirectoryName(settingsPath);
+    if (!string.IsNullOrWhiteSpace(directory))
+        Directory.CreateDirectory(directory);
+
+    var template = new ToolSmtpSettings();
+    File.WriteAllText(settingsPath, JsonSerializer.Serialize(template, new JsonSerializerOptions { WriteIndented = true }));
+}
+
+static bool TryLoadToolSmtpSettings(out ToolSmtpSettings settings, out string message)
+{
+    settings = new ToolSmtpSettings();
+    message = string.Empty;
+
+    try
+    {
+        string packagedPath = GetPackagedSmtpSettingsPath();
+        string appDataPath = GetSmtpSettingsPath();
+        string? settingsPath = null;
+
+        if (File.Exists(packagedPath))
+            settingsPath = packagedPath;
+        else if (File.Exists(appDataPath))
+            settingsPath = appDataPath;
+
+        if (string.IsNullOrWhiteSpace(settingsPath))
+        {
+            EnsureSmtpSettingsTemplateFile();
+            message = $"SMTP settings not found. A template was created at: {GetPreferredWritableSmtpSettingsPath()}";
+            return false;
+        }
+
+        string json = File.ReadAllText(settingsPath);
+        settings = JsonSerializer.Deserialize<ToolSmtpSettings>(json) ?? new ToolSmtpSettings();
+        return true;
+    }
+    catch (Exception ex)
+    {
+        message = $"Failed to read SMTP settings: {ex.Message}";
+        return false;
+    }
+}
+
+static bool TrySaveToolSmtpSettings(ToolSmtpSettings settings, out string message)
+{
+    message = string.Empty;
+
+    if (string.IsNullOrWhiteSpace(settings.Host)
+        || settings.Port <= 0
+        || string.IsNullOrWhiteSpace(settings.FromEmail))
+    {
+        message = "SMTP Host, Port, and From Email are required.";
+        return false;
+    }
+
+    if (!IsValidEmailAddress(settings.FromEmail))
+    {
+        message = "From Email format is invalid.";
+        return false;
+    }
+
+    if (!string.IsNullOrWhiteSpace(settings.ToEmail) && !IsValidEmailAddress(settings.ToEmail))
+    {
+        message = "Default To Email format is invalid.";
+        return false;
+    }
+
+    string settingsPath = GetPreferredWritableSmtpSettingsPath();
+    try
+    {
+        string? directory = Path.GetDirectoryName(settingsPath);
+        if (!string.IsNullOrWhiteSpace(directory))
+            Directory.CreateDirectory(directory);
+
+        string json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
+        File.WriteAllText(settingsPath, json);
+        message = "SMTP settings saved.";
+        return true;
+    }
+    catch (Exception ex)
+    {
+        message = $"Failed to save SMTP settings: {ex.Message}";
+        return false;
+    }
+}
+
+static void OpenSmtpSettingsInExplorer()
+{
+    string settingsPath = GetPreferredWritableSmtpSettingsPath();
+    EnsureSmtpSettingsTemplateFile();
+
+    var info = new ProcessStartInfo
+    {
+        FileName = "explorer.exe",
+        Arguments = $"/select,\"{settingsPath}\"",
+        UseShellExecute = true,
+    };
+
+    Process.Start(info);
+}
+
+static void ShowSmtpSettingsDialog(Window owner)
+{
+    TryLoadToolSmtpSettings(out var loaded, out _);
+
+    var panel = new StackPanel { Margin = new Thickness(12) };
+
+    panel.Children.Add(new TextBlock { Text = "SMTP Host:", Margin = new Thickness(0, 0, 0, 4) });
+    var hostBox = new TextBox { Text = loaded.Host, Height = 30, Margin = new Thickness(0, 0, 0, 8) };
+    panel.Children.Add(hostBox);
+
+    panel.Children.Add(new TextBlock { Text = "SMTP Port:", Margin = new Thickness(0, 0, 0, 4) });
+    var portBox = new TextBox { Text = loaded.Port.ToString(CultureInfo.InvariantCulture), Height = 30, Margin = new Thickness(0, 0, 0, 8) };
+    panel.Children.Add(portBox);
+
+    var sslCheck = new CheckBox
+    {
+        Content = "Use SSL",
+        IsChecked = loaded.UseSsl,
+        Margin = new Thickness(0, 0, 0, 8),
+    };
+    panel.Children.Add(sslCheck);
+
+    panel.Children.Add(new TextBlock { Text = "SMTP Username (optional):", Margin = new Thickness(0, 0, 0, 4) });
+    var usernameBox = new TextBox { Text = loaded.Username, Height = 30, Margin = new Thickness(0, 0, 0, 8) };
+    panel.Children.Add(usernameBox);
+
+    panel.Children.Add(new TextBlock { Text = "SMTP Password (optional):", Margin = new Thickness(0, 0, 0, 4) });
+    var passwordBox = new PasswordBox { Password = loaded.Password, Height = 30, Margin = new Thickness(0, 0, 0, 8) };
+    panel.Children.Add(passwordBox);
+
+    panel.Children.Add(new TextBlock { Text = "From Email:", Margin = new Thickness(0, 0, 0, 4) });
+    var fromEmailBox = new TextBox { Text = loaded.FromEmail, Height = 30, Margin = new Thickness(0, 0, 0, 8) };
+    panel.Children.Add(fromEmailBox);
+
+    panel.Children.Add(new TextBlock { Text = "Default To Email (optional):", Margin = new Thickness(0, 0, 0, 4) });
+    var toEmailBox = new TextBox { Text = loaded.ToEmail, Height = 30, Margin = new Thickness(0, 0, 0, 12) };
+    panel.Children.Add(toEmailBox);
+
+    var buttonRow = new StackPanel
+    {
+        Orientation = Orientation.Horizontal,
+        HorizontalAlignment = HorizontalAlignment.Left,
+    };
+
+    var saveButton = new Button
+    {
+        Content = "Save",
+        Width = 96,
+        Height = 30,
+        Margin = new Thickness(0, 0, 8, 0),
+    };
+
+    var openButton = new Button
+    {
+        Content = "Open File",
+        Width = 110,
+        Height = 30,
+        Margin = new Thickness(0, 0, 8, 0),
+    };
+
+    var closeButton = new Button
+    {
+        Content = "Close",
+        Width = 96,
+        Height = 30,
+    };
+
+    buttonRow.Children.Add(saveButton);
+    buttonRow.Children.Add(openButton);
+    buttonRow.Children.Add(closeButton);
+    panel.Children.Add(buttonRow);
+
+    var dialog = new Window
+    {
+        Title = "SMTP Settings",
+        Width = 470,
+        Height = 560,
+        MinWidth = 430,
+        MinHeight = 520,
+        WindowStartupLocation = WindowStartupLocation.CenterOwner,
+        Owner = owner,
+        Content = new ScrollViewer
+        {
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            Content = panel,
+        },
+    };
+
+    saveButton.Click += (_, _) =>
+    {
+        if (!int.TryParse(portBox.Text.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int port) || port <= 0)
+        {
+            MessageBox.Show("SMTP Port must be a positive integer.", "Activation Tool", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var settings = new ToolSmtpSettings
+        {
+            Host = hostBox.Text.Trim(),
+            Port = port,
+            UseSsl = sslCheck.IsChecked == true,
+            Username = usernameBox.Text.Trim(),
+            Password = passwordBox.Password,
+            FromEmail = fromEmailBox.Text.Trim(),
+            ToEmail = toEmailBox.Text.Trim(),
+        };
+
+        if (TrySaveToolSmtpSettings(settings, out string message))
+            MessageBox.Show(message, "Activation Tool", MessageBoxButton.OK, MessageBoxImage.Information);
+        else
+            MessageBox.Show(message, "Activation Tool", MessageBoxButton.OK, MessageBoxImage.Warning);
+    };
+
+    openButton.Click += (_, _) =>
+    {
+        try
+        {
+            OpenSmtpSettingsInExplorer();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Could not open SMTP settings file: {ex.Message}", "Activation Tool", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    };
+
+    closeButton.Click += (_, _) => dialog.Close();
+    dialog.ShowDialog();
+}
+
 static bool TrySendActivationResponseBySmtp(
     string name,
     string recipientEmail,
@@ -729,21 +1014,9 @@ static bool TrySendActivationResponseBySmtp(
     out string message)
 {
     ToolSmtpSettings settings;
-    try
+    if (!TryLoadToolSmtpSettings(out settings, out string loadMessage))
     {
-        string settingsPath = GetSmtpSettingsPath();
-        if (!File.Exists(settingsPath))
-        {
-            message = "SMTP settings not found. Configure SMTP in the main app first.";
-            return false;
-        }
-
-        string json = File.ReadAllText(settingsPath);
-        settings = JsonSerializer.Deserialize<ToolSmtpSettings>(json) ?? new ToolSmtpSettings();
-    }
-    catch (Exception ex)
-    {
-        message = $"Failed to read SMTP settings: {ex.Message}";
+        message = loadMessage;
         return false;
     }
 
@@ -751,7 +1024,7 @@ static bool TrySendActivationResponseBySmtp(
         || settings.Port <= 0
         || string.IsNullOrWhiteSpace(settings.FromEmail))
     {
-        message = "SMTP settings are incomplete. Configure Host/Port/From Email in the main app.";
+        message = "SMTP settings are incomplete. Open SMTP Settings in the activation tool and fill Host/Port/From Email.";
         return false;
     }
 
@@ -773,18 +1046,33 @@ static bool TrySendActivationResponseBySmtp(
         using var client = new SmtpClient(settings.Host, settings.Port)
         {
             EnableSsl = settings.UseSsl,
+            UseDefaultCredentials = false,
+            Timeout = 20000,
         };
 
         if (!string.IsNullOrWhiteSpace(settings.Username))
         {
-            client.UseDefaultCredentials = false;
             client.Credentials = new NetworkCredential(settings.Username, settings.Password ?? string.Empty);
         }
 
-        using var mail = new MailMessage(settings.FromEmail, recipientEmail, subject, body);
+        MailAddress fromAddress = string.IsNullOrWhiteSpace(settings.DisplayName)
+            ? new MailAddress(settings.FromEmail)
+            : new MailAddress(settings.FromEmail, settings.DisplayName);
+
+        using var mail = new MailMessage(fromAddress, new MailAddress(recipientEmail))
+        {
+            Subject = subject,
+            Body = body,
+        };
         client.Send(mail);
         message = "Activation response email sent.";
         return true;
+    }
+    catch (SmtpException ex)
+    {
+        message = $"SMTP send failed ({ex.StatusCode}): {ex.Message}\n"
+            + "Check SMTP Host/Port/SSL, credentials, and app-password requirements.";
+        return false;
     }
     catch (Exception ex)
     {
@@ -1253,4 +1541,5 @@ file sealed class ToolSmtpSettings
     public string Password { get; set; } = string.Empty;
     public string FromEmail { get; set; } = string.Empty;
     public string ToEmail { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
 }

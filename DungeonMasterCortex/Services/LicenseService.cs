@@ -246,11 +246,12 @@ public sealed class LicenseService
             using var client = new SmtpClient(settings.Host, settings.Port)
             {
                 EnableSsl = settings.UseSsl,
+                UseDefaultCredentials = false,
+                Timeout = 20000,
             };
 
             if (!string.IsNullOrWhiteSpace(settings.Username))
             {
-                client.UseDefaultCredentials = false;
                 client.Credentials = new NetworkCredential(settings.Username, settings.Password ?? string.Empty);
             }
 
@@ -258,6 +259,11 @@ public sealed class LicenseService
             client.Send(mail);
             message = "Activation request email sent.";
             return true;
+        }
+        catch (SmtpException ex)
+        {
+            message = BuildSmtpErrorMessage(ex);
+            return false;
         }
         catch (Exception ex)
         {
@@ -297,11 +303,12 @@ public sealed class LicenseService
             using var client = new SmtpClient(settings.Host, settings.Port)
             {
                 EnableSsl = settings.UseSsl,
+                UseDefaultCredentials = false,
+                Timeout = 20000,
             };
 
             if (!string.IsNullOrWhiteSpace(settings.Username))
             {
-                client.UseDefaultCredentials = false;
                 client.Credentials = new NetworkCredential(settings.Username, settings.Password ?? string.Empty);
             }
 
@@ -310,11 +317,23 @@ public sealed class LicenseService
             message = "Activation request email sent.";
             return true;
         }
+        catch (SmtpException ex)
+        {
+            message = BuildSmtpErrorMessage(ex);
+            return false;
+        }
         catch (Exception ex)
         {
             message = $"SMTP send failed: {ex.Message}";
             return false;
         }
+    }
+
+    private static string BuildSmtpErrorMessage(SmtpException ex)
+    {
+        var detail = $"SMTP send failed ({ex.StatusCode}): {ex.Message}";
+        var hint = "Check SMTP Host/Port/SSL, credentials, and app-password requirements.";
+        return $"{detail}\n{hint}";
     }
 
     private bool TryValidateSignedActivationCode(string code, out string message)

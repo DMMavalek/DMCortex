@@ -177,8 +177,9 @@ public partial class CharGenSubraceScreen : UserControl, IScreen
         }
         else
         {
-            // Core Rules: racial package is fixed and fully granted.
+            // Core Rules: only auto-granted racial abilities are applied.
             _autoAssignedAbilities = race.StructuredAbilities
+                .Where(a => a.AutoGranted)
                 .OrderBy(a => a.PointCost)
                 .ThenBy(a => a.Description)
                 .ToList();
@@ -362,11 +363,7 @@ public partial class CharGenSubraceScreen : UserControl, IScreen
         var selectedRace = _subraces[idx];
         var selectedIds = IsPlayersOptionMode
             ? _selectedAbilityIds.ToList()
-            : selectedRace.StructuredAbilities
-                .Where(a => !a.AutoGranted)
-                .Select(a => a.Id)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
+            : new List<string>();
 
         var package = _app.Rules.BuildRacialAbilityPackage(selectedRace.Id, selectedIds);
         if (IsPlayersOptionMode)
@@ -451,6 +448,8 @@ public partial class CharGenSubraceScreen : UserControl, IScreen
 public class AbilityListItem
 {
     public string Id { get; set; } = string.Empty;
+    public string BaseAbilityId { get; set; } = string.Empty;
+    public string SelectionEntry { get; set; } = string.Empty;
     public string Label { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public bool IsAutoAssigned { get; set; }

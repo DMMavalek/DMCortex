@@ -70,11 +70,26 @@ class CharacterBuilder:
 
         return issues
 
-    def build_character(self, name: str, race_id: str, class_id: str, abilities: Dict[str, int]) -> CharacterSheet:
+    def build_character(
+        self,
+        name: str,
+        race_id: str,
+        class_id: str,
+        abilities: Dict[str, int],
+        player_name: str = "",
+        party_name: str = "Unassigned",
+    ) -> CharacterSheet:
         issues = self.validate_choice(race_id, class_id, abilities)
         if issues:
             raise ValueError("Invalid character choice: " + "; ".join(issues))
-        return CharacterSheet(name=name, race_id=race_id, class_id=class_id, abilities=abilities)
+        return CharacterSheet(
+            name=name,
+            race_id=race_id,
+            class_id=class_id,
+            abilities=abilities,
+            player_name=player_name,
+            party_name=party_name,
+        )
 
     @staticmethod
     def _roll_4d6_drop_lowest() -> int:

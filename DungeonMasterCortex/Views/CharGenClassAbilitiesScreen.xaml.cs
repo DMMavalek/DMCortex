@@ -18,7 +18,7 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
     private ClassDefinition? _activeClass;
     private List<AbilityDefinition> _optionalAbilities = new();
     private List<AbilityDefinition> _autoAssignedAbilities = new();
-    private readonly HashSet<string> _selectedAbilityIds = new(System.StringComparer.OrdinalIgnoreCase);
+    private readonly List<string> _selectedAbilityEntries = new();
     private List<AbilityListItem> _availableItems = new();
     private List<AbilityListItem> _selectedItems = new();
     private bool _showDisadvantagesTab;
@@ -201,7 +201,7 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
     private void SaveCurrentMultiClassState()
     {
         if (_activeClass == null || _app.CharGen.ClassMode != "multiclass") return;
-        _app.CharGen.SelectedAbilitiesByClass[_activeClass.Id] = _selectedAbilityIds.ToList();
+        _app.CharGen.SelectedAbilitiesByClass[_activeClass.Id] = _selectedAbilityEntries.ToList();
         _app.CharGen.WizardSpecializationById[_activeClass.Id] = _app.CharGen.WizardSpecializationId ?? "";
         _app.CharGen.SpheresByClass[_activeClass.Id] = new(_app.CharGen.SelectedSpheres);
         _app.CharGen.SchoolsByClass[_activeClass.Id] = new(_app.CharGen.SelectedWizardSchools);
@@ -229,6 +229,7 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
 
     private void BuildAbilityChoices(ClassDefinition cls)
     {
+        List<AbilityDefinition> allOptionalAbilities;
         if (IsPlayersOptionMode)
         {
             _autoAssignedAbilities = cls.StructuredAbilities
@@ -237,11 +238,16 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
                 .ToList();
 
             var hiddenSpecializationAbilityIds = GetHiddenWizardSpecializationAbilityIds(cls);
-            _optionalAbilities = cls.StructuredAbilities
+            allOptionalAbilities = cls.StructuredAbilities
                 .Where(a => !a.AutoGranted
                     && !IsSelectorManagedAbility(a)
                     && !hiddenSpecializationAbilityIds.Contains(a.Id))
                 .OrderBy(a => a.PointCost).ThenBy(a => a.Description)
+                .ToList();
+
+            bool creationStage = Math.Max(1, _app.CharGen.CharacterLevel) <= 1;
+            _optionalAbilities = allOptionalAbilities
+                .Where(a => creationStage || a.AllowPurchaseAfterLevelOne)
                 .ToList();
         }
         else
@@ -251,11 +257,12 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
                 .OrderBy(a => a.PointCost)
                 .ThenBy(a => a.Description)
                 .ToList();
+            allOptionalAbilities = new List<AbilityDefinition>();
             _optionalAbilities = new List<AbilityDefinition>();
         }
 
-        _selectedAbilityIds.Clear();
-        var optionalIds = new HashSet<string>(_optionalAbilities.Select(a => a.Id), System.StringComparer.OrdinalIgnoreCase);
+        _selectedAbilityEntries.Clear();
+        var optionalIds = new HashSet<string>(allOptionalAbilities.Select(a => a.Id), System.StringComparer.OrdinalIgnoreCase);
         if (!IsPlayersOptionMode)
         {
             PersistCurrentSelections();
@@ -263,12 +270,23 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
         else if (_app.CharGen.ClassMode == "multiclass")
         {
             if (_app.CharGen.SelectedAbilitiesByClass.TryGetValue(cls.Id, out var saved))
-                foreach (var id in saved.Where(optionalIds.Contains)) _selectedAbilityIds.Add(id);
+            {
+                foreach (var entry in saved)
+                {
+                    string baseId = RulesEngine.ExtractClassAbilityBaseId(entry);
+                    if (optionalIds.Contains(baseId))
+                        _selectedAbilityEntries.Add(entry);
+                }
+            }
         }
         else
         {
-            foreach (var id in _app.CharGen.SelectedClassAbilityIds.Where(optionalIds.Contains))
-                _selectedAbilityIds.Add(id);
+            foreach (var entry in _app.CharGen.SelectedClassAbilityIds)
+            {
+                string baseId = RulesEngine.ExtractClassAbilityBaseId(entry);
+                if (optionalIds.Contains(baseId))
+                    _selectedAbilityEntries.Add(entry);
+            }
         }
 
         UpdateWizardSpecialtyUI(cls);
@@ -283,7 +301,9 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
         ClassAbilityHint.Text = !IsPlayersOptionMode
             ? "Core Rules mode: all class abilities are granted automatically."
             : _optionalAbilities.Count == 0
-                ? "This class has no optional abilities to configure."
+                ? (Math.Max(1, _app.CharGen.CharacterLevel) > 1
+                    ? "No optional abilities can be purchased at this level. Some abilities are creation-only."
+                    : "This class has no optional abilities to configure.")
                 : "Choose optional abilities on the left and move them into your package on the right.";
     }
 
@@ -402,17 +422,41 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
     {
         bool showDisadvantages = _showDisadvantagesTab;
 
+        var selectedBaseIds = _selectedAbilityEntries
+            .Select(RulesEngine.ExtractClassAbilityBaseId)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .ToList();
+        var selectedCountById = selectedBaseIds
+            .GroupBy(id => id, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.Count(), StringComparer.OrdinalIgnoreCase);
+
         _availableItems = _optionalAbilities
-            .Where(a => !_selectedAbilityIds.Contains(a.Id))
+            .Where(a => a.AllowMultiple || !selectedCountById.ContainsKey(a.Id))
             .Where(a => IsDisadvantageAbility(a) == showDisadvantages)
             .Select(ToAbilityItem)
             .OrderBy(a => a.Label)
             .ToList();
 
-        var selectedOptional = _optionalAbilities
-            .Where(a => _selectedAbilityIds.Contains(a.Id))
-            .Where(a => IsDisadvantageAbility(a) == showDisadvantages)
-            .Select(ToAbilityItem);
+        var hiddenSpecializationAbilityIds = _activeClass is null
+            ? new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            : GetHiddenWizardSpecializationAbilityIds(_activeClass);
+        var optionalById = (_activeClass?.StructuredAbilities ?? new List<AbilityDefinition>())
+            .Where(a => !a.AutoGranted
+                && !IsSelectorManagedAbility(a)
+                && !hiddenSpecializationAbilityIds.Contains(a.Id))
+            .GroupBy(a => a.Id, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+        var selectedOptional = _selectedAbilityEntries
+            .Select(entry =>
+            {
+                string baseId = RulesEngine.ExtractClassAbilityBaseId(entry);
+                return optionalById.TryGetValue(baseId, out var ability)
+                    ? ToAbilityItem(ability, entry)
+                    : null;
+            })
+            .Where(item => item is not null)
+            .Select(item => item!)
+            .Where(item => item.IsDisadvantage == showDisadvantages);
 
         if (showDisadvantages)
         {
@@ -493,7 +537,7 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
             : _app.CharGen.WizardSpecializationId;
 
         var package = _app.Rules.BuildClassAbilityPackage(
-            cls.Id, _selectedAbilityIds.ToList(),
+            cls.Id, _selectedAbilityEntries.ToList(),
             _app.CharGen.RacialCarryoverToClassPoints, wizSpec);
 
         int configurationCost = CalculateConfigurationCpCost(
@@ -604,7 +648,7 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
 
     private List<string> GetSelectedRogueSkillIds()
     {
-        var selectedIds = _selectedAbilityIds
+        var selectedIds = _selectedAbilityEntries
             .Concat(_autoAssignedAbilities.Select(a => a.Id))
             .Distinct(System.StringComparer.OrdinalIgnoreCase)
             .ToList();
@@ -660,7 +704,7 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
                                    "druid_sphere_access_minor", "druid_sphere_access_major",
                                    "ranger_sphere_access_minor", "ranger_sphere_access_major",
                                    "paladin_sphere_access_minor", "paladin_sphere_access_major" })
-            _selectedAbilityIds.Remove(id);
+            _selectedAbilityEntries.RemoveAll(entry => string.Equals(RulesEngine.ExtractClassAbilityBaseId(entry), id, StringComparison.OrdinalIgnoreCase));
     }
 
     private static AbilityListItem ToAbilityItem(AbilityDefinition a)
@@ -670,7 +714,26 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
         string label = isDisadvantage
             ? $"{shortName} ({a.PointCost} CP)  (disadvantage)"
             : $"{shortName} ({a.PointCost} CP)";
-        return new AbilityListItem { Id = a.Id, Label = label, Description = a.Description, IsAutoAssigned = a.AutoGranted, IsDisadvantage = isDisadvantage };
+        return new AbilityListItem
+        {
+            Id = a.Id,
+            BaseAbilityId = a.Id,
+            SelectionEntry = a.Id,
+            Label = label,
+            Description = a.Description,
+            IsAutoAssigned = a.AutoGranted,
+            IsDisadvantage = isDisadvantage,
+        };
+    }
+
+    private static AbilityListItem ToAbilityItem(AbilityDefinition a, string selectionEntry)
+    {
+        var item = ToAbilityItem(a);
+        string playerText = RulesEngine.ExtractClassAbilityPlayerText(selectionEntry);
+        if (!string.IsNullOrWhiteSpace(playerText))
+            item.Label += $" [Selection: {playerText}]";
+        item.SelectionEntry = selectionEntry;
+        return item;
     }
 
     private static bool IsDisadvantageAbility(AbilityDefinition ability)
@@ -703,7 +766,46 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
             return;
 
         if (_activeClass is null || AvailableClassAbilityList.SelectedItem is not AbilityListItem item) return;
-        _selectedAbilityIds.Add(item.Id);
+        var toAdd = _optionalAbilities.FirstOrDefault(a => string.Equals(a.Id, item.Id, StringComparison.OrdinalIgnoreCase));
+        if (toAdd is null)
+            return;
+
+        if (Math.Max(1, _app.CharGen.CharacterLevel) > 1 && !toAdd.AllowPurchaseAfterLevelOne)
+        {
+            MessageBox.Show(
+                $"{toAdd.Description} can only be purchased during character creation.",
+                "Selection Restricted",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        bool alreadySelected = _selectedAbilityEntries.Any(entry =>
+            string.Equals(RulesEngine.ExtractClassAbilityBaseId(entry), toAdd.Id, StringComparison.OrdinalIgnoreCase));
+        if (!toAdd.AllowMultiple && alreadySelected)
+        {
+            MessageBox.Show(
+                $"{toAdd.Description} can only be selected once.",
+                "Selection Restricted",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        string playerText = string.Empty;
+        if (toAdd.RequiresPlayerText)
+        {
+            string? entered = PromptForClassAbilitySelectionText(toAdd.Description, string.Empty);
+            if (entered is null)
+                return;
+            playerText = entered;
+        }
+
+        string selectionEntry = RulesEngine.BuildClassAbilitySelectionEntry(toAdd.Id, playerText);
+        if (string.IsNullOrWhiteSpace(selectionEntry))
+            return;
+
+        _selectedAbilityEntries.Add(selectionEntry);
         PersistCurrentSelections();
         RefreshAbilityLists();
         RefreshBudgetSummary(_activeClass);
@@ -717,7 +819,17 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
 
         if (_activeClass is null || SelectedClassAbilityList.SelectedItem is not AbilityListItem item) return;
         if (item.IsAutoAssigned) return;
-        _selectedAbilityIds.Remove(item.Id);
+
+        if (!string.IsNullOrWhiteSpace(item.SelectionEntry))
+            _selectedAbilityEntries.Remove(item.SelectionEntry);
+        else
+        {
+            int idx = _selectedAbilityEntries.FindLastIndex(entry =>
+                string.Equals(RulesEngine.ExtractClassAbilityBaseId(entry), item.BaseAbilityId, StringComparison.OrdinalIgnoreCase));
+            if (idx >= 0)
+                _selectedAbilityEntries.RemoveAt(idx);
+        }
+
         PersistCurrentSelections();
         RefreshAbilityLists();
         RefreshBudgetSummary(_activeClass);
@@ -728,9 +840,9 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
     {
         if (_activeClass == null) return;
         if (_app.CharGen.ClassMode == "multiclass")
-            _app.CharGen.SelectedAbilitiesByClass[_activeClass.Id] = _selectedAbilityIds.ToList();
+            _app.CharGen.SelectedAbilitiesByClass[_activeClass.Id] = _selectedAbilityEntries.ToList();
         else
-            _app.CharGen.SelectedClassAbilityIds = _selectedAbilityIds.ToList();
+            _app.CharGen.SelectedClassAbilityIds = _selectedAbilityEntries.ToList();
     }
 
     private void AvailableClassAbilityList_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -753,6 +865,54 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
     {
         var text = string.IsNullOrWhiteSpace(item.Description) ? item.Label : item.Description;
         DescriptionPopupService.Show(Window.GetWindow(this), "Class Ability Description", text);
+    }
+
+    private static string? PromptForClassAbilitySelectionText(string abilityName, string existing)
+    {
+        var window = new Window
+        {
+            Title = $"{abilityName} selection",
+            Width = 560,
+            Height = 220,
+            WindowStartupLocation = WindowStartupLocation.CenterScreen,
+            ResizeMode = ResizeMode.NoResize,
+        };
+
+        var panel = new StackPanel { Margin = new Thickness(14) };
+        panel.Children.Add(new TextBlock
+        {
+            Text = "Enter selection text (for example the exact spell):",
+            Margin = new Thickness(0, 0, 0, 8),
+        });
+
+        var input = new TextBox
+        {
+            Text = existing ?? string.Empty,
+            AcceptsReturn = false,
+            Height = 30,
+        };
+        panel.Children.Add(input);
+
+        var buttons = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Margin = new Thickness(0, 12, 0, 0)
+        };
+        var ok = new Button { Content = "OK", Width = 80, Margin = new Thickness(0, 0, 8, 0), IsDefault = true };
+        var cancel = new Button { Content = "Cancel", Width = 80, IsCancel = true };
+        ok.Click += (_, _) => window.DialogResult = true;
+        cancel.Click += (_, _) => window.DialogResult = false;
+        buttons.Children.Add(ok);
+        buttons.Children.Add(cancel);
+        panel.Children.Add(buttons);
+
+        window.Content = panel;
+        bool? result = window.ShowDialog();
+        if (result != true)
+            return null;
+
+        return input.Text.Trim();
     }
 
     private void BtnSelectSpheres_Click(object sender, RoutedEventArgs e)
@@ -793,12 +953,12 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
             if (!string.Equals(newSpecId, _app.CharGen.WizardSpecializationId, System.StringComparison.OrdinalIgnoreCase))
             {
                 var allSpecIds = _activeClass.Specializations?.SelectMany(s => s.AutoSelectAbilityIds).ToHashSet() ?? new HashSet<string>();
-                foreach (var id in allSpecIds) _selectedAbilityIds.Remove(id);
+                _selectedAbilityEntries.RemoveAll(entry => allSpecIds.Contains(RulesEngine.ExtractClassAbilityBaseId(entry)));
                 _app.CharGen.WizardSpecializationId = newSpecId;
                 if (!string.IsNullOrEmpty(newSpecId))
                 {
                     var spec = _activeClass.Specializations?.FirstOrDefault(s => string.Equals(s.Id, newSpecId, System.StringComparison.OrdinalIgnoreCase));
-                    if (spec != null) foreach (var id in spec.AutoSelectAbilityIds) _selectedAbilityIds.Add(id);
+                    if (spec != null) foreach (var id in spec.AutoSelectAbilityIds) _selectedAbilityEntries.Add(id);
                 }
             }
             _app.CharGen.SelectedWizardSchools = NormalizeWizardSchoolSelections(dialog.GetSelections());

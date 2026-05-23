@@ -12,6 +12,8 @@ class CharacterSheet:
     race_id: str
     class_id: str
     abilities: AbilityScores
+    player_name: str = ""
+    party_name: str = "Unassigned"
     notes: List[str] = field(default_factory=list)
 
 

@@ -1,6 +1,11 @@
 Dungeon Master Cortex - Running Changelog
 ========================================
 
+v1.3.20 (2026-05-23)
+- Added edition labels on the character roster and selected-character summary so Core Rules and Player's Option characters are easier to spot.
+- Kept the expanded class-ability and activation-request work in the release line.
+- Added a release checklist so future GitHub publishes are more repeatable.
+
 v1.3.19 (2026-05-23)
 - Added reusable class-ability catalog support so abilities can be assigned across multiple classes.
 - Added class ability metadata for repeatable picks, required selection text, and creation-only purchase gating.

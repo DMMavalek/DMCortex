@@ -17,6 +17,7 @@ from dmcortex.combat import CombatTracker
 from dmcortex.models import CharacterSheet, Combatant, CampaignEntry
 from dmcortex.campaign import CampaignManager
 from dmcortex.rules_engine import RulesEngine
+from dmcortex.storage import UNASSIGNED_PARTY, load_state, save_state
 
 # ── Window constants ───────────────────────────────────────────────────────────
 WIN_W = 960
@@ -87,6 +88,10 @@ def _load_rules() -> RulesEngine:
             "paladin": {"name": "Paladin", "ability_minimums": {"str": 12, "con": 9, "wis": 13, "cha": 17}, "allowed_races": ["human"]},
         },
     })
+
+
+def _characters_store_path() -> Path:
+    return _project_root() / "data" / "state" / "characters.json"
 
 
 # ── Styled widget factories ────────────────────────────────────────────────────
@@ -402,6 +407,13 @@ class HubScreen(BaseScreen):
 
         make_ornament_bar(content, width=700).pack(pady=(28, 0))
 
+        make_button(
+            content,
+            "PARTY MANAGEMENT",
+            command=lambda: self._app.go("party_management"),
+            width=24,
+        ).pack(pady=(14, 0))
+
     def _make_hub_card(self, parent: tk.Widget, label: str,
                        target: str, desc: str) -> tk.Frame:
         outer = tk.Frame(parent, bg=C_BORDER, padx=2, pady=2)
@@ -459,6 +471,7 @@ class CharGenNameScreen(BaseScreen):
     def __init__(self, parent: tk.Widget, app: "App"):
         super().__init__(parent, app)
         self._name_var = tk.StringVar()
+        self._player_var = tk.StringVar()
         self._method_var = tk.StringVar(value="4d6_drop_lowest")
         self._build()
 
@@ -482,12 +495,19 @@ class CharGenNameScreen(BaseScreen):
             row=0, column=1, sticky="w", pady=8
         )
 
+        make_label(form, "Player Name:", bold=True, bg=C_PANEL).grid(
+            row=1, column=0, sticky="e", padx=(0, 12), pady=8
+        )
+        make_entry(form, self._player_var, width=32).grid(
+            row=1, column=1, sticky="w", pady=8
+        )
+
         # Method
         make_label(form, "Ability Generation:", bold=True, bg=C_PANEL).grid(
-            row=1, column=0, sticky="ne", padx=(0, 12), pady=8
+            row=2, column=0, sticky="ne", padx=(0, 12), pady=8
         )
         method_frame = tk.Frame(form, bg=C_PANEL)
-        method_frame.grid(row=1, column=1, sticky="w")
+        method_frame.grid(row=2, column=1, sticky="w")
 
         methods = [
             ("4d6_drop_lowest", "Roll 4d6, drop lowest (recommended)"),
@@ -520,6 +540,7 @@ class CharGenNameScreen(BaseScreen):
             messagebox.showwarning("Name Required", "Please enter a character name.", parent=self._app.root)
             return
         self._app.chargen["name"] = name
+        self._app.chargen["player_name"] = self._player_var.get().strip()
         self._app.chargen["method"] = self._method_var.get()
         # Pre-generate abilities now so the next screen can display them
         abilities = self._app.builder.generate_abilities(self._app.chargen["method"])
@@ -884,6 +905,7 @@ class CharGenReviewScreen(BaseScreen):
 
         cg = self._app.chargen
         name     = cg.get("name", "—")
+        player   = cg.get("player_name", "") or "—"
         race_id  = cg.get("race_id", "—")
         class_id = cg.get("class_id", "—")
         abilities = cg.get("abilities", {})
@@ -902,8 +924,10 @@ class CharGenReviewScreen(BaseScreen):
         # Name / Race / Class
         info_rows = [
             ("Name",  name),
+            ("Player", player),
             ("Race",  race_name),
             ("Class", class_name),
+            ("Party", "Unassigned"),
         ]
         for lbl, val in info_rows:
             row = tk.Frame(card, bg=C_CARD)
@@ -949,8 +973,11 @@ class CharGenReviewScreen(BaseScreen):
                 race_id=cg["race_id"],
                 class_id=cg["class_id"],
                 abilities=cg["abilities"],
+                player_name=cg.get("player_name", ""),
+                party_name="Unassigned",
             )
             self._app.characters.append(sheet)
+            self._app.persist_characters()
             messagebox.showinfo(
                 "Character Created",
                 f"{sheet.name} the {sheet.race_id.title()} {sheet.class_id.title()} is ready for adventure!",
@@ -1213,6 +1240,318 @@ class CampaignScreen(BaseScreen):
         self._app.nav.hide()
 
 
+class PartyManagementScreen(BaseScreen):
+    """Manage parties, player assignments, and party-based PC filtering."""
+
+    FILTER_ALL = "All Parties"
+
+    def __init__(self, parent: tk.Widget, app: "App"):
+        super().__init__(parent, app)
+        self._player_var = tk.StringVar()
+        self._selected_party_var = tk.StringVar(value=UNASSIGNED_PARTY)
+        self._filter_party_var = tk.StringVar(value=self.FILTER_ALL)
+        self._party_name_var = tk.StringVar()
+        self._selected_character: Optional[CharacterSheet] = None
+        self._filtered_characters: List[CharacterSheet] = []
+        self._build()
+
+    def _build(self) -> None:
+        top_strip = tk.Frame(self, bg=C_PANEL)
+        top_strip.pack(fill="x", padx=20, pady=(16, 0))
+
+        make_title(top_strip, "PARTY MANAGEMENT", 18).pack(side="left")
+        make_button(top_strip, "◀  BACK TO HUB",
+                    command=lambda: self._app.go("hub", direction=-1),
+                    width=16).pack(side="right")
+
+        make_ornament_bar(self, 880).pack(pady=(10, 14))
+
+        content = tk.Frame(self, bg=C_PANEL)
+        content.pack(fill="both", expand=True, padx=20)
+
+        left = tk.Frame(content, bg=C_PANEL, width=360)
+        left.pack_propagate(False)
+        left.pack(side="left", fill="y", padx=(0, 16))
+
+        make_label(left, "Filter PCs by Party:", bold=True, bg=C_PANEL).pack(anchor="w")
+        self._filter_menu = tk.OptionMenu(left, self._filter_party_var, self.FILTER_ALL, command=lambda _v: self._refresh_characters())
+        self._filter_menu.configure(
+            bg=C_BTN, fg=C_BTN_TXT, activebackground=C_BTN_ACT, activeforeground=C_SEL_TXT,
+            highlightthickness=0, relief="flat", width=24,
+        )
+        self._filter_menu.pack(anchor="w", pady=(2, 8))
+
+        make_label(left, "Player Characters:", bold=True, bg=C_PANEL).pack(anchor="w")
+        list_frame = tk.Frame(left, bg=C_PANEL)
+        list_frame.pack(fill="both", expand=True, pady=(4, 0))
+
+        self._chars_lb = make_listbox(list_frame, height=14, width=42)
+        self._chars_lb.pack(side="left", fill="both", expand=True)
+        make_scrollbar(list_frame, self._chars_lb).pack(side="left", fill="y")
+        self._chars_lb.bind("<<ListboxSelect>>", self._on_select_character)
+
+        right = tk.Frame(content, bg=C_PANEL)
+        right.pack(side="left", fill="both", expand=True)
+
+        party_card = tk.Frame(right, bg=C_CARD, padx=16, pady=12)
+        party_card.pack(fill="x")
+
+        make_label(party_card, "Parties", bold=True, bg=C_CARD, color=C_TITLE, size=13).pack(anchor="w")
+        party_list_frame = tk.Frame(party_card, bg=C_CARD)
+        party_list_frame.pack(fill="x", pady=(4, 8))
+        self._parties_lb = make_listbox(party_list_frame, height=5, width=28)
+        self._parties_lb.pack(side="left")
+        make_scrollbar(party_list_frame, self._parties_lb).pack(side="left", fill="y")
+        self._parties_lb.bind("<<ListboxSelect>>", self._on_select_party)
+
+        make_label(party_card, "Party Name:", bold=True, bg=C_CARD).pack(anchor="w")
+        make_entry(party_card, self._party_name_var, width=28).pack(anchor="w", pady=(2, 8))
+
+        party_btns = tk.Frame(party_card, bg=C_CARD)
+        party_btns.pack(anchor="w")
+        make_button(party_btns, "CREATE", command=self._create_party, width=10).pack(side="left")
+        make_button(party_btns, "RENAME", command=self._rename_party, width=10).pack(side="left", padx=(6, 0))
+        make_button(party_btns, "DELETE", command=self._delete_party, width=10, danger=True).pack(side="left", padx=(6, 0))
+
+        char_card = tk.Frame(right, bg=C_CARD, padx=16, pady=12)
+        char_card.pack(fill="x", pady=(12, 0))
+
+        self._char_title = make_label(char_card, "Select a character", bold=True,
+                                      color=C_TITLE, bg=C_CARD, size=14)
+        self._char_title.pack(anchor="w", pady=(0, 8))
+
+        self._char_meta = make_label(char_card, "", bg=C_CARD, color=C_TEXT, size=10, justify="left")
+        self._char_meta.pack(anchor="w", pady=(0, 10))
+
+        make_label(char_card, "Player Name:", bold=True, bg=C_CARD).pack(anchor="w")
+        make_entry(char_card, self._player_var, width=32).pack(anchor="w", pady=(2, 8))
+
+        make_label(char_card, "Assign to Party:", bold=True, bg=C_CARD).pack(anchor="w")
+        self._assign_menu = tk.OptionMenu(char_card, self._selected_party_var, UNASSIGNED_PARTY)
+        self._assign_menu.configure(
+            bg=C_BTN, fg=C_BTN_TXT, activebackground=C_BTN_ACT, activeforeground=C_SEL_TXT,
+            highlightthickness=0, relief="flat", width=24,
+        )
+        self._assign_menu.pack(anchor="w", pady=(2, 10))
+
+        char_btns = tk.Frame(char_card, bg=C_CARD)
+        char_btns.pack(anchor="w")
+        make_button(char_btns, "SAVE CHARACTER", command=self._save_selected, width=16).pack(side="left")
+        make_button(char_btns, "SET UNASSIGNED", command=self._clear_party, width=16).pack(side="left", padx=(8, 0))
+
+        make_label(right, "Party Rosters:", bold=True, bg=C_PANEL).pack(anchor="w", pady=(12, 4))
+        self._party_detail = tk.Text(
+            right, bg=C_CARD, fg=C_TEXT,
+            font=("Georgia", 10), relief="flat", bd=0,
+            width=52, height=10, wrap="word", state="disabled",
+        )
+        self._party_detail.pack(fill="both", expand=True)
+
+    def _party_names(self) -> List[str]:
+        names = [name for name in self._app.parties if name.strip()]
+        if UNASSIGNED_PARTY.lower() not in {name.lower() for name in names}:
+            names.insert(0, UNASSIGNED_PARTY)
+        names.sort(key=str.lower)
+        return names
+
+    def _set_menu_values(self, option_menu: tk.OptionMenu, variable: tk.StringVar, values: List[str], default_value: str) -> None:
+        menu = option_menu["menu"]
+        menu.delete(0, "end")
+        for value in values:
+            menu.add_command(label=value, command=tk._setit(variable, value))
+
+        if variable.get() not in values:
+            variable.set(default_value if default_value in values else values[0])
+
+    def _refresh_party_controls(self) -> None:
+        party_names = self._party_names()
+
+        self._parties_lb.delete(0, "end")
+        for name in party_names:
+            if name.lower() == UNASSIGNED_PARTY.lower():
+                continue
+            self._parties_lb.insert("end", name)
+
+        filter_values = [self.FILTER_ALL] + party_names
+        self._set_menu_values(self._filter_menu, self._filter_party_var, filter_values, self.FILTER_ALL)
+        self._set_menu_values(self._assign_menu, self._selected_party_var, party_names, UNASSIGNED_PARTY)
+
+    def _refresh_characters(self) -> None:
+        self._chars_lb.delete(0, "end")
+        selected_filter = self._filter_party_var.get()
+
+        if selected_filter and selected_filter != self.FILTER_ALL:
+            self._filtered_characters = [
+                sheet for sheet in self._app.characters
+                if (sheet.party_name or UNASSIGNED_PARTY).strip().lower() == selected_filter.strip().lower()
+            ]
+        else:
+            self._filtered_characters = list(self._app.characters)
+
+        for sheet in self._filtered_characters:
+            player = sheet.player_name or "Unassigned player"
+            party = sheet.party_name or UNASSIGNED_PARTY
+            self._chars_lb.insert("end", f"{sheet.name}  —  {player}  [{party}]")
+
+    def _refresh_party_roster(self) -> None:
+        parties: Dict[str, List[CharacterSheet]] = {name: [] for name in self._party_names()}
+        for sheet in self._app.characters:
+            party_name = (sheet.party_name or UNASSIGNED_PARTY).strip() or UNASSIGNED_PARTY
+            parties.setdefault(party_name, []).append(sheet)
+
+        lines: List[str] = []
+        for party_name in sorted(parties.keys(), key=str.lower):
+            lines.append(f"{party_name}")
+            members = parties[party_name]
+            if not members:
+                lines.append("  - (no members)")
+            else:
+                for member in members:
+                    player = member.player_name or "Unassigned player"
+                    lines.append(f"  - {member.name} (Player: {player})")
+            lines.append("")
+
+        self._party_detail.configure(state="normal")
+        self._party_detail.delete("1.0", "end")
+        self._party_detail.insert("end", "\n".join(lines).strip())
+        self._party_detail.configure(state="disabled")
+
+    def _on_select_character(self, _event=None) -> None:
+        sel = self._chars_lb.curselection()
+        if not sel:
+            self._selected_character = None
+            return
+
+        self._selected_character = self._filtered_characters[sel[0]]
+        sheet = self._selected_character
+        self._player_var.set(sheet.player_name)
+        self._selected_party_var.set(sheet.party_name or UNASSIGNED_PARTY)
+
+        race = self._app.rules.get_race(sheet.race_id).get("name", sheet.race_id)
+        char_class = self._app.rules.get_class(sheet.class_id).get("name", sheet.class_id)
+        self._char_title.configure(text=sheet.name)
+        self._char_meta.configure(text=f"Race: {race}\nClass: {char_class}")
+
+    def _on_select_party(self, _event=None) -> None:
+        sel = self._parties_lb.curselection()
+        if not sel:
+            return
+        self._party_name_var.set(self._parties_lb.get(sel[0]))
+
+    def _create_party(self) -> None:
+        party_name = self._party_name_var.get().strip()
+        if not party_name:
+            messagebox.showwarning("Party Name Required", "Enter a party name to create.", parent=self._app.root)
+            return
+        if party_name.lower() == UNASSIGNED_PARTY.lower():
+            messagebox.showwarning("Invalid Name", f"{UNASSIGNED_PARTY} is reserved.", parent=self._app.root)
+            return
+        if party_name.lower() in {p.lower() for p in self._app.parties}:
+            messagebox.showwarning("Duplicate Party", "A party with that name already exists.", parent=self._app.root)
+            return
+
+        self._app.parties.append(party_name)
+        self._app.persist_characters()
+        self._refresh_party_controls()
+        self._refresh_party_roster()
+
+    def _rename_party(self) -> None:
+        sel = self._parties_lb.curselection()
+        if not sel:
+            messagebox.showinfo("Select Party", "Choose a party to rename.", parent=self._app.root)
+            return
+
+        old_name = self._parties_lb.get(sel[0]).strip()
+        new_name = self._party_name_var.get().strip()
+        if not new_name:
+            messagebox.showwarning("Party Name Required", "Enter the new party name.", parent=self._app.root)
+            return
+        if new_name.lower() == UNASSIGNED_PARTY.lower():
+            messagebox.showwarning("Invalid Name", f"{UNASSIGNED_PARTY} is reserved.", parent=self._app.root)
+            return
+        if new_name.lower() != old_name.lower() and new_name.lower() in {p.lower() for p in self._app.parties}:
+            messagebox.showwarning("Duplicate Party", "A party with that name already exists.", parent=self._app.root)
+            return
+
+        for idx, party in enumerate(self._app.parties):
+            if party.lower() == old_name.lower():
+                self._app.parties[idx] = new_name
+                break
+
+        for sheet in self._app.characters:
+            if (sheet.party_name or "").strip().lower() == old_name.lower():
+                sheet.party_name = new_name
+
+        self._app.persist_characters()
+        self._refresh_party_controls()
+        self._refresh_characters()
+        self._refresh_party_roster()
+
+    def _delete_party(self) -> None:
+        sel = self._parties_lb.curselection()
+        if not sel:
+            messagebox.showinfo("Select Party", "Choose a party to delete.", parent=self._app.root)
+            return
+
+        party_name = self._parties_lb.get(sel[0]).strip()
+        confirm = messagebox.askyesno(
+            "Delete Party",
+            f"Delete {party_name}? Characters in that party will be moved to {UNASSIGNED_PARTY}.",
+            parent=self._app.root,
+        )
+        if not confirm:
+            return
+
+        self._app.parties = [p for p in self._app.parties if p.lower() != party_name.lower()]
+        for sheet in self._app.characters:
+            if (sheet.party_name or "").strip().lower() == party_name.lower():
+                sheet.party_name = UNASSIGNED_PARTY
+
+        self._app.persist_characters()
+        self._party_name_var.set("")
+        self._refresh_party_controls()
+        self._refresh_characters()
+        self._refresh_party_roster()
+
+    def _save_selected(self) -> None:
+        if self._selected_character is None:
+            messagebox.showinfo("Select Character", "Choose a character from the list first.", parent=self._app.root)
+            return
+
+        selected_party = self._selected_party_var.get().strip() or UNASSIGNED_PARTY
+        if selected_party.lower() not in {p.lower() for p in self._app.parties}:
+            self._app.parties.append(selected_party)
+
+        self._selected_character.player_name = self._player_var.get().strip()
+        self._selected_character.party_name = selected_party
+
+        self._app.persist_characters()
+        self._refresh_party_controls()
+        self._refresh_characters()
+        self._refresh_party_roster()
+
+    def _clear_party(self) -> None:
+        if self._selected_character is None:
+            messagebox.showinfo("Select Character", "Choose a character from the list first.", parent=self._app.root)
+            return
+        self._selected_party_var.set(UNASSIGNED_PARTY)
+        self._save_selected()
+
+    def on_enter(self) -> None:
+        self._app.banner.set_subtitle("Party  ›  Management")
+        self._app.nav.hide()
+        self._selected_character = None
+        self._char_title.configure(text="Select a character")
+        self._char_meta.configure(text="")
+        self._player_var.set("")
+        self._party_name_var.set("")
+        self._filter_party_var.set(self.FILTER_ALL)
+        self._selected_party_var.set(UNASSIGNED_PARTY)
+        self._refresh_party_controls()
+        self._refresh_characters()
+        self._refresh_party_roster()
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # MAIN APPLICATION
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1248,7 +1587,12 @@ class App:
         self.rules    = _load_rules()
         self.builder  = CharacterBuilder(self.rules)
         self.chargen: Dict[str, Any] = {}
-        self.characters: List[CharacterSheet] = []
+        self._characters_file = _characters_store_path()
+        try:
+            self.characters, self.parties = load_state(self._characters_file)
+        except Exception:
+            self.characters = []
+            self.parties = [UNASSIGNED_PARTY]
 
         # Layout
         self.banner = TopBanner(self.root, self)
@@ -1270,6 +1614,7 @@ class App:
             "chargen_review":   CharGenReviewScreen,
             "dm_tools":         DMToolsScreen,
             "campaign":         CampaignScreen,
+            "party_management": PartyManagementScreen,
         }
         for name, cls in screens.items():
             frame = cls(self.container, self)
@@ -1300,6 +1645,16 @@ class App:
         screen = self.container._screens[screen_name]
         if hasattr(screen, "on_enter"):
             screen.on_enter()
+
+    def persist_characters(self) -> None:
+        try:
+            save_state(self._characters_file, self.characters, self.parties)
+        except Exception as exc:
+            messagebox.showerror(
+                "Save Failed",
+                f"Could not save characters:\n{exc}",
+                parent=self.root,
+            )
 
     def run(self) -> None:
         self.root.mainloop()

@@ -96,6 +96,9 @@ public partial class EditInfoScreen : UserControl, IScreen
     private bool _showMagicalEquipment = false;
     private bool _demoViewOnlyNoticeShown;
     private string _activeCharacterEditorSubTab = "update";
+    private string _editorRulesModeFilter = "core_rules";
+    private readonly List<int> _visibleRacialAbilityIndices = new();
+    private readonly List<int> _visibleClassAbilityIndices = new();
 
     private sealed class HealingSpellOption
     {
@@ -239,6 +242,8 @@ public partial class EditInfoScreen : UserControl, IScreen
             tab = "spells_arcane";
 
         bool inOptions = tab is "nwps" or "traits" or "disadvantages" or "kits" or "multiclass";
+        if (inOptions && IsCoreFilter() && (tab == "traits" || tab == "disadvantages"))
+            tab = "nwps";
         bool inRaces = tab is "races" or "racial_abilities";
         bool inClasses = tab is "classes" or "class_abilities";
         bool inSpells = tab is "spells_arcane" or "spells_divine" or "spells_psionic";
@@ -281,7 +286,13 @@ public partial class EditInfoScreen : UserControl, IScreen
         OptionsSubTabStrip.Visibility = inOptions ? Visibility.Visible : Visibility.Collapsed;
         RacesSubTabStrip.Visibility = inRaces ? Visibility.Visible : Visibility.Collapsed;
         ClassesSubTabStrip.Visibility = inClasses ? Visibility.Visible : Visibility.Collapsed;
+        RulesModeFilterStrip.Visibility = (inRaces || inClasses || inOptions) ? Visibility.Visible : Visibility.Collapsed;
         SpellsSubTabStrip.Visibility = inSpells ? Visibility.Visible : Visibility.Collapsed;
+        UpdateRulesModeToggleUi();
+
+        bool poOptionsEnabled = !IsCoreFilter();
+        TabBtnTraits.Visibility = poOptionsEnabled ? Visibility.Visible : Visibility.Collapsed;
+        TabBtnDisadvantages.Visibility = poOptionsEnabled ? Visibility.Visible : Visibility.Collapsed;
 
         var active   = (System.Windows.Media.Brush)FindResource("BrushBtnAct");
         var inactive = (System.Windows.Media.Brush)FindResource("BrushBtn");
@@ -334,6 +345,154 @@ public partial class EditInfoScreen : UserControl, IScreen
         if (inSpells)
             RefreshSpellEditor();
     }
+
+    private void RulesModeToggle_Changed(object sender, RoutedEventArgs e)
+    {
+        _editorRulesModeFilter = RulesModeToggle.IsChecked == true ? "players_option" : "core_rules";
+        UpdateRulesModeToggleUi();
+        RefreshModeFilteredEditors();
+    }
+
+    private void UpdateRulesModeToggleUi()
+    {
+        if (RulesModeToggle == null) return;
+        RulesModeToggle.Content = string.Equals(_editorRulesModeFilter, "players_option", System.StringComparison.OrdinalIgnoreCase)
+            ? "Showing Player's Option"
+            : "Showing Core Rules";
+    }
+
+    private void RefreshModeFilteredEditors()
+    {
+        if (TabNwps.Visibility == Visibility.Visible)
+            RefreshNwpList();
+        if (TabKits.Visibility == Visibility.Visible)
+            RefreshKitEditorList();
+        if (TabTraits.Visibility == Visibility.Visible && IsCoreFilter())
+            ShowTab("nwps");
+        if (TabDisadvantages.Visibility == Visibility.Visible && IsCoreFilter())
+            ShowTab("nwps");
+        if (TabRaces.Visibility == Visibility.Visible)
+            RefreshRaceList();
+        if (TabRacialAbilities.Visibility == Visibility.Visible)
+            RefreshRacialAbilityEditorList();
+        if (TabClasses.Visibility == Visibility.Visible)
+            RefreshClassEditorList();
+        if (TabClassAbilities.Visibility == Visibility.Visible)
+            RefreshClassAbilityEditorList();
+    }
+
+    private bool IsCoreFilter()
+        => !string.Equals(_editorRulesModeFilter, "players_option", System.StringComparison.OrdinalIgnoreCase);
+
+    private bool RaceMatchesEditorFilter(RaceDefinition race)
+    {
+        var mode = (race.CharacterMode ?? string.Empty).Trim().ToLowerInvariant();
+        if (mode == "all") return true;
+
+        return IsCoreFilter()
+            ? mode == "core_rules"
+            : mode == "players_option";
+    }
+
+    private List<RaceDefinition> GetOrderedRacesForEditor()
+        => _app.Rules.Races.Values
+            .Where(RaceMatchesEditorFilter)
+            .OrderBy(r => r.Name)
+            .ToList();
+
+    private static bool IsCoreAbilityEntry(AbilityDefinition a)
+        => a.AutoGranted && a.PointCost <= 0;
+
+    private static bool IsPlayersOptionAbilityEntry(AbilityDefinition a)
+        => !a.AutoGranted || a.PointCost > 0;
+
+    private string ResolveClassRulesModeForEditor(ClassDefinition cls)
+    {
+        var mode = (cls.RulesMode ?? string.Empty).Trim().ToLowerInvariant();
+        if (mode == "core_rules" || mode == "players_option" || mode == "all")
+            return mode;
+
+        bool hasCore = cls.StructuredAbilities.Any(IsCoreAbilityEntry);
+        bool hasPlayersOption = cls.ClassPointBudget > 0 || cls.StructuredAbilities.Any(IsPlayersOptionAbilityEntry);
+        if (hasCore && !hasPlayersOption) return "core_rules";
+        if (!hasCore && hasPlayersOption) return "players_option";
+        return "all";
+    }
+
+    private static string StripLeadingLevelPrefix(string description)
+    {
+        if (string.IsNullOrWhiteSpace(description))
+            return string.Empty;
+
+        return System.Text.RegularExpressions.Regex
+            .Replace(description.Trim(), @"^\s*level\s+\d+\s*:\s*", string.Empty, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+    }
+
+    private bool ClassMatchesEditorFilter(ClassDefinition cls)
+    {
+        var mode = ResolveClassRulesModeForEditor(cls);
+        if (mode == "all") return true;
+        return IsCoreFilter() ? mode == "core_rules" : mode == "players_option";
+    }
+
+    private bool NwpMatchesRulesModeFilter(NonweaponProficiencyDefinition nwp)
+    {
+        var source = (nwp.Source ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(source)) return true;
+
+        bool hasCore = string.Equals(source, "Core", System.StringComparison.OrdinalIgnoreCase)
+            || string.Equals(source, "Core & Player's Option", System.StringComparison.OrdinalIgnoreCase)
+            || string.Equals(source, "Custom", System.StringComparison.OrdinalIgnoreCase)
+            || string.Equals(source, "Supplement", System.StringComparison.OrdinalIgnoreCase);
+
+        bool hasPlayersOption = string.Equals(source, "Player's Option", System.StringComparison.OrdinalIgnoreCase)
+            || string.Equals(source, "Core & Player's Option", System.StringComparison.OrdinalIgnoreCase)
+            || string.Equals(source, "Custom", System.StringComparison.OrdinalIgnoreCase);
+
+        return IsCoreFilter() ? hasCore : hasPlayersOption;
+    }
+
+    private bool KitMatchesRulesModeFilter(KitDefinition kit)
+    {
+        var mode = (kit.RulesMode ?? string.Empty).Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(mode)) mode = "all";
+
+        if (mode == "all") return true;
+        if (IsCoreFilter()) return mode == "core_rules";
+        return mode == "players_option";
+    }
+
+    private static void SelectKitRulesMode(ComboBox box, string mode)
+    {
+        string normalized = (mode ?? string.Empty).Trim().ToLowerInvariant();
+        if (normalized != "core_rules" && normalized != "players_option" && normalized != "all")
+            normalized = "all";
+
+        foreach (var item in box.Items)
+        {
+            if (item is ComboBoxItem combo && string.Equals(combo.Tag as string, normalized, System.StringComparison.OrdinalIgnoreCase))
+            {
+                box.SelectedItem = combo;
+                return;
+            }
+        }
+
+        box.SelectedIndex = 0;
+    }
+
+    private static string SelectedKitRulesMode(ComboBox box)
+    {
+        if (box.SelectedItem is ComboBoxItem combo && combo.Tag is string tag)
+            return tag;
+        return "all";
+    }
+
+    private static string KitRulesModeLabel(string mode) => (mode ?? string.Empty).Trim().ToLowerInvariant() switch
+    {
+        "core_rules" => "Core",
+        "players_option" => "PO",
+        _ => "All",
+    };
 
     private void ShowCharacterEditorSubTab(string subTab)
     {
@@ -2010,12 +2169,12 @@ public partial class EditInfoScreen : UserControl, IScreen
     private void RefreshRaceList()
     {
         RaceListEditor.Items.Clear();
-        foreach (var race in _app.Rules.Races.Values.OrderBy(r => r.Name))
+        var ordered = GetOrderedRacesForEditor();
+        foreach (var race in ordered)
             RaceListEditor.Items.Add(FormatRaceEditorLabel(race));
 
         if (!string.IsNullOrEmpty(_selectedRaceId) && _app.Rules.Races.ContainsKey(_selectedRaceId))
         {
-            var ordered = _app.Rules.Races.Values.OrderBy(r => r.Name).ToList();
             RaceListEditor.SelectedIndex = ordered.FindIndex(r => r.Id == _selectedRaceId);
         }
         else
@@ -2030,7 +2189,7 @@ public partial class EditInfoScreen : UserControl, IScreen
         int idx = RaceListEditor.SelectedIndex;
         if (idx < 0) return;
 
-        var ordered = _app.Rules.Races.Values.OrderBy(r => r.Name).ToList();
+        var ordered = GetOrderedRacesForEditor();
         if (idx >= ordered.Count) return;
         LoadRaceEditor(ordered[idx]);
     }
@@ -2289,6 +2448,12 @@ public partial class EditInfoScreen : UserControl, IScreen
         return "all";
     }
 
+    private string SelectedClassRulesMode()
+    {
+        if (ClassDefRulesMode.SelectedItem is ComboBoxItem item && item.Tag is string tag) return tag;
+        return "all";
+    }
+
     private void SelectMode(string mode)
     {
         foreach (var item in RaceMode.Items)
@@ -2300,6 +2465,19 @@ public partial class EditInfoScreen : UserControl, IScreen
             }
         }
         RaceMode.SelectedIndex = 0;
+    }
+
+    private void SelectClassRulesMode(string mode)
+    {
+        foreach (var item in ClassDefRulesMode.Items)
+        {
+            if (item is ComboBoxItem combo && (combo.Tag as string) == mode)
+            {
+                ClassDefRulesMode.SelectedItem = combo;
+                return;
+            }
+        }
+        ClassDefRulesMode.SelectedIndex = 0;
     }
 
     private static string ModeLabel(string mode) => mode switch
@@ -2318,7 +2496,15 @@ public partial class EditInfoScreen : UserControl, IScreen
         => $"{race.Name}  [{ModeLabel(race.CharacterMode)}]  [{SourceLabel(race.Source)}]";
 
     private static string FormatClassEditorLabel(ClassDefinition cls)
-        => $"{cls.Name} [{cls.Id}] [{SourceLabel(cls.Source)}]";
+    {
+        string modeLabel = (cls.RulesMode ?? string.Empty).Trim().ToLowerInvariant() switch
+        {
+            "core_rules" => "Core",
+            "players_option" => "PO",
+            _ => "All",
+        };
+        return $"{cls.Name} [{cls.Id}] [{modeLabel}] [{SourceLabel(cls.Source)}]";
+    }
 
     private void BtnExportCustomPack_Click(object sender, RoutedEventArgs e)
     {
@@ -2591,13 +2777,14 @@ public partial class EditInfoScreen : UserControl, IScreen
                 (string.IsNullOrWhiteSpace(search)
                     || k.Name.Contains(search, System.StringComparison.OrdinalIgnoreCase)
                     || k.Description.Contains(search, System.StringComparison.OrdinalIgnoreCase))
+                && KitMatchesRulesModeFilter(k)
                 && (allSources || string.Equals(k.Source, sourceFilter, System.StringComparison.OrdinalIgnoreCase)))
             .OrderBy(k => k.Source)
             .ThenBy(k => k.Name)
             .ToList();
 
         KitListEditor.ItemsSource = _kitItems
-            .Select(k => $"{k.Name}  [{k.Source}]")
+            .Select(k => $"{k.Name}  [{KitRulesModeLabel(k.RulesMode)}] [{k.Source}]")
             .ToList();
 
         if (!string.IsNullOrWhiteSpace(_selectedKitId))
@@ -2629,6 +2816,7 @@ public partial class EditInfoScreen : UserControl, IScreen
         _selectedKitId = kit.Id;
         KitEditName.Text = kit.Name;
         KitEditSource.Text = kit.Source;
+        SelectKitRulesMode(KitEditRulesMode, kit.RulesMode);
         KitEditAllowedRaces.Text = string.Join(", ", kit.AllowedRaces);
         KitEditAllowedClasses.Text = string.Join(", ", kit.AllowedClasses);
         KitEditDescription.Text = kit.Description;
@@ -2644,6 +2832,7 @@ public partial class EditInfoScreen : UserControl, IScreen
         KitListEditor.SelectedIndex = -1;
         KitEditName.Text = string.Empty;
         KitEditSource.Text = "Custom";
+        SelectKitRulesMode(KitEditRulesMode, IsCoreFilter() ? "core_rules" : "players_option");
         KitEditAllowedRaces.Text = string.Empty;
         KitEditAllowedClasses.Text = string.Empty;
         KitEditDescription.Text = string.Empty;
@@ -2681,7 +2870,8 @@ public partial class EditInfoScreen : UserControl, IScreen
             allowedRaces,
             allowedClasses,
             existingKit?.FreeNwpIds ?? new List<string>(),
-            existingKit?.RequiredNwpIds ?? new List<string>());
+            existingKit?.RequiredNwpIds ?? new List<string>(),
+            SelectedKitRulesMode(KitEditRulesMode));
 
         var allKits = _app.Rules.Kits.Where(k => k.Id != id).Append(updated);
         _app.Rules.SaveKitDefinitions(allKits);
@@ -2701,12 +2891,39 @@ public partial class EditInfoScreen : UserControl, IScreen
         _selectedKitId = string.Empty;
         KitEditName.Text = string.Empty;
         KitEditSource.Text = string.Empty;
+        SelectKitRulesMode(KitEditRulesMode, "all");
         KitEditAllowedRaces.Text = string.Empty;
         KitEditAllowedClasses.Text = string.Empty;
         KitEditDescription.Text = string.Empty;
         BtnDeleteKit.IsEnabled = false;
         KitEditorInfo.Text = string.Empty;
         RefreshKitEditorList();
+    }
+
+    private void BtnMigrateKitRulesModes_Click(object sender, RoutedEventArgs e)
+    {
+        if (MessageBox.Show(
+                "This will write explicit rules_mode values into kits.json for kits that do not have one yet. Continue?",
+                "Migrate Kit Rules Modes",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question) != MessageBoxResult.Yes)
+            return;
+
+        try
+        {
+            var (updated, total) = _app.Rules.MigrateKitRulesModesInFile();
+            RefreshKitEditorList();
+            KitEditorInfo.Text = $"Migration complete: {updated} updated out of {total} kits.";
+            MessageBox.Show(
+                $"Kit rules-mode migration complete.\n\nUpdated: {updated}\nTotal kits scanned: {total}",
+                "Migration Complete",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (System.Exception ex)
+        {
+            MessageBox.Show($"Migration failed: {ex.Message}", "Migration Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     // ── Classes tab ──────────────────────────────────────────────────────────
@@ -2865,7 +3082,10 @@ public partial class EditInfoScreen : UserControl, IScreen
 
 
     private List<ClassDefinition> GetOrderedClasses()
-        => _app.Rules.Classes.Values.OrderBy(c => c.Name).ToList();
+        => _app.Rules.Classes.Values
+            .Where(ClassMatchesEditorFilter)
+            .OrderBy(c => c.Name)
+            .ToList();
 
     private void RefreshClassEditorList()
     {
@@ -2899,6 +3119,7 @@ public partial class EditInfoScreen : UserControl, IScreen
         ClassDefEditorTitle.Text = $"Class Editor - {cls.Name}";
         ClassDefIdEditor.Text = cls.Id;
         ClassDefNameEditor.Text = cls.Name;
+        SelectClassRulesMode(ResolveClassRulesModeForEditor(cls));
         ClassDefBudgetEditor.Text = cls.ClassPointBudget.ToString();
         ClassDefAllowedRacesEditor.Text = string.Join(", ", cls.AllowedRaces);
         ClassDefMinsEditor.Text = JsonSerializer.Serialize(cls.AbilityMinimums);
@@ -2912,6 +3133,7 @@ public partial class EditInfoScreen : UserControl, IScreen
         ClassDefEditorTitle.Text = "Class Editor - New Class";
         ClassDefIdEditor.Text = string.Empty;
         ClassDefNameEditor.Text = string.Empty;
+        SelectClassRulesMode(IsCoreFilter() ? "core_rules" : "players_option");
         ClassDefBudgetEditor.Text = "0";
         ClassDefAllowedRacesEditor.Text = string.Empty;
         ClassDefMinsEditor.Text = "{}";
@@ -2953,7 +3175,8 @@ public partial class EditInfoScreen : UserControl, IScreen
                 existingClass?.StructuredAbilities ?? new List<AbilityDefinition>(),
                 budget,
                 existingClass?.Specializations,
-                existingClass?.Source ?? "custom"));
+                existingClass?.Source ?? "custom",
+                SelectedClassRulesMode()));
             _selectedClassId = id;
             ClassDefEditorInfo.Text = $"Saved class: {name}";
             RefreshClassEditorList();
@@ -3011,7 +3234,7 @@ public partial class EditInfoScreen : UserControl, IScreen
         ClassIdEditor.Text = cls.Id;
         ClassNameEditor.Text = cls.Name;
         _workingClassAbilities = cls.StructuredAbilities
-            .Select(a => new AbilityDefinition { Id = a.Id, Description = a.Description, Category = a.Category, PointCost = a.PointCost, AutoGranted = a.AutoGranted, Effect = a.Effect })
+            .Select(CloneAbilityDefinition)
             .ToList();
         _selectedClassAbilityIndex = -1;
         RefreshClassAbilityItemsList();
@@ -3057,7 +3280,8 @@ public partial class EditInfoScreen : UserControl, IScreen
                 _workingClassAbilities,
                 existingClass?.ClassPointBudget ?? 0,
                 existingClass?.Specializations,
-                existingClass?.Source ?? "custom"));
+                existingClass?.Source ?? "custom",
+                existingClass?.RulesMode ?? (IsCoreFilter() ? "core_rules" : "players_option")));
 
             int updatedCharacters = ReapplyAbilityMechanicsToMatchingCharacters(classId: id, raceId: null);
             _selectedClassId = id;
@@ -3118,51 +3342,97 @@ public partial class EditInfoScreen : UserControl, IScreen
 
         var sourceAbility = _workingClassAbilities[_selectedClassAbilityIndex];
         var clonedAbility = CloneAbilityDefinition(sourceAbility);
-        var targetAbilities = targetClass.StructuredAbilities
-            .Select(CloneAbilityDefinition)
-            .ToList();
+        var result = CopyClassAbilityToTargets(clonedAbility, new[] { targetClass });
+        ClassEditorInfo.Text = result.updated > 0
+            ? $"Updated '{clonedAbility.Description}' on {targetClass.Name}. Reapplied mechanics to {result.charactersUpdated} character(s)."
+            : $"Copied '{clonedAbility.Description}' to {targetClass.Name}. Reapplied mechanics to {result.charactersUpdated} character(s).";
+    }
 
-        int existingIdx = targetAbilities.FindIndex(a =>
-            string.Equals(a.Id, clonedAbility.Id, System.StringComparison.OrdinalIgnoreCase));
+    private void BtnCopyClassAbilityToAllClasses_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedClassAbilityIndex < 0 || _selectedClassAbilityIndex >= _workingClassAbilities.Count)
+        {
+            ClassEditorInfo.Text = "Select an ability to copy first.";
+            return;
+        }
 
-        if (existingIdx >= 0)
-            targetAbilities[existingIdx] = clonedAbility;
-        else
-            targetAbilities.Add(clonedAbility);
+        if (_classCopyTargets.Count == 0)
+        {
+            ClassEditorInfo.Text = "No other classes available in the current filter.";
+            return;
+        }
 
-        _app.Rules.SaveClass(new ClassDefinition(
-            targetClass.Id,
-            targetClass.Name,
-            targetClass.AbilityMinimums,
-            targetClass.AllowedRaces,
-            targetAbilities,
-            targetClass.ClassPointBudget,
-            targetClass.Specializations,
-            targetClass.Source));
+        if (_selectedClassAbilityIndex == CaAbilityList.SelectedIndex)
+        {
+            _workingClassAbilities[_selectedClassAbilityIndex] = ReadClassAbilityDetailForm();
+            RefreshClassAbilityItemsList();
+        }
 
-        int updatedCharacters = ReapplyAbilityMechanicsToMatchingCharacters(classId: targetClass.Id, raceId: null);
+        var sourceAbility = _workingClassAbilities[_selectedClassAbilityIndex];
+        var clonedAbility = CloneAbilityDefinition(sourceAbility);
+        var result = CopyClassAbilityToTargets(clonedAbility, _classCopyTargets);
 
-        ClassEditorInfo.Text = existingIdx >= 0
-            ? $"Updated '{clonedAbility.Description}' on {targetClass.Name}. Reapplied mechanics to {updatedCharacters} character(s)."
-            : $"Copied '{clonedAbility.Description}' to {targetClass.Name}. Reapplied mechanics to {updatedCharacters} character(s).";
+        ClassEditorInfo.Text = $"Applied '{clonedAbility.Description}' to {_classCopyTargets.Count} class(es): {result.added} added, {result.updated} updated. Reapplied mechanics to {result.charactersUpdated} character(s).";
+    }
+
+    private (int added, int updated, int charactersUpdated) CopyClassAbilityToTargets(AbilityDefinition ability, IEnumerable<ClassDefinition> targets)
+    {
+        int added = 0;
+        int updated = 0;
+        int charactersUpdated = 0;
+
+        foreach (var targetClass in targets)
+        {
+            var targetAbilities = targetClass.StructuredAbilities
+                .Select(CloneAbilityDefinition)
+                .ToList();
+
+            int existingIdx = targetAbilities.FindIndex(a =>
+                string.Equals(a.Id, ability.Id, System.StringComparison.OrdinalIgnoreCase));
+
+            if (existingIdx >= 0)
+            {
+                targetAbilities[existingIdx] = CloneAbilityDefinition(ability);
+                updated += 1;
+            }
+            else
+            {
+                targetAbilities.Add(CloneAbilityDefinition(ability));
+                added += 1;
+            }
+
+            _app.Rules.SaveClass(new ClassDefinition(
+                targetClass.Id,
+                targetClass.Name,
+                targetClass.AbilityMinimums,
+                targetClass.AllowedRaces,
+                targetAbilities,
+                targetClass.ClassPointBudget,
+                targetClass.Specializations,
+                targetClass.Source,
+                targetClass.RulesMode));
+
+            charactersUpdated += ReapplyAbilityMechanicsToMatchingCharacters(classId: targetClass.Id, raceId: null);
+        }
+
+        return (added, updated, charactersUpdated);
     }
 
     // ── Racial Abilities tab ─────────────────────────────────────────────────
 
     private void RefreshRacialAbilityEditorList()
     {
-        RaceAbilityListEditor.ItemsSource = _app.Rules.Races.Values
-            .OrderBy(r => r.Name)
-            .Select(r => $"{r.Name} [{r.Id}] [{SourceLabel(r.Source)}]")
+        var ordered = GetOrderedRacesForEditor();
+        RaceAbilityListEditor.ItemsSource = ordered
+            .Select(r => $"{r.Name} [{r.Id}] [{ModeLabel(r.CharacterMode)}] [{SourceLabel(r.Source)}]")
             .ToList();
 
         if (!string.IsNullOrWhiteSpace(_selectedRaceAbilityId))
         {
-            var ordered = _app.Rules.Races.Values.OrderBy(r => r.Name).ToList();
             int idx = ordered.FindIndex(r => string.Equals(r.Id, _selectedRaceAbilityId, System.StringComparison.OrdinalIgnoreCase));
             if (idx >= 0) RaceAbilityListEditor.SelectedIndex = idx;
         }
-        if (RaceAbilityListEditor.SelectedIndex < 0 && _app.Rules.Races.Count > 0)
+        if (RaceAbilityListEditor.SelectedIndex < 0 && ordered.Count > 0)
             RaceAbilityListEditor.SelectedIndex = 0;
 
         RefreshRaceCopyTargets();
@@ -3171,7 +3441,7 @@ public partial class EditInfoScreen : UserControl, IScreen
     private void RaceAbilityListEditor_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         int idx = RaceAbilityListEditor.SelectedIndex;
-        var ordered = _app.Rules.Races.Values.OrderBy(r => r.Name).ToList();
+        var ordered = GetOrderedRacesForEditor();
         if (idx < 0 || idx >= ordered.Count) return;
         var race = ordered[idx];
         _selectedRaceAbilityId = race.Id;
@@ -3179,7 +3449,7 @@ public partial class EditInfoScreen : UserControl, IScreen
         RaceAbilityRaceId.Text = race.Id;
         RaceAbilityRaceName.Text = race.Name;
         _workingRacialAbilities = race.StructuredAbilities
-            .Select(a => new AbilityDefinition { Id = a.Id, Description = a.Description, Category = a.Category, PointCost = a.PointCost, AutoGranted = a.AutoGranted, Effect = a.Effect })
+            .Select(CloneAbilityDefinition)
             .ToList();
         _selectedRacialAbilityIndex = -1;
         RefreshRacialAbilityItemsList();
@@ -3455,7 +3725,8 @@ public partial class EditInfoScreen : UserControl, IScreen
             character.SubAbilities,
             character.ExceptionalStrength,
             character.RogueSkillArmorProfile,
-            Math.Max(1, character.Level));
+            Math.Max(1, character.Level),
+            character.CharacterMode);
 
         character.StructuredAbilities = rebuilt.StructuredAbilities
             .Select(CloneAbilityDefinition)
@@ -3496,20 +3767,41 @@ public partial class EditInfoScreen : UserControl, IScreen
 
     private void RefreshClassAbilityItemsList()
     {
+        _visibleClassAbilityIndices.Clear();
+        _visibleClassAbilityIndices.AddRange(
+            Enumerable.Range(0, _workingClassAbilities.Count)
+                .OrderBy(i => _workingClassAbilities[i].Description ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(i => _workingClassAbilities[i].Id ?? string.Empty, StringComparer.OrdinalIgnoreCase));
+
         CaAbilityList.ItemsSource = null;
-        CaAbilityList.ItemsSource = _workingClassAbilities
-            .Select(a => $"{a.Description}  [{(a.AutoGranted ? "auto" : "optional")}, {a.PointCost} pts]")
+        CaAbilityList.ItemsSource = _visibleClassAbilityIndices
+            .Select(i => _workingClassAbilities[i])
+            .Select(a =>
+            {
+                int unlockLevel = DungeonMasterCortex.Services.RulesEngine.AbilityUnlockLevel(a);
+                string levelBadge = unlockLevel > 1 ? $", unlock L{unlockLevel}" : string.Empty;
+                string multiBadge = a.AllowMultiple ? ", repeatable" : string.Empty;
+                string textBadge = a.RequiresPlayerText ? ", text" : string.Empty;
+                string postLevelBadge = a.AllowPurchaseAfterLevelOne ? string.Empty : ", creation-only";
+                return $"{a.Description}  [{(a.AutoGranted ? "auto" : "optional")}, {a.PointCost} pts{levelBadge}{multiBadge}{textBadge}{postLevelBadge}]";
+            })
             .ToList();
+
         if (_selectedClassAbilityIndex >= 0 && _selectedClassAbilityIndex < _workingClassAbilities.Count)
-            CaAbilityList.SelectedIndex = _selectedClassAbilityIndex;
+        {
+            int visibleIdx = _visibleClassAbilityIndices.IndexOf(_selectedClassAbilityIndex);
+            CaAbilityList.SelectedIndex = visibleIdx;
+            if (visibleIdx < 0)
+                ClearClassAbilityDetailForm();
+        }
     }
 
     private void CaAbilityList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         int idx = CaAbilityList.SelectedIndex;
-        if (idx < 0 || idx >= _workingClassAbilities.Count) return;
-        _selectedClassAbilityIndex = idx;
-        LoadClassAbilityDetailForm(_workingClassAbilities[idx]);
+        if (idx < 0 || idx >= _visibleClassAbilityIndices.Count) return;
+        _selectedClassAbilityIndex = _visibleClassAbilityIndices[idx];
+        LoadClassAbilityDetailForm(_workingClassAbilities[_selectedClassAbilityIndex]);
     }
 
     private void BtnAddClassAbility_Click(object sender, RoutedEventArgs e)
@@ -3546,9 +3838,13 @@ public partial class EditInfoScreen : UserControl, IScreen
 
     private void LoadClassAbilityDetailForm(AbilityDefinition a)
     {
-        CaDesc.Text = a.Description;
+        CaDesc.Text = StripLeadingLevelPrefix(a.Description);
         CaCost.Text = a.PointCost != 0 ? a.PointCost.ToString() : "";
+        CaUnlockLevel.Text = DungeonMasterCortex.Services.RulesEngine.AbilityUnlockLevel(a).ToString();
         CaAuto.IsChecked = a.AutoGranted;
+        CaAllowMultiple.IsChecked = a.AllowMultiple;
+        CaRequiresText.IsChecked = a.RequiresPlayerText;
+        CaAllowPostLevelOne.IsChecked = a.AllowPurchaseAfterLevelOne;
         var fx = a.Effect;
         CaAcBonus.Text      = fx.AcBonus != 0 ? fx.AcBonus.ToString() : "";
         CaNoArmorForAc.IsChecked = fx.AcBonusRequiresNoArmor;
@@ -3580,7 +3876,10 @@ public partial class EditInfoScreen : UserControl, IScreen
 
     private void ClearClassAbilityDetailForm()
     {
-        CaDesc.Text = ""; CaCost.Text = ""; CaAuto.IsChecked = true;
+        CaDesc.Text = ""; CaCost.Text = ""; CaUnlockLevel.Text = "1"; CaAuto.IsChecked = true;
+        CaAllowMultiple.IsChecked = false;
+        CaRequiresText.IsChecked = false;
+        CaAllowPostLevelOne.IsChecked = false;
         CaAcBonus.Text = ""; CaAttackBonus.Text = ""; CaDamageBonus.Text = "";
         CaNoArmorForAc.IsChecked = false;
         CaMovementBonus.Text = "";
@@ -3597,13 +3896,23 @@ public partial class EditInfoScreen : UserControl, IScreen
 
     private AbilityDefinition ReadClassAbilityDetailForm()
     {
-        var desc = CaDesc.Text.Trim();
+        var baseDesc = StripLeadingLevelPrefix(CaDesc.Text);
+        int unlockLevel = ParseIntOrDefault(CaUnlockLevel.Text, 1);
+        if (unlockLevel < 1) unlockLevel = 1;
+        var desc = unlockLevel > 1 ? $"Level {unlockLevel}: {baseDesc}" : baseDesc;
+        var id = unlockLevel > 1
+            ? $"{SlugifySimple(baseDesc)}_lvl{unlockLevel}"
+            : SlugifySimple(baseDesc);
+
         return new AbilityDefinition
         {
-            Id          = SlugifySimple(desc),
+            Id          = id,
             Description = desc,
             PointCost   = ParseIntOrDefault(CaCost.Text, 0),
             AutoGranted = CaAuto.IsChecked == true,
+            AllowMultiple = CaAllowMultiple.IsChecked == true,
+            RequiresPlayerText = CaRequiresText.IsChecked == true,
+            AllowPurchaseAfterLevelOne = CaAllowPostLevelOne.IsChecked == true,
             Effect = new AbilityEffect
             {
                 AcBonus            = ParseIntOrDefault(CaAcBonus.Text, 0),
@@ -3644,6 +3953,9 @@ public partial class EditInfoScreen : UserControl, IScreen
             Category = source.Category,
             PointCost = source.PointCost,
             AutoGranted = source.AutoGranted,
+            AllowMultiple = source.AllowMultiple,
+            RequiresPlayerText = source.RequiresPlayerText,
+            AllowPurchaseAfterLevelOne = source.AllowPurchaseAfterLevelOne,
             Effect = CloneAbilityEffect(source.Effect),
         };
     }
@@ -3684,20 +3996,39 @@ public partial class EditInfoScreen : UserControl, IScreen
 
     private void RefreshRacialAbilityItemsList()
     {
+        _visibleRacialAbilityIndices.Clear();
+        for (int i = 0; i < _workingRacialAbilities.Count; i++)
+        {
+            var ability = _workingRacialAbilities[i];
+            bool include = IsCoreFilter()
+                ? IsCoreAbilityEntry(ability)
+                : IsPlayersOptionAbilityEntry(ability);
+
+            if (include)
+                _visibleRacialAbilityIndices.Add(i);
+        }
+
         RaAbilityList.ItemsSource = null;
-        RaAbilityList.ItemsSource = _workingRacialAbilities
+        RaAbilityList.ItemsSource = _visibleRacialAbilityIndices
+            .Select(i => _workingRacialAbilities[i])
             .Select(a => $"{a.Description}  [{(a.AutoGranted ? "auto" : "optional")}, {a.PointCost} pts]")
             .ToList();
+
         if (_selectedRacialAbilityIndex >= 0 && _selectedRacialAbilityIndex < _workingRacialAbilities.Count)
-            RaAbilityList.SelectedIndex = _selectedRacialAbilityIndex;
+        {
+            int visibleIdx = _visibleRacialAbilityIndices.IndexOf(_selectedRacialAbilityIndex);
+            RaAbilityList.SelectedIndex = visibleIdx;
+            if (visibleIdx < 0)
+                ClearRacialAbilityDetailForm();
+        }
     }
 
     private void RaAbilityList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         int idx = RaAbilityList.SelectedIndex;
-        if (idx < 0 || idx >= _workingRacialAbilities.Count) return;
-        _selectedRacialAbilityIndex = idx;
-        LoadRacialAbilityDetailForm(_workingRacialAbilities[idx]);
+        if (idx < 0 || idx >= _visibleRacialAbilityIndices.Count) return;
+        _selectedRacialAbilityIndex = _visibleRacialAbilityIndices[idx];
+        LoadRacialAbilityDetailForm(_workingRacialAbilities[_selectedRacialAbilityIndex]);
     }
 
     private void BtnAddRacialAbility_Click(object sender, RoutedEventArgs e)
@@ -3873,6 +4204,7 @@ public partial class EditInfoScreen : UserControl, IScreen
                     || nwp.Name.Contains(search, System.StringComparison.OrdinalIgnoreCase)
                     || nwp.Category.Contains(search, System.StringComparison.OrdinalIgnoreCase)
                     || nwp.Description.Contains(search, System.StringComparison.OrdinalIgnoreCase))
+                && NwpMatchesRulesModeFilter(nwp)
                 && (categoryFilter is "" or "All Categories"
                     || NwpMatchesCategoryFilter(nwp, categoryFilter))
                 && (sourceFilter is "" or "All Sources"

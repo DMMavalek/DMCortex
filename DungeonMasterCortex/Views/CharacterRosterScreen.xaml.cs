@@ -70,6 +70,18 @@ public class CharacterRosterScreen : UserControl, IScreen
         return string.Join("/", parts);
     }
 
+    private static string FormatRulesetDisplay(CharacterSheet character)
+    {
+        string mode = (character.CharacterMode ?? string.Empty).Trim();
+        if (string.Equals(mode, "players_option", StringComparison.OrdinalIgnoreCase))
+            return "PO";
+
+        if (string.IsNullOrWhiteSpace(mode) || string.Equals(mode, "core_rules", StringComparison.OrdinalIgnoreCase))
+            return "C";
+
+        return mode;
+    }
+
     public void OnEnter()
     {
         _app.SetBanner("Character Blueprint  ›  Character Roster");
@@ -175,6 +187,7 @@ public class CharacterRosterScreen : UserControl, IScreen
         AddTextColumn(grid, "Name", "Name", 145);
         AddTextColumn(grid, "Player", "PlayerName", 90);
         AddTextColumn(grid, "Party", "Party", 75);
+        AddTextColumn(grid, "Edition", "Ruleset", 70);
         AddTextColumn(grid, "Race", "Race", 70);
         AddTextColumn(grid, "Class", "Class", 85);
         AddTextColumn(grid, "Lvl", "Level", 45);
@@ -545,14 +558,14 @@ public class CharacterRosterScreen : UserControl, IScreen
         {
             var character = _app.Characters[selected.SourceIndex];
             SelectedCharacterText.Text = $"Selected character: {character.Name}";
-            SelectedCharacterDetails.Text = $"Level: {Math.Max(1, character.Level)}   HP: {character.HitPoints}   Race: {(string.IsNullOrWhiteSpace(character.RaceName) ? character.RaceId : character.RaceName)}   Class: {(string.IsNullOrWhiteSpace(character.ClassName) ? character.ClassId : character.ClassName)}";
+            SelectedCharacterDetails.Text = $"Edition: {FormatRulesetDisplay(character)}   Level: {Math.Max(1, character.Level)}   HP: {character.HitPoints}   Race: {(string.IsNullOrWhiteSpace(character.RaceName) ? character.RaceId : character.RaceName)}   Class: {(string.IsNullOrWhiteSpace(character.ClassName) ? character.ClassId : character.ClassName)}";
             PlayerNameEditor.Text = character.PlayerName ?? string.Empty;
             PartyNameEditor.Text = character.Party ?? string.Empty;
             return;
         }
 
         SelectedCharacterText.Text = "Selected character: none";
-        SelectedCharacterDetails.Text = "Level: -   HP: -   Race: -   Class: -";
+        SelectedCharacterDetails.Text = "Edition: -   Level: -   HP: -   Race: -   Class: -";
         PlayerNameEditor.Text = string.Empty;
         PartyNameEditor.Text = string.Empty;
     }
@@ -1168,6 +1181,7 @@ public class CharacterRosterScreen : UserControl, IScreen
                 Name = c.Name,
                 PlayerName = c.PlayerName,
                 Party = c.Party,
+                Ruleset = FormatRulesetDisplay(c),
                 Race = c.RaceName,
                 Class = c.ClassName,
                 Level = FormatLevelDisplay(c),
@@ -1391,6 +1405,7 @@ public class CharacterRosterScreen : UserControl, IScreen
         public string Name { get; set; } = "";
         public string PlayerName { get; set; } = "";
         public string Party { get; set; } = "";
+        public string Ruleset { get; set; } = "";
         public string Race { get; set; } = "";
         public string Class { get; set; } = "";
         public string Level { get; set; } = "";

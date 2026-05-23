@@ -13,9 +13,9 @@ $ErrorActionPreference = 'Stop'
 
 $root = (Resolve-Path (Join-Path $PSScriptRoot '.')).Path
 $buildScript = Join-Path $root 'build-installers.ps1'
-$releaseRoot = Join-Path $root 'artifacts\github-release'
-$dmOut = Join-Path $releaseRoot 'dm'
-$playerOut = Join-Path $releaseRoot 'player'
+$releaseRoot = $null
+$dmOut = $null
+$playerOut = $null
 
 function Get-OriginRepositorySlug {
 	$remote = (git -C $root config --get remote.origin.url).Trim()
@@ -64,6 +64,25 @@ function Get-ReleaseNotesText {
 	}
 
 	return $InlineNotes
+}
+
+function Test-ReleasePreflight {
+	param(
+		[string]$RepoSlug,
+		[hashtable]$Headers
+	)
+
+	$repoApi = "https://api.github.com/repos/$RepoSlug"
+	$repo = Invoke-RestMethod -Method Get -Headers $Headers -Uri $repoApi
+
+	# When permissions are provided, enforce write access before doing any build work.
+	if ($null -ne $repo.permissions -and
+		$repo.permissions.PSObject.Properties.Name -contains 'push' -and
+		-not [bool]$repo.permissions.push) {
+		throw "GitHub token does not have write access to $RepoSlug. Grant repository Contents: Read and write."
+	}
+
+	Write-Host "Preflight passed for $RepoSlug"
 }
 
 function Get-OrCreateRelease {
@@ -135,6 +154,34 @@ function Upload-ReleaseAsset {
 	Write-Host "Uploaded $($file.Name)"
 }
 
+function Assert-ReleaseAssetsUploaded {
+	param(
+		[string]$RepoSlug,
+		[hashtable]$Headers,
+		[int]$ReleaseId,
+		[string[]]$ExpectedAssetNames
+	)
+
+	$releaseApi = "https://api.github.com/repos/$RepoSlug/releases/$ReleaseId"
+	$latest = Invoke-RestMethod -Method Get -Headers $Headers -Uri $releaseApi
+	$assets = @($latest.assets)
+
+	$missing = @()
+	foreach ($name in $ExpectedAssetNames) {
+		$asset = $assets | Where-Object { $_.name -eq $name -and $_.state -eq 'uploaded' } | Select-Object -First 1
+		if ($null -eq $asset) {
+			$missing += $name
+		}
+	}
+
+	if ($missing.Count -gt 0) {
+		$missingText = $missing -join ', '
+		throw "Release verification failed. Missing uploaded assets: $missingText"
+	}
+
+	Write-Host "Release verification passed: $($ExpectedAssetNames -join ', ')"
+}
+
 if ([string]::IsNullOrWhiteSpace($Tag)) {
 	$version = Get-ReleaseVersionFromProject
 	$Tag = "v$version"
@@ -145,10 +192,14 @@ if ([string]::IsNullOrWhiteSpace($Title)) {
 }
 
 $releaseNotes = Get-ReleaseNotesText -InlineNotes $Notes -Path $NotesFile
+$releaseRoot = Join-Path $root ('artifacts\github-release\' + $Tag + '-' + [guid]::NewGuid().ToString('N'))
+$dmOut = Join-Path $releaseRoot 'dm'
+$playerOut = Join-Path $releaseRoot 'player'
 
-if (Test-Path $releaseRoot) {
-	Remove-Item $releaseRoot -Recurse -Force
-}
+$tokenValue = if (-not [string]::IsNullOrWhiteSpace($Token)) { $Token } else { $env:GITHUB_TOKEN }
+$headers = Get-GitHubHeaders $tokenValue
+$repoSlug = Get-OriginRepositorySlug
+Test-ReleasePreflight -RepoSlug $repoSlug -Headers $headers
 
 New-Item -ItemType Directory -Path $releaseRoot -Force | Out-Null
 New-Item -ItemType Directory -Path $dmOut -Force | Out-Null
@@ -173,14 +224,11 @@ if ($null -eq $dmInstaller -or $null -eq $playerInstaller) {
 	throw 'Could not locate both DM and Player installer EXEs in local release staging.'
 }
 
-$tokenValue = if (-not [string]::IsNullOrWhiteSpace($Token)) { $Token } else { $env:GITHUB_TOKEN }
-$headers = Get-GitHubHeaders $tokenValue
-$repoSlug = Get-OriginRepositorySlug
-
 Write-Host "Publishing release $Tag to $repoSlug..."
 $release = Get-OrCreateRelease -RepoSlug $repoSlug -Headers $headers -ReleaseTag $Tag -ReleaseTitle $Title -Body $releaseNotes -IsDraft:$Draft -IsPrerelease:$Prerelease
 
 Upload-ReleaseAsset -Release $release -Headers $headers -RepoSlug $repoSlug -FilePath $dmInstaller.FullName
 Upload-ReleaseAsset -Release $release -Headers $headers -RepoSlug $repoSlug -FilePath $playerInstaller.FullName
+Assert-ReleaseAssetsUploaded -RepoSlug $repoSlug -Headers $headers -ReleaseId $release.id -ExpectedAssetNames @($dmInstaller.Name, $playerInstaller.Name)
 
 Write-Host "Release ready: https://github.com/$repoSlug/releases/tag/$Tag"

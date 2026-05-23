@@ -1,11 +1,18 @@
 {
   "ruleset_id": "core_2e",
-  "name": "AD&D 2e Core",
+  "name": "AD\u0026D 2e Core",
   "ability_generation_methods": [
     "4d6_drop_lowest",
     "standard_array"
   ],
-  "standard_array": [15, 14, 13, 12, 10, 8],
+  "standard_array": [
+    15,
+    14,
+    13,
+    12,
+    10,
+    8
+  ],
   "races": {
     "human": {
       "name": "Human",
@@ -17,69 +24,199 @@
     "elf": {
       "name": "Elf",
       "character_mode": "all",
-      "ability_minimums": {"dex": 7},
-      "ability_maximums": {"con": 17},
+      "ability_minimums": {
+        "dex": 7
+      },
+      "ability_maximums": {
+        "con": 17
+      },
       "racial_abilities": [
-        { "id": "elf_charm_resist",  "description": "90% resistance to sleep and charm magic.",
-          "mechanics": { "magic_resist_percent": 90 } },
-        { "id": "elf_infravision",   "description": "Infravision 60 feet.",
-          "mechanics": { "infravision_feet": 60 } },
-        { "id": "elf_secret_doors",  "description": "Detect secret and concealed doors with a careful search.",
-          "mechanics": { "detect_secret_doors": true } }
+        {
+          "id": "elf_charm_resist",
+          "description": "90% resistance to sleep and charm magic.",
+          "mechanics": {
+            "magic_resist_percent": 90
+          }
+        },
+        {
+          "id": "elf_infravision",
+          "description": "Infravision 60 feet.",
+          "mechanics": {
+            "infravision_feet": 60
+          }
+        },
+        {
+          "id": "elf_secret_doors",
+          "description": "Detect secret and concealed doors with a careful search.",
+          "mechanics": {
+            "detect_secret_doors": true
+          }
+        }
       ]
     },
     "dwarf": {
       "name": "Dwarf",
       "character_mode": "all",
-      "ability_minimums": {"con": 11},
-      "ability_maximums": {"cha": 17},
+      "ability_minimums": {
+        "con": 11
+      },
+      "ability_maximums": {
+        "cha": 17
+      },
       "racial_abilities": [
-        { "id": "dwarf_infravision",    "description": "Infravision 60 feet.",
-          "mechanics": { "infravision_feet": 60 } },
-        { "id": "dwarf_stonework",      "description": "Notice unusual stonework and grade or depth changes.",
-          "mechanics": { "detect_stonework": true } },
-        { "id": "dwarf_goblinoid_atk",  "description": "+1 attack bonus versus goblinoids.",
-          "mechanics": { "enemy_attack_bonuses": { "goblinoids": 1 } } },
-        { "id": "dwarf_giant_ac",       "description": "-4 AC bonus versus giants (giants have -4 to hit dwarves).",
-          "mechanics": { "enemy_attack_bonuses": { "giants": -4 } } },
-        { "id": "dwarf_poison_save",    "description": "Saving throw bonus versus poison (+4 per 3.5 CON).",
-          "mechanics": { "save_bonuses": { "poison": 4 } } },
-        { "id": "dwarf_magic_save",     "description": "Saving throw bonus versus magic (+4 per 3.5 CON).",
-          "mechanics": { "save_bonuses": { "magic": 4 } } }
+        {
+          "id": "dwarf_infravision",
+          "description": "Infravision 60 feet.",
+          "mechanics": {
+            "infravision_feet": 60
+          }
+        },
+        {
+          "id": "dwarf_stonework",
+          "description": "Notice unusual stonework and grade or depth changes.",
+          "mechanics": {
+            "detect_stonework": true
+          }
+        },
+        {
+          "id": "dwarf_goblinoid_atk",
+          "description": "\u002B1 attack bonus versus goblinoids.",
+          "mechanics": {
+            "enemy_attack_bonuses": {
+              "goblinoids": 1
+            }
+          }
+        },
+        {
+          "id": "dwarf_giant_ac",
+          "description": "-4 AC bonus versus giants (giants have -4 to hit dwarves).",
+          "mechanics": {
+            "enemy_attack_bonuses": {
+              "giants": -4
+            }
+          }
+        },
+        {
+          "id": "dwarf_poison_save",
+          "description": "Saving throw bonus versus poison (\u002B4 per 3.5 CON).",
+          "mechanics": {
+            "save_bonuses": {
+              "poison": 4
+            }
+          }
+        },
+        {
+          "id": "dwarf_magic_save",
+          "description": "Saving throw bonus versus magic (\u002B4 per 3.5 CON).",
+          "mechanics": {
+            "save_bonuses": {
+              "magic": 4
+            }
+          }
+        }
       ]
     },
     "gnome": {
       "name": "Gnome",
       "character_mode": "all",
-      "ability_minimums": {"int": 6, "con": 8},
+      "ability_minimums": {
+        "int": 6,
+        "con": 8
+      },
       "ability_maximums": {},
       "racial_abilities": [
-        { "id": "gnome_infravision",  "description": "Infravision 60 feet.",
-          "mechanics": { "infravision_feet": 60 } },
-        { "id": "gnome_stonework",    "description": "Notice grade, depth, and unsafe stonework underground.",
-          "mechanics": { "detect_stonework": true } },
-        { "id": "gnome_kobold_atk",   "description": "+1 attack bonus versus kobolds and goblins.",
-          "mechanics": { "enemy_attack_bonuses": { "kobolds": 1, "goblins": 1 } } },
-        { "id": "gnome_gnoll_ac",     "description": "-4 AC versus gnolls, bugbears, ogres, trolls, and giants.",
-          "mechanics": { "enemy_attack_bonuses": { "gnolls": -4, "bugbears": -4, "ogres": -4, "trolls": -4, "giants": -4 } } },
-        { "id": "gnome_magic_save",   "description": "Saving throw bonus versus magic.",
-          "mechanics": { "save_bonuses": { "magic": 4 } } }
+        {
+          "id": "gnome_infravision",
+          "description": "Infravision 60 feet.",
+          "mechanics": {
+            "infravision_feet": 60
+          }
+        },
+        {
+          "id": "gnome_stonework",
+          "description": "Notice grade, depth, and unsafe stonework underground.",
+          "mechanics": {
+            "detect_stonework": true
+          }
+        },
+        {
+          "id": "gnome_kobold_atk",
+          "description": "\u002B1 attack bonus versus kobolds and goblins.",
+          "mechanics": {
+            "enemy_attack_bonuses": {
+              "kobolds": 1,
+              "goblins": 1
+            }
+          }
+        },
+        {
+          "id": "gnome_gnoll_ac",
+          "description": "-4 AC versus gnolls, bugbears, ogres, trolls, and giants.",
+          "mechanics": {
+            "enemy_attack_bonuses": {
+              "gnolls": -4,
+              "bugbears": -4,
+              "ogres": -4,
+              "trolls": -4,
+              "giants": -4
+            }
+          }
+        },
+        {
+          "id": "gnome_magic_save",
+          "description": "Saving throw bonus versus magic.",
+          "mechanics": {
+            "save_bonuses": {
+              "magic": 4
+            }
+          }
+        }
       ]
     },
     "halfling": {
       "name": "Halfling",
       "character_mode": "all",
-      "ability_minimums": {"dex": 7, "con": 10},
+      "ability_minimums": {
+        "dex": 7,
+        "con": 10
+      },
       "ability_maximums": {},
       "racial_abilities": [
-        { "id": "halfling_thrown_bonus", "description": "+1 attack bonus with thrown weapons and slings.",
-          "mechanics": { "weapon_attack_bonuses": { "thrown": 1, "slings": 1 } } },
-        { "id": "halfling_stealth",      "description": "Stealth advantages outdoors and in natural cover.",
-          "mechanics": { "grants_stealth": true } },
-        { "id": "halfling_poison_save",  "description": "Saving throw bonus versus poison.",
-          "mechanics": { "save_bonuses": { "poison": 4 } } },
-        { "id": "halfling_magic_save",   "description": "Saving throw bonus versus magic.",
-          "mechanics": { "save_bonuses": { "magic": 4 } } }
+        {
+          "id": "halfling_thrown_bonus",
+          "description": "\u002B1 attack bonus with thrown weapons and slings.",
+          "mechanics": {
+            "weapon_attack_bonuses": {
+              "thrown": 1,
+              "slings": 1
+            }
+          }
+        },
+        {
+          "id": "halfling_stealth",
+          "description": "Stealth advantages outdoors and in natural cover.",
+          "mechanics": {
+            "grants_stealth": true
+          }
+        },
+        {
+          "id": "halfling_poison_save",
+          "description": "Saving throw bonus versus poison.",
+          "mechanics": {
+            "save_bonuses": {
+              "poison": 4
+            }
+          }
+        },
+        {
+          "id": "halfling_magic_save",
+          "description": "Saving throw bonus versus magic.",
+          "mechanics": {
+            "save_bonuses": {
+              "magic": 4
+            }
+          }
+        }
       ]
     },
     "half-elf": {
@@ -88,56 +225,4073 @@
       "ability_minimums": {},
       "ability_maximums": {},
       "racial_abilities": [
-        { "id": "half_elf_charm_resist", "description": "30% resistance to sleep and charm magic.",
-          "mechanics": { "magic_resist_percent": 30 } },
-        { "id": "half_elf_infravision",  "description": "Infravision 60 feet.",
-          "mechanics": { "infravision_feet": 60 } },
-        { "id": "half_elf_secret_doors", "description": "Detect secret and concealed doors with a careful search.",
-          "mechanics": { "detect_secret_doors": true } }
-      ]
-    }
-  },
-  "classes": {
-    "fighter": {
-      "name": "Fighter",
-      "ability_minimums": {"str": 9},
-      "allowed_races": ["human", "elf", "dwarf", "gnome", "halfling", "half-elf", "half-orc", "half-ogre"],
-      "class_abilities": [
         {
-          "id": "fighter_hit_die_upgrade_d12",
-          "description": "Hit Die Upgrade: Roll 1d12 for hit points at level 1 instead of 1d10.",
-          "point_cost": 10,
-          "auto_granted": false,
+          "id": "half_elf_charm_resist",
+          "description": "30% resistance to sleep and charm magic.",
           "mechanics": {
-            "hp_dice_expression": "1d12"
+            "magic_resist_percent": 30
+          }
+        },
+        {
+          "id": "half_elf_infravision",
+          "description": "Infravision 60 feet.",
+          "mechanics": {
+            "infravision_feet": 60
+          }
+        },
+        {
+          "id": "half_elf_secret_doors",
+          "description": "Detect secret and concealed doors with a careful search.",
+          "mechanics": {
+            "detect_secret_doors": true
           }
         }
       ]
     },
-    "wizard": {
-      "name": "Wizard",
-      "ability_minimums": {"int": 9},
-      "allowed_races": ["human", "elf", "gnome", "half-elf"]
-    },
+    "half-dragon": {
+      "name": "Half-Dragon",
+      "source": "custom",
+      "character_mode": "all",
+      "base_race_id": "half-dragon",
+      "ability_minimums": {},
+      "ability_maximums": {},
+      "ability_modifiers": {},
+      "racial_abilities": [
+        {
+          "id": "half-dragon_draconic-empathy",
+          "description": "The Half-Dragon has a special bond with dragons and dragonkin.   \u002B2 Reaction bonus to draconic creatures.",
+          "point_cost": 5,
+          "auto_granted": false,
+          "mechanics": {}
+        },
+        {
+          "id": "half-dragon_extra-breath-weapon",
+          "description": "This ability grants the half-dragon an extra use of its breath weapon once per day.",
+          "point_cost": 7,
+          "auto_granted": false,
+          "mechanics": {}
+        },
+        {
+          "id": "half-dragon_flight",
+          "description": "This ability grants flight (C) for 1 round for each point of constitution.",
+          "point_cost": 15,
+          "auto_granted": false,
+          "mechanics": {}
+        },
+        {
+          "id": "half-dragon_glide",
+          "description": "Although the half-dragon cannot fly, it can glide for 100 yard per point of strength.",
+          "point_cost": 5,
+          "auto_granted": false,
+          "mechanics": {}
+        },
+        {
+          "id": "half-dragon_infravision-90",
+          "description": "Grants Infravision 90\u0027",
+          "point_cost": 7,
+          "auto_granted": false,
+          "mechanics": {}
+        },
+        {
+          "id": "half-dragon_thick-scales-major",
+          "description": "Provides unarmored AC of 2",
+          "point_cost": 12,
+          "auto_granted": false,
+          "mechanics": {}
+        },
+        {
+          "id": "half-dragon_thick-scales-minor",
+          "description": "Provides unarmored AC of 4",
+          "point_cost": 5,
+          "auto_granted": false,
+          "mechanics": {}
+        },
+        {
+          "id": "half-dragon_ultravision",
+          "description": "Can see in the dark as well as it can in the light.",
+          "point_cost": 15,
+          "auto_granted": false,
+          "mechanics": {}
+        },
+        {
+          "id": "half-dragon_amethyst-breath-weapon",
+          "description": "Subrace: Amethyst | Spews a line of force that does 2d10 points of damage, half damage with a save.   Any creature hit with the breath attack is slowed per wizard spell. (Saving throw applies if applicable).  \r\n\r\nThis is usable once per day.",
+          "point_cost": 10,
+          "auto_granted": false,
+          "mechanics": {}
+        },
+        {
+          "id": "half-dragon_amethyst-mental-resilience",
+          "description": "Subrace: Amethyst | Amethyst Half-Dragon Receives \u002B2 bonus to saving throws versus Charm and Fear Effect.",
+          "point_cost": 3,
+          "auto_granted": false,
+          "mechanics": {
+            "save_bonuses": {
+              "magic": 2
+            }
+          }
+        },
+        {
+          "id": "half-dragon_amethyst-telekinesis",
+          "description": "Subrace: Amethyst | The dragon is able to telekinetically move objects.   At level 1 an Amethyst Half-Dragon can lift 100 lbs of anything within 10 feet.   For each 2 level, this increases by 50 lbs and 10 feet.   \r\n\r\nUsable 1 per day.",
+          "point_cost": 10,
+          "auto_granted": false,
+          "mechanics": {}
+        },
+        {
+          "id": "half-dragon_emerald-breath-weapon",
+          "description": "Subrace: Emerald | A sonic blast that extends in all directions, up to 15 feet.   This sonic blast does 4d4\u002B1 point of damage to everyone within 15 feet, half damage for successful saving throw.   A second saving throw versus breath weapon is required to avoid being stunned for 1 round.\r\n\r\nThis is usable once per day.",
+          "point_cost": 10,
+          "auto_granted": false,
+          "mechanics": {}
+        },
+        {
+          "id": "half-dragon_emerald-camouflage",
+          "description": "Subrace: Emerald | Uses Psionic powers to help Hide in any surroundings. | Effect: \u002B10% to hide in shadows and \u002B5% to move silently.",
+          "point_cost": 7,
+          "auto_granted": false,
+          "mechanics": {
+            "subability_bonuses": {
+              "move_silently": 5,
+              "hide_in_shadows": 10
+            }
+          }
+        },
+        {
+          "id": "half-dragon_emerald-clairvoyance",
+          "description": "Subrace: Emerald | Can use the Psionic Clairvoyance ability for 2 minutes.   Follows all rules laid out in the Psionics Handbook.",
+          "point_cost": 10,
+          "auto_granted": false,
+          "mechanics": {}
+        },
+        {
+          "id": "half-dragon_emerald-object-reading",
+          "description": "Subrace: Emerald | As the psionic devotion.  Allows insight into an object\u0027s past.",
+          "point_cost": 5,
+          "auto_granted": false,
+          "mechanics": {}
+        },
+        {
+          "id": "half-dragon_sapphire-battle-discipline",
+          "description": "Subrace: Sapphire | Half-Dragon makes an insight check each round of combat.   If successful, Sapphire Half-Dragon recieves \u002B2 to hit that round, having studied and learned the layout of the battlefield.",
+          "point_cost": 5,
+          "auto_granted": false,
+          "mechanics": {}
+        },
+        {
+          "id": "half-dragon_sapphire-breath-weapon",
+          "description": "Subrace: Sapphire | Cone of concussive sound (30 ft).   Cone starts at 5 feet wide and expends out to 15 feet wide.   Anyone in the cone takes 2d6 damage for every 2 levels of the Sapphire Half-Dragon.   Half damage with save.    Creatue also make a saving throw versus breath weapon to avoid being stunned for 1 combat round.",
+          "point_cost": 10,
+          "auto_granted": false,
+          "mechanics": {}
+        },
+        {
+          "id": "half-dragon_sapphire-cell-adjustment",
+          "description": "Subrace: Sapphire | Sapphire Half-Dragon can use a minor psionic healing on anyone within 10 feet.    Can either bring anyone unconcious to 0 hps and they will no longer lose HPs, or they can remove 1 disease, or they can heal someone for 5 points of damage.   This can be used, 1/day.",
+          "point_cost": 10,
+          "auto_granted": false,
+          "mechanics": {}
+        },
+        {
+          "id": "half-dragon_sapphire-tactical-insight",
+          "description": "Subrace: Sapphire | Half-Dragon receives \u002B2 bonus to initiative Rolls.",
+          "point_cost": 5,
+          "auto_granted": false,
+          "mechanics": {}
+        },
+        {
+          "id": "half-dragon_subraces",
+          "description": "Subraces: Amethyst, Emerald, Sapphire",
+          "point_cost": 0,
+          "auto_granted": true,
+          "mechanics": {}
+        },
+        {
+          "id": "half-dragon_allowed_classes",
+          "description": "Allowed classes: Bard, Cleric, Fighter, Mage, Ranger, Thief",
+          "point_cost": 0,
+          "auto_granted": true,
+          "mechanics": {}
+        },
+        {
+          "id": "half-dragon_multiclass_notes",
+          "description": "Allowed multiclass combinations: Fighter, Thief; Mage, Thief",
+          "point_cost": 0,
+          "auto_granted": true,
+          "mechanics": {}
+        },
+        {
+          "id": "half-dragon_subrace_ability_modifiers",
+          "description": "Subrace ability modifiers: Amethyst: Wisdom:\u002B1; Amethyst: Constitution:\u002B1; Amethyst: Charisma:-2; Sapphire: Strength:\u002B1;Sapphire: Intelligence:\u002B1;Sapphire: Charisma:-1; Sapphire: Wisdom:-1; Emerald: Dexterity:\u002B1; Emerald: Intelligence:\u002B1; Emerald: Strength:-1; Emerald: Constitution:-1",
+          "point_cost": 0,
+          "auto_granted": true,
+          "mechanics": {}
+        }
+      ],
+      "racial_point_budget": 45
+    }
+  },
+  "classes": {
     "cleric": {
       "name": "Cleric",
-      "ability_minimums": {"wis": 9},
-      "allowed_races": ["human", "elf", "dwarf", "gnome", "halfling", "half-elf", "half-orc", "half-ogre"]
+      "ability_minimums": {
+        "wis": 9
+      },
+      "allowed_races": [
+        "human",
+        "elf",
+        "dwarf",
+        "gnome",
+        "halfling",
+        "half-elf",
+        "half-orc",
+        "half-ogre"
+      ],
+      "rules_mode": "all",
+      "class_point_budget": 125,
+      "class_ability_ids": [
+        "cleric_casting_reduction",
+        "cleric_detect_evil",
+        "cleric_detect_undead",
+        "cleric_expert_healer",
+        "cleric_followers_cp5",
+        "cleric_followers_cp10",
+        "cleric_hit_point_bonus",
+        "cleric_know_alignment_cp10",
+        "cleric_know_alignment_cp15",
+        "cleric_resist_energy_drain",
+        "cleric_spell_duration_increase",
+        "cleric_turn_undead",
+        "cleric_warrior_priests",
+        "cleric_weapon_allowance",
+        "cleric_weapon_specialization",
+        "cleric_wizardly_priests",
+        "cleric_animal_empathy",
+        "cleric_armor_class_improvement",
+        "cleric_extended_spell_duration_cp10",
+        "cleric_extended_spell_duration_cp15",
+        "cleric_inspire_enrage_allies_cp5",
+        "cleric_inspire_enrage_allies_cp10",
+        "cleric_pass_without_trace_cp5",
+        "cleric_pass_without_trace_cp7",
+        "cleric_shapechange",
+        "cleric_thief_ability",
+        "cleric_warrior_ability_bonuses_cp15",
+        "cleric_warrior_ability_bonuses_cp20",
+        "cleric_weapon_selection_cp5",
+        "cleric_weapon_selection_cp10",
+        "cleric_lay_on_hands",
+        "cleric_cold_resistance",
+        "cleric_fire_electrical_resistance",
+        "cleric_communication",
+        "cleric_identify_plants_animals_cp5",
+        "cleric_identify_plants_animals_cp8",
+        "cleric_immunity_to_charm",
+        "cleric_immunity_to_magic",
+        "cleric_immunity_to_disease",
+        "cleric_proficiency_crossovers",
+        "cleric_purify_water",
+        "cleric_secret_language",
+        "cleric_spell_like_granted_power",
+        "cleric_unarmed_combat_skills",
+        "cleric_restriction_armor_restriction",
+        "cleric_restriction_awkward_casting_method",
+        "cleric_restriction_difficult_spell_acquisition",
+        "cleric_restriction_hazardous_spells",
+        "cleric_restriction_limited_magical_item_use",
+        "cleric_restriction_reduced_hit_points",
+        "cleric_restriction_reduced_spell_progression",
+        "cleric_restriction_slower_casting_times",
+        "cleric_restriction_weapon_restriction_cp5",
+        "cleric_restriction_weapon_restriction_cp15",
+        "cleric_restriction_behavior_taboo",
+        "cleric_restriction_ceremony_observance",
+        "cleric_restriction_fanaticism",
+        "cleric_restriction_limited_spell_selection",
+        "cleric_restriction_talisman",
+        "cleric_sphere_minor_all",
+        "cleric_sphere_major_all",
+        "cleric_sphere_minor_animal",
+        "cleric_sphere_major_animal",
+        "cleric_sphere_minor_astral",
+        "cleric_sphere_major_astral",
+        "cleric_sphere_minor_chaos",
+        "cleric_sphere_major_chaos",
+        "cleric_sphere_minor_charm",
+        "cleric_sphere_major_charm",
+        "cleric_sphere_minor_combat",
+        "cleric_sphere_major_combat",
+        "cleric_sphere_minor_creation",
+        "cleric_sphere_major_creation",
+        "cleric_sphere_minor_divination",
+        "cleric_sphere_major_divination",
+        "cleric_sphere_minor_elemental",
+        "cleric_sphere_major_elemental",
+        "cleric_sphere_minor_elemental_air",
+        "cleric_sphere_major_elemental_air",
+        "cleric_sphere_minor_elemental_earth",
+        "cleric_sphere_major_elemental_earth",
+        "cleric_sphere_minor_elemental_fire",
+        "cleric_sphere_major_elemental_fire",
+        "cleric_sphere_minor_elemental_water",
+        "cleric_sphere_major_elemental_water",
+        "cleric_sphere_minor_guardian",
+        "cleric_sphere_major_guardian",
+        "cleric_sphere_minor_healing",
+        "cleric_sphere_major_healing",
+        "cleric_sphere_minor_law",
+        "cleric_sphere_major_law",
+        "cleric_sphere_minor_magic",
+        "cleric_sphere_major_magic",
+        "cleric_sphere_minor_necromantic",
+        "cleric_sphere_major_necromantic",
+        "cleric_sphere_minor_numbers",
+        "cleric_sphere_major_numbers",
+        "cleric_sphere_minor_plant",
+        "cleric_sphere_major_plant",
+        "cleric_sphere_minor_protection",
+        "cleric_sphere_major_protection",
+        "cleric_sphere_minor_spells",
+        "cleric_sphere_major_spells",
+        "cleric_sphere_minor_summoning",
+        "cleric_sphere_major_summoning",
+        "cleric_sphere_minor_sun",
+        "cleric_sphere_major_sun",
+        "cleric_sphere_minor_thought",
+        "cleric_sphere_major_thought",
+        "cleric_sphere_minor_time",
+        "cleric_sphere_major_time",
+        "cleric_sphere_minor_travelers",
+        "cleric_sphere_major_travelers",
+        "cleric_sphere_minor_war",
+        "cleric_sphere_major_war",
+        "cleric_sphere_minor_wards",
+        "cleric_sphere_major_wards",
+        "cleric_sphere_minor_weather",
+        "cleric_sphere_major_weather",
+        "cleric_sphere_focus_bonus",
+        "cleric_turning_mastery",
+        "cleric_divine_resilience"
+      ]
     },
-    "thief": {
-      "name": "Thief",
-      "ability_minimums": {"dex": 9},
-      "allowed_races": ["human", "elf", "dwarf", "gnome", "halfling", "half-elf", "half-orc"]
-    },
-    "ranger": {
-      "name": "Ranger",
-      "ability_minimums": {"str": 13, "dex": 13, "con": 14, "wis": 14},
-      "allowed_races": ["human", "elf", "half-elf"]
+    "fighter": {
+      "name": "Fighter",
+      "ability_minimums": {
+        "str": 9
+      },
+      "allowed_races": [
+        "human",
+        "elf",
+        "dwarf",
+        "gnome",
+        "halfling",
+        "half-elf",
+        "half-orc",
+        "half-ogre"
+      ],
+      "rules_mode": "all",
+      "class_point_budget": 15,
+      "class_ability_ids": [
+        "fighter_improved_thac0",
+        "fighter_proficiency_ease",
+        "fighter_anomalous_intuition",
+        "fighter_athleticism",
+        "fighter_blood_oath",
+        "fighter_combat_sense",
+        "fighter_comitatus",
+        "fighter_concentrated_strength",
+        "fighter_coup_de_gras",
+        "fighter_heroic_boast",
+        "fighter_iaijutsu",
+        "fighter_mettle",
+        "fighter_mythic_lore",
+        "fighter_war_cry",
+        "fighter_shield_mastery",
+        "fighter_battle_hardened"
+      ]
     },
     "paladin": {
       "name": "Paladin",
-      "ability_minimums": {"str": 12, "con": 9, "wis": 13, "cha": 17},
-      "allowed_races": ["human"]
+      "ability_minimums": {
+        "cha": 17,
+        "con": 9,
+        "str": 12,
+        "wis": 13
+      },
+      "allowed_races": [
+        "human"
+      ],
+      "rules_mode": "all",
+      "class_point_budget": 60,
+      "class_ability_ids": [
+        "paladin_circle_of_power",
+        "paladin_curative",
+        "paladin_detection",
+        "paladin_faithful_mount",
+        "paladin_healing",
+        "paladin_health",
+        "paladin_poison_resistance",
+        "paladin_priest_spells",
+        "paladin_protection_from_evil",
+        "paladin_resist_charm",
+        "paladin_saving_throw_bonus",
+        "paladin_turn_undead",
+        "paladin_weapon_specialization",
+        "paladin_alternate_sphere_access",
+        "paladin_increased_spell_power",
+        "paladin_increased_spell_progression_cp10",
+        "paladin_increased_spell_progression_cp15",
+        "paladin_restriction_limited_armor_chain",
+        "paladin_restriction_limited_armor_studded",
+        "paladin_restriction_limited_armor_none",
+        "paladin_restriction_limited_weapon_selection",
+        "paladin_restriction_limited_magical_item_use",
+        "paladin_divine_aura",
+        "paladin_sacred_defense"
+      ]
+    },
+    "psionicist": {
+      "name": "Psionicist",
+      "ability_minimums": {
+        "con": 11,
+        "int": 12,
+        "wis": 15
+      },
+      "allowed_races": [
+        "human",
+        "elf",
+        "dwarf",
+        "half-elf",
+        "gnome",
+        "halfling"
+      ],
+      "rules_mode": "all",
+      "class_point_budget": 100,
+      "class_ability_ids": [
+        "psionicist_extra_power_points_5",
+        "psionicist_extra_power_points_10",
+        "psionicist_extra_devotion",
+        "psionicist_extra_science",
+        "psionicist_extra_discipline",
+        "psionicist_discipline_mastery",
+        "psionicist_defense_mode_bonus",
+        "psionicist_wild_talent",
+        "psionicist_combat_bonus",
+        "psionicist_mental_armor",
+        "psionicist_power_point_recovery",
+        "psionicist_psionic_attack_bonus",
+        "psionicist_contact_mastery",
+        "psionicist_mindbender",
+        "psionicist_body_mastery",
+        "psionicist_telekinetic_force",
+        "psionicist_clairvoyant_sense",
+        "psionicist_metapsionic_link",
+        "psionicist_restriction_reduced_pp",
+        "psionicist_restriction_one_discipline",
+        "psionicist_restriction_no_combat_modes",
+        "psionicist_mental_bastion",
+        "psionicist_celerity"
+      ]
+    },
+    "ranger": {
+      "name": "Ranger",
+      "ability_minimums": {
+        "con": 14,
+        "dex": 13,
+        "str": 13,
+        "wis": 14
+      },
+      "allowed_races": [
+        "human",
+        "elf",
+        "half-elf"
+      ],
+      "rules_mode": "all",
+      "class_point_budget": 60,
+      "class_ability_ids": [
+        "ranger_bow_bonus",
+        "ranger_climbing",
+        "ranger_detect_noise",
+        "ranger_empathy_with_animals",
+        "ranger_find_remove_wilderness_traps",
+        "ranger_followers",
+        "ranger_hide_in_shadows",
+        "ranger_move_silently",
+        "ranger_pass_without_trace",
+        "ranger_priest_spells",
+        "ranger_sneak_attack",
+        "ranger_speak_with_animals",
+        "ranger_special_enemy",
+        "ranger_tracking_proficiency",
+        "ranger_two_weapon_style",
+        "ranger_weapon_specialization",
+        "ranger_alternate_sphere_access",
+        "ranger_increased_spell_power",
+        "ranger_increased_spell_progression_cp7",
+        "ranger_increased_spell_progression_cp12",
+        "ranger_restriction_limited_armor_chain",
+        "ranger_restriction_limited_armor_studded",
+        "ranger_restriction_limited_armor_none",
+        "ranger_restriction_limited_weapon_selection",
+        "ranger_restriction_limited_magical_item_use",
+        "ranger_trailblazer",
+        "ranger_beast_lore"
+      ]
+    },
+    "thief": {
+      "name": "Thief",
+      "ability_minimums": {
+        "dex": 9
+      },
+      "allowed_races": [
+        "human",
+        "elf",
+        "dwarf",
+        "gnome",
+        "halfling",
+        "half-elf",
+        "half-orc"
+      ],
+      "rules_mode": "all",
+      "class_point_budget": 80,
+      "class_ability_ids": [
+        "thief_backstab",
+        "thief_bribe",
+        "thief_climb_walls",
+        "thief_defense_bonus",
+        "thief_detect_illusion",
+        "thief_detect_magic",
+        "thief_detect_noise",
+        "thief_escaping_bonds",
+        "thief_find_remove_traps",
+        "thief_followers_cp5",
+        "thief_followers_cp10",
+        "thief_hide_in_shadows",
+        "thief_move_silently",
+        "thief_open_locks",
+        "thief_pick_pockets",
+        "thief_read_languages",
+        "thief_scroll_use_cp5",
+        "thief_scroll_use_cp10",
+        "thief_thieves_cant",
+        "thief_tunneling",
+        "thief_weapon_specialization",
+        "thief_escape_artist",
+        "thief_backstab_training"
+      ]
+    },
+    "wizard": {
+      "name": "Wizard",
+      "ability_minimums": {
+        "int": 9
+      },
+      "allowed_races": [
+        "human",
+        "elf",
+        "gnome",
+        "half-elf"
+      ],
+      "rules_mode": "all",
+      "class_point_budget": 40,
+      "class_ability_ids": [
+        "wizard_access_to_schools",
+        "wizard_armored_wizard",
+        "wizard_automatic_spells",
+        "wizard_casting_reduction",
+        "wizard_combat_bonus",
+        "wizard_detect_magic",
+        "wizard_extend_duration",
+        "wizard_bonus_spells_cp10",
+        "wizard_bonus_spells_cp15",
+        "wizard_dispel_cp10",
+        "wizard_dispel_cp15",
+        "wizard_no_components_cp5",
+        "wizard_no_components_cp8",
+        "wizard_range_increase_cp5",
+        "wizard_range_increase_cp7",
+        "wizard_weapon_selection_cp10",
+        "wizard_weapon_selection_cp15",
+        "wizard_thief_ability",
+        "wizard_hit_point_bonus",
+        "wizard_warrior_hit_point_bonus",
+        "wizard_read_magic",
+        "wizard_resist_sleep_charm",
+        "wizard_weapon_specialization",
+        "wizard_priestly_wizard_cp10",
+        "wizard_priestly_wizard_cp15",
+        "wizard_signature_spell_levels_1_3",
+        "wizard_signature_spell_levels_4_6",
+        "wizard_signature_spell_levels_7_9",
+        "wizard_enhanced_casting_level",
+        "wizard_followers",
+        "wizard_immunity",
+        "wizard_learning_bonus_cp5",
+        "wizard_learning_bonus_cp7",
+        "wizard_persistent_spell_effect",
+        "wizard_proficiency_crossovers",
+        "wizard_research_bonus",
+        "wizard_school_knowledge_cp5",
+        "wizard_school_knowledge_cp8",
+        "wizard_constitution_adjustment",
+        "wizard_improved_hit_die_d8",
+        "wizard_specialist_abjurer",
+        "wizard_specialist_alchemist",
+        "wizard_specialist_transmuter",
+        "wizard_specialist_conjurer",
+        "wizard_specialist_diviner",
+        "wizard_specialist_enchanter",
+        "wizard_specialist_geometer",
+        "wizard_specialist_illusionist",
+        "wizard_specialist_invoker",
+        "wizard_specialist_necromancer",
+        "wizard_specialist_shadow",
+        "wizard_specialist_song_wizard",
+        "wizard_restriction_learning_penalty",
+        "wizard_restriction_limited_magical_item_use",
+        "wizard_restriction_reduced_spell_progression",
+        "wizard_restriction_awkward_casting_method",
+        "wizard_restriction_hazardous_spells",
+        "wizard_restriction_reduced_hit_points",
+        "wizard_restriction_reduced_spell_knowledge",
+        "wizard_restriction_slower_casting_time_cp2",
+        "wizard_restriction_slower_casting_time_cp5",
+        "wizard_restriction_behavior_taboo",
+        "wizard_restriction_difficult_memorization",
+        "wizard_restriction_environmental_condition",
+        "wizard_restriction_supernatural_constraint",
+        "wizard_restriction_talisman",
+        "wizard_restriction_weapons_restriction_cp3",
+        "wizard_restriction_weapons_restriction_cp5",
+        "wizard_school_abjuration",
+        "wizard_school_alteration",
+        "wizard_school_conjuration_summoning",
+        "wizard_school_divination",
+        "wizard_school_enchantment_charm",
+        "wizard_school_illusion",
+        "wizard_school_invocation_evocation",
+        "wizard_school_necromancy",
+        "wizard_school_alchemy",
+        "wizard_school_artifice",
+        "wizard_school_dimensional",
+        "wizard_school_force",
+        "wizard_school_geometry",
+        "wizard_school_shadow",
+        "wizard_school_song",
+        "wizard_school_wild",
+        "wizard_school_elemental_air",
+        "wizard_school_elemental_earth",
+        "wizard_school_elemental_fire",
+        "wizard_school_elemental_water",
+        "wizard_spell_focus",
+        "wizard_arcane_ward"
+      ],
+      "specializations": [
+        {
+          "id": "spec_abjurer",
+          "name": "Abjurer",
+          "description": "Specialist in Abjuration. Bonus Abjuration spell per level, \u002B1 save vs own school, know all Abjuration spells. Budget: 30 CP.",
+          "ability_minimums": {
+            "wis": 15
+          },
+          "allowed_races": [
+            "human"
+          ],
+          "class_point_budget": 30,
+          "auto_select_ability_ids": [
+            "wizard_specialist_abjurer"
+          ],
+          "opposition_schools": [
+            "Alteration",
+            "Illusion"
+          ]
+        },
+        {
+          "id": "spec_alchemist",
+          "name": "Alchemist",
+          "description": "Specialist in Alchemy. Bonus Alchemy spell per level, \u002B1 save vs own school, know all Alchemy spells. Budget: 30 CP.",
+          "ability_minimums": {
+            "int": 15
+          },
+          "allowed_races": [
+            "human",
+            "half-elf",
+            "gnome"
+          ],
+          "class_point_budget": 30,
+          "auto_select_ability_ids": [
+            "wizard_specialist_alchemist"
+          ],
+          "opposition_schools": [
+            "Illusion",
+            "Necromancy"
+          ]
+        },
+        {
+          "id": "spec_transmuter",
+          "name": "Transmuter",
+          "description": "Specialist in Alteration/Transmutation. Bonus Alteration spell per level, \u002B1 save vs own school. Budget: 30 CP.",
+          "ability_minimums": {
+            "dex": 15
+          },
+          "allowed_races": [
+            "human",
+            "half-elf"
+          ],
+          "class_point_budget": 30,
+          "auto_select_ability_ids": [
+            "wizard_specialist_transmuter"
+          ],
+          "opposition_schools": [
+            "Abjuration",
+            "Necromancy"
+          ]
+        },
+        {
+          "id": "spec_conjurer",
+          "name": "Conjurer",
+          "description": "Specialist in Conjuration/Summoning. Bonus Conjuration spell per level, \u002B1 save vs own school. Budget: 30 CP.",
+          "ability_minimums": {
+            "con": 15
+          },
+          "allowed_races": [
+            "human",
+            "half-elf"
+          ],
+          "class_point_budget": 30,
+          "auto_select_ability_ids": [
+            "wizard_specialist_conjurer"
+          ],
+          "opposition_schools": [
+            "Divination",
+            "Invocation/Evocation"
+          ]
+        },
+        {
+          "id": "spec_diviner",
+          "name": "Diviner",
+          "description": "Specialist in Divination. Bonus Divination spell per level, \u002B1 save vs own school, immune to many mind-affecting spells. Budget: 30 CP.",
+          "ability_minimums": {
+            "wis": 16
+          },
+          "allowed_races": [
+            "human",
+            "half-elf",
+            "elf"
+          ],
+          "class_point_budget": 30,
+          "auto_select_ability_ids": [
+            "wizard_specialist_diviner"
+          ],
+          "opposition_schools": [
+            "Conjuration/Summoning"
+          ]
+        },
+        {
+          "id": "spec_enchanter",
+          "name": "Enchanter",
+          "description": "Specialist in Enchantment/Charm. Bonus Enchantment spell per level, \u002B1 save vs own school. Budget: 30 CP.",
+          "ability_minimums": {
+            "cha": 16
+          },
+          "allowed_races": [
+            "human",
+            "half-elf",
+            "elf"
+          ],
+          "class_point_budget": 30,
+          "auto_select_ability_ids": [
+            "wizard_specialist_enchanter"
+          ],
+          "opposition_schools": [
+            "Invocation/Evocation",
+            "Necromancy"
+          ]
+        },
+        {
+          "id": "spec_geometer",
+          "name": "Geometer",
+          "description": "Specialist in Geometry. Uses geometric patterns for unique spell effects. Budget: 30 CP.",
+          "ability_minimums": {
+            "int": 15
+          },
+          "allowed_races": [
+            "human",
+            "elf",
+            "half-elf"
+          ],
+          "class_point_budget": 30,
+          "auto_select_ability_ids": [
+            "wizard_specialist_geometer"
+          ],
+          "opposition_schools": [
+            "Enchantment/Charm",
+            "Illusion"
+          ]
+        },
+        {
+          "id": "spec_illusionist",
+          "name": "Illusionist",
+          "description": "Specialist in Illusion. Bonus Illusion spell per level, \u002B1 save vs own school, know all Illusion spells. Budget: 30 CP.",
+          "ability_minimums": {
+            "dex": 16
+          },
+          "allowed_races": [
+            "human",
+            "gnome"
+          ],
+          "class_point_budget": 30,
+          "auto_select_ability_ids": [
+            "wizard_specialist_illusionist"
+          ],
+          "opposition_schools": [
+            "Necromancy",
+            "Invocation/Evocation",
+            "Abjuration"
+          ]
+        },
+        {
+          "id": "spec_invoker",
+          "name": "Invoker",
+          "description": "Specialist in Invocation/Evocation. Bonus Invocation spell per level, \u002B1 save vs own school. Budget: 30 CP.",
+          "ability_minimums": {
+            "con": 16
+          },
+          "allowed_races": [
+            "human"
+          ],
+          "class_point_budget": 30,
+          "auto_select_ability_ids": [
+            "wizard_specialist_invoker"
+          ],
+          "opposition_schools": [
+            "Enchantment/Charm",
+            "Conjuration/Summoning"
+          ]
+        },
+        {
+          "id": "spec_necromancer",
+          "name": "Necromancer",
+          "description": "Specialist in Necromancy. Bonus Necromancy spell per level, \u002B1 save vs own school, know all Necromancy spells. Budget: 30 CP.",
+          "ability_minimums": {
+            "wis": 16
+          },
+          "allowed_races": [
+            "human"
+          ],
+          "class_point_budget": 30,
+          "auto_select_ability_ids": [
+            "wizard_specialist_necromancer"
+          ],
+          "opposition_schools": [
+            "Illusion",
+            "Enchantment/Charm"
+          ]
+        },
+        {
+          "id": "spec_shadow",
+          "name": "Shadow Wizard",
+          "description": "Specialist in Shadow magic, drawing power from the Plane of Shadow. Budget: 30 CP.",
+          "ability_minimums": {
+            "int": 15
+          },
+          "allowed_races": [
+            "human"
+          ],
+          "class_point_budget": 30,
+          "auto_select_ability_ids": [
+            "wizard_specialist_shadow"
+          ],
+          "opposition_schools": [
+            "Abjuration",
+            "Invocation/Evocation"
+          ]
+        },
+        {
+          "id": "spec_song_wizard",
+          "name": "Song Wizard",
+          "description": "Specialist in Song magic, drawing on Elven musical traditions. Budget: 30 CP.",
+          "ability_minimums": {
+            "int": 14
+          },
+          "allowed_races": [
+            "human",
+            "elf",
+            "half-elf"
+          ],
+          "class_point_budget": 30,
+          "auto_select_ability_ids": [
+            "wizard_specialist_song_wizard"
+          ],
+          "opposition_schools": [
+            "Divination",
+            "Invocation/Evocation",
+            "Necromancy"
+          ]
+        }
+      ]
+    },
+    "druid": {
+      "name": "Druid",
+      "ability_minimums": {
+        "cha": 15,
+        "wis": 12
+      },
+      "allowed_races": [],
+      "rules_mode": "all",
+      "class_point_budget": 100,
+      "class_ability_ids": [
+        "druid_access_to_spheres",
+        "druid_bonus_spell",
+        "druid_cold_resistance",
+        "druid_communicate_with_creatures",
+        "druid_elemental_spell_bonus",
+        "druid_hit_point_bonus",
+        "druid_immunity_to_disease",
+        "druid_pass_without_trace",
+        "druid_fire_electrical_resistance",
+        "druid_shapechange_cp10",
+        "druid_shapechange_cp15",
+        "druid_restriction_armor_restriction",
+        "druid_restriction_awkward_casting_method",
+        "druid_restriction_difficult_spell_acquisition",
+        "druid_restriction_hazardous_spells",
+        "druid_restriction_limited_magical_item_use",
+        "druid_restriction_reduced_hit_points_cp10",
+        "druid_restriction_reduced_hit_points_cp20",
+        "druid_restriction_reduced_spell_progression",
+        "druid_restriction_slower_casting_times",
+        "druid_restriction_weapon_restriction_cp5",
+        "druid_restriction_weapon_restriction_cp15",
+        "druid_restriction_behavior_taboo",
+        "druid_restriction_ceremony_observance",
+        "druid_restriction_fanaticism",
+        "druid_restriction_limited_spell_selection",
+        "druid_restriction_talisman",
+        "druid_woodland_stride",
+        "druid_nature_ward"
+      ]
+    },
+    "bard": {
+      "name": "Bard",
+      "ability_minimums": {
+        "cha": 15,
+        "dex": 12,
+        "int": 13
+      },
+      "allowed_races": [],
+      "rules_mode": "all",
+      "class_point_budget": 70,
+      "class_ability_ids": [
+        "bard_appearancebonus",
+        "bard_detectlie",
+        "bard_fascinate",
+        "bard_good_reputation",
+        "bard_learning_bonus",
+        "bard_inspiring_performance",
+        "bard_lorekeeper",
+        "access_to_spheres_standard_druid_package_costs_60_cp_or_buy_spheres_individually"
+      ]
+    }
+  },
+  "class_ability_library": {
+    "bard_appearancebonus": {
+      "description": "AppearanceBonus (7 CP): The character gains a \u002B1 bonus to their Charisma/Appearance score.  Their Appearance score can be up to 5 points higher than their Leadership score, instead of the maximum of four points.  The subability may not exceed 18 with this bonus.",
+      "point_cost": 7,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false,
+      "mechanics": {
+        "reaction_bonus": 1
+      }
+    },
+    "bard_detectlie": {
+      "description": "DetectLie (10 CP): A Bard learns to study people and is an excellent observer of the habits and nuances of body language and what they signify.  They are adept at telling when someone is lying to them or being evasive.  The Bard does not know the specifics of any falsehoods--they only know if the speaker is lying to them.  If the speaker is an exceptionally good liar or actor, the DM may secretly roll a Wisdom/Intuition check for the Bard.  If the check fails, the Bard does not detect a lie or an evasion in a statement or answer.  If, however, the check succeeds, the Bard can sense the speaker is lying.  The DM may penalize the Intuition check if the speaker is a Rogue, unusually eloquent, or wary of what they say to the Bard.  The Bard cannot verify the accuracy of what someone says, only if they are intentionally lying or not.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "bard_fascinate": {
+      "description": "Fascinate (5 CP): The Bard has a magnetic personality that fascinates people.  Their voice is hypnotic and their eyes are alluring.  People meeting the Bard seem to like them instantly.  When the Bard speaks or sings, people in the room fall silent to listen.  When talking to a group of people, the Bard receives a -1 Bonus to their reaction rolls, in addition to any other bonuses they might have.  When talking to one or two people, the Bard receives a -2 Bonus to their reaction rolls.  Furthermore, if the reaction of the listeners is \u0022Friendly\u0022 they act as if under the influence of a Suggestion spell for the next round.  They do their best to do what the Bard asks, freely answering all of their questions.  As long as the Bard does not abuse their influence or ask for anything out of character from the listeners, they do not feel manipulated or tricked.  Creatures of \u003C5 Intelligence, undead, and animated or summoned monsters are immune to this power.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false,
+      "mechanics": {
+        "reaction_bonus": 1
+      }
+    },
+    "bard_good_reputation": {
+      "description": "Good Reputation (5 CP): The Bard has a popular reputation in the area, and people are familiar with their talents.  The Bard\u0027s name has become common knowledge and their abilities are in demand.  With their reputation, the Bard can travel from place to place, living off the goodwill their name generates.  They can acquire free room and board, free drinks, and the occasional small gift.  In game terms, the Bard gains a -2 Bonus to reaction rolls after they mention their name in conversation.  If the reaction they receive is favorable, they can ask for free lodging, information, or food and expect to receive it.  If the reaction is unfavorable, they first must prove their namesake by entertaining the disbelievers.  After that, they may make another reaction check with a -4 bonus.  Failure indicates the Bard\u0027s name is unfamiliar to the listeners or that they just aren\u0027t impressed.  In exchange for the goodwill and gifts, people expect the Bard to entertain them wherever the Bard goes, often for hours at a time.  If the Bard refuses, it damages their reputation.  If the Bard continually turns down requests to entertain, their reputation suffers permanent harm.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false,
+      "mechanics": {
+        "reaction_bonus": 2
+      }
+    },
+    "bard_learning_bonus": {
+      "description": "Learning Bonus (5 CP): The Bard is adept at learning new things.  This bonus allows them to purchase all NWPs at 1 point under normal cost (minimum 1 point).  For example, the NWP Ancient History normally costs 3 points.  For a Bard with Learning Bonus, the proficiency only costs 2 points.  When learning languages, the Bard pays the full normal NWP cost, but receives two languages instead of one for the price.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false,
+      "mechanics": {
+        "nwp_cost_reduction": 1
+      }
+    },
+    "bard_inspiring_performance": {
+      "description": "Inspiring performance (8): Allies gain \u002B1 reaction bonus after one round of performance.",
+      "point_cost": 8,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false,
+      "mechanics": {
+        "reaction_bonus": 1
+      }
+    },
+    "bard_lorekeeper": {
+      "description": "Lorekeeper (6): \u002B1 to checks related to history, legends, and identification lore.",
+      "point_cost": 6,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false,
+      "mechanics": {
+        "nwp_check_bonus": 1
+      }
+    },
+    "cleric_casting_reduction": {
+      "description": "Casting reduction (5): Cleric spell casting time reduced by 1 (minimum 1).",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_detect_evil": {
+      "description": "Detect evil (10): Detect evil emanations in a 10\u0027 by 60\u0027 path.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_detect_undead": {
+      "description": "Detect undead (10): Detect undead in a 10\u0027 by 60\u0027 path.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_expert_healer": {
+      "description": "Expert healer (5): One extra cure light wounds spell per day.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_followers_cp5": {
+      "description": "Followers (5): Attract followers by stronghold, with earlier option at 10.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_followers_cp10": {
+      "description": "Followers (10): Attract followers by stronghold, with earlier option at 10.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_hit_point_bonus": {
+      "description": "Hit point bonus (10): Use d10 hit die instead of d8.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true,
+      "mechanics": {
+        "hp_dice_expression": "1d10"
+      }
+    },
+    "cleric_know_alignment_cp10": {
+      "description": "Know alignment (10): Cast know alignment once per day per two levels.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_know_alignment_cp15": {
+      "description": "Know alignment (15): Cast know alignment once per day per two levels.",
+      "point_cost": 15,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_resist_energy_drain": {
+      "description": "Resist energy drain (5): \u002B1 to saves vs energy drain and level-drain effects.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true,
+      "mechanics": {
+        "save_bonuses": {
+          "energy_drain": 1
+        }
+      }
+    },
+    "cleric_spell_duration_increase": {
+      "description": "Spell duration increase (10): Increase non-instantaneous spell durations by level.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_turn_undead": {
+      "description": "Turn undead (10): Gain turn/destroy undead progression.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_warrior_priests": {
+      "description": "Warrior-priests (10): Use warrior Strength and Constitution exceptional benefits.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_weapon_allowance": {
+      "description": "Weapon allowance (5): May use one deity-favored edged weapon.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_weapon_specialization": {
+      "description": "Weapon specialization (15): May specialize in one weapon (costs paid separately).",
+      "point_cost": 15,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_wizardly_priests": {
+      "description": "Wizardly priests (15): Gain one wizard school cast as priest spells.",
+      "point_cost": 15,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_animal_empathy": {
+      "description": "Animal empathy (10): Influence natural animal reactions.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_armor_class_improvement": {
+      "description": "Armor Class improvement (15): Natural AC improves by level when unarmored.",
+      "point_cost": 15,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true,
+      "mechanics": {
+        "ac_bonus": -1,
+        "ac_bonus_requires_no_armor": true
+      }
+    },
+    "cleric_extended_spell_duration_cp10": {
+      "description": "Extended spell duration (10): Increase noninstantaneous spell duration.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_extended_spell_duration_cp15": {
+      "description": "Extended spell duration (15): Increase noninstantaneous spell duration.",
+      "point_cost": 15,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_inspire_enrage_allies_cp5": {
+      "description": "Inspire/enrage allies (5): Chant to grant allies combat bonuses.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_inspire_enrage_allies_cp10": {
+      "description": "Inspire/enrage allies (10): Chant to grant allies combat bonuses.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_pass_without_trace_cp5": {
+      "description": "Pass without trace (5): Gain pass without trace at 3rd level or earlier.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_pass_without_trace_cp7": {
+      "description": "Pass without trace (7): Gain pass without trace at 3rd level or earlier.",
+      "point_cost": 7,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_shapechange": {
+      "description": "Shapechange (15\u002B): Gain druid-like shapechanging progression.",
+      "point_cost": 15,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_thief_ability": {
+      "description": "Thief ability (10\u002B): Purchase one or more thief abilities.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_warrior_ability_bonuses_cp15": {
+      "description": "Warrior ability bonuses (15): Improved warrior CON and exceptional STR benefits.",
+      "point_cost": 15,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_warrior_ability_bonuses_cp20": {
+      "description": "Warrior ability bonuses (20): Improved warrior CON and exceptional STR benefits.",
+      "point_cost": 20,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_weapon_selection_cp5": {
+      "description": "Weapon selection (5): Broaden priest weapon allowances.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_weapon_selection_cp10": {
+      "description": "Weapon selection (10): Broaden priest weapon allowances.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_lay_on_hands": {
+      "description": "Lay on hands (10): Once per day, heal up to 2 HP per experience level by touch. Identical to the paladin class ability.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_cold_resistance": {
+      "description": "Cold resistance (5): \u002B2 bonus to saving throws vs. natural and magical cold, including ice-based attacks.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_fire_electrical_resistance": {
+      "description": "Fire/electrical resistance (7): \u002B2 bonus to saving throws vs. fire or electrical effects, both natural and magical.",
+      "point_cost": 7,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_communication": {
+      "description": "Communication (10): Learn one language per level from a related group of racial tongues appropriate to the deity\u0027s domain (woodland, aquatic, mountain, etc.).",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_identify_plants_animals_cp5": {
+      "description": "Identify plants and animals (5): At 3rd level, identify natural plants, animals, and pure water. For 8 CP, available at 1st level.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_identify_plants_animals_cp8": {
+      "description": "Identify plants and animals (8): At 3rd level, identify natural plants, animals, and pure water. For 8 CP, available at 1st level.",
+      "point_cost": 8,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_immunity_to_charm": {
+      "description": "Immunity to charm (5\u002B): At 7th level, become immune to charm effects from a related creature class (undead, woodland, plant, extraplanar, etc.). Each additional class costs 5 CP. Acquire earlier for \u002B1 CP/level.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_immunity_to_magic": {
+      "description": "Immunity to magic (15): Partial immunity to one type of magic (alteration, invocation, necromancy, etc.): \u002B4 to saves, or a save against effects that normally allow none.",
+      "point_cost": 15,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_immunity_to_disease": {
+      "description": "Immunity to natural disease (10): Immune to normal diseases. Magical diseases such as lycanthropy and mummy rot still apply.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_proficiency_crossovers": {
+      "description": "Proficiency group crossovers (5\u002B): Select NWP from an additional character group (warrior, wizard, rogue, etc.) at no penalty. 5 CP per extra group.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_purify_water": {
+      "description": "Purify water (5): Once per day, use purify food and drink applied to water or brine only.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_secret_language": {
+      "description": "Secret language (5): Share a secret form of communication known only to priests of the same faith, permitting secure conversations in any setting.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_spell_like_granted_power": {
+      "description": "Spell-like granted power (10\u002B): Once per week invoke a spell as a granted power (no components). Base 10 CP \u002B 1 CP/priest spell level or 2 CP/wizard spell level. \u002B5 CP for once/day use, \u002B1 CP/level per additional daily use.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_unarmed_combat_skills": {
+      "description": "Unarmed combat skills (15): Master unarmed combat as a monk. Specialist at 1st level, master at 5th, high master at 9th, grand master at 13th.",
+      "point_cost": 15,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_restriction_armor_restriction": {
+      "description": "Restriction - Armor restriction: Gain 5/10/15 CP depending on severity.",
+      "point_cost": -5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_restriction_awkward_casting_method": {
+      "description": "Restriction - Awkward casting method: Gain 5 CP.",
+      "point_cost": -5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_restriction_difficult_spell_acquisition": {
+      "description": "Restriction - Difficult spell acquisition: Gain 5 CP.",
+      "point_cost": -5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_restriction_hazardous_spells": {
+      "description": "Restriction - Hazardous spells: Gain 10 CP.",
+      "point_cost": -10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_restriction_limited_magical_item_use": {
+      "description": "Restriction - Limited magical item use (per category): Gain 5 CP.",
+      "point_cost": -5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_restriction_reduced_hit_points": {
+      "description": "Restriction - Reduced hit points (d6 or d4): Gain 10/20 CP.",
+      "point_cost": -10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true,
+      "mechanics": {
+        "hp_per_level": -1
+      }
+    },
+    "cleric_restriction_reduced_spell_progression": {
+      "description": "Restriction - Reduced spell progression: Gain 15 CP.",
+      "point_cost": -15,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_restriction_slower_casting_times": {
+      "description": "Restriction - Slower casting times: Gain 5 CP.",
+      "point_cost": -5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_restriction_weapon_restriction_cp5": {
+      "description": "Restriction - Weapon restriction (5): Priest is further restricted to staff, club, war hammer, horseman\u0027s mace, and horseman\u0027s flail (5 CP); or may never gain proficiency in any weapon (15 CP). Gain 5 or 15 CP.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_restriction_weapon_restriction_cp15": {
+      "description": "Restriction - Weapon restriction (15): Priest is further restricted to staff, club, war hammer, horseman\u0027s mace, and horseman\u0027s flail (5 CP); or may never gain proficiency in any weapon (15 CP). Gain 5 or 15 CP.",
+      "point_cost": 15,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_restriction_behavior_taboo": {
+      "description": "Restriction - Behavior/taboo (2): Priest\u0027s religion requires an unusual code of conduct (e.g., pray before crossing every river, must always cast cure spells on anyone in need); violating it requires penance to regain spells. Gain 2 CP.",
+      "point_cost": -2,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_restriction_ceremony_observance": {
+      "description": "Restriction - Ceremony/observance (5): Priest must perform a mandatory daily ceremony (prayer at sunrise, daily sacrifice, lengthy nightly atonement); missing it risks losing memorized spells or suffering divine disfavor. Gain 5 CP.",
+      "point_cost": -5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_restriction_fanaticism": {
+      "description": "Restriction - Fanaticism (5): Priest\u0027s faith is intolerant \u2014 refuses non-worshipping companions and suffers a \u22124 reaction adjustment with any NPC not of his faith. Gain 5 CP.",
+      "point_cost": -5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_restriction_limited_spell_selection": {
+      "description": "Restriction - Limited spell selection (5): Priest must build a spell book like a wizard; spells per level capped by Intelligence, and a learn-spells roll is required to add each new spell. Gain 5 CP.",
+      "point_cost": -5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_restriction_talisman": {
+      "description": "Restriction - Talisman/symbol (8): Priest\u0027s spell powers are focused through one holy symbol; without it, no spells can be cast. Creating a replacement takes 1d4 weeks of prayer, meditation, and fasting at his home temple. Gain 8 CP.",
+      "point_cost": -8,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "cleric_sphere_minor_all": {
+      "description": "[Sphere - Minor] All (3 CP): Gain minor access to the All sphere.",
+      "point_cost": 3,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_major_all": {
+      "description": "[Sphere - Major] All (5 CP): Gain major access to the All sphere.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_minor_animal": {
+      "description": "[Sphere - Minor] Animal (5 CP): Gain minor access to the Animal sphere.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_major_animal": {
+      "description": "[Sphere - Major] Animal (10 CP): Gain major access to the Animal sphere.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_minor_astral": {
+      "description": "[Sphere - Minor] Astral (3 CP): Gain minor access to the Astral sphere.",
+      "point_cost": 3,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_major_astral": {
+      "description": "[Sphere - Major] Astral (5 CP): Gain major access to the Astral sphere.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_minor_chaos": {
+      "description": "[Sphere - Minor] Chaos (5 CP): Gain minor access to the Chaos sphere.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_major_chaos": {
+      "description": "[Sphere - Major] Chaos (8 CP): Gain major access to the Chaos sphere.",
+      "point_cost": 8,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_minor_charm": {
+      "description": "[Sphere - Minor] Charm (5 CP): Gain minor access to the Charm sphere.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_major_charm": {
+      "description": "[Sphere - Major] Charm (10 CP): Gain major access to the Charm sphere.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_minor_combat": {
+      "description": "[Sphere - Minor] Combat (5 CP): Gain minor access to the Combat sphere.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_major_combat": {
+      "description": "[Sphere - Major] Combat (10 CP): Gain major access to the Combat sphere.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_minor_creation": {
+      "description": "[Sphere - Minor] Creation (5 CP): Gain minor access to the Creation sphere.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_major_creation": {
+      "description": "[Sphere - Major] Creation (10 CP): Gain major access to the Creation sphere.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_minor_divination": {
+      "description": "[Sphere - Minor] Divination (5 CP): Gain minor access to the Divination sphere.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_major_divination": {
+      "description": "[Sphere - Major] Divination (10 CP): Gain major access to the Divination sphere.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_minor_elemental": {
+      "description": "[Sphere - Minor] Elemental (8 CP): Gain minor access to the Elemental sphere.",
+      "point_cost": 8,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_major_elemental": {
+      "description": "[Sphere - Major] Elemental (20 CP): Gain major access to the Elemental sphere.",
+      "point_cost": 20,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_minor_elemental_air": {
+      "description": "[Sphere - Minor] Elemental (Air) (2 CP): Gain minor access to the Elemental (Air) sphere.",
+      "point_cost": 2,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_major_elemental_air": {
+      "description": "[Sphere - Major] Elemental (Air) (5 CP): Gain major access to the Elemental (Air) sphere.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_minor_elemental_earth": {
+      "description": "[Sphere - Minor] Elemental (Earth) (3 CP): Gain minor access to the Elemental (Earth) sphere.",
+      "point_cost": 3,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_major_elemental_earth": {
+      "description": "[Sphere - Major] Elemental (Earth) (8 CP): Gain major access to the Elemental (Earth) sphere.",
+      "point_cost": 8,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_minor_elemental_fire": {
+      "description": "[Sphere - Minor] Elemental (Fire) (3 CP): Gain minor access to the Elemental (Fire) sphere.",
+      "point_cost": 3,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_major_elemental_fire": {
+      "description": "[Sphere - Major] Elemental (Fire) (8 CP): Gain major access to the Elemental (Fire) sphere.",
+      "point_cost": 8,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_minor_elemental_water": {
+      "description": "[Sphere - Minor] Elemental (Water) (2 CP): Gain minor access to the Elemental (Water) sphere.",
+      "point_cost": 2,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_major_elemental_water": {
+      "description": "[Sphere - Major] Elemental (Water) (5 CP): Gain major access to the Elemental (Water) sphere.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_minor_guardian": {
+      "description": "[Sphere - Minor] Guardian (3 CP): Gain minor access to the Guardian sphere.",
+      "point_cost": 3,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_major_guardian": {
+      "description": "[Sphere - Major] Guardian (5 CP): Gain major access to the Guardian sphere.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_minor_healing": {
+      "description": "[Sphere - Minor] Healing (5 CP): Gain minor access to the Healing sphere.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_major_healing": {
+      "description": "[Sphere - Major] Healing (10 CP): Gain major access to the Healing sphere.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_minor_law": {
+      "description": "[Sphere - Minor] Law (5 CP): Gain minor access to the Law sphere.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_major_law": {
+      "description": "[Sphere - Major] Law (8 CP): Gain major access to the Law sphere.",
+      "point_cost": 8,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_minor_magic": {
+      "description": "[Sphere - Minor] Magic (5 CP): Gain minor access to the Magic sphere.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_major_magic": {
+      "description": "[Sphere - Major] Magic (10 CP): Gain major access to the Magic sphere.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_minor_necromantic": {
+      "description": "[Sphere - Minor] Necromantic (5 CP): Gain minor access to the Necromantic sphere.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_major_necromantic": {
+      "description": "[Sphere - Major] Necromantic (10 CP): Gain major access to the Necromantic sphere.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_minor_numbers": {
+      "description": "[Sphere - Minor] Numbers (5 CP): Gain minor access to the Numbers sphere.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_major_numbers": {
+      "description": "[Sphere - Major] Numbers (10 CP): Gain major access to the Numbers sphere.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_minor_plant": {
+      "description": "[Sphere - Minor] Plant (5 CP): Gain minor access to the Plant sphere.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_major_plant": {
+      "description": "[Sphere - Major] Plant (10 CP): Gain major access to the Plant sphere.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_minor_protection": {
+      "description": "[Sphere - Minor] Protection (5 CP): Gain minor access to the Protection sphere.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_major_protection": {
+      "description": "[Sphere - Major] Protection (10 CP): Gain major access to the Protection sphere.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_minor_spells": {
+      "description": "[Sphere - Minor] Spells (5 CP): Gain minor access to the Spells sphere.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_major_spells": {
+      "description": "[Sphere - Major] Spells (10 CP): Gain major access to the Spells sphere.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_minor_summoning": {
+      "description": "[Sphere - Minor] Summoning (5 CP): Gain minor access to the Summoning sphere.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_major_summoning": {
+      "description": "[Sphere - Major] Summoning (10 CP): Gain major access to the Summoning sphere.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_minor_sun": {
+      "description": "[Sphere - Minor] Sun (3 CP): Gain minor access to the Sun sphere.",
+      "point_cost": 3,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_major_sun": {
+      "description": "[Sphere - Major] Sun (5 CP): Gain major access to the Sun sphere.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_minor_thought": {
+      "description": "[Sphere - Minor] Thought (5 CP): Gain minor access to the Thought sphere.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_major_thought": {
+      "description": "[Sphere - Major] Thought (10 CP): Gain major access to the Thought sphere.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_minor_time": {
+      "description": "[Sphere - Minor] Time (5 CP): Gain minor access to the Time sphere.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_major_time": {
+      "description": "[Sphere - Major] Time (10 CP): Gain major access to the Time sphere.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_minor_travelers": {
+      "description": "[Sphere - Minor] Travelers (3 CP): Gain minor access to the Travelers sphere.",
+      "point_cost": 3,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_major_travelers": {
+      "description": "[Sphere - Major] Travelers (5 CP): Gain major access to the Travelers sphere.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_minor_war": {
+      "description": "[Sphere - Minor] War (3 CP): Gain minor access to the War sphere.",
+      "point_cost": 3,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_major_war": {
+      "description": "[Sphere - Major] War (5 CP): Gain major access to the War sphere.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_minor_wards": {
+      "description": "[Sphere - Minor] Wards (5 CP): Gain minor access to the Wards sphere.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_major_wards": {
+      "description": "[Sphere - Major] Wards (10 CP): Gain major access to the Wards sphere.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_minor_weather": {
+      "description": "[Sphere - Minor] Weather (5 CP): Gain minor access to the Weather sphere.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_major_weather": {
+      "description": "[Sphere - Major] Weather (10 CP): Gain major access to the Weather sphere.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_sphere_focus_bonus": {
+      "description": "[Sphere - Bonus] Sphere focus (5 CP): Choose one major sphere; cast spells from it at \u002B1 effective caster level.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_turning_mastery": {
+      "description": "Turning mastery (10): Turn undead as if one level higher.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "cleric_divine_resilience": {
+      "description": "Divine resilience (8): \u002B1 to saving throws versus magical effects.",
+      "point_cost": 8,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false,
+      "mechanics": {
+        "save_bonuses": {
+          "magic": 1
+        }
+      }
+    },
+    "fighter_improved_thac0": {
+      "description": "Improved Thac0 (10 CP): The PC begins life better suited than most, to fight, by having an improved Thac0.  The PC starts with a Thac0 of 18 at 1st level that improves by 1 for every level advance.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false,
+      "mechanics": {
+        "attack_bonus": 2
+      }
+    },
+    "fighter_proficiency_ease": {
+      "description": "Proficiency Ease (5 CP): By spending 5 CPs now, the fighter can cut the cost of all weapon proficiency costs in the future (including all forms of mastery) by 50%",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "fighter_anomalous_intuition": {
+      "description": "Anomalous Intuition (10 CP): Like many heroes of literature and myth, this warrior maintains an unexplained connection with some mysterious power or magical entity.  Perhaps they have divine parentage, as did Hercules, or maybe their mother was years ago blessed by fairy folk, and the warrior still--perhaps unknowingly--carries this blessing.  At the least, the character has a distant kinship with elves or a similar magical race, and retains and echo of their power.  Whether they are aware of its origins or not, the Warrior with Anomalous Intuition has the uncanny ability to detect things that are normally beyond the range of mortal perception.  By simply passing within a few feet of a secret door, the character has a 1-in-6 chance of sensing its existence, or a 1-in-3 chance if the Warrior is an elf.  Furthermore, their hunches or their \u0027gut\u0027 guide them when danger is afoot.  The Warrior possesses the equivalent of the Trouble Sense proficiency as detailed in Player\u0027s Options: Combat and Tactics, pg 80",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false,
+      "mechanics": {
+        "detect_secret_doors": true
+      }
+    },
+    "fighter_athleticism": {
+      "description": "Athleticism (10 CP): A Warrior with this talent is the physical epitome of the epic Greek athletes of ancient Athens.  Robust and naturally fit, a Fighter with this skill is capable of heroic feats of bodily prowess and puissance.  They epitomize the animal grace of the humanoid form.  As a result of their strength and agility, the Warrior receives a \u002B2/\u002B10% bonus to all checks involving running, jumping, throwing and climbing.  Furthermore, they can purchase the Endurance proficiency for half the standard cost.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false,
+      "mechanics": {
+        "movement_bonus": 1
+      }
+    },
+    "fighter_blood_oath": {
+      "description": "Blood Oath (5 CP): Much like the Ranger\u0027s special racial enmity, this option allows the player to select a certain type of creature as their character\u0027s blood enemy.  Whenever they are faced with their chosen foe, the Warrior enjoys a \u002B2 bonus to attack and damage rolls.  However, their hatred toward this enemy is so great that it requires an enormous effort of willpower to resist an opportunity to combat this foe.  If the Warrior wishes to avoid a confrontation, they must make a Wisdom/Willpower check to see if they have the force of will to turn around and walk away.  If they fail, the Blood Oath gets the best of them and they charge forward, teeth bared and weapons flashing.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "fighter_combat_sense": {
+      "description": "Combat Sense (10 CP): By selecting this skill, the Fighter enjoys an innate kinship with the pulse of battle, enabling them to act with more precision and accuracy than others who are less comfortable in melee situations.  They receive a \u002B1 bonus in three different combat situations: 1) Fighting in the dark (reducing the penalty to -3 instead of the standard -4, or -1 if the Fighter knows the Blindfighting NWP); 2) Attacking opponents who are partially or wholly concealed (reducing all penalties by 1, as per PHB); 3) Surprise (the Fighters chance of being Surprised is reduced by 1 in 10)",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false,
+      "mechanics": {
+        "surprise_bonus": 1
+      }
+    },
+    "fighter_comitatus": {
+      "description": "Comitatus (5 CP): By purchasing this option, the player is essentially entering their character into a feudal contract.  The exact interpretation of this pact is the domain of the DM, but the Comitatus generally entitles the character to a special favor or privilege from their liege lord or other powerful NPC.  For example, in return for protecting the region from local brigands, the Fighter can expect food and lodging from the Baron of the land.  On a greater scale, a Warrior in command of their own castle may be responsible for the housing and upkeep of several platoons of the King\u0027s army.  In exchange, he is granted legal protection and various privileges normally reserved exclusively for nobility.  Comitatus was the old Danish practice of swearing brotherhood between a thane and their vassals.  Certain duties were expected of the vassal, but in return for their loyalty, they could expect an occasional favor from their lord.  The player is encouraged to develop a story behind this relationship and should manipulate the Comitatus to be consistent with the campaign.  Comitatus is not restricted to a liege and their vassal; the player is free to form the Comitatus with any appropriate NPC: guildmaster, sage, city alderman, etc.  As long as they are faithful to the relationship, the character can expect an occasional petty favor from their benefactor, as governed by the DM.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "fighter_concentrated_strength": {
+      "description": "Concentrated Strength (5 CP): Though they might not be capable of sudden bursts of intense power, the Warrior choosing this option can apply a great deal of muscle to a single task requiring concentration and will.  In effect, this is the difference between the Open Doors check (which requires a quick application of motion and muscle) and the Bend Bars percentage (which relies upon a deep inner focus and the steady increase of continous pressure).  By opting for this ability, the character doubles their normal chances of Bending Bars and Lifting Gates.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "fighter_coup_de_gras": {
+      "description": "Coup de Gras (10 CP): The Coup de Gras is the Warrior\u0027s signature strike, the stroke of grace that ends combat with a single blow and inspires Bards to compose epic poetry, romanticizing the battle.  If the Critical Hit rules from Combat \u0026 Tactics are in use, the Coup de Gras translates into a considerable bonus to the Warrior who succeeds in scoring a critical strike.  Before rolling for the severity of the blow, the Warrior makes a Strength/Muscle check.  If successful, their weapon is considered to be one size larger than usual, so that a size M Longsword is now size L, while a two-handed sword is considered a size H weapon for purposes of critical hits.  If the critical hit tables are not in effect, the Warrior with the Coup de Gras power is still entitled to additional damage whenever their attack roll is a natural 18, 19 or 20 and is at least five points above the required roll to hit.  In these cases, the Warrior inflict double damage.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false,
+      "mechanics": {
+        "damage_bonus": 1
+      }
+    },
+    "fighter_heroic_boast": {
+      "description": "Heroic Boast (5 CP): Much like mythic Beowulf, a Fighter with this option has the ability to rouse the morale of their comrades.  By uttering a brief, passionate oration on their prowess in battle and the glory to be won a Fighter can inspire friendly NPCs, granting them a \u002B2 to morale for the duration of the upcoming struggle, so long as the Fighter is leading them.  This skill should be roleplayed by the player to be effective.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "fighter_iaijutsu": {
+      "description": "Iaijutsu (5 CP): As adapted from the 1st Edition Oriental Adventures rulebook, Iaijutsu allows the Warrior to unsheath their weapon with startling speed.  A successful Dexterity/Balance check means that the Warrior suffers no delay in terms of game rounds when removing or returning their weapon from and to its scabbard.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false,
+      "mechanics": {
+        "attack_bonus": 1
+      }
+    },
+    "fighter_mettle": {
+      "description": "Mettle (10 CP): Like many legendary heroes, the Warrior with this natural gift possesses a near indestructible frame; indeed he seems to be cast of iron.  With bones that are inherently resilient, this character has a Herculean fortitude that allows them to resist the punishment of bludgeoning weapons and falling damage.  Any damage from these attack forms is halved if the Warrior makes a successful Constitution/Fitness check.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "fighter_mythic_lore": {
+      "description": "Mythic Lore (10 CP): In their youth, this Fighter spent many sleepless nights listening to the tales of magnificent Warriors and their weapons.  The Fighter now has a 5% chance per level of knowing the history of any magical or legendary weapon or piece of armor, as well as facts concerning the known owners of those items.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "fighter_war_cry": {
+      "description": "War Cry (5 CP): By uttering a withering battle cry seconds before striking, a Fighter with this skill receives a \u002B1 bonus to damage rolls for a single strike.  This strike must always be the Fighter\u0027s first in any combat situation, used as they engage the enemy for the first time.  This skill may be used a number of times per day equal to the character\u0027s level, but never more than once in any battle.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false,
+      "mechanics": {
+        "damage_bonus": 1
+      }
+    },
+    "fighter_shield_mastery": {
+      "description": "Shield mastery (8): Gain \u002B1 AC while using any shield.",
+      "point_cost": 8,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false,
+      "mechanics": {
+        "ac_bonus": -1
+      }
+    },
+    "fighter_battle_hardened": {
+      "description": "Battle hardened (10): \u002B1 bonus on all saving throws.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false,
+      "mechanics": {
+        "save_bonuses": {
+          "all": 1
+        }
+      }
+    },
+    "paladin_circle_of_power": {
+      "description": "Circle of power (5): With holy sword, project 10\u0027 anti-hostile magic field.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "paladin_curative": {
+      "description": "Curative (10): Cure disease uses by level progression.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "paladin_detection": {
+      "description": "Detection (5): Detect evil creatures within 60 feet by concentration.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "paladin_faithful_mount": {
+      "description": "Faithful mount (5): Summon a bonded special steed at 4th level.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "paladin_healing": {
+      "description": "Healing (5): Laying on hands once daily for 2 hit points per level.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "paladin_health": {
+      "description": "Health (5): Immunity to disease (except lycanthropy and mummy rot).",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "paladin_poison_resistance": {
+      "description": "Poison resistance (10): \u002B1 to saving throws vs poison.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true,
+      "mechanics": {
+        "save_bonuses": {
+          "poison": 1
+        }
+      }
+    },
+    "paladin_priest_spells": {
+      "description": "Priest spells (10): Begin paladin priest spellcasting at 4th level.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "paladin_protection_from_evil": {
+      "description": "Protection from evil (5): 10\u0027 aura imposes -1 on attacks by summoned/evil creatures.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true,
+      "mechanics": {
+        "ac_bonus": -1
+      }
+    },
+    "paladin_resist_charm": {
+      "description": "Resist charm (10): \u002B2 bonus to saves vs charm-like effects.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true,
+      "mechanics": {
+        "save_bonuses": {
+          "charm": 2
+        }
+      }
+    },
+    "paladin_saving_throw_bonus": {
+      "description": "Saving throw bonus (10): \u002B2 bonus to all saving throws.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true,
+      "mechanics": {
+        "save_bonuses": {
+          "all": 2
+        }
+      }
+    },
+    "paladin_turn_undead": {
+      "description": "Turn undead (10): Turn undead as a cleric two levels lower, starting at 3rd level.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "paladin_weapon_specialization": {
+      "description": "Weapon specialization (10): May specialize in one weapon (costs paid separately).",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "paladin_alternate_sphere_access": {
+      "description": "Alternate sphere access (5\u002B): Replace or add minor paladin spell spheres.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "paladin_increased_spell_power": {
+      "description": "Increased spell power (7): Cast paladin spells at effective level only four below true level.",
+      "point_cost": 7,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "paladin_increased_spell_progression_cp10": {
+      "description": "Increased spell progression (10): Begin paladin spellcasting earlier than standard.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "paladin_increased_spell_progression_cp15": {
+      "description": "Increased spell progression (15): Begin paladin spellcasting earlier than standard.",
+      "point_cost": 15,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "paladin_restriction_limited_armor_chain": {
+      "description": "Restriction - Limited armor (chain or lighter): Gain 5 CP.",
+      "point_cost": -5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "paladin_restriction_limited_armor_studded": {
+      "description": "Restriction - Limited armor (studded leather or lighter): Gain 10 CP.",
+      "point_cost": -10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "paladin_restriction_limited_armor_none": {
+      "description": "Restriction - No armor: Gain 15 CP.",
+      "point_cost": -15,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "paladin_restriction_limited_weapon_selection": {
+      "description": "Restriction - Limited weapon selection: Gain 5 CP.",
+      "point_cost": -5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "paladin_restriction_limited_magical_item_use": {
+      "description": "Restriction - Limited magical item use (per barred category): Gain 5 CP.",
+      "point_cost": -5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "paladin_divine_aura": {
+      "description": "Divine aura (8): \u002B1 reaction bonus with lawful good creatures and common folk.",
+      "point_cost": 8,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false,
+      "mechanics": {
+        "reaction_bonus": 1
+      }
+    },
+    "paladin_sacred_defense": {
+      "description": "Sacred defense (10): \u002B1 to all saving throws while acting in good faith.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false,
+      "mechanics": {
+        "save_bonuses": {
+          "all": 1
+        }
+      }
+    },
+    "psionicist_extra_power_points_5": {
+      "description": "Extra power points \u002B5/level (10): Gain 5 additional power points per experience level.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "psionicist_extra_power_points_10": {
+      "description": "Extra power points \u002B10/level (18): Gain 10 additional power points per experience level.",
+      "point_cost": 18,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "psionicist_extra_devotion": {
+      "description": "Extra devotion slot (10): Gain one additional devotion known at character creation.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "psionicist_extra_science": {
+      "description": "Extra science slot (15): Gain one additional science known at character creation.",
+      "point_cost": 15,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "psionicist_extra_discipline": {
+      "description": "Extra discipline access (20): Gain access to one additional psionic discipline at 1st level.",
+      "point_cost": 20,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "psionicist_discipline_mastery": {
+      "description": "Discipline mastery (15): Choose one primary discipline; devotions from that discipline cost 1 fewer power point (minimum 1).",
+      "point_cost": 15,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "psionicist_defense_mode_bonus": {
+      "description": "Bonus defense mode (10): Know one additional defense mode at 1st level (normally gained at later levels).",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "psionicist_wild_talent": {
+      "description": "Wild talent (5): Gain one random wild talent devotion in addition to regular powers.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "psionicist_combat_bonus": {
+      "description": "Combat mind (10): \u002B1 to initiative rolls due to psionic awareness; \u002B1 surprise checks.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true,
+      "mechanics": {
+        "surprise_bonus": 1
+      }
+    },
+    "psionicist_mental_armor": {
+      "description": "Mental armor (10): Psionic AC bonus of \u002B1 when not wearing physical armor (stacks with DEX bonus).",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true,
+      "mechanics": {
+        "ac_bonus": -1,
+        "ac_bonus_requires_no_armor": true
+      }
+    },
+    "psionicist_power_point_recovery": {
+      "description": "Rapid recovery (8): Regain power points at double the normal rate during rest.",
+      "point_cost": 8,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "psionicist_psionic_attack_bonus": {
+      "description": "Focused mind (12): \u002B1 to psionic attack scores (MTHAC0); psionic combat rolls are more accurate.",
+      "point_cost": 12,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true,
+      "mechanics": {
+        "attack_bonus": 1
+      }
+    },
+    "psionicist_contact_mastery": {
+      "description": "Contact mastery (8): Make psionic contact as a free action once per round (normally costs action).",
+      "point_cost": 8,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "psionicist_mindbender": {
+      "description": "Mindbender (12): When using Telepathy devotions, save penalties for targets are increased by 1.",
+      "point_cost": 12,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "psionicist_body_mastery": {
+      "description": "Body mastery (10): Psychometabolism devotions cost 1 fewer power point (minimum 1).",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "psionicist_telekinetic_force": {
+      "description": "Telekinetic force (10): \u002B25% to mass limits for all Psychokinesis devotions.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "psionicist_clairvoyant_sense": {
+      "description": "Clairvoyant sense (8): Clairsentience devotion range increased by 50%.",
+      "point_cost": 8,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "psionicist_metapsionic_link": {
+      "description": "Metapsionic link (15): May apply one Metapsionics devotion to another power as a free action once per day.",
+      "point_cost": 15,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "psionicist_restriction_reduced_pp": {
+      "description": "Restriction - Reduced base power points per level: Gain 10 CP (receive 3 fewer base PP per level).",
+      "point_cost": -10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "psionicist_restriction_one_discipline": {
+      "description": "Restriction - Single discipline focus: Gain 15 CP (locked to one primary discipline, cannot access others until high level).",
+      "point_cost": -15,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "psionicist_restriction_no_combat_modes": {
+      "description": "Restriction - No psionic combat modes: Gain 20 CP (use only contact-based powers, no attack modes).",
+      "point_cost": -20,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "psionicist_mental_bastion": {
+      "description": "Mental bastion (10): \u002B1 bonus to saving throws versus mind-affecting magic and psionics.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false,
+      "mechanics": {
+        "save_bonuses": {
+          "magic": 1
+        }
+      }
+    },
+    "psionicist_celerity": {
+      "description": "Psionic celerity (8): \u002B1 initiative-like surprise response through precognitive flashes.",
+      "point_cost": 8,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false,
+      "mechanics": {
+        "surprise_bonus": 1
+      }
+    },
+    "ranger_bow_bonus": {
+      "description": "Bow bonus (5): \u002B1 attack bonus with bows.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true,
+      "mechanics": {
+        "weapon_attack_bonuses": {
+          "bow": 1
+        }
+      }
+    },
+    "ranger_climbing": {
+      "description": "Climbing (10): Climb natural formations with ranger progression.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "ranger_detect_noise": {
+      "description": "Detect noise (10): Hear as thief using ranger-derived chance.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "ranger_empathy_with_animals": {
+      "description": "Empathy with animals (10): Befriend and influence animals.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "ranger_find_remove_wilderness_traps": {
+      "description": "Find/remove wilderness traps (10): Detect and disarm pits, snares, and similar hazards.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "ranger_followers": {
+      "description": "Followers (10): Attract 2d6 followers at 10th level.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "ranger_hide_in_shadows": {
+      "description": "Hide in shadows (5): Thief-like hiding in natural surroundings.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true,
+      "mechanics": {
+        "grants_stealth": true
+      }
+    },
+    "ranger_move_silently": {
+      "description": "Move silently (5): Thief-like silent movement in natural surroundings.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true,
+      "mechanics": {
+        "grants_stealth": true
+      }
+    },
+    "ranger_pass_without_trace": {
+      "description": "Pass without trace (10): Gain druid pass without trace once per day.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "ranger_priest_spells": {
+      "description": "Priest spells (10): Learn priest plant/animal spells starting at level 8.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "ranger_sneak_attack": {
+      "description": "Sneak attack (10): Backstab-like attack after successful hide and move silently.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "ranger_speak_with_animals": {
+      "description": "Speak with animals (5): Use speak with animals once per day.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "ranger_special_enemy": {
+      "description": "Special enemy (10): \u002B4 attack bonus versus one chosen enemy type.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true,
+      "mechanics": {
+        "enemy_attack_bonuses": {
+          "special_enemy": 4
+        }
+      }
+    },
+    "ranger_tracking_proficiency": {
+      "description": "Tracking proficiency (5): Gain tracking with automatic improvement by level.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "ranger_two_weapon_style": {
+      "description": "Two-weapon style (5): No attack penalties when fighting with two weapons in light armor.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "ranger_weapon_specialization": {
+      "description": "Weapon specialization (10): May specialize in one weapon (costs paid separately).",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "ranger_alternate_sphere_access": {
+      "description": "Alternate sphere access (5\u002B): Replace or add minor ranger spell spheres.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "ranger_increased_spell_power": {
+      "description": "Increased spell power (7): Cast ranger spells at effective level only four below true level.",
+      "point_cost": 7,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "ranger_increased_spell_progression_cp7": {
+      "description": "Increased spell progression (7): Begin ranger spellcasting earlier than standard.",
+      "point_cost": 7,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "ranger_increased_spell_progression_cp12": {
+      "description": "Increased spell progression (12): Begin ranger spellcasting earlier than standard.",
+      "point_cost": 12,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "ranger_restriction_limited_armor_chain": {
+      "description": "Restriction - Limited armor (chain or lighter): Gain 5 CP.",
+      "point_cost": -5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "ranger_restriction_limited_armor_studded": {
+      "description": "Restriction - Limited armor (studded leather or lighter): Gain 10 CP.",
+      "point_cost": -10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "ranger_restriction_limited_armor_none": {
+      "description": "Restriction - No armor: Gain 15 CP.",
+      "point_cost": -15,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "ranger_restriction_limited_weapon_selection": {
+      "description": "Restriction - Limited weapon selection: Gain 5 CP.",
+      "point_cost": -5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "ranger_restriction_limited_magical_item_use": {
+      "description": "Restriction - Limited magical item use (per barred category): Gain 5 CP.",
+      "point_cost": -5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "ranger_trailblazer": {
+      "description": "Trailblazer (8): \u002B1 surprise and superior wilderness pursuit/navigation.",
+      "point_cost": 8,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false,
+      "mechanics": {
+        "surprise_bonus": 1
+      }
+    },
+    "ranger_beast_lore": {
+      "description": "Beast lore (6): \u002B1 reaction bonus with natural beasts and animal companions.",
+      "point_cost": 6,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false,
+      "mechanics": {
+        "reaction_bonus": 1
+      }
+    },
+    "thief_backstab": {
+      "description": "Backstab (10): \u002B4 to hit from surprise behind target with scaling damage multiplier.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "thief_bribe": {
+      "description": "Bribe (5): Attempt to bribe officials and NPC authorities.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "thief_climb_walls": {
+      "description": "Climb walls (5): Climb smooth or vertical surfaces.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "thief_defense_bonus": {
+      "description": "Defense bonus (10): \u002B2 AC when unarmored and unencumbered.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true,
+      "mechanics": {
+        "ac_bonus": -2,
+        "ac_bonus_requires_no_armor": true
+      }
+    },
+    "thief_detect_illusion": {
+      "description": "Detect illusion (10): Detect visual illusions within line of sight.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "thief_detect_magic": {
+      "description": "Detect magic (10): Spot magical radiations and intensity.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "thief_detect_noise": {
+      "description": "Detect noise (5): Hear sounds others usually cannot.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "thief_escaping_bonds": {
+      "description": "Escaping bonds (10): Escape ropes, manacles, chains, and restraints.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "thief_find_remove_traps": {
+      "description": "Find/remove traps (10): Locate and disarm small mechanical traps.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "thief_followers_cp5": {
+      "description": "Followers (5): Gain followers with stronghold, earlier option at 10.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "thief_followers_cp10": {
+      "description": "Followers (10): Gain followers with stronghold, earlier option at 10.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "thief_hide_in_shadows": {
+      "description": "Hide in shadows (5): Become effectively unseen while concealed.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true,
+      "mechanics": {
+        "grants_stealth": true
+      }
+    },
+    "thief_move_silently": {
+      "description": "Move silently (5): Move without noise at reduced movement.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true,
+      "mechanics": {
+        "grants_stealth": true
+      }
+    },
+    "thief_open_locks": {
+      "description": "Open locks (10): Pick locks with tools and finesse.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "thief_pick_pockets": {
+      "description": "Pick pockets (10): Steal small items from person or gear.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "thief_read_languages": {
+      "description": "Read languages (5): Decipher unknown writings.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "thief_scroll_use_cp5": {
+      "description": "Scroll use (5): Use spell scrolls at 10th, or earlier with higher-cost option.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "thief_scroll_use_cp10": {
+      "description": "Scroll use (10): Use spell scrolls at 10th, or earlier with higher-cost option.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "thief_thieves_cant": {
+      "description": "Thieves\u0027 cant (5): Use coded underworld slang.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "thief_tunneling": {
+      "description": "Tunneling (10): Dig tunnels with skill checks by earth type.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "thief_weapon_specialization": {
+      "description": "Weapon specialization (15): May specialize in one weapon (costs paid separately).",
+      "point_cost": 15,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "thief_escape_artist": {
+      "description": "Escape artist (8): Gain superior movement/escape talent and \u002B1 surprise bonus.",
+      "point_cost": 8,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false,
+      "mechanics": {
+        "surprise_bonus": 1,
+        "grants_stealth": true
+      }
+    },
+    "thief_backstab_training": {
+      "description": "Backstab training (10): \u002B1 damage on successful backstab attacks.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false,
+      "mechanics": {
+        "damage_bonus": 1
+      }
+    },
+    "wizard_access_to_schools": {
+      "description": "Access to schools (5 each): Buy access per school of wizard magic.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_armored_wizard": {
+      "description": "Armored wizard (15): Cast spells while wearing chosen armor.",
+      "point_cost": 15,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_automatic_spells": {
+      "description": "Automatic spells (5): Gain one automatic spell when unlocking a new spell level.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_casting_reduction": {
+      "description": "Casting reduction (5): Reduce casting time by 1 (minimum 1).",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_combat_bonus": {
+      "description": "Combat bonus (10): Use rogue THAC0 progression.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_detect_magic": {
+      "description": "Detect magic (10): Detect magical radiations by line of sight with per-level uses.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_extend_duration": {
+      "description": "Extend duration (10): Increase non-instantaneous spell durations by level.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_bonus_spells_cp10": {
+      "description": "Bonus spells (10): Memorize one extra spell per level (school-limited or unrestricted).",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_bonus_spells_cp15": {
+      "description": "Bonus spells (15): Memorize one extra spell per level (school-limited or unrestricted).",
+      "point_cost": 15,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_dispel_cp10": {
+      "description": "Dispel (10): Daily targeted dispel against one linked spell category.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_dispel_cp15": {
+      "description": "Dispel (15): Daily targeted dispel against one linked spell category.",
+      "point_cost": 15,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_no_components_cp5": {
+      "description": "No components (5): Designate spells requiring no material components.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_no_components_cp8": {
+      "description": "No components (8): Designate spells requiring no material components.",
+      "point_cost": 8,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_range_increase_cp5": {
+      "description": "Range increase (5): Increase ranged spell distance by 25% or 50%.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_range_increase_cp7": {
+      "description": "Range increase (7): Increase ranged spell distance by 25% or 50%.",
+      "point_cost": 7,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_weapon_selection_cp10": {
+      "description": "Weapon selection (10): Expand wizard weapon list to thief/cleric or unrestricted.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_weapon_selection_cp15": {
+      "description": "Weapon selection (15): Expand wizard weapon list to thief/cleric or unrestricted.",
+      "point_cost": 15,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_thief_ability": {
+      "description": "Thief ability (10\u002B): Purchase one or more thief abilities.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_hit_point_bonus": {
+      "description": "Hit point bonus (10): Use d6 hit die instead of d4.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true,
+      "mechanics": {
+        "hp_dice_expression": "1d6"
+      }
+    },
+    "wizard_warrior_hit_point_bonus": {
+      "description": "Warrior hit point bonus (5): Use warrior Constitution bonus progression.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_read_magic": {
+      "description": "Read magic (5): Extra read magic uses per day by level.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_resist_sleep_charm": {
+      "description": "Resistance to sleep and charm (5): \u002B1 to saves vs sleep and charm.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true,
+      "mechanics": {
+        "save_bonuses": {
+          "charm": 1,
+          "sleep": 1
+        }
+      }
+    },
+    "wizard_weapon_specialization": {
+      "description": "Weapon specialization (15): May specialize in one weapon (costs paid separately).",
+      "point_cost": 15,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_priestly_wizard_cp10": {
+      "description": "Priestly wizard (10): Gain minor or major priest sphere access cast with wizard slots.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_priestly_wizard_cp15": {
+      "description": "Priestly wizard (15): Gain minor or major priest sphere access cast with wizard slots.",
+      "point_cost": 15,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_signature_spell_levels_1_3": {
+      "description": "Signature spell I (levels 1-3, 2 CP): Choose one signature spell for levels 1-3.",
+      "point_cost": 2,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_signature_spell_levels_4_6": {
+      "description": "Signature spell II (levels 4-6, 4 CP): Choose one signature spell for levels 4-6.",
+      "point_cost": 4,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_signature_spell_levels_7_9": {
+      "description": "Signature spell III (levels 7-9, 6 CP): Choose one signature spell for levels 7-9.",
+      "point_cost": 6,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_enhanced_casting_level": {
+      "description": "Enhanced casting level (10): Once per day, cast spells of one chosen school as if 1d4 levels higher (roll each use).",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_followers": {
+      "description": "Followers (10): Automatically attract 20-200 0-level men-at-arms and 1d6 apprentice wizards (levels 1-3) at 8th level upon establishing a stronghold.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_immunity": {
+      "description": "Immunity (10\u002B): Complete immunity to one spell (10 CP \u002B 1 CP/spell level). Immunity to a group of related spells costs points equal to the highest-level spell in that group.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_learning_bonus_cp5": {
+      "description": "Learning bonus (5): \u002B15% to learn spells of one school (5 CP) or \u002B25% (7 CP). Double cost to apply to all schools.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_learning_bonus_cp7": {
+      "description": "Learning bonus (7): \u002B15% to learn spells of one school (5 CP) or \u002B25% (7 CP). Double cost to apply to all schools.",
+      "point_cost": 7,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_persistent_spell_effect": {
+      "description": "Persistent spell effect (15\u002B2/spell level): One known spell has a persistent effect as long as you concentrate; give up a spell slot of that level. Only self-affecting, non-instantaneous spells qualify.",
+      "point_cost": 15,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_proficiency_crossovers": {
+      "description": "Proficiency group crossovers (5\u002B): Select NWP from an additional character group (warrior, priest, rogue, etc.) at no penalty. 5 CP per extra group.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_research_bonus": {
+      "description": "Research bonus (5\u002B): Spells of one school count as one level lower for spell research. Double cost to apply to all schools.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_school_knowledge_cp5": {
+      "description": "School knowledge (5): Deep expertise in one school grants \u002B1 bonus to saves vs. that school\u0027s spells and imposes -1 penalty to opponents\u0027 saves. For 8 CP, bonuses increase to \u002B2/-2.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_school_knowledge_cp8": {
+      "description": "School knowledge (8): Deep expertise in one school grants \u002B1 bonus to saves vs. that school\u0027s spells and imposes -1 penalty to opponents\u0027 saves. For 8 CP, bonuses increase to \u002B2/-2.",
+      "point_cost": 8,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_constitution_adjustment": {
+      "description": "Constitution adjustment (5): Use the warrior Constitution-based HP bonus (\u002B3/\u002B4 per Hit Die with Con 17/18 instead of maximum \u002B2).",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_improved_hit_die_d8": {
+      "description": "Improved hit die (20): Use a d8 for hit points instead of d4. (For d6, use hit point bonus at 10 CP.)",
+      "point_cost": 20,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true,
+      "mechanics": {
+        "hp_dice_expression": "1d8"
+      }
+    },
+    "wizard_specialist_abjurer": {
+      "description": "Abjurer specialist package: \u002B1 save vs Abjuration spells, bonus Abjuration spell per level, know all Abjuration spells. Opposition: Alteration \u0026 Illusion.",
+      "point_cost": 0,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true,
+      "mechanics": {
+        "save_bonuses": {
+          "abjuration": 1
+        }
+      }
+    },
+    "wizard_specialist_alchemist": {
+      "description": "Alchemist specialist package: \u002B1 save vs Alchemy spells, bonus Alchemy spell per level, know all Alchemy spells. Opposition: Illusion \u0026 Necromancy.",
+      "point_cost": 0,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_specialist_transmuter": {
+      "description": "Transmuter specialist package: \u002B1 save vs Alteration spells, bonus Alteration spell per level, know all Alteration spells. Opposition: Abjuration \u0026 Necromancy.",
+      "point_cost": 0,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_specialist_conjurer": {
+      "description": "Conjurer specialist package: \u002B1 save vs Conjuration/Summoning spells, bonus Conj. spell per level, know all Conj. spells. Opposition: Greater Divination \u0026 Invocation/Evocation.",
+      "point_cost": 0,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_specialist_diviner": {
+      "description": "Diviner specialist package: \u002B1 save vs Divination spells, bonus Divination spell per level, know all Divination spells. Opposition: Conjuration/Summoning.",
+      "point_cost": 0,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_specialist_enchanter": {
+      "description": "Enchanter specialist package: \u002B1 save vs Enchantment/Charm spells, bonus Enchantment spell per level, know all Enchantment spells. Opposition: Invocation/Evocation \u0026 Necromancy.",
+      "point_cost": 0,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_specialist_geometer": {
+      "description": "Geometer specialist package: \u002B1 save vs Geometry spells, bonus Geometry spell per level. Uses geometric formulae for unique spells. Opposition: Enchantment/Charm \u0026 Illusion.",
+      "point_cost": 0,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_specialist_illusionist": {
+      "description": "Illusionist specialist package: \u002B1 save vs Illusion spells, bonus Illusion spell per level, know all Illusion spells. Opposition: Necromancy, Invocation/Evocation \u0026 Abjuration.",
+      "point_cost": 0,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_specialist_invoker": {
+      "description": "Invoker specialist package: \u002B1 save vs Invocation/Evocation spells, bonus Invocation spell per level, know all Invocation spells. Opposition: Enchantment/Charm \u0026 Conjuration/Summoning.",
+      "point_cost": 0,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_specialist_necromancer": {
+      "description": "Necromancer specialist package: \u002B1 save vs Necromancy spells, bonus Necromancy spell per level, know all Necromancy spells. Opposition: Illusion \u0026 Enchantment/Charm.",
+      "point_cost": 0,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_specialist_shadow": {
+      "description": "Shadow Wizard specialist package: \u002B1 save vs Shadow spells, bonus Shadow spell per level. Draws power from the Plane of Shadow. Opposition: Abjuration \u0026 Invocation/Evocation.",
+      "point_cost": 0,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_specialist_song_wizard": {
+      "description": "Song Wizard specialist package: \u002B1 save vs Song spells, bonus Song spell per level. Uses musical magic of Elven tradition. Opposition: Divination, Invocation/Evocation \u0026 Necromancy.",
+      "point_cost": 0,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_restriction_learning_penalty": {
+      "description": "Restriction - Learning penalty outside favored school: Gain 5 CP.",
+      "point_cost": -5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_restriction_limited_magical_item_use": {
+      "description": "Restriction - Limited magical item use (per barred category): Gain 5 CP.",
+      "point_cost": -5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_restriction_reduced_spell_progression": {
+      "description": "Restriction - Reduced spell progression: Gain 15 CP.",
+      "point_cost": -15,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_restriction_awkward_casting_method": {
+      "description": "Restriction - Awkward casting method (5): Wizard\u0027s spellcasting is extremely obvious \u2014 brilliant lights, shouted components, or waves of sensation alert anyone nearby. Casting from ambush or discretely is nearly impossible. Gain 5 CP.",
+      "point_cost": -5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_restriction_hazardous_spells": {
+      "description": "Restriction - Hazardous spells (10): Each time wizard casts a spell, must save vs. breath weapon or suffer 1 damage per spell level; or a cumulative 1%/level chance of insanity lasting 3d4 days. Gain 10 CP.",
+      "point_cost": -10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_restriction_reduced_hit_points": {
+      "description": "Restriction - Reduced hit points (10): Uses d3 Hit Die instead of d4; Constitution hit point bonus capped at \u002B1 per die. Gain 10 CP.",
+      "point_cost": -10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true,
+      "mechanics": {
+        "hp_per_level": -1
+      }
+    },
+    "wizard_restriction_reduced_spell_knowledge": {
+      "description": "Restriction - Reduced spell knowledge (7): Maximum spells known per level is halved (or capped at 10 if Intelligence would allow knowing all spells). Gain 7 CP.",
+      "point_cost": -7,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_restriction_slower_casting_time_cp2": {
+      "description": "Restriction - Slower casting time (2): All casting times increase by 3 (2 CP), or jump to the next greater time unit \u2014 1-9 becomes 1 round, rounds become turns, etc. (5 CP). Gain 2 or 5 CP.",
+      "point_cost": 2,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_restriction_slower_casting_time_cp5": {
+      "description": "Restriction - Slower casting time (5): All casting times increase by 3 (2 CP), or jump to the next greater time unit \u2014 1-9 becomes 1 round, rounds become turns, etc. (5 CP). Gain 2 or 5 CP.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_restriction_behavior_taboo": {
+      "description": "Restriction - Behavior/taboo (2): Wizard must follow an unusual code of behavior (specific dress, food avoidance, no physical contact, etc.); violating it causes loss of all memorized spells. Gain 2 CP.",
+      "point_cost": -2,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_restriction_difficult_memorization": {
+      "description": "Restriction - Difficult memorization (5): Wizard can only memorize spells under very specific circumstances (e.g., only in his lab, in a temple of the god of magic, or after a full-day rite). Gain 5 CP.",
+      "point_cost": -5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_restriction_environmental_condition": {
+      "description": "Restriction - Environmental condition (5\u002B): Wizard can only cast spells under certain conditions (e.g., only by day, near a favored element, no priests nearby). DM assigns 5\u201320 CP based on how frequently the restriction applies. Gain 5\u201320 CP.",
+      "point_cost": -5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_restriction_supernatural_constraint": {
+      "description": "Restriction - Supernatural constraint (5\u002B): Wizard has an unavoidable supernatural vulnerability \u2014 e.g., cannot cross running water, cannot enter a home without invitation, lost at crossroads. DM assigns 5\u201315 CP based on impact. Gain 5\u201315 CP.",
+      "point_cost": -5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_restriction_talisman": {
+      "description": "Restriction - Talisman (8): Wizard\u0027s magical power is linked to a specific object (crystal, staff, amulet, ring, etc.); spells cannot be cast without it. If destroyed, 1d4 weeks of work creates a new one. Gain 8 CP.",
+      "point_cost": -8,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_restriction_weapons_restriction_cp3": {
+      "description": "Restriction - Weapons restriction (3): May never have weapon proficiency (3 CP), or may never attempt to wield a weapon at all \u2014 doing so renders spellcasting impossible for one full month (5 CP). Gain 3 or 5 CP.",
+      "point_cost": 3,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_restriction_weapons_restriction_cp5": {
+      "description": "Restriction - Weapons restriction (5): May never have weapon proficiency (3 CP), or may never attempt to wield a weapon at all \u2014 doing so renders spellcasting impossible for one full month (5 CP). Gain 3 or 5 CP.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "wizard_school_abjuration": {
+      "description": "[Arcane School] Abjuration access (5 CP): Gain full spell access to the Abjuration school.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "wizard_school_alteration": {
+      "description": "[Arcane School] Alteration access (5 CP): Gain full spell access to the Alteration school.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "wizard_school_conjuration_summoning": {
+      "description": "[Arcane School] Conjuration/Summoning access (5 CP): Gain full spell access to the Conjuration/Summoning school.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "wizard_school_divination": {
+      "description": "[Arcane School] Divination access (5 CP): Gain full spell access to the Divination school.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "wizard_school_enchantment_charm": {
+      "description": "[Arcane School] Enchantment/Charm access (5 CP): Gain full spell access to the Enchantment/Charm school.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "wizard_school_illusion": {
+      "description": "[Arcane School] Illusion access (5 CP): Gain full spell access to the Illusion school.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "wizard_school_invocation_evocation": {
+      "description": "[Arcane School] Invocation/Evocation access (5 CP): Gain full spell access to the Invocation/Evocation school.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "wizard_school_necromancy": {
+      "description": "[Arcane School] Necromancy access (5 CP): Gain full spell access to the Necromancy school.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "wizard_school_alchemy": {
+      "description": "[Thaumaturgy School] Alchemy access (5 CP): Gain full spell access to the Alchemy school.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "wizard_school_artifice": {
+      "description": "[Thaumaturgy School] Artifice access (5 CP): Gain full spell access to the Artifice school.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "wizard_school_dimensional": {
+      "description": "[Thaumaturgy School] Dimensional access (5 CP): Gain full spell access to the Dimensional school.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "wizard_school_force": {
+      "description": "[Thaumaturgy School] Force access (5 CP): Gain full spell access to the Force school.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "wizard_school_geometry": {
+      "description": "[Thaumaturgy School] Geometry access (5 CP): Gain full spell access to the Geometry school.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "wizard_school_shadow": {
+      "description": "[Thaumaturgy School] Shadow access (5 CP): Gain full spell access to the Shadow school.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "wizard_school_song": {
+      "description": "[Thaumaturgy School] Song access (5 CP): Gain full spell access to the Song school.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "wizard_school_wild": {
+      "description": "[Thaumaturgy School] Wild Magic access (5 CP): Gain full spell access to the Wild Magic school.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "wizard_school_elemental_air": {
+      "description": "[Thaumaturgy School] Elemental (Air) access (5 CP): Gain full spell access to the Elemental (Air) school.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "wizard_school_elemental_earth": {
+      "description": "[Thaumaturgy School] Elemental (Earth) access (5 CP): Gain full spell access to the Elemental (Earth) school.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "wizard_school_elemental_fire": {
+      "description": "[Thaumaturgy School] Elemental (Fire) access (5 CP): Gain full spell access to the Elemental (Fire) school.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "wizard_school_elemental_water": {
+      "description": "[Thaumaturgy School] Elemental (Water) access (5 CP): Gain full spell access to the Elemental (Water) school.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "wizard_spell_focus": {
+      "description": "Spell focus (8): Chosen spell school receives \u002B1 effective caster level for duration and range.",
+      "point_cost": 8,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "wizard_arcane_ward": {
+      "description": "Arcane ward (10): \u002B1 to saving throws versus hostile spells.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false,
+      "mechanics": {
+        "save_bonuses": {
+          "magic": 1
+        }
+      }
+    },
+    "druid_access_to_spheres": {
+      "description": "Access to spheres: Standard druid package costs 60 CP, or buy spheres individually.",
+      "point_cost": 60,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "druid_bonus_spell": {
+      "description": "Bonus spell (5): Cast animal friendship once per day as bonus spell.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "druid_cold_resistance": {
+      "description": "Cold resistance (5): \u002B2 to saving throws vs cold and ice effects.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true,
+      "mechanics": {
+        "save_bonuses": {
+          "cold": 2
+        }
+      }
+    },
+    "druid_communicate_with_creatures": {
+      "description": "Communicate with creatures (10): Learn woodland creature languages by level.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "druid_elemental_spell_bonus": {
+      "description": "Elemental spell bonus (5): Cast elemental sphere spells as one level higher.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "druid_hit_point_bonus": {
+      "description": "Hit point bonus (10): Use d10 hit die instead of d8.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true,
+      "mechanics": {
+        "hp_dice_expression": "1d10"
+      }
+    },
+    "druid_immunity_to_disease": {
+      "description": "Immunity to disease (10): Immune to natural diseases.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "druid_pass_without_trace": {
+      "description": "Pass without trace (5): Gain pass without trace at 3rd level.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "druid_fire_electrical_resistance": {
+      "description": "Fire/electrical resistance (5): \u002B2 to saving throws vs fire and electricity.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true,
+      "mechanics": {
+        "save_bonuses": {
+          "electricity": 2,
+          "fire": 2
+        }
+      }
+    },
+    "druid_shapechange_cp10": {
+      "description": "Shapechange (10): Gain druid shapechanging progression; advanced version begins earlier.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "druid_shapechange_cp15": {
+      "description": "Shapechange (15): Gain druid shapechanging progression; advanced version begins earlier.",
+      "point_cost": 15,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "druid_restriction_armor_restriction": {
+      "description": "Restriction - Armor restriction (5\u002B): Druid is limited in armor choice. Chain mail or lighter (5 CP); studded leather or lighter (10 CP); no armor at all (15 CP). Gain 5, 10, or 15 CP.",
+      "point_cost": -5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "druid_restriction_awkward_casting_method": {
+      "description": "Restriction - Awkward casting method (5): Druid\u0027s spellcasting is obviously supernatural \u2014 glowing halo, peals of thunder, tremors, or nearby sensations alert any intelligent creature in earshot. Casting unobserved is nearly impossible. Gain 5 CP.",
+      "point_cost": -5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "druid_restriction_difficult_spell_acquisition": {
+      "description": "Restriction - Difficult spell acquisition (5): Druid can pray for spells only under very specific circumstances (e.g., only in a sacred grove, only at certain celestial alignments, or after 3 days of fasting). Gain 5 CP.",
+      "point_cost": -5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "druid_restriction_hazardous_spells": {
+      "description": "Restriction - Hazardous spells (10): Channeling nature\u0027s power is dangerous; druid suffers 1 damage per spell level (save vs. breath for half), or has a 5%/level chance (\u22122%/character level, min 1%) of losing all spells and being feebleminded for 1d3 days. Gain 10 CP.",
+      "point_cost": -10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "druid_restriction_limited_magical_item_use": {
+      "description": "Restriction - Limited magical item use (5\u002B): Druid is banned from certain magical item categories. For each barred category \u2014 potions/oils/scrolls; rings; rods/staves/wands; miscellaneous magic; weapons and armor \u2014 gain 5 CP.",
+      "point_cost": -5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "druid_restriction_reduced_hit_points_cp10": {
+      "description": "Restriction - Reduced hit points (10): Uses d6 Hit Die instead of d8 (10 CP), or d4 Hit Die (20 CP). Gain 10 or 20 CP.",
+      "point_cost": 10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true,
+      "mechanics": {
+        "hp_per_level": -1
+      }
+    },
+    "druid_restriction_reduced_hit_points_cp20": {
+      "description": "Restriction - Reduced hit points (20): Uses d6 Hit Die instead of d8 (10 CP), or d4 Hit Die (20 CP). Gain 10 or 20 CP.",
+      "point_cost": 20,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true,
+      "mechanics": {
+        "hp_per_level": -1
+      }
+    },
+    "druid_restriction_reduced_spell_progression": {
+      "description": "Restriction - Reduced spell progression (15): Druid memorizes one less spell of each level than normal; 1st-level druid gains 0 first-level spells, and no bonus Wisdom spells for reduced levels. Gain 15 CP.",
+      "point_cost": -15,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "druid_restriction_slower_casting_times": {
+      "description": "Restriction - Slower casting times (5): Druid\u0027s spells are long-winded; all casting times increase by 3, or casting times of 1 round or longer are doubled. Gain 5 CP.",
+      "point_cost": -5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "druid_restriction_weapon_restriction_cp5": {
+      "description": "Restriction - Weapon restriction (5): Druid further restricted to staff, club, war hammer, horseman\u0027s mace, and horseman\u0027s flail (5 CP); or may never gain proficiency in any weapon (15 CP). Gain 5 or 15 CP.",
+      "point_cost": 5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "druid_restriction_weapon_restriction_cp15": {
+      "description": "Restriction - Weapon restriction (15): Druid further restricted to staff, club, war hammer, horseman\u0027s mace, and horseman\u0027s flail (5 CP); or may never gain proficiency in any weapon (15 CP). Gain 5 or 15 CP.",
+      "point_cost": 15,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "druid_restriction_behavior_taboo": {
+      "description": "Restriction - Behavior/taboo (2): Druid must follow an unusual code of conduct tied to nature (e.g., always speak a prayer before felling a tree, never enter a city); violating it requires penance to regain spells. Gain 2 CP.",
+      "point_cost": -2,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "druid_restriction_ceremony_observance": {
+      "description": "Restriction - Ceremony/observance (5): Druid must perform a daily natural ceremony (dawn meditation, moonrise ritual, etc.); missing it risks losing memorized spells or suffering divine disfavor from nature. Gain 5 CP.",
+      "point_cost": -5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "druid_restriction_fanaticism": {
+      "description": "Restriction - Fanaticism (5): Druid\u0027s faith is intolerant of those who despoil nature; refuses companions who cut forests or kill animals wantonly, and suffers \u22124 reaction with those who openly harm nature. Gain 5 CP.",
+      "point_cost": -5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "druid_restriction_limited_spell_selection": {
+      "description": "Restriction - Limited spell selection (5): Druid must build a spell book like a wizard; spells per level capped by Intelligence, and a learn-spells roll is required to add each new nature spell. Gain 5 CP.",
+      "point_cost": -5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "druid_restriction_talisman": {
+      "description": "Restriction - Talisman/symbol (8): Druid\u0027s power is focused through one sacred natural object (a specific stone, carved branch, or totem); without it, no spells can be cast. Creating a replacement takes 1d4 weeks of fasting and communion with nature. Gain 8 CP.",
+      "point_cost": -8,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "druid_woodland_stride": {
+      "description": "Woodland stride (6): Move through natural undergrowth unhindered and gain \u002B1 surprise bonus.",
+      "point_cost": 6,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true,
+      "mechanics": {
+        "surprise_bonus": 1
+      }
+    },
+    "druid_nature_ward": {
+      "description": "Nature ward (8): \u002B1 to saves versus poison and disease.",
+      "point_cost": 8,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true,
+      "mechanics": {
+        "save_bonuses": {
+          "poison": 1
+        }
+      }
+    },
+    "access_to_spheres_standard_druid_package_costs_60_cp_or_buy_spheres_individually": {
+      "description": "Access to spheres: Standard druid package costs 60 CP, or buy spheres individually.",
+      "point_cost": 60,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
     }
   }
 }
