@@ -84,8 +84,8 @@
                 Background="{StaticResource BrushCard}"
                 BorderBrush="{StaticResource BrushBorder2}"
                 BorderThickness="1" CornerRadius="2" Padding="14">
-            <TabControl Background="Transparent" BorderThickness="0">
-                <TabItem Header="Nonweapon Proficiencies">
+            <TabControl x:Name="OptionsTabControl" Background="Transparent" BorderThickness="0">
+                <TabItem x:Name="NwpTab" Header="Nonweapon Proficiencies">
                     <Grid Margin="8">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -213,7 +213,7 @@
                     </Grid>
                 </TabItem>
 
-                <TabItem Header="Traits">
+                <TabItem x:Name="TraitsTab" Header="Traits">
                     <Grid Margin="8">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -284,7 +284,7 @@
                     </Grid>
                 </TabItem>
 
-                <TabItem Header="Disadvantages">
+                <TabItem x:Name="DisadvantagesTab" Header="Disadvantages">
                     <Grid Margin="8">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -359,7 +359,7 @@
                     </Grid>
                 </TabItem>
 
-                <TabItem Header="Languages">
+                <TabItem x:Name="LanguagesTab" Header="Languages">
                     <Grid Margin="8">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -397,6 +397,8 @@
                                         <ComboBoxItem Content="Free Spoken Language" Tag="free_spoken" IsSelected="True"/>
                                         <ComboBoxItem Content="Modern Languages" Tag="modern_languages"/>
                                         <ComboBoxItem Content="Ancient Languages" Tag="ancient_languages"/>
+                                        <ComboBoxItem Content="Animal Languages" Tag="animal_languages"/>
+                                        <ComboBoxItem Content="Priest Secret Language" Tag="priest_secret_language"/>
                                         <ComboBoxItem Content="Reading/Writing" Tag="reading_writing"/>
                                     </ComboBox>
                                     <TextBox Grid.Row="4" x:Name="LanguageNameTextBox" Style="{StaticResource DarkTextBox}"/>

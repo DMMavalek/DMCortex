@@ -264,7 +264,7 @@
                     <!-- Level-up / progression editor -->
                     <Border x:Name="CharUpdatePanel" Grid.Row="4" Background="{StaticResource BrushBtn}" BorderBrush="{StaticResource BrushBorder2}" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,10">
                         <StackPanel>
-                            <TextBlock Text="Level-Up &amp; CP Spending" Style="{StaticResource LabelText}" Margin="0,0,0,8"/>
+                            <TextBlock x:Name="CharUpdateHeader" Text="Level-Up &amp; CP Spending" Style="{StaticResource LabelText}" Margin="0,0,0,8"/>
 
                             <Grid Margin="0,0,0,8">
                                 <Grid.ColumnDefinitions>
@@ -282,7 +282,7 @@
                                     <TextBlock Text="Add HP" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
                                     <TextBox x:Name="CharHpGainInput" Style="{StaticResource DarkTextBox}" Text="0"/>
                                 </StackPanel>
-                                <StackPanel Grid.Column="4">
+                                <StackPanel x:Name="CharAddCpPanel" Grid.Column="4">
                                     <TextBlock Text="Add CP" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
                                     <TextBox x:Name="CharCpGainInput" Style="{StaticResource DarkTextBox}" Text="0"/>
                                 </StackPanel>
@@ -290,7 +290,7 @@
 
                             <Button Content="⬆  APPLY LEVEL UPDATE" Style="{StaticResource GoldButton}" Width="190" HorizontalAlignment="Left" Click="BtnApplyLevelUpdate_Click"/>
 
-                            <Grid Margin="0,8,0,8">
+                            <Grid x:Name="CharSpendCpGrid" Margin="0,8,0,8">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="12"/>
@@ -306,10 +306,47 @@
                                 </StackPanel>
                             </Grid>
 
-                            <Button Content="💾  SPEND CP" Style="{StaticResource GoldButton}" Width="130" HorizontalAlignment="Left" Click="BtnSpendCharacterCp_Click"/>
+                            <Button x:Name="CharSpendCpButton" Content="💾  SPEND CP" Style="{StaticResource GoldButton}" Width="130" HorizontalAlignment="Left" Click="BtnSpendCharacterCp_Click"/>
 
-                            <TextBlock Text="Currency" Style="{StaticResource SubtitleText}" Margin="0,10,0,2"/>
-                            <TextBlock x:Name="CharCoinSummary" Style="{StaticResource SubtitleText}" Margin="0,0,0,8" TextWrapping="Wrap"/>
+                            <Expander Header="Money &amp; Gems" IsExpanded="True" Margin="0,10,0,8">
+                                <StackPanel Margin="8,6,8,4">
+                                    <TextBlock x:Name="CharCoinSummary" Style="{StaticResource SubtitleText}" Margin="0,0,0,6" TextWrapping="Wrap"/>
+                                    <TextBlock Text="Gem Inventory" Style="{StaticResource SubtitleText}" Margin="0,0,0,4"/>
+                                    <ListBox x:Name="CharGemList"
+                                             Style="{StaticResource DarkListBox}"
+                                             ItemContainerStyle="{StaticResource DarkListBoxItem}"
+                                             MinHeight="64"
+                                             MaxHeight="140"/>
+                                </StackPanel>
+                            </Expander>
+
+                            <Expander Header="Inventory (By Category)" IsExpanded="True" Margin="0,0,0,8">
+                                <StackPanel Margin="0,6,0,4">
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="2*"/>
+                                            <ColumnDefinition Width="10"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="10"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox x:Name="CharInventorySearchBox"
+                                                 Grid.Column="0"
+                                                 Style="{StaticResource DarkTextBox}"
+                                                 Tag="Search inventory"
+                                                 TextChanged="CharInventorySearchBox_TextChanged"/>
+                                        <ComboBox x:Name="CharInventoryCategoryFilter"
+                                                  Grid.Column="2"
+                                                  Style="{StaticResource DarkComboBox}"
+                                                  SelectionChanged="CharInventoryCategoryFilter_SelectionChanged"/>
+                                        <ComboBox x:Name="CharInventorySort"
+                                                  Grid.Column="4"
+                                                  Style="{StaticResource DarkComboBox}"
+                                                  SelectionChanged="CharInventorySort_SelectionChanged"/>
+                                    </Grid>
+                                    <StackPanel x:Name="CharInventorySectionsPanel"/>
+                                </StackPanel>
+                            </Expander>
 
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
                                 <Button Content="🛒  BUY ITEM"

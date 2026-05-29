@@ -5,9 +5,9 @@
     <Grid Margin="40,20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="12"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="12"/>
+                <RowDefinition Height="0"/>
+                <RowDefinition Height="0"/>
+                <RowDefinition Height="0"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -15,10 +15,15 @@
             <TextBlock Text="EQUIPMENT" Style="{StaticResource TitleText}" FontSize="20" Margin="0,0,0,4"/>
             <TextBlock Text="Choose starting gear by category. Double-click is enabled for quick add/remove."
                        Style="{StaticResource SubtitleText}" Margin="0,0,0,10"/>
+            <TextBlock x:Name="CurrentMoneyText" Style="{StaticResource BodyText}" Margin="0,0,0,10" Visibility="Collapsed"/>
+            <TextBlock x:Name="TransactionStatusText" Style="{StaticResource BodyText}" Margin="0,0,0,8" TextWrapping="Wrap" Visibility="Collapsed"/>
+            <TextBlock Text="IMPORTANT NOTES" Style="{StaticResource SubtitleText}" FontSize="10" Margin="0,0,0,2" Visibility="Collapsed"/>
+            <TextBlock x:Name="ImportStatusText" Style="{StaticResource BodyText}" Margin="0,0,0,8" TextWrapping="Wrap" Visibility="Collapsed"/>
             <Rectangle Height="1" Fill="{StaticResource BrushBorder}" Margin="0,0,0,10"/>
         </StackPanel>
 
         <Border Grid.Row="2"
+                Visibility="Collapsed"
                 Background="{StaticResource BrushCard}"
                 BorderBrush="{StaticResource BrushBorder2}"
                 BorderThickness="1"
@@ -32,13 +37,15 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Grid.Column="0">
-                    <TextBlock Text="Selected items" Style="{StaticResource SubtitleText}" FontSize="10"/>
-                    <TextBlock x:Name="SelectedCountText" Style="{StaticResource BodyText}" Margin="0,4,0,0"/>
+                    <TextBlock Text="Funds" Style="{StaticResource SubtitleText}" FontSize="10"/>
+                    <TextBlock x:Name="StartingFundsText" Style="{StaticResource BodyText}" Margin="0,4,0,0" Visibility="Collapsed"/>
+                    <TextBlock x:Name="EquipmentSpendText" Style="{StaticResource BodyText}" Margin="0,2,0,0" Visibility="Collapsed"/>
+                    <TextBlock x:Name="RemainingFundsText" Style="{StaticResource BodyText}" Margin="0,2,0,0" Visibility="Collapsed"/>
                 </StackPanel>
                 <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource BrushBorder2}" Margin="0,2"/>
                 <StackPanel Grid.Column="2">
-                    <TextBlock Text="Import notes" Style="{StaticResource SubtitleText}" FontSize="10"/>
-                    <TextBlock x:Name="ImportStatusText" Style="{StaticResource BodyText}" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                    <TextBlock Text="Notes" Style="{StaticResource SubtitleText}" FontSize="10"/>
+                    <TextBlock Text="Gems are shown in Selected equipment with [G]." Style="{StaticResource BodyText}" Margin="0,4,0,0" TextWrapping="Wrap"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -98,6 +105,8 @@
                         Margin="0,0,0,10" Click="BtnEquip_Click" IsEnabled="False"/>
                 <Button x:Name="BtnSetQuantity" Content="SET QTY" Style="{StaticResource GoldButton}"
                     Margin="0,0,0,10" Click="BtnSetQuantity_Click" IsEnabled="False"/>
+                <Button x:Name="BtnAddFunds" Content="ADD FUNDS" Style="{StaticResource GoldButton}"
+                    Margin="0,0,0,10" Click="BtnAddFunds_Click"/>
                 <Button x:Name="BtnRemove" Content="◀  REMOVE" Style="{StaticResource DarkButton}"
                         Margin="0,0,0,10" Click="BtnRemove_Click"/>
                 <Button x:Name="BtnClear" Content="CLEAR" Style="{StaticResource DarkButton}"
@@ -118,25 +127,59 @@
                     <TextBlock Text="Selected equipment" Style="{StaticResource SubtitleText}"/>
 
                     <!-- Equipped slots summary -->
-                    <Border Grid.Row="1" Background="{StaticResource BrushPanel}"
-                            BorderBrush="{StaticResource BrushBorder}" BorderThickness="1"
-                            CornerRadius="2" Padding="8,6" Margin="0,8,0,0">
-                        <StackPanel>
-                            <TextBlock Text="EQUIPPED" Style="{StaticResource SubtitleText}" FontSize="9" Margin="0,0,0,4"/>
-                            <TextBlock x:Name="EquippedArmorText" Style="{StaticResource BodyText}" FontSize="10"
-                                       Text="Armor: —" TextWrapping="Wrap"/>
-                            <TextBlock x:Name="EquippedShieldText" Style="{StaticResource BodyText}" FontSize="10"
-                                       Text="Shield: —" TextWrapping="Wrap" Margin="0,2,0,0"/>
-                            <TextBlock x:Name="EquippedWeaponText" Style="{StaticResource BodyText}" FontSize="10"
-                                       Text="Weapon: —" TextWrapping="Wrap" Margin="0,2,0,0"/>
-                        </StackPanel>
-                    </Border>
+                    <Expander Grid.Row="1" x:Name="EquippedExpander" IsExpanded="True" Margin="0,8,0,0"
+                              Loaded="EquippedExpander_Loaded"
+                              Expanded="EquippedExpander_Expanded"
+                              Collapsed="EquippedExpander_Collapsed"
+                              Background="{StaticResource BrushPanel}">
+                        <Expander.Header>
+                            <TextBlock Text="EQUIPPED" Style="{StaticResource SubtitleText}" FontSize="9"/>
+                        </Expander.Header>
+                        <Border BorderBrush="{StaticResource BrushBorder}" BorderThickness="1"
+                                CornerRadius="2" Padding="8,6" Margin="0,4,0,0">
+                            <StackPanel>
+                                <TextBlock x:Name="EquippedArmorText" Style="{StaticResource BodyText}" FontSize="10"
+                                           Text="Armor: —" TextWrapping="Wrap"/>
+                                <TextBlock x:Name="EquippedShieldText" Style="{StaticResource BodyText}" FontSize="10"
+                                           Text="Shield: —" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                                <TextBlock x:Name="EquippedWeaponText" Style="{StaticResource BodyText}" FontSize="10"
+                                           Text="Weapon: —" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </Border>
+                    </Expander>
 
                     <ListBox Grid.Row="3" x:Name="SelectedList"
                              Background="Transparent" BorderThickness="0"
                              MouseDoubleClick="SelectedList_MouseDoubleClick"
                              MouseRightButtonUp="SelectedList_MouseRightButtonUp"
                              SelectionChanged="SelectedList_SelectionChanged">
+                        <ListBox.GroupStyle>
+                            <GroupStyle>
+                                <GroupStyle.ContainerStyle>
+                                    <Style TargetType="{x:Type GroupItem}">
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="{x:Type GroupItem}">
+                                                    <Expander IsExpanded="True" Margin="0,2,0,4"
+                                                              Tag="{Binding Name}"
+                                                              Loaded="SelectedGroupExpander_Loaded"
+                                                              Expanded="SelectedGroupExpander_Expanded"
+                                                              Collapsed="SelectedGroupExpander_Collapsed">
+                                                        <Expander.Header>
+                                                            <DockPanel LastChildFill="False">
+                                                                <TextBlock Text="{Binding Name}" Style="{StaticResource SubtitleText}"/>
+                                                                <TextBlock Text="{Binding ItemCount, StringFormat= ({0})}" Style="{StaticResource BodyText}" Margin="6,0,0,0"/>
+                                                            </DockPanel>
+                                                        </Expander.Header>
+                                                        <ItemsPresenter Margin="0,4,0,0"/>
+                                                    </Expander>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </GroupStyle.ContainerStyle>
+                            </GroupStyle>
+                        </ListBox.GroupStyle>
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <Grid Margin="2,1">

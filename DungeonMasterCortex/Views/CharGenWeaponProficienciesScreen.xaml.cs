@@ -30,6 +30,16 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
         ("fighting_style_sword_shield", "Sword and Shield Style", "Defensive style built around shield use and close-in melee control.")
     };
 
+    private static readonly HashSet<string> ClericRestrictedWeaponIds =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            "quarterstaff",
+            "club",
+            "warhammer",
+            "horsemans_mace",
+            "horsemans_flail",
+        };
+
     private readonly MainWindow _app;
     private CharacterOptionCatalog _catalog = new(
         Array.Empty<NonweaponProficiencyDefinition>(),
@@ -82,6 +92,8 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
             backAction: () => _app.GoTo("chargen_character_options", -1),
             nextAction: Advance);
 
+        EnforceClericWeaponRestrictionsOnExistingSelections();
+
         PopulateGroupFilter();
         Refresh();
         UpdateDetail(null);
@@ -116,16 +128,44 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
     }
 
     private int GetSlotsUsed()
-        => IsPlayersOptionMode()
-            ? _app.Rules.GetTotalWeaponProficiencyCpUsed(GetEffectiveClassIds(), _app.CharGen.SelectedWeaponProficiencies)
-            : RulesEngine.GetTotalWeaponProficiencySlotsUsed(_app.CharGen.SelectedWeaponProficiencies);
+        => _app.CharGen.SelectedWeaponProficiencies.Sum(GetSelectionTotalCost);
 
     private int GetCharacterLevel() => Math.Max(1, _app.CharGen.CharacterLevel);
 
     private int GetProficiencyCost(string profType, string proficiencyId, bool specialized = false)
-        => IsPlayersOptionMode()
+    {
+        int baseCost = IsPlayersOptionMode()
             ? _app.Rules.GetWeaponProficiencyCpCost(GetEffectiveClassIds(), proficiencyId, profType, specialized, GetCharacterLevel())
             : RulesEngine.GetWeaponProficiencySlotCost(profType) + (specialized ? 1 : 0);
+
+        if (baseCost <= 0
+            && IsPlayersOptionMode()
+            && specialized
+            && string.Equals(profType, "individual", StringComparison.OrdinalIgnoreCase)
+            && IsWizardOnlyCharacter()
+            && HasSelectedClassAbility("wizard_weapon_specialization"))
+        {
+            int nonSpecializedCost = _app.Rules.GetWeaponProficiencyCpCost(
+                GetEffectiveClassIds(),
+                proficiencyId,
+                profType,
+                specialized: false,
+                GetCharacterLevel());
+            if (nonSpecializedCost > 0)
+            {
+                // Table 53 wizard specialization surcharge.
+                baseCost = nonSpecializedCost + 10;
+            }
+        }
+
+        if (baseCost <= 0)
+            return baseCost;
+
+        if (HasFighterProficiencyEase())
+            return Math.Max(1, (baseCost + 1) / 2);
+
+        return baseCost;
+    }
 
     private string FormatBudgetUnits(int amount)
     {
@@ -159,6 +199,230 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
             ? modInt
             : _app.CharGen.Abilities.GetValueOrDefault("int", 10);
         return _app.Rules.GetWeaponCpBudget(classIds, intScore);
+    }
+
+    private HashSet<string> GetSelectedClassAbilityBaseIds()
+    {
+        var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (string entry in _app.CharGen.SelectedClassAbilityIds)
+        {
+            string id = RulesEngine.ExtractClassAbilityBaseId(entry);
+            if (!string.IsNullOrWhiteSpace(id))
+                ids.Add(id);
+        }
+
+        foreach (var byClass in _app.CharGen.SelectedAbilitiesByClass.Values)
+        {
+            foreach (string entry in byClass)
+            {
+                string id = RulesEngine.ExtractClassAbilityBaseId(entry);
+                if (!string.IsNullOrWhiteSpace(id))
+                    ids.Add(id);
+            }
+        }
+
+        return ids;
+    }
+
+    private IEnumerable<string> GetSelectedClassAbilityEntries()
+    {
+        foreach (string entry in _app.CharGen.SelectedClassAbilityIds)
+            yield return entry;
+
+        foreach (var byClass in _app.CharGen.SelectedAbilitiesByClass.Values)
+        {
+            foreach (string entry in byClass)
+                yield return entry;
+        }
+    }
+
+    private bool HasSelectedClassAbility(params string[] abilityIds)
+    {
+        if (abilityIds is null || abilityIds.Length == 0)
+            return false;
+
+        var wanted = new HashSet<string>(abilityIds.Where(id => !string.IsNullOrWhiteSpace(id)), StringComparer.OrdinalIgnoreCase);
+        if (wanted.Count == 0)
+            return false;
+
+        return GetSelectedClassAbilityEntries()
+            .Select(RulesEngine.ExtractClassAbilityBaseId)
+            .Any(wanted.Contains);
+    }
+
+    private HashSet<string> GetWizardListedWeaponRestrictionIds()
+    {
+        var allowedIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (string entry in GetSelectedClassAbilityEntries())
+        {
+            string baseId = RulesEngine.ExtractClassAbilityBaseId(entry);
+            if (!string.Equals(baseId, "wizard_restriction_weapons_restriction_cp3", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            string playerText = RulesEngine.ExtractClassAbilityPlayerText(entry);
+            if (string.IsNullOrWhiteSpace(playerText))
+                continue;
+
+            foreach (string rawToken in playerText.Split(new[] { ',', ';', '/', '|' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                string token = rawToken.Trim();
+                if (string.IsNullOrWhiteSpace(token))
+                    continue;
+
+                var byId = _app.Rules.WeaponById.Keys.FirstOrDefault(id => string.Equals(id, token, StringComparison.OrdinalIgnoreCase));
+                if (!string.IsNullOrWhiteSpace(byId))
+                {
+                    allowedIds.Add(byId);
+                    continue;
+                }
+
+                var byName = _app.Rules.WeaponById.Values
+                    .FirstOrDefault(w => string.Equals(w.Name, token, StringComparison.OrdinalIgnoreCase));
+                if (byName is not null)
+                    allowedIds.Add(byName.Id);
+            }
+        }
+
+        return allowedIds;
+    }
+
+    private bool HasNoWeaponProficiencyRestriction()
+        => GetSelectedClassAbilityBaseIds().Contains("cleric_restriction_weapon_restriction_cp15")
+            || GetSelectedClassAbilityBaseIds().Contains("druid_restriction_weapon_restriction_cp15")
+            || HasSelectedClassAbility("wizard_restriction_weapons_restriction_cp5");
+
+    private bool HasLimitedPriestWeaponRestriction()
+        => GetSelectedClassAbilityBaseIds().Contains("cleric_restriction_weapon_restriction_cp5")
+            || GetSelectedClassAbilityBaseIds().Contains("druid_restriction_weapon_restriction_cp5")
+            || GetSelectedClassAbilityBaseIds().Contains("paladin_restriction_limited_weapon_selection")
+            || GetSelectedClassAbilityBaseIds().Contains("ranger_restriction_limited_weapon_selection");
+
+    private bool HasWizardListedWeaponRestriction()
+        => HasSelectedClassAbility("wizard_restriction_weapons_restriction_cp3");
+
+    private bool HasFighterProficiencyEase()
+        => GetSelectedClassAbilityBaseIds().Contains("fighter_proficiency_ease");
+
+    private static bool IsWizardWeaponClassId(string classId)
+    {
+        string key = (classId ?? string.Empty).Trim();
+        return string.Equals(key, "wizard", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(key, "mage", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(key, "illusionist", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool IsWizardOnlyCharacter()
+    {
+        var classes = GetEffectiveClassIds();
+        return classes.Count > 0 && classes.All(IsWizardWeaponClassId);
+    }
+
+    private bool HasWizardRogueWeaponSelection()
+        => HasSelectedClassAbility("wizard_weapon_selection_cp10");
+
+    private bool HasWizardClericWeaponSelection()
+        => HasSelectedClassAbility("wizard_weapon_selection_cp15");
+
+    private bool CanWizardSelectWeaponByAbility(string? weaponId)
+    {
+        if (!IsPlayersOptionMode() || !IsWizardOnlyCharacter())
+            return true;
+
+        if (string.IsNullOrWhiteSpace(weaponId))
+            return false;
+
+        int wizardCost = _app.Rules.GetWeaponProficiencyCpCost(
+            new[] { "wizard" },
+            weaponId,
+            "individual",
+            specialized: false,
+            GetCharacterLevel());
+
+        if (wizardCost <= 0)
+            return false;
+
+        if (wizardCost == 3)
+            return true;
+
+        bool isClericWeapon = ClericRestrictedWeaponIds.Contains(weaponId);
+        if (isClericWeapon)
+            return HasWizardClericWeaponSelection();
+
+        if (wizardCost == 5)
+            return HasWizardRogueWeaponSelection();
+
+        return false;
+    }
+
+    private bool IsWeaponAllowedForClassRestriction(string weaponId)
+    {
+        if (HasNoWeaponProficiencyRestriction())
+            return false;
+
+        if (HasWizardListedWeaponRestriction())
+        {
+            var allowed = GetWizardListedWeaponRestrictionIds();
+            return allowed.Contains(weaponId ?? string.Empty);
+        }
+
+        if (!HasLimitedPriestWeaponRestriction())
+            return CanWizardSelectWeaponByAbility(weaponId);
+
+        return ClericRestrictedWeaponIds.Contains(weaponId ?? string.Empty)
+            && CanWizardSelectWeaponByAbility(weaponId);
+    }
+
+    private void EnforceClericWeaponRestrictionsOnExistingSelections()
+    {
+        if (_app.CharGen.SelectedWeaponProficiencies.Count == 0)
+            return;
+
+        bool noWeapons = HasNoWeaponProficiencyRestriction();
+        bool limitedWeapons = HasLimitedPriestWeaponRestriction();
+        bool wizardListedWeapons = HasWizardListedWeaponRestriction();
+        bool wizardSelectionGated = IsPlayersOptionMode() && IsWizardOnlyCharacter();
+        var wizardAllowed = GetWizardListedWeaponRestrictionIds();
+        if (!noWeapons && !limitedWeapons && !wizardListedWeapons && !wizardSelectionGated)
+            return;
+
+        int removed = _app.CharGen.SelectedWeaponProficiencies.RemoveAll(sel =>
+        {
+            if (noWeapons)
+                return true;
+
+            if (wizardListedWeapons)
+            {
+                return !string.Equals(sel.ProficiencyType, "individual", StringComparison.OrdinalIgnoreCase)
+                    || !wizardAllowed.Contains(sel.ProficiencyId);
+            }
+
+            if (!limitedWeapons)
+            {
+                if (wizardSelectionGated)
+                {
+                    return !string.Equals(sel.ProficiencyType, "individual", StringComparison.OrdinalIgnoreCase)
+                        || !CanWizardSelectWeaponByAbility(sel.ProficiencyId);
+                }
+
+                return false;
+            }
+
+            return !string.Equals(sel.ProficiencyType, "individual", StringComparison.OrdinalIgnoreCase)
+                || !ClericRestrictedWeaponIds.Contains(sel.ProficiencyId);
+        });
+
+        if (removed <= 0)
+            return;
+
+        string message = noWeapons
+            ? "Weapon restriction (15 CP) is selected. All weapon proficiencies were removed."
+            : wizardSelectionGated
+                ? "Wizard weapon-selection limits are active. Disallowed proficiencies were removed."
+                : "Weapon restriction is selected. Only staff, club, war hammer, horseman's mace, and horseman's flail may remain.";
+
+        MessageBox.Show(message, "Weapon Restrictions Applied", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private int GetTotalNwpImprovementCp()
@@ -324,8 +588,11 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
     {
         bool isPO = string.Equals(_app.CharGen.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase);
         if (isPO)
+        {
+            bool wizardAbilityUnlock = IsWizardOnlyCharacter() && HasSelectedClassAbility("wizard_weapon_specialization");
             return HasPurchasedWeaponSpecializationAbility()
-                && _app.Rules.CanSpecializeAtLevel(GetEffectiveClassIds(), GetCharacterLevel());
+                && (_app.Rules.CanSpecializeAtLevel(GetEffectiveClassIds(), GetCharacterLevel()) || wizardAbilityUnlock);
+        }
         return GetEffectiveClassIds()
             .Any(id => _app.Rules.CanSpecializeInWeapons(id, isPO));
     }
@@ -346,6 +613,21 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
         }
 
         return false;
+    }
+
+    private bool HasPaladinSingleSpecializationCap()
+    {
+        if (!IsPlayersOptionMode())
+            return false;
+
+        bool hasPaladinClass = GetEffectiveClassIds().Any(id => string.Equals(id, "paladin", StringComparison.OrdinalIgnoreCase));
+        if (!hasPaladinClass)
+            return false;
+
+        var selected = GetSelectedAbilityIdsForClass("paladin");
+        bool hasSingleSpecAbility = selected.Any(id => string.Equals(RulesEngine.ExtractClassAbilityBaseId(id), "paladin_weapon_specialization", StringComparison.OrdinalIgnoreCase));
+        bool hasMultipleSpecAbility = selected.Any(id => RulesEngine.ExtractClassAbilityBaseId(id).EndsWith("_multiple_specialization", StringComparison.OrdinalIgnoreCase));
+        return hasSingleSpecAbility && !hasMultipleSpecAbility;
     }
 
     // ── UI population ─────────────────────────────────────────────────────────
@@ -421,10 +703,12 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
         bool showTight      = showType == "all" || showType == "tight";
         bool showBroad      = showType == "all" || showType == "broad";
         bool showTraining   = showType == "all" || showType == "training";
+        bool noWeapons      = HasNoWeaponProficiencyRestriction();
+        bool limitedWeapons = HasLimitedPriestWeaponRestriction();
         bool canBuyGroups   = !IsPlayersOptionMode() || _app.Rules.CanBuyWeaponGroups(GetEffectiveClassIds());
 
         // Broad groups
-        if (showBroad && canBuyGroups)
+        if (showBroad && canBuyGroups && !noWeapons && !limitedWeapons)
         {
             foreach (var g in _app.Rules.WeaponGroups)
             {
@@ -443,7 +727,7 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
         }
 
         // Tight groups
-        if (showTight && canBuyGroups)
+        if (showTight && canBuyGroups && !noWeapons && !limitedWeapons)
         {
             foreach (var g in _app.Rules.WeaponGroups)
             {
@@ -468,11 +752,14 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
         }
 
         // Individual weapons
-        if (showIndividual)
+        if (showIndividual && !noWeapons)
         {
             foreach (var w in _app.Rules.Weapons
                 .OrderBy(w => GetWeaponSortKey(w.Name), StringComparer.OrdinalIgnoreCase))
             {
+                if (!IsWeaponAllowedForClassRestriction(w.Id))
+                    continue;
+
                 if (!string.Equals(groupFilter, AllGroups, StringComparison.OrdinalIgnoreCase))
                 {
                     var grp = _app.Rules.WeaponGroups
@@ -494,7 +781,7 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
         }
 
         // Additional combat training picks that share the weapon proficiency budget.
-        if (showTraining)
+        if (showTraining && !noWeapons && !limitedWeapons)
         {
             foreach (var option in CombatOptions.OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase))
             {
@@ -576,6 +863,20 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
 
     private int GetPerWeaponOptionCost(string optionId)
         => Math.Max(0, GetProficiencyCost(CombatOptionType, optionId));
+
+    private int GetSelectionTotalCost(WeaponProficiencySelection selection)
+    {
+        int cost = GetProficiencyCost(selection.ProficiencyType, selection.ProficiencyId, selection.Specialized);
+        if (cost < 0)
+            cost = RulesEngine.GetWeaponProficiencySlotCost(selection.ProficiencyType) + (selection.Specialized ? 1 : 0);
+
+        if (selection.WeaponOfChoice)
+            cost += GetPerWeaponOptionCost(WeaponOfChoiceId);
+        if (selection.WeaponExpertise)
+            cost += GetPerWeaponOptionCost(WeaponExpertiseId);
+
+        return Math.Max(0, cost);
+    }
 
     private bool TryGetSelectedIndividualWeapon(out WeaponProficiencySelection selection)
     {
@@ -830,6 +1131,52 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
     {
         if (AvailableList.SelectedItem is not AvailableItem item) return;
 
+        if (HasNoWeaponProficiencyRestriction())
+        {
+            MessageBox.Show(
+                "This character has the 15 CP weapon restriction and cannot gain weapon proficiencies.",
+                "Weapon Restriction",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        if (HasLimitedPriestWeaponRestriction())
+        {
+            bool allowed = string.Equals(item.ProfType, "individual", StringComparison.OrdinalIgnoreCase)
+                && ClericRestrictedWeaponIds.Contains(item.Id);
+            if (!allowed)
+            {
+                MessageBox.Show(
+                    "This character is limited to staff, club, war hammer, horseman's mace, and horseman's flail.",
+                    "Weapon Restriction",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+        }
+
+        if (HasWizardListedWeaponRestriction())
+        {
+            var allowedIds = GetWizardListedWeaponRestrictionIds();
+            bool allowed = string.Equals(item.ProfType, "individual", StringComparison.OrdinalIgnoreCase)
+                && allowedIds.Contains(item.Id);
+            if (!allowed)
+            {
+                string allowedText = allowedIds.Count == 0
+                    ? "No allowed weapon list is configured. Set it in Class Abilities for Weapons Restriction (3)."
+                    : "Allowed list only: " + string.Join(", ", allowedIds
+                        .Select(id => _app.Rules.WeaponById.TryGetValue(id, out var w) ? w.Name : id)
+                        .OrderBy(x => x, StringComparer.OrdinalIgnoreCase));
+                MessageBox.Show(
+                    allowedText,
+                    "Weapon Restriction",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+        }
+
         var existing = _app.CharGen.SelectedWeaponProficiencies
             .FirstOrDefault(s => string.Equals(s.ProficiencyId, item.Id, StringComparison.OrdinalIgnoreCase));
         if (existing is not null) return; // already added
@@ -910,6 +1257,20 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
             .FirstOrDefault(s => string.Equals(s.ProficiencyId, selItem.Id, StringComparison.OrdinalIgnoreCase));
         if (match is not null)
         {
+            if (!match.Specialized && HasPaladinSingleSpecializationCap())
+            {
+                int specializedCount = _app.CharGen.SelectedWeaponProficiencies.Count(s => s.Specialized);
+                if (specializedCount >= 1)
+                {
+                    MessageBox.Show(
+                        "Paladin weapon specialization allows specialization in only one weapon.",
+                        "Weapon Specialization",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                    return;
+                }
+            }
+
             int budget = GetSlotBudget();
             int used = GetSlotsUsed();
             int specializedCost = GetProficiencyCost(match.ProficiencyType, match.ProficiencyId, specialized: true);

@@ -70,6 +70,8 @@ public sealed class LicenseService
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "DungeonMasterCortex");
 
+    private const string DefaultActivationEmail = "dungeonmastercortex@gmail.com";
+    private static readonly string BundledSmtpSettingsPath = Path.Combine(AppContext.BaseDirectory, "smtp_activation.json");
     private static readonly string SmtpSettingsPath = Path.Combine(LicenseDirectory, "smtp_activation.json");
     private static readonly string LegacyLicensePath = Path.Combine(LicenseDirectory, "license.json");
 
@@ -174,16 +176,51 @@ public sealed class LicenseService
     {
         try
         {
-            if (!File.Exists(SmtpSettingsPath))
-                return new ActivationSmtpSettings();
+            ActivationSmtpSettings? settings = null;
 
-            var json = File.ReadAllText(SmtpSettingsPath);
-            return JsonSerializer.Deserialize<ActivationSmtpSettings>(json) ?? new ActivationSmtpSettings();
+            if (File.Exists(SmtpSettingsPath))
+            {
+                var json = File.ReadAllText(SmtpSettingsPath);
+                settings = JsonSerializer.Deserialize<ActivationSmtpSettings>(json);
+            }
+
+            settings ??= TryReadBundledSmtpSettings();
+            return NormalizeSmtpSettings(settings);
         }
         catch
         {
-            return new ActivationSmtpSettings();
+            return NormalizeSmtpSettings(null);
         }
+    }
+
+    private static ActivationSmtpSettings? TryReadBundledSmtpSettings()
+    {
+        try
+        {
+            if (!File.Exists(BundledSmtpSettingsPath))
+                return null;
+
+            var json = File.ReadAllText(BundledSmtpSettingsPath);
+            return JsonSerializer.Deserialize<ActivationSmtpSettings>(json);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static ActivationSmtpSettings NormalizeSmtpSettings(ActivationSmtpSettings? settings)
+    {
+        var result = settings ?? new ActivationSmtpSettings();
+
+        result.Host = string.IsNullOrWhiteSpace(result.Host) ? "smtp.gmail.com" : result.Host.Trim();
+        result.Port = result.Port > 0 ? result.Port : 587;
+        result.UseSsl = true;
+        result.Username = string.IsNullOrWhiteSpace(result.Username) ? DefaultActivationEmail : result.Username.Trim();
+        result.FromEmail = string.IsNullOrWhiteSpace(result.FromEmail) ? DefaultActivationEmail : result.FromEmail.Trim();
+        result.ToEmail = string.IsNullOrWhiteSpace(result.ToEmail) ? DefaultActivationEmail : result.ToEmail.Trim();
+
+        return result;
     }
 
     public bool SaveSmtpSettings(ActivationSmtpSettings settings, out string message)

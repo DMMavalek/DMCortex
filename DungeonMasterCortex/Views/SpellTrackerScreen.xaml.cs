@@ -280,10 +280,13 @@ public class SpellTrackerScreen : UserControl, IScreen
         EnsureSpellTrackingInitialized(_selectedCharacter);
 
         _characterHeader.Text = BuildCharacterSummary(_selectedCharacter);
-        _statusText.Text = "Select a spell, then use ADD TO PREPARED for wizard or cleric daily prep.";
+        _statusText.Text = "Select a spell, then use ADD TO PREPARED for daily spell prep.";
 
-        _priestBypass.IsEnabled = IsDivineCaster(_selectedCharacter);
-        _priestBypass.IsChecked = _selectedCharacter.PriestMemorizationBypass;
+        bool hasPriestSpellbookRestriction = HasPriestSpellbookRestriction(_selectedCharacter);
+        _priestBypass.IsEnabled = IsDivineCaster(_selectedCharacter) && !hasPriestSpellbookRestriction;
+        _priestBypass.IsChecked = hasPriestSpellbookRestriction ? false : _selectedCharacter.PriestMemorizationBypass;
+        if (hasPriestSpellbookRestriction)
+            _selectedCharacter.PriestMemorizationBypass = false;
         _prepareSelectedButton.IsEnabled = true;
         _openDayDetailsButton.IsEnabled = true;
 
@@ -485,19 +488,57 @@ public class SpellTrackerScreen : UserControl, IScreen
         if (IsDivineCaster(character))
         {
             var spheres = GatherCharacterSpheres(character);
+            var sphereAccess = GatherCharacterSphereAccess(character);
             foreach (var spell in _app.Rules.Spells.Where(IsDivineSpell))
             {
                 if (string.IsNullOrWhiteSpace(spell.Id))
                     continue;
 
-                if (spheres.Count > 0 && !string.IsNullOrWhiteSpace(spell.Schools))
+                if (sphereAccess.Count > 0 && !string.IsNullOrWhiteSpace(spell.Schools))
                 {
-                    bool sphereMatch = spheres.Any(s => ContainsToken(spell.Schools, s));
+                    int spellLevel = ParseSpellLevel(spell.Level);
+                    string requiredAccess = spellLevel <= 3 ? "minor" : "major";
+                    bool sphereMatch = ParseSpellSchoolTokens(spell.Schools)
+                        .Any(sphere => RulesEngine.PriestHasSphereAccess(sphere, sphereAccess, requiredAccess));
                     if (!sphereMatch)
                         continue;
                 }
 
                 AddSpellRow(character, spell.Id, "Divine", "Divine List", spell.BriefDescription ?? string.Empty);
+            }
+
+            if (HasPriestSpellbookRestriction(character))
+            {
+                foreach (string spellId in character.WizardSpellbookIds
+                    .Where(id => !string.IsNullOrWhiteSpace(id))
+                    .Distinct(StringComparer.OrdinalIgnoreCase))
+                {
+                    var spell = _app.Rules.Spells.FirstOrDefault(s => string.Equals(s.Id, spellId, StringComparison.OrdinalIgnoreCase));
+                    if (spell is null || !IsDivineSpell(spell))
+                        continue;
+
+                    AddSpellRow(character, spellId, "Divine", "Priest Spellbook", "Recorded in priest spellbook");
+                }
+            }
+
+            // Wizardly Priests: add common/uncommon arcane spells from the selected wizard school(s)
+            var wizardlySchools = character.SelectedClassAbilityIds
+                .Where(entry => string.Equals(RulesEngine.ExtractClassAbilityBaseId(entry),
+                    "cleric_wizardly_priests", StringComparison.OrdinalIgnoreCase))
+                .Select(RulesEngine.ExtractClassAbilityPlayerText)
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .ToList();
+
+            if (wizardlySchools.Count > 0)
+            {
+                foreach (var spell in _app.Rules.Spells
+                    .Where(s => string.Equals(s.Category, "arcane", StringComparison.OrdinalIgnoreCase))
+                    .Where(s => IsSpellInAnySchoolTracker(s, wizardlySchools))
+                    .Where(IsCommonOrUncommonSpellTracker))
+                {
+                    if (!string.IsNullOrWhiteSpace(spell.Id))
+                        AddSpellRow(character, spell.Id, "Divine", "Wizardly Priest", $"Wizard school: {spell.Schools}");
+                }
             }
         }
 
@@ -624,6 +665,8 @@ public class SpellTrackerScreen : UserControl, IScreen
         if (_selectedCharacter?.SpellTracking is null)
             return;
 
+        var character = _selectedCharacter;
+
         if (_knownSpells.SelectedItem is not SpellRow row)
         {
             MessageBox.Show("Select a spell to prepare first.", "Spell Tracker", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -640,7 +683,7 @@ public class SpellTrackerScreen : UserControl, IScreen
         if (row.Level == 0)
         {
             bool isDivine = string.Equals(row.Type, "Divine", StringComparison.OrdinalIgnoreCase);
-            int cantripCap = GetCantripCapacity(_selectedCharacter, isDivine: isDivine);
+            int cantripCap = GetCantripCapacity(character, isDivine: isDivine);
             int preppedCantrips = CountPreparedSpellsForLevel(isDivine, 0);
             if (preppedCantrips >= cantripCap)
             {
@@ -650,7 +693,19 @@ public class SpellTrackerScreen : UserControl, IScreen
         }
 
         bool preparingDivine = string.Equals(row.Type, "Divine", StringComparison.OrdinalIgnoreCase);
-        var maxSlots = GetEffectiveSlots(_selectedCharacter, isDivine: preparingDivine);
+        if (preparingDivine
+            && HasPriestSpellbookRestriction(character)
+            && !character.WizardSpellbookIds.Any(id => string.Equals(id, row.Id, StringComparison.OrdinalIgnoreCase)))
+        {
+            MessageBox.Show(
+                "This character uses the Limited Spell Selection restriction. Add this spell to the priest spellbook before preparing it.",
+                "Priest Spellbook Required",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        var maxSlots = GetEffectiveSlots(character, isDivine: preparingDivine);
         int maxForLevel = 0;
         if (row.Level > 0)
         {
@@ -671,8 +726,8 @@ public class SpellTrackerScreen : UserControl, IScreen
             }
         }
 
-        _selectedCharacter.SpellTracking.AddPreparedSpell(row.Id, row.Name, row.Level, row.SchoolOrSphere);
-        TouchCharacter(_selectedCharacter);
+        character.SpellTracking.AddPreparedSpell(row.Id, row.Name, row.Level, row.SchoolOrSphere);
+        TouchCharacter(character);
         _app.SaveCharacters();
         RenderTrackingState();
     }
@@ -947,6 +1002,48 @@ public class SpellTrackerScreen : UserControl, IScreen
             return;
         }
 
+        bool isWizardFlow = IsCharacterWizard();
+        bool isPriestRestrictionFlow = !isWizardFlow
+            && HasPriestSpellbookRestriction(_selectedCharacter)
+            && string.Equals(selectedSpell.Type, "Divine", StringComparison.OrdinalIgnoreCase);
+
+        if (isPriestRestrictionFlow)
+        {
+            var selectedDef = _app.Rules.Spells.FirstOrDefault(s => string.Equals(s.Id, selectedSpell.Id, StringComparison.OrdinalIgnoreCase));
+            if (selectedDef is null || !IsDivineSpell(selectedDef))
+            {
+                MessageBox.Show(
+                    "Only divine spells can be added to a priest spellbook.",
+                    "Priest Spellbook",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            if (_selectedCharacter.WizardSpellbookIds.Any(id => string.Equals(id, selectedSpell.Id, StringComparison.OrdinalIgnoreCase)))
+            {
+                MessageBox.Show(
+                    $"'{selectedSpell.Name}' is already recorded in the priest spellbook.",
+                    "Priest Spellbook",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            _selectedCharacter.WizardSpellbookIds.Add(selectedSpell.Id);
+            TouchCharacter(_selectedCharacter);
+            _app.SaveCharacters();
+            BuildKnownSpellRows(_selectedCharacter);
+            RenderKnownSpells();
+
+            MessageBox.Show(
+                $"'{selectedSpell.Name}' added to priest spellbook.",
+                "Priest Spellbook",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
         if (_selectedCharacter.WizardSpellbooks?.Count == 0)
         {
             MessageBox.Show("This character has no spellbooks.", "Add to Spellbook", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -1059,6 +1156,17 @@ public class SpellTrackerScreen : UserControl, IScreen
         if (_selectedCharacter is null)
             return;
 
+        if (HasPriestSpellbookRestriction(_selectedCharacter))
+        {
+            _priestBypass.IsChecked = false;
+            _selectedCharacter.PriestMemorizationBypass = false;
+            if (_selectedCharacter.SpellTracking?.DivineConfig is not null)
+                _selectedCharacter.SpellTracking.DivineConfig.BypassMemorization = false;
+            TouchCharacter(_selectedCharacter);
+            _app.SaveCharacters();
+            return;
+        }
+
         bool bypass = _priestBypass.IsChecked == true;
         _selectedCharacter.PriestMemorizationBypass = bypass;
         if (_selectedCharacter.SpellTracking?.DivineConfig is not null)
@@ -1114,15 +1222,86 @@ public class SpellTrackerScreen : UserControl, IScreen
         return 0;
     }
 
+    private static string GetDisplayedCastTime(CharacterSheet character, string spellType, string? rawCastTime)
+    {
+        string castTime = (rawCastTime ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(castTime))
+            return string.Empty;
+
+        if (string.Equals(spellType, "Divine", StringComparison.OrdinalIgnoreCase)
+            && HasClassAbility(character, "cleric_restriction_slower_casting_times"))
+        {
+            return RulesEngine.AdjustSpellCastTimeForSlowerCasting(castTime);
+        }
+
+        if (string.Equals(spellType, "Arcane", StringComparison.OrdinalIgnoreCase)
+            && HasClassAbility(character, "wizard_restriction_slower_casting_time_cp5"))
+        {
+            return RulesEngine.AdjustSpellCastTimeToNextTimeUnit(castTime);
+        }
+
+        if (string.Equals(spellType, "Arcane", StringComparison.OrdinalIgnoreCase)
+            && HasClassAbility(character, "wizard_restriction_slower_casting_time_cp2"))
+        {
+            return RulesEngine.AdjustSpellCastTimeForSlowerCasting(castTime);
+        }
+
+        return castTime;
+    }
+
+    private static HashSet<string> ParseSpellSchoolTokens(string schoolsText)
+    {
+        var tokens = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (string.IsNullOrWhiteSpace(schoolsText))
+            return tokens;
+
+        foreach (string raw in Regex.Split(schoolsText, @"\s*(,|;|/|\||&|\band\b)\s*", RegexOptions.IgnoreCase))
+        {
+            if (string.IsNullOrWhiteSpace(raw)
+                || raw == ","
+                || raw == ";"
+                || raw == "/"
+                || raw == "|"
+                || raw == "&"
+                || string.Equals(raw, "and", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            string normalized = (raw ?? string.Empty).Trim();
+            if (string.Equals(normalized, "Greater Divination", StringComparison.OrdinalIgnoreCase))
+                normalized = "Divination";
+
+            if (!string.IsNullOrWhiteSpace(normalized))
+                tokens.Add(normalized);
+        }
+
+        return tokens;
+    }
+
     private static Dictionary<int, int> GetEffectiveSlots(CharacterSheet character, bool isDivine)
     {
         var slots = new Dictionary<int, int>();
         var source = isDivine ? character.DivineSpellSlots : character.ArcaneSpellSlots;
+        bool hasReducedDivineProgression = isDivine
+            && (HasClassAbility(character, "cleric_restriction_reduced_spell_progression")
+                || HasClassAbility(character, "druid_restriction_reduced_spell_progression"));
+        bool hasReducedArcaneProgression = !isDivine
+            && HasClassAbility(character, "wizard_restriction_reduced_spell_progression");
 
         foreach (var kv in source)
         {
-            if (kv.Key >= 1 && kv.Value > 0)
-                slots[kv.Key] = kv.Value;
+            if (kv.Key < 1)
+                continue;
+
+            int baseSlots = kv.Value;
+            if (hasReducedDivineProgression)
+                baseSlots = Math.Max(0, baseSlots - 1);
+            if (hasReducedArcaneProgression)
+                baseSlots = Math.Max(0, baseSlots - 1);
+
+            if (baseSlots > 0)
+                slots[kv.Key] = baseSlots;
         }
 
         if (isDivine && IsDivineCaster(character))
@@ -1142,9 +1321,12 @@ public class SpellTrackerScreen : UserControl, IScreen
                     continue;
 
                 // AD&D rule intent: bonus spells apply only to levels the caster can already cast.
-                // Exception: level 1 can be granted when we use full-priest fallback.
+                // Exception: level 1 can be granted when we use full-priest fallback and there is no
+                // reduced-progression restriction suppressing that level.
                 bool levelIsAvailable = slots.ContainsKey(spellLevel)
-                    || (spellLevel == 1 && IsFullPriestCaster(character));
+                    || (spellLevel == 1
+                        && IsFullPriestCaster(character)
+                        && !hasReducedDivineProgression);
                 if (!levelIsAvailable)
                     continue;
 
@@ -1218,6 +1400,54 @@ public class SpellTrackerScreen : UserControl, IScreen
         return IsWizardClass(_selectedCharacter);
     }
 
+    private bool CanAddSelectedSpellToSpellbook(SpellRow row)
+    {
+        if (_selectedCharacter is null)
+            return false;
+
+        if (IsCharacterWizard())
+            return true;
+
+        return HasPriestSpellbookRestriction(_selectedCharacter)
+            && string.Equals(row.Type, "Divine", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool HasClassAbility(CharacterSheet character, params string[] abilityIds)
+    {
+        if (abilityIds is null || abilityIds.Length == 0)
+            return false;
+
+        var wanted = new HashSet<string>(abilityIds.Where(id => !string.IsNullOrWhiteSpace(id)), StringComparer.OrdinalIgnoreCase);
+        if (wanted.Count == 0)
+            return false;
+
+        if (character.SelectedClassAbilityIds
+            .Select(RulesEngine.ExtractClassAbilityBaseId)
+            .Any(id => wanted.Contains(id)))
+        {
+            return true;
+        }
+
+        foreach (var (_, entries) in character.SelectedAbilitiesByClass)
+        {
+            if (entries is null)
+                continue;
+
+            if (entries
+                .Select(RulesEngine.ExtractClassAbilityBaseId)
+                .Any(id => wanted.Contains(id)))
+            {
+                return true;
+            }
+        }
+
+        return character.StructuredAbilities.Any(a => wanted.Contains(a.Id));
+    }
+
+    private static bool HasPriestSpellbookRestriction(CharacterSheet character)
+        => HasClassAbility(character, "cleric_restriction_limited_spell_selection")
+            || HasClassAbility(character, "druid_restriction_limited_spell_selection");
+
     private static bool IsWizardClass(CharacterSheet character)
     {
         string combined = BuildClassText(character);
@@ -1260,6 +1490,21 @@ public class SpellTrackerScreen : UserControl, IScreen
     {
         string category = (spell.Category ?? string.Empty).Trim().ToLowerInvariant();
         return category.Contains("priest") || category.Contains("divine") || category.Contains("sphere");
+    }
+
+    private static bool IsSpellInAnySchoolTracker(SpellDefinition spell, List<string> schools)
+    {
+        var spellSchools = ParseSpellSchoolTokens(spell.Schools);
+        return schools.Any(school =>
+            spellSchools.Contains(school.Trim(), StringComparer.OrdinalIgnoreCase));
+    }
+
+    private static bool IsCommonOrUncommonSpellTracker(SpellDefinition spell)
+    {
+        string freq = (spell.Frequency ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(freq)) return true;
+        return !freq.StartsWith("Rare", StringComparison.OrdinalIgnoreCase)
+            && !freq.StartsWith("Very Rare", StringComparison.OrdinalIgnoreCase);
     }
 
     private void RefreshSpellbookFilter()
@@ -1320,7 +1565,7 @@ public class SpellTrackerScreen : UserControl, IScreen
             spell?.Schools ?? string.Empty,
             summary,
             spell?.Description ?? string.Empty,
-            spell?.CastTime ?? string.Empty,
+            GetDisplayedCastTime(character, type, spell?.CastTime),
             spell?.Duration ?? string.Empty,
             spell?.Range ?? string.Empty,
             spell?.Components ?? string.Empty,
@@ -1365,7 +1610,7 @@ public class SpellTrackerScreen : UserControl, IScreen
         _viewSpellCardButton.IsEnabled = true;
         _addTagButton.IsEnabled = true;
         _removeTagButton.IsEnabled = true;
-        _addToSpellbookButton.IsEnabled = IsCharacterWizard();
+        _addToSpellbookButton.IsEnabled = CanAddSelectedSpellToSpellbook(row);
         string tags = row.Tags.Count == 0 ? "(none)" : string.Join(", ", row.Tags);
         string pageTracking = GetSpellbookPageTrackingText(row.Id);
         _selectedSpellInfo.Text = $"{row.Name} (L{row.Level}, {row.Type})\nTags: {tags}\n{pageTracking}";
@@ -1686,6 +1931,78 @@ public class SpellTrackerScreen : UserControl, IScreen
         }
 
         return spheres;
+    }
+
+    private static Dictionary<string, string> GatherCharacterSphereAccess(CharacterSheet character)
+    {
+        var access = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        void MergeSphereSelections(Dictionary<string, string>? selections)
+        {
+            if (selections is null)
+                return;
+
+            foreach (var (sphere, tier) in selections)
+            {
+                if (string.IsNullOrWhiteSpace(sphere))
+                    continue;
+
+                string normalizedTier = string.Equals(tier, "major", StringComparison.OrdinalIgnoreCase)
+                    ? "major"
+                    : "minor";
+
+                if (!access.TryGetValue(sphere, out var existing)
+                    || RulesEngine.PriestHasSphereAccess(sphere, new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        [sphere] = normalizedTier,
+                    }, existing == "major" ? "major" : "minor"))
+                {
+                    access[sphere] = existing == "major" || normalizedTier == "major"
+                        ? "major"
+                        : "minor";
+                }
+            }
+        }
+
+        MergeSphereSelections(character.SelectedSpheres);
+        foreach (var byClass in character.SpheresByClass.Values)
+            MergeSphereSelections(byClass);
+
+        bool rangerHasConfiguredClassSpheres = character.SpheresByClass.TryGetValue("ranger", out var rangerSpheres)
+            && rangerSpheres.Count > 0;
+        if (CharacterHasClass(character, "ranger")
+            && !rangerHasConfiguredClassSpheres
+            && HasClassAbility(character, "ranger_priest_spells", "ranger_increased_spell_progression_cp7", "ranger_increased_spell_progression_cp12"))
+        {
+            if (!access.ContainsKey("Animal"))
+                access["Animal"] = "minor";
+            if (!access.ContainsKey("Plant"))
+                access["Plant"] = "minor";
+        }
+
+        bool paladinHasConfiguredClassSpheres = character.SpheresByClass.TryGetValue("paladin", out var paladinSpheres)
+            && paladinSpheres.Count > 0;
+        if (CharacterHasClass(character, "paladin")
+            && !paladinHasConfiguredClassSpheres
+            && HasClassAbility(character, "paladin_priest_spells"))
+        {
+            if (!access.ContainsKey("Combat"))
+                access["Combat"] = "minor";
+            if (!access.ContainsKey("Divination"))
+                access["Divination"] = "minor";
+            if (!access.ContainsKey("Healing"))
+                access["Healing"] = "minor";
+            if (!access.ContainsKey("Protection"))
+                access["Protection"] = "minor";
+        }
+
+        return access;
+    }
+
+    private static bool CharacterHasClass(CharacterSheet character, string classId)
+    {
+        string combined = BuildClassText(character);
+        return combined.Contains(classId, StringComparison.OrdinalIgnoreCase);
     }
 
     private static Button CreateHeaderButton(string content, double width, RoutedEventHandler onClick, bool isLast = false, string style = "GoldButton")

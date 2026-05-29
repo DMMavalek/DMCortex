@@ -1,6 +1,22 @@
 Dungeon Master Cortex - Running Changelog
 ========================================
 
+v1.4.01 (2026-05-29)
+- Updated the character sheet layout system so sections can be expanded/collapsed, moved, and customized more reliably.
+- Improved print preview and print stability so preview opens consistently and mirrors the configured sheet layout.
+- Added print toggles in SPELLS:
+  - Print: Keep Spells Grouped by Level
+  - Print: Black & White Default
+- Added black-and-white print mode support for low-ink output.
+- Fixed missing SPELLS content in print preview/print and improved spell pagination behavior near page margins.
+- Reduced cases where CLASS BONUS SPELLS / POWERS appears isolated on a page by itself.
+- Character creation now requires selecting at least one Free Spoken Language before continuing.
+- Character sheet WEAPON PROFICIENCIES now render as a single-column list.
+- Player's Options: Continued backend mechanical support updates where needed.
+- Made changes to back end so processing and moving between pages was easier.
+- Activation should now work.
+
+
 v1.3.20 (2026-05-23)
 - Added edition labels on the character roster and selected-character summary so Core Rules and Player's Option characters are easier to spot.
 - Kept the expanded class-ability and activation-request work in the release line.

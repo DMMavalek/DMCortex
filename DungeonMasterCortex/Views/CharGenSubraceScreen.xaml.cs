@@ -40,9 +40,17 @@ public partial class CharGenSubraceScreen : UserControl, IScreen
             backAction: () => _app.GoTo("chargen_race"),
             nextAction: Advance);
 
-        // Core Rules: hide the racial ability selection panel — the subrace is fixed and prebuilt.
+        // Core Rules: hide the racial ability selection panel and CP budget — the subrace is fixed and prebuilt.
         if (RacialAbilityPanel != null)
             RacialAbilityPanel.Visibility = isPO_s ? Visibility.Visible : Visibility.Collapsed;
+        if (CpBudgetBorder != null)
+            CpBudgetBorder.Visibility = isPO_s ? Visibility.Visible : Visibility.Collapsed;
+        if (CpPanelHeader != null)
+            CpPanelHeader.Text = isPO_s ? "CP Summary" : "SUBRACE INFO";
+        if (CpPanelSubtitle != null)
+            CpPanelSubtitle.Text = isPO_s
+                ? "Points remaining after defaults and selections"
+                : "Granted abilities for the selected subrace";
 
         var baseRaceId = ResolveBaseRaceId();
         if (string.IsNullOrWhiteSpace(baseRaceId))
@@ -67,10 +75,23 @@ public partial class CharGenSubraceScreen : UserControl, IScreen
         {
             SubraceList.SelectedIndex = idx;
         }
-        else if (_subraces.Count > 0)
+        else
         {
-            int basicIdx = _subraces.FindIndex(IsBasicSubrace);
-            SubraceList.SelectedIndex = basicIdx >= 0 ? basicIdx : 0;
+            SubraceList.SelectedIndex = -1;
+            SubraceTitle.Text = "Select a subrace";
+            SubraceInfo.Text = "Choose a specific subrace to continue.";
+            if (IsPlayersOptionMode)
+            {
+                BudgetSummary.Text = "-";
+                BudgetDetail.Text = "Select a subrace to view racial CP budget.";
+            }
+            else
+            {
+                BudgetSummary.Text = "Core";
+                BudgetDetail.Text = "Core Rules: choose a specific subrace (no generic base race entry).";
+            }
+            AvailableAbilityList.ItemsSource = null;
+            SelectedAbilityList.ItemsSource = null;
         }
 
         if (_subraces.Count == 0)
@@ -125,15 +146,39 @@ public partial class CharGenSubraceScreen : UserControl, IScreen
         SubraceTitle.Text = race.Name;
         var autoCount = race.StructuredAbilities.Count(x => x.AutoGranted);
         var optionCount = race.StructuredAbilities.Count(x => !x.AutoGranted);
-        
+
         var sb = new StringBuilder();
-        sb.AppendLine(autoCount > 0
-            ? $"{autoCount} default abilities, {optionCount} optional choices"
-            : optionCount > 0
-                ? $"No defaults, {optionCount} optional choices"
-                : "No racial ability entries");
-        
-        // Display racial ability modifiers if any
+
+        if (!IsPlayersOptionMode)
+        {
+            // Core Rules: list granted abilities by name, no CP costs
+            var granted = race.StructuredAbilities
+                .Where(a => a.AutoGranted)
+                .OrderBy(a => a.Description)
+                .Select(a => ToShortAbilityName(a.Description))
+                .ToList();
+
+            if (granted.Count > 0)
+            {
+                sb.AppendLine("GRANTED ABILITIES:");
+                foreach (var name in granted)
+                    sb.AppendLine($"  • {name}");
+            }
+            else
+            {
+                sb.AppendLine("No special racial abilities.");
+            }
+        }
+        else
+        {
+            sb.AppendLine(autoCount > 0
+                ? $"{autoCount} default abilities, {optionCount} optional choices"
+                : optionCount > 0
+                    ? $"No defaults, {optionCount} optional choices"
+                    : "No racial ability entries");
+        }
+
+        // Display racial ability score modifiers if any
         var raceModifiers = _app.Rules.GetEffectiveAbilityModifiers(race.Id);
         if (raceModifiers.Count > 0)
         {
@@ -141,7 +186,7 @@ public partial class CharGenSubraceScreen : UserControl, IScreen
             sb.AppendLine("ABILITY MODIFIERS:");
             var abilityLabels = new[] { "STR", "DEX", "CON", "INT", "WIS", "CHA" };
             var abilityKeys = new[] { "str", "dex", "con", "int", "wis", "cha" };
-            
+
             for (int i = 0; i < abilityKeys.Length; i++)
             {
                 if (raceModifiers.TryGetValue(abilityKeys[i], out var modifier) && modifier != 0)
@@ -149,13 +194,13 @@ public partial class CharGenSubraceScreen : UserControl, IScreen
                     int baseScore = _app.CharGen.Abilities.GetValueOrDefault(abilityKeys[i], 10);
                     int modifiedScore = _app.Rules.ApplyRacialModifiers(race.Id, _app.CharGen.Abilities)
                         .GetValueOrDefault(abilityKeys[i], 10);
-                    
+
                     var modStr = modifier > 0 ? $"+{modifier}" : modifier.ToString();
                     sb.AppendLine($"  {abilityLabels[i]}: {baseScore} → {modifiedScore}  ({modStr})");
                 }
             }
         }
-        
+
         SubraceInfo.Text = sb.ToString().Trim();
     }
 
@@ -365,9 +410,10 @@ public partial class CharGenSubraceScreen : UserControl, IScreen
             ? _selectedAbilityIds.ToList()
             : new List<string>();
 
-        var package = _app.Rules.BuildRacialAbilityPackage(selectedRace.Id, selectedIds);
+        int remainingRacialCp = 0;
         if (IsPlayersOptionMode)
         {
+            var package = _app.Rules.BuildRacialAbilityPackage(selectedRace.Id, selectedIds);
             if (package.remaining < 0)
             {
                 MessageBox.Show(
@@ -388,6 +434,8 @@ public partial class CharGenSubraceScreen : UserControl, IScreen
                     MessageBoxImage.Warning);
                 return;
             }
+
+            remainingRacialCp = package.remaining;
         }
 
         var previousModified = _app.CharGen.ModifiedAbilities != null && _app.CharGen.ModifiedAbilities.Count > 0
@@ -396,7 +444,7 @@ public partial class CharGenSubraceScreen : UserControl, IScreen
 
         _app.CharGen.RaceId = selectedRace.Id;
         _app.CharGen.SelectedRacialAbilityIds = selectedIds;
-        _app.CharGen.RacialCarryoverToClassPoints = IsPlayersOptionMode ? package.remaining : 0;
+        _app.CharGen.RacialCarryoverToClassPoints = IsPlayersOptionMode ? remainingRacialCp : 0;
         
         // Apply racial ability modifiers to base ability scores
         _app.CharGen.RacialAbilityModifiers = selectedRace.AbilityModifiers ?? new();

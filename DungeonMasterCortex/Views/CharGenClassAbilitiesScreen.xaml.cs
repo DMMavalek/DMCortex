@@ -52,6 +52,12 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
             return Math.Max(0, fixedSphereAbility?.PointCost ?? 60);
         }
 
+        if (string.Equals(cls.Id, "paladin", StringComparison.OrdinalIgnoreCase))
+            return CalculateSphereCpCost(spheres);
+
+        if (string.Equals(cls.Id, "ranger", StringComparison.OrdinalIgnoreCase))
+            return 0;
+
         return 0;
     }
 
@@ -309,11 +315,23 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
 
     internal static bool IsSelectorManagedAbility(AbilityDefinition ability)
     {
+        string abilityId = ability.Id ?? string.Empty;
+        if (abilityId.StartsWith("cleric_sphere_minor_", StringComparison.OrdinalIgnoreCase)
+            || abilityId.StartsWith("cleric_sphere_major_", StringComparison.OrdinalIgnoreCase)
+            || abilityId.StartsWith("druid_sphere_minor_", StringComparison.OrdinalIgnoreCase)
+            || abilityId.StartsWith("druid_sphere_major_", StringComparison.OrdinalIgnoreCase)
+            || abilityId.StartsWith("ranger_sphere_minor_", StringComparison.OrdinalIgnoreCase)
+            || abilityId.StartsWith("ranger_sphere_major_", StringComparison.OrdinalIgnoreCase)
+            || abilityId.StartsWith("paladin_sphere_minor_", StringComparison.OrdinalIgnoreCase)
+            || abilityId.StartsWith("paladin_sphere_major_", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
         var ids = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase)
         {
             "cleric_sphere_access_minor",
             "cleric_sphere_access_major",
-            "cleric_wizardly_priests",
             "druid_access_to_spheres",
             "wizard_access_to_schools",
             "wizard_priestly_wizard",
@@ -325,9 +343,29 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
             "paladin_sphere_access_major",
             "ranger_alternate_sphere_access",
             "paladin_alternate_sphere_access",
+            "wizard_school_abjuration",
+            "wizard_school_alteration",
+            "wizard_school_conjuration_summoning",
+            "wizard_school_divination",
+            "wizard_school_enchantment_charm",
+            "wizard_school_illusion",
+            "wizard_school_invocation_evocation",
+            "wizard_school_necromancy",
+            "wizard_school_alchemy",
+            "wizard_school_artifice",
+            "wizard_school_dimensional",
+            "wizard_school_force",
+            "wizard_school_geometry",
+            "wizard_school_shadow",
+            "wizard_school_song",
+            "wizard_school_wild",
+            "wizard_school_elemental_air",
+            "wizard_school_elemental_earth",
+            "wizard_school_elemental_fire",
+            "wizard_school_elemental_water",
         };
 
-        if (ids.Contains(ability.Id))
+        if (ids.Contains(abilityId))
             return true;
 
         string category = ability.Category ?? string.Empty;
@@ -375,13 +413,17 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
         {
             BtnSelectWizardSchools.Visibility = Visibility.Collapsed;
         }
-        BtnAllocateRogueSkills.Visibility = IsRogueClass(cls.Id) ? Visibility.Visible : Visibility.Collapsed;
+        BtnAllocateRogueSkills.Visibility = ClassSupportsRogueSkillConfiguration(cls) ? Visibility.Visible : Visibility.Collapsed;
         RefreshClassConfigurationCard(cls);
     }
 
     private void UpdateSphereSelectionUI(ClassDefinition cls)
     {
-        BtnSelectSpheres.Visibility = cls.Id == "cleric" ? Visibility.Visible : Visibility.Collapsed;
+        bool canConfigurePaladinSpheres = ShouldConfigurePaladinSpheres(cls);
+        bool canConfigureRangerSpheres = ShouldConfigureRangerSpheres(cls);
+        BtnSelectSpheres.Visibility = cls.Id == "cleric" || canConfigurePaladinSpheres || canConfigureRangerSpheres
+            ? Visibility.Visible
+            : Visibility.Collapsed;
 
         if (cls.Id == "cleric")
         {
@@ -394,14 +436,28 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
             RefreshAbilityLists();
             RefreshBudgetSummary(cls);
         }
-        if (cls.Id != "cleric" && cls.Id != "druid")
+        if (canConfigureRangerSpheres && _app.CharGen.SelectedSpheres.Count == 0)
+        {
+            AutoFillRangerDefaultSpheres();
+        }
+        if (cls.Id != "cleric" && cls.Id != "druid" && !canConfigurePaladinSpheres && !canConfigureRangerSpheres)
             _app.CharGen.SelectedSpheres.Clear();
         if (cls.Id == "druid")
         {
             ClassConfigTitle.Text = "Priest Configuration";
             ClassConfigHint.Text = "Druid sphere access is fixed and summarized below.";
         }
-        if (IsRogueClass(cls.Id))
+        if (canConfigurePaladinSpheres)
+        {
+            ClassConfigTitle.Text = "Priest Configuration";
+            ClassConfigHint.Text = "Paladin alternate sphere access: choose minor and/or major sphere access.";
+        }
+        if (canConfigureRangerSpheres)
+        {
+            ClassConfigTitle.Text = "Priest Configuration";
+            ClassConfigHint.Text = "Ranger alternate sphere access: swap one default minor sphere for another.";
+        }
+        if (ClassSupportsRogueSkillConfiguration(cls))
         {
             ClassConfigTitle.Text = "Rogue Skill Configuration";
             ClassConfigHint.Text = "Allocate rogue skill points using race, Dexterity, and armor adjustments.";
@@ -413,7 +469,12 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
 
     private void RefreshClassConfigurationCard(ClassDefinition cls)
     {
-        bool show = cls.Id == "wizard" || cls.Id == "cleric" || cls.Id == "druid" || IsRogueClass(cls.Id);
+        bool show = cls.Id == "wizard"
+            || cls.Id == "cleric"
+            || cls.Id == "druid"
+            || ShouldConfigurePaladinSpheres(cls)
+            || ShouldConfigureRangerSpheres(cls)
+            || ClassSupportsRogueSkillConfiguration(cls);
         ClassConfigCard.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
         if (!show) ClassConfigHint.Text = string.Empty;
     }
@@ -430,10 +491,11 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
             .GroupBy(id => id, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(g => g.Key, g => g.Count(), StringComparer.OrdinalIgnoreCase);
 
+        bool showCpLabels = IsPlayersOptionMode;
         _availableItems = _optionalAbilities
             .Where(a => a.AllowMultiple || !selectedCountById.ContainsKey(a.Id))
             .Where(a => IsDisadvantageAbility(a) == showDisadvantages)
-            .Select(ToAbilityItem)
+            .Select(a => ToAbilityItem(a, showCpLabels))
             .OrderBy(a => a.Label)
             .ToList();
 
@@ -451,7 +513,7 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
             {
                 string baseId = RulesEngine.ExtractClassAbilityBaseId(entry);
                 return optionalById.TryGetValue(baseId, out var ability)
-                    ? ToAbilityItem(ability, entry)
+                    ? ToAbilityItem(ability, entry, showCpLabels)
                     : null;
             })
             .Where(item => item is not null)
@@ -466,7 +528,7 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
         }
         else
         {
-            _selectedItems = _autoAssignedAbilities.Select(ToAbilityItem)
+            _selectedItems = _autoAssignedAbilities.Select(a => ToAbilityItem(a, showCpLabels))
                 .Concat(selectedOptional)
                 .OrderBy(a => a.Label)
                 .ToList();
@@ -569,9 +631,18 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
             SphereSchoolSectionLabel.Text = "PRIEST SPHERE ACCESS";
             var spheres = CharGenClassScreen.NormalizeSphereSelections(_app.CharGen.SelectedSpheres);
             _app.CharGen.SelectedSpheres = new(spheres);
-            SphereSchoolSectionSummary.Text = spheres.Count == 0
+            string sphereSummary = spheres.Count == 0
                 ? "No spheres configured â€” click the button to select minor and/or major access."
                 : $"{spheres.Count} sphere(s) â€” {CalculateSphereCpCost(spheres)} CP  Â·  {string.Join(", ", spheres.OrderBy(kv => kv.Key).Select(kv => $"{kv.Key} ({kv.Value})"))}";
+            var selectedSkillIds = GetSelectedRogueSkillIds();
+            if (selectedSkillIds.Count == 0)
+            {
+                SphereSchoolSectionSummary.Text = sphereSummary;
+            }
+            else
+            {
+                SphereSchoolSectionSummary.Text = $"{sphereSummary}\n{BuildRogueSkillSummary(selectedSkillIds)}";
+            }
         }
         else if (cls.Id == "druid")
         {
@@ -579,6 +650,29 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
             SphereSchoolSectionLabel.Text = "PRIEST SPHERE ACCESS  (Fixed â€” Druid)";
             int fixedCost = CalculateConfigurationCpCost(cls, _app.CharGen.SelectedSpheres, _app.CharGen.SelectedWizardSchools);
             SphereSchoolSectionSummary.Text = $"Auto-assigned: All, Elemental, Healing, Plant, Weather (minor access)  Â·  {fixedCost} CP";
+        }
+        else if (ShouldConfigurePaladinSpheres(cls))
+        {
+            SphereSchoolSection.Visibility = Visibility.Visible;
+            SphereSchoolSectionLabel.Text = "PRIEST SPHERE ACCESS  (Paladin Alternate)";
+            var spheres = CharGenClassScreen.NormalizeSphereSelections(_app.CharGen.SelectedSpheres);
+            _app.CharGen.SelectedSpheres = new(spheres);
+            int cost = CalculateSphereCpCost(spheres);
+            SphereSchoolSectionSummary.Text = spheres.Count == 0
+                ? "No alternate spheres configured â€” click the button to select minor and/or major access."
+                : $"{spheres.Count} sphere(s) â€” {cost} CP  Â·  {string.Join(", ", spheres.OrderBy(kv => kv.Key).Select(kv => $"{kv.Key} ({kv.Value})"))}";
+        }
+        else if (ShouldConfigureRangerSpheres(cls))
+        {
+            SphereSchoolSection.Visibility = Visibility.Visible;
+            SphereSchoolSectionLabel.Text = "PRIEST SPHERE ACCESS  (Ranger Alternate)";
+            var spheres = NormalizeRangerAlternateSpheres(_app.CharGen.SelectedSpheres);
+            _app.CharGen.SelectedSpheres = new(spheres);
+            var defaults = GetRangerDefaultSpheres();
+            string details = string.Join(", ", spheres.OrderBy(kv => kv.Key).Select(kv => $"{kv.Key} ({kv.Value})"));
+            SphereSchoolSectionSummary.Text = !IsValidRangerSphereSwap(spheres)
+                ? "Select exactly two minor spheres with exactly one default (Animal or Plant) and one replacement sphere."
+                : $"Configured: {details}  Â·  default minor spheres are Animal + Plant (swap one).";
         }
         else if (cls.Id == "wizard")
         {
@@ -610,7 +704,7 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
                 SphereSchoolSectionSummary.Text = $"Specialist: {specName}  Â·  {selected.Count} school(s) selected — {schoolCost} CP  Â·  Purchased: {selectedText}  Â·  Opposed: {opposedText}";
             }
         }
-        else if (IsRogueClass(cls.Id))
+        else if (ClassSupportsRogueSkillConfiguration(cls))
         {
             SphereSchoolSection.Visibility = Visibility.Visible;
             SphereSchoolSectionLabel.Text = "ROGUE SKILL PROFILE";
@@ -622,28 +716,33 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
                 return;
             }
 
-            int level = Math.Max(1, _app.CharGen.CharacterLevel);
-            int dex = GetCurrentDexterityScore();
-            string raceId = GetCurrentBaseRaceId();
-            var breakdown = RulesEngine.BuildRogueSkillBreakdown(
-                selectedSkillIds,
-                raceId,
-                dex,
-                _app.CharGen.RogueSkillArmorProfile,
-                _app.CharGen.SelectedRogueSkillPoints,
-                level);
-
-            int pool = RulesEngine.GetRogueSkillPointPoolForLevel(level);
-            int spent = breakdown.Sum(x => x.AllocatedPoints);
-            int remaining = pool - spent;
-            string armorLabel = GetArmorProfileLabel(_app.CharGen.RogueSkillArmorProfile);
-            string skillText = string.Join(", ", breakdown.Select(x => $"{x.SkillName} {x.FinalScore}%"));
-            SphereSchoolSectionSummary.Text = $"Armor: {armorLabel}  |  Points: {spent}/{pool} (remaining {remaining})  |  {skillText}";
+            SphereSchoolSectionSummary.Text = BuildRogueSkillSummary(selectedSkillIds);
         }
         else
         {
             SphereSchoolSection.Visibility = Visibility.Collapsed;
         }
+    }
+
+    private string BuildRogueSkillSummary(List<string> selectedSkillIds)
+    {
+        int level = Math.Max(1, _app.CharGen.CharacterLevel);
+        int dex = GetCurrentDexterityScore();
+        string raceId = GetCurrentBaseRaceId();
+        var breakdown = RulesEngine.BuildRogueSkillBreakdown(
+            selectedSkillIds,
+            raceId,
+            dex,
+            _app.CharGen.RogueSkillArmorProfile,
+            _app.CharGen.SelectedRogueSkillPoints,
+            level);
+
+        int pool = RulesEngine.GetRogueSkillPointPoolForLevel(level);
+        int spent = breakdown.Sum(x => x.AllocatedPoints);
+        int remaining = pool - spent;
+        string armorLabel = GetArmorProfileLabel(_app.CharGen.RogueSkillArmorProfile);
+        string skillText = string.Join(", ", breakdown.Select(x => $"{x.SkillName} {x.FinalScore}%"));
+        return $"Rogue skills â€” Armor: {armorLabel}  |  Points: {spent}/{pool} (remaining {remaining})  |  {skillText}";
     }
 
     private List<string> GetSelectedRogueSkillIds()
@@ -676,6 +775,15 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
         => string.Equals(classId, "thief", StringComparison.OrdinalIgnoreCase)
            || string.Equals(classId, "bard", StringComparison.OrdinalIgnoreCase);
 
+    private bool ClassSupportsRogueSkillConfiguration(ClassDefinition cls)
+    {
+        if (IsRogueClass(cls.Id))
+            return true;
+
+        return cls.StructuredAbilities.Any(a => string.Equals(a.Id, "cleric_thief_ability", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(a.Id, "wizard_thief_ability", StringComparison.OrdinalIgnoreCase));
+    }
+
     private static string GetArmorProfileLabel(string? armorProfile)
     {
         return (armorProfile ?? "no_armor").Trim().ToLowerInvariant() switch
@@ -707,13 +815,82 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
             _selectedAbilityEntries.RemoveAll(entry => string.Equals(RulesEngine.ExtractClassAbilityBaseId(entry), id, StringComparison.OrdinalIgnoreCase));
     }
 
-    private static AbilityListItem ToAbilityItem(AbilityDefinition a)
+    private bool ShouldConfigurePaladinSpheres(ClassDefinition cls)
+    {
+        if (!string.Equals(cls.Id, "paladin", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        return _selectedAbilityEntries.Any(entry =>
+            string.Equals(RulesEngine.ExtractClassAbilityBaseId(entry), "paladin_alternate_sphere_access", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private bool ShouldConfigureRangerSpheres(ClassDefinition cls)
+    {
+        if (!string.Equals(cls.Id, "ranger", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        return _selectedAbilityEntries.Any(entry =>
+            string.Equals(RulesEngine.ExtractClassAbilityBaseId(entry), "ranger_alternate_sphere_access", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static Dictionary<string, string> GetRangerDefaultSpheres()
+        => new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Animal"] = "minor",
+            ["Plant"] = "minor",
+        };
+
+    private static Dictionary<string, string> NormalizeRangerAlternateSpheres(Dictionary<string, string>? spheres)
+    {
+        var normalized = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (spheres is null)
+            return normalized;
+
+        foreach (var (sphere, access) in spheres)
+        {
+            if (string.IsNullOrWhiteSpace(sphere))
+                continue;
+
+            string tier = (access ?? string.Empty).Trim();
+            if (!string.Equals(tier, "minor", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            normalized[sphere.Trim()] = "minor";
+        }
+
+        return normalized;
+    }
+
+    private static bool IsValidRangerSphereSwap(Dictionary<string, string> spheres)
+    {
+        if (spheres.Count != 2)
+            return false;
+
+        if (spheres.Values.Any(v => !string.Equals(v, "minor", StringComparison.OrdinalIgnoreCase)))
+            return false;
+
+        var defaults = GetRangerDefaultSpheres().Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        int defaultCount = spheres.Keys.Count(k => defaults.Contains(k));
+        return defaultCount == 1;
+    }
+
+    private void AutoFillRangerDefaultSpheres()
+    {
+        _app.CharGen.SelectedSpheres.Clear();
+        foreach (var kv in GetRangerDefaultSpheres())
+            _app.CharGen.SelectedSpheres[kv.Key] = kv.Value;
+        RemoveSphereAccessAbilitiesFromSelection();
+    }
+
+    private static AbilityListItem ToAbilityItem(AbilityDefinition a, bool showCp = true)
     {
         var shortName = ToShortAbilityName(a.Description);
         bool isDisadvantage = IsDisadvantageAbility(a);
-        string label = isDisadvantage
-            ? $"{shortName} ({a.PointCost} CP)  (disadvantage)"
-            : $"{shortName} ({a.PointCost} CP)";
+        string label = showCp
+            ? (isDisadvantage
+                ? $"{shortName} ({a.PointCost} CP)  (disadvantage)"
+                : $"{shortName} ({a.PointCost} CP)")
+            : shortName;
         return new AbilityListItem
         {
             Id = a.Id,
@@ -726,10 +903,22 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
         };
     }
 
-    private static AbilityListItem ToAbilityItem(AbilityDefinition a, string selectionEntry)
+    private static AbilityListItem ToAbilityItem(AbilityDefinition a, string selectionEntry, bool showCp = true)
     {
-        var item = ToAbilityItem(a);
-        string playerText = RulesEngine.ExtractClassAbilityPlayerText(selectionEntry);
+        var effectiveAbility = new AbilityDefinition
+        {
+            Id = a.Id,
+            Description = a.Description,
+            Category = a.Category,
+            PointCost = RulesEngine.GetConfiguredClassAbilityPointCost(a, selectionEntry),
+            AutoGranted = a.AutoGranted,
+            AllowMultiple = a.AllowMultiple,
+            RequiresPlayerText = a.RequiresPlayerText,
+            AllowPurchaseAfterLevelOne = a.AllowPurchaseAfterLevelOne,
+            Effect = a.Effect,
+        };
+        var item = ToAbilityItem(effectiveAbility, showCp);
+        string playerText = RulesEngine.FormatClassAbilitySelectionText(a.Id, RulesEngine.ExtractClassAbilityPlayerText(selectionEntry));
         if (!string.IsNullOrWhiteSpace(playerText))
             item.Label += $" [Selection: {playerText}]";
         item.SelectionEntry = selectionEntry;
@@ -757,6 +946,276 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
         name = Regex.Replace(name, @"\s*\(\s*-?\d+\s*\)\s*$", string.Empty).Trim();
         return string.IsNullOrWhiteSpace(name) ? description.Trim() : name;
     }
+
+    private static readonly Dictionary<string, IReadOnlyList<string>> SelectionOptionsByAbilityId =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["cleric_proficiency_crossovers"] = new[]
+            {
+                "Warrior",
+                "Mage",
+                "Rogue",
+            },
+            ["cleric_restriction_limited_magical_item_use"] = new[]
+            {
+                "Potions/Oils/Scrolls",
+                "Rings",
+                "Rods/Staves/Wands",
+                "Miscellaneous Magic",
+                "Weapons and Armor",
+            },
+            ["druid_restriction_limited_magical_item_use"] = new[]
+            {
+                "Potions/Oils/Scrolls",
+                "Rings",
+                "Rods/Staves/Wands",
+                "Miscellaneous Magic",
+                "Weapons and Armor",
+            },
+            ["paladin_restriction_limited_magical_item_use"] = new[]
+            {
+                "Potions/Oils/Scrolls",
+                "Rings",
+                "Rods/Staves/Wands",
+                "Miscellaneous Magic",
+                "Weapons and Armor",
+            },
+            ["ranger_restriction_limited_magical_item_use"] = new[]
+            {
+                "Potions/Oils/Scrolls",
+                "Rings",
+                "Rods/Staves/Wands",
+                "Miscellaneous Magic",
+                "Weapons and Armor",
+            },
+            ["fighter_restriction_limited_magical_item_use"] = new[]
+            {
+                "Potions/Oils/Scrolls",
+                "Rings",
+                "Rods/Staves/Wands",
+                "Miscellaneous Magic",
+                "Weapons and Armor",
+            },
+            ["cleric_sphere_focus_bonus"] = SphereCosts.Keys.OrderBy(x => x).ToArray(),
+            ["cleric_thief_ability"] = RulesEngine.ClericThiefAbilitySelectionToSkillId.Keys.ToArray(),
+            ["cleric_wizardly_priests"] = new[]
+            {
+                "Abjuration",
+                "Conjuration",
+                "Divination",
+                "Enchantment",
+                "Illusion",
+                "Invocation",
+                "Necromancy",
+                "Transmutation",
+            },
+            ["bard_school_specialization"] = new[]
+            {
+                "Enchantment/Charm",
+                "Illusion",
+                "Song",
+            },
+            ["bard_restriction_opposition_school"] = new[]
+            {
+                "Abjuration",
+                "Alteration",
+                "Conjuration/Summoning",
+                "Divination",
+                "Enchantment/Charm",
+                "Illusion",
+                "Invocation/Evocation",
+                "Necromancy",
+                "Song",
+            },
+            ["psionicist_discipline_mastery"] = new[]
+            {
+                "Clairsentience",
+                "Psychokinesis",
+                "Psychometabolism",
+                "Psychoportation",
+                "Telepathy",
+                "Metapsionics",
+            },
+            ["psionicist_restriction_one_discipline"] = new[]
+            {
+                "Clairsentience",
+                "Psychokinesis",
+                "Psychometabolism",
+                "Psychoportation",
+                "Telepathy",
+                "Metapsionics",
+            },
+            ["wizard_dispel_cp10"] = new[]
+            {
+                "Abjuration",
+                "Alteration",
+                "Conjuration/Summoning",
+                "Divination",
+                "Enchantment/Charm",
+                "Illusion",
+                "Invocation/Evocation",
+                "Necromancy",
+            },
+            ["wizard_dispel_cp15"] = new[]
+            {
+                "Abjuration",
+                "Alteration",
+                "Conjuration/Summoning",
+                "Divination",
+                "Enchantment/Charm",
+                "Illusion",
+                "Invocation/Evocation",
+                "Necromancy",
+            },
+            ["wizard_enhanced_casting_level"] = new[]
+            {
+                "Abjuration",
+                "Alteration",
+                "Conjuration/Summoning",
+                "Divination",
+                "Enchantment/Charm",
+                "Illusion",
+                "Invocation/Evocation",
+                "Necromancy",
+            },
+            ["wizard_immunity"] = new[] { "Use spell picker" },
+            ["wizard_learning_bonus_cp5"] = new[]
+            {
+                "Abjuration",
+                "Alteration",
+                "Conjuration/Summoning",
+                "Divination",
+                "Enchantment/Charm",
+                "Illusion",
+                "Invocation/Evocation",
+                "Necromancy",
+            },
+            ["wizard_learning_bonus_cp7"] = new[]
+            {
+                "Abjuration",
+                "Alteration",
+                "Conjuration/Summoning",
+                "Divination",
+                "Enchantment/Charm",
+                "Illusion",
+                "Invocation/Evocation",
+                "Necromancy",
+            },
+            ["wizard_restriction_learning_penalty"] = new[]
+            {
+                "Abjuration",
+                "Alteration",
+                "Conjuration/Summoning",
+                "Divination",
+                "Enchantment/Charm",
+                "Illusion",
+                "Invocation/Evocation",
+                "Necromancy",
+            },
+            ["wizard_restriction_limited_magical_item_use"] = new[]
+            {
+                "Potions/Oils/Scrolls",
+                "Rings",
+                "Rods/Staves/Wands",
+                "Miscellaneous Magic",
+                "Weapons and Armor",
+            },
+            ["wizard_no_components_cp5"] = new[] { "Use spell picker" },
+            ["wizard_no_components_cp8"] = new[] { "Use spell picker" },
+            ["wizard_persistent_spell_effect"] = new[] { "Use spell picker" },
+            ["wizard_priestly_wizard_cp10"] = SphereCosts.Keys.OrderBy(x => x).ToArray(),
+            ["wizard_priestly_wizard_cp15"] = SphereCosts.Keys.OrderBy(x => x).ToArray(),
+            ["wizard_proficiency_crossovers"] = new[]
+            {
+                "Warrior",
+                "Priest",
+                "Rogue",
+            },
+            ["wizard_range_increase_cp5"] = new[] { "25%" },
+            ["wizard_range_increase_cp7"] = new[] { "50%" },
+            ["wizard_research_bonus"] = new[]
+            {
+                "Abjuration",
+                "Alteration",
+                "Conjuration/Summoning",
+                "Divination",
+                "Enchantment/Charm",
+                "Illusion",
+                "Invocation/Evocation",
+                "Necromancy",
+            },
+            ["wizard_spell_focus"] = new[]
+            {
+                "Abjuration",
+                "Alteration",
+                "Conjuration/Summoning",
+                "Divination",
+                "Enchantment/Charm",
+                "Illusion",
+                "Invocation/Evocation",
+                "Necromancy",
+                "Alchemy",
+                "Artifice",
+                "Dimensional",
+                "Force",
+                "Geometry",
+                "Shadow",
+                "Song",
+                "Wild Magic",
+                "Elemental (Air)",
+                "Elemental (Earth)",
+                "Elemental (Fire)",
+                "Elemental (Water)",
+            },
+            ["wizard_thief_ability"] = RulesEngine.ClericThiefAbilitySelectionToSkillId.Keys.ToArray(),
+        };
+
+    private static readonly HashSet<string> UniqueSelectionTextAbilityIds =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            "cleric_proficiency_crossovers",
+            "cleric_restriction_limited_magical_item_use",
+            "druid_restriction_limited_magical_item_use",
+            "paladin_restriction_limited_magical_item_use",
+            "ranger_restriction_limited_magical_item_use",
+            "fighter_restriction_limited_magical_item_use",
+            "cleric_sphere_focus_bonus",
+            "cleric_thief_ability",
+            "cleric_wizardly_priests",
+            "bard_school_specialization",
+            "bard_restriction_opposition_school",
+            "psionicist_discipline_mastery",
+            "psionicist_restriction_one_discipline",
+            "wizard_dispel_cp10",
+            "wizard_dispel_cp15",
+            "wizard_enhanced_casting_level",
+            "wizard_immunity",
+            "wizard_learning_bonus_cp5",
+            "wizard_learning_bonus_cp7",
+            "wizard_restriction_learning_penalty",
+            "wizard_restriction_limited_magical_item_use",
+            "wizard_no_components_cp5",
+            "wizard_no_components_cp8",
+            "wizard_persistent_spell_effect",
+            "wizard_priestly_wizard_cp10",
+            "wizard_priestly_wizard_cp15",
+            "wizard_proficiency_crossovers",
+            "wizard_range_increase_cp5",
+            "wizard_range_increase_cp7",
+            "wizard_research_bonus",
+            "wizard_spell_focus",
+            "wizard_signature_spell_levels_1_3",
+            "wizard_signature_spell_levels_4_6",
+            "wizard_signature_spell_levels_7_9",
+            "wizard_thief_ability",
+            "wizard_restriction_awkward_casting_method",
+            "wizard_restriction_behavior_taboo",
+            "wizard_restriction_difficult_memorization",
+            "wizard_restriction_environmental_condition",
+            "wizard_restriction_supernatural_constraint",
+            "wizard_restriction_talisman",
+            "wizard_restriction_weapons_restriction_cp3",
+        };
 
     // â”€â”€ Button handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -792,13 +1251,64 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
             return;
         }
 
+        if (string.Equals(toAdd.Id, "wizard_no_components_cp8", StringComparison.OrdinalIgnoreCase))
+        {
+            int selectedCount = _selectedAbilityEntries.Count(entry =>
+                string.Equals(RulesEngine.ExtractClassAbilityBaseId(entry), toAdd.Id, StringComparison.OrdinalIgnoreCase));
+            if (selectedCount >= 2)
+            {
+                MessageBox.Show(
+                    "No components (8) allows exactly two selected spells.",
+                    "Selection Restricted",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+        }
+
+        // Turning Mastery: warn if Turn Undead not already selected
+        if (string.Equals(toAdd.Id, "cleric_turning_mastery", StringComparison.OrdinalIgnoreCase))
+        {
+            bool hasTurnUndead = _selectedAbilityEntries.Any(entry =>
+                string.Equals(RulesEngine.ExtractClassAbilityBaseId(entry), "cleric_turn_undead", StringComparison.OrdinalIgnoreCase));
+            if (!hasTurnUndead)
+            {
+                var warnResult = MessageBox.Show(
+                    "Turn Undead is not selected. Turning Mastery requires Turn Undead to function properly. Proceed anyway?",
+                    "Dependency Warning",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+                if (warnResult == MessageBoxResult.No)
+                    return;
+            }
+        }
+
         string playerText = string.Empty;
         if (toAdd.RequiresPlayerText)
         {
-            string? entered = PromptForClassAbilitySelectionText(toAdd.Description, string.Empty);
+            string? entered = PromptForClassAbilitySelectionText(toAdd.Id, toAdd.Description, string.Empty);
             if (entered is null)
                 return;
             playerText = entered;
+
+            if (UniqueSelectionTextAbilityIds.Contains(toAdd.Id))
+            {
+                bool duplicateSelection = _selectedAbilityEntries.Any(entry =>
+                    string.Equals(RulesEngine.ExtractClassAbilityBaseId(entry), toAdd.Id, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(RulesEngine.ExtractClassAbilityPlayerText(entry), playerText, StringComparison.OrdinalIgnoreCase));
+                if (duplicateSelection)
+                {
+                    MessageBox.Show(
+                        $"{ToShortAbilityName(toAdd.Description)} already includes '{playerText}'. Choose a different option.",
+                        "Selection Restricted",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                    return;
+                }
+            }
+
+            if (!ValidateWizardSignatureSelection(toAdd.Id, playerText))
+                return;
         }
 
         string selectionEntry = RulesEngine.BuildClassAbilitySelectionEntry(toAdd.Id, playerText);
@@ -853,12 +1363,28 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
 
     private void AvailableClassAbilityList_MouseRightButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
-        if (AvailableClassAbilityList.SelectedItem is AbilityListItem item) ShowAbilityDescription(item);
+        if (e.OriginalSource is DependencyObject dep)
+        {
+            var listItem = ItemsControl.ContainerFromElement(AvailableClassAbilityList, dep) as ListBoxItem;
+            if (listItem?.DataContext is AbilityListItem item)
+            {
+                ShowAbilityDescription(item);
+                e.Handled = true;
+            }
+        }
     }
 
     private void SelectedClassAbilityList_MouseRightButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
-        if (SelectedClassAbilityList.SelectedItem is AbilityListItem item) ShowAbilityDescription(item);
+        if (e.OriginalSource is DependencyObject dep)
+        {
+            var listItem = ItemsControl.ContainerFromElement(SelectedClassAbilityList, dep) as ListBoxItem;
+            if (listItem?.DataContext is AbilityListItem item)
+            {
+                ShowAbilityDescription(item);
+                e.Handled = true;
+            }
+        }
     }
 
     private void ShowAbilityDescription(AbilityListItem item)
@@ -867,8 +1393,57 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
         DescriptionPopupService.Show(Window.GetWindow(this), "Class Ability Description", text);
     }
 
-    private static string? PromptForClassAbilitySelectionText(string abilityName, string existing)
+    private string? PromptForClassAbilitySelectionText(string abilityId, string abilityName, string existing)
     {
+        if (string.Equals(abilityId, "cleric_spell_like_granted_power", StringComparison.OrdinalIgnoreCase))
+            return PromptForSpellLikeGrantedPowerSelection(abilityName, existing);
+
+        if (string.Equals(abilityId, "wizard_signature_spell_levels_1_3", StringComparison.OrdinalIgnoreCase))
+            return PromptForWizardSignatureSpellSelection(abilityName, existing, 1, 3);
+
+        if (string.Equals(abilityId, "wizard_signature_spell_levels_4_6", StringComparison.OrdinalIgnoreCase))
+            return PromptForWizardSignatureSpellSelection(abilityName, existing, 4, 6);
+
+        if (string.Equals(abilityId, "wizard_signature_spell_levels_7_9", StringComparison.OrdinalIgnoreCase))
+            return PromptForWizardSignatureSpellSelection(abilityName, existing, 7, 9);
+
+        if (string.Equals(abilityId, "wizard_immunity", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(abilityId, "wizard_no_components_cp5", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(abilityId, "wizard_no_components_cp8", StringComparison.OrdinalIgnoreCase))
+        {
+            return PromptForSpellSelection(
+                abilityName,
+                existing,
+                _app.Rules.Spells
+                    .Where(spell => string.Equals(spell.Category, "arcane", StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(spell => spell.Name, StringComparer.OrdinalIgnoreCase)
+                    .ToList());
+        }
+
+        if (string.Equals(abilityId, "wizard_persistent_spell_effect", StringComparison.OrdinalIgnoreCase))
+        {
+            return PromptForSpellSelection(
+                abilityName,
+                existing,
+                _app.Rules.Spells
+                    .Where(spell => string.Equals(spell.Category, "arcane", StringComparison.OrdinalIgnoreCase))
+                    .Where(spell => !string.IsNullOrWhiteSpace(spell.Duration)
+                        && !spell.Duration.Contains("instant", StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(spell => spell.Name, StringComparer.OrdinalIgnoreCase)
+                    .ToList());
+        }
+
+        if (SelectionOptionsByAbilityId.TryGetValue(abilityId ?? string.Empty, out var options)
+            && options.Count > 0)
+        {
+            if (options.Count == 1 && string.Equals(options[0], "Use spell picker", StringComparison.OrdinalIgnoreCase))
+            {
+                return PromptForSpellSelection(abilityName, existing, _app.Rules.Spells.OrderBy(spell => spell.Name, StringComparer.OrdinalIgnoreCase).ToList());
+            }
+
+            return PromptForClassAbilitySelectionOption(abilityName, options, existing);
+        }
+
         var window = new Window
         {
             Title = $"{abilityName} selection",
@@ -915,16 +1490,407 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
         return input.Text.Trim();
     }
 
+    private string? PromptForWizardSignatureSpellSelection(string abilityName, string existing, int minLevel, int maxLevel)
+    {
+        var eligibleSpells = _app.Rules.Spells
+            .Where(spell => string.Equals(spell.Category, "arcane", StringComparison.OrdinalIgnoreCase))
+            .Where(spell => int.TryParse(spell.Level, out int parsedLevel) && parsedLevel >= minLevel && parsedLevel <= maxLevel)
+            .OrderBy(spell => ParseSpellLevelOrZero(spell.Level))
+            .ThenBy(spell => spell.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        string? picked = PromptForSpellSelection(abilityName, existing, eligibleSpells);
+        if (picked is null)
+            return null;
+
+        if (!TryGetArcaneSpellLevelByName(picked, out int spellLevel)
+            || spellLevel < minLevel
+            || spellLevel > maxLevel)
+        {
+            MessageBox.Show(
+                $"Select a valid arcane spell from levels {minLevel}-{maxLevel}.",
+                "Selection Required",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return null;
+        }
+
+        return GetCanonicalArcaneSpellName(picked);
+    }
+
+    private bool ValidateWizardSignatureSelection(string abilityId, string selectedSpellName)
+    {
+        if (!TryGetSignatureLevelRange(abilityId, out int minLevel, out int maxLevel))
+            return true;
+
+        if (!TryGetArcaneSpellLevelByName(selectedSpellName, out int selectedLevel)
+            || selectedLevel < minLevel
+            || selectedLevel > maxLevel)
+        {
+            MessageBox.Show(
+                $"Signature spell selection must be an arcane spell from levels {minLevel}-{maxLevel}.",
+                "Selection Restricted",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return false;
+        }
+
+        bool alreadyUsedLevel = _selectedAbilityEntries
+            .Where(entry => string.Equals(RulesEngine.ExtractClassAbilityBaseId(entry), abilityId, StringComparison.OrdinalIgnoreCase))
+            .Select(entry => RulesEngine.ExtractClassAbilityPlayerText(entry))
+            .Select(name => TryGetArcaneSpellLevelByName(name, out int level) ? level : 0)
+            .Any(level => level == selectedLevel);
+
+        if (alreadyUsedLevel)
+        {
+            MessageBox.Show(
+                $"A signature spell for level {selectedLevel} is already selected. Choose a spell from a different level.",
+                "Selection Restricted",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool TryGetSignatureLevelRange(string abilityId, out int minLevel, out int maxLevel)
+    {
+        minLevel = 0;
+        maxLevel = 0;
+
+        if (string.Equals(abilityId, "wizard_signature_spell_levels_1_3", StringComparison.OrdinalIgnoreCase))
+        {
+            minLevel = 1;
+            maxLevel = 3;
+            return true;
+        }
+
+        if (string.Equals(abilityId, "wizard_signature_spell_levels_4_6", StringComparison.OrdinalIgnoreCase))
+        {
+            minLevel = 4;
+            maxLevel = 6;
+            return true;
+        }
+
+        if (string.Equals(abilityId, "wizard_signature_spell_levels_7_9", StringComparison.OrdinalIgnoreCase))
+        {
+            minLevel = 7;
+            maxLevel = 9;
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool TryGetArcaneSpellLevelByName(string spellName, out int level)
+    {
+        level = 0;
+        if (string.IsNullOrWhiteSpace(spellName))
+            return false;
+
+        var spell = _app.Rules.Spells.FirstOrDefault(s =>
+            string.Equals(s.Category, "arcane", StringComparison.OrdinalIgnoreCase)
+            && string.Equals(s.Name, spellName.Trim(), StringComparison.OrdinalIgnoreCase));
+        if (spell is null)
+            return false;
+
+        return int.TryParse(spell.Level, out level);
+    }
+
+    private string GetCanonicalArcaneSpellName(string spellName)
+    {
+        var spell = _app.Rules.Spells.FirstOrDefault(s =>
+            string.Equals(s.Category, "arcane", StringComparison.OrdinalIgnoreCase)
+            && string.Equals(s.Name, spellName?.Trim(), StringComparison.OrdinalIgnoreCase));
+        return spell?.Name ?? spellName.Trim();
+    }
+
+    private static int ParseSpellLevelOrZero(string level)
+        => int.TryParse(level, out int parsed) ? parsed : 0;
+
+    private static string? PromptForSpellSelection(string abilityName, string existing, IReadOnlyList<SpellDefinition> spells)
+    {
+        var options = spells
+            .Select(spell => spell.Name)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (options.Count == 0)
+        {
+            MessageBox.Show("No eligible spells were found for this selection.", "Selection Unavailable", MessageBoxButton.OK, MessageBoxImage.Information);
+            return null;
+        }
+
+        var window = new Window
+        {
+            Title = $"{abilityName} selection",
+            Width = 640,
+            Height = 260,
+            WindowStartupLocation = WindowStartupLocation.CenterScreen,
+            ResizeMode = ResizeMode.NoResize,
+        };
+
+        var panel = new StackPanel { Margin = new Thickness(14) };
+        panel.Children.Add(new TextBlock
+        {
+            Text = "Select one spell:",
+            Margin = new Thickness(0, 0, 0, 8),
+        });
+
+        var picker = new ComboBox
+        {
+            Height = 30,
+            MinWidth = 420,
+            ItemsSource = options,
+            IsEditable = true,
+        };
+
+        string existingValue = (existing ?? string.Empty).Trim();
+        if (!string.IsNullOrWhiteSpace(existingValue))
+            picker.Text = existingValue;
+        else
+            picker.SelectedIndex = 0;
+
+        panel.Children.Add(picker);
+
+        var buttons = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Margin = new Thickness(0, 12, 0, 0)
+        };
+        var ok = new Button { Content = "OK", Width = 80, Margin = new Thickness(0, 0, 8, 0), IsDefault = true };
+        var cancel = new Button { Content = "Cancel", Width = 80, IsCancel = true };
+        ok.Click += (_, _) => window.DialogResult = true;
+        cancel.Click += (_, _) => window.DialogResult = false;
+        buttons.Children.Add(ok);
+        buttons.Children.Add(cancel);
+        panel.Children.Add(buttons);
+
+        window.Content = panel;
+        bool? result = window.ShowDialog();
+        if (result != true)
+            return null;
+
+        return (picker.Text ?? string.Empty).Trim();
+    }
+
+    private static string? PromptForSpellLikeGrantedPowerSelection(string abilityName, string existing)
+    {
+        RulesEngine.TryParseSpellLikeGrantedPowerSelection(existing, out var current);
+
+        var window = new Window
+        {
+            Title = $"{abilityName} selection",
+            Width = 640,
+            Height = 360,
+            WindowStartupLocation = WindowStartupLocation.CenterScreen,
+            ResizeMode = ResizeMode.NoResize,
+        };
+
+        var panel = new StackPanel { Margin = new Thickness(14) };
+        panel.Children.Add(new TextBlock
+        {
+            Text = "Configure the spell-like granted power.",
+            Margin = new Thickness(0, 0, 0, 12),
+        });
+
+        panel.Children.Add(new TextBlock { Text = "Spell type", Margin = new Thickness(0, 0, 0, 4) });
+        var spellTypePicker = new ComboBox
+        {
+            Height = 30,
+            ItemsSource = new[] { "Priest", "Wizard" },
+            SelectedItem = string.Equals(current.SpellType, "wizard", StringComparison.OrdinalIgnoreCase) ? "Wizard" : "Priest",
+        };
+        panel.Children.Add(spellTypePicker);
+
+        panel.Children.Add(new TextBlock { Text = "Spell name", Margin = new Thickness(0, 10, 0, 4) });
+        var spellNameInput = new TextBox
+        {
+            Text = current.SpellName ?? string.Empty,
+            Height = 30,
+        };
+        panel.Children.Add(spellNameInput);
+
+        panel.Children.Add(new TextBlock { Text = "Spell level", Margin = new Thickness(0, 10, 0, 4) });
+        var spellLevelPicker = new ComboBox { Height = 30 };
+
+        void RefreshSpellLevels()
+        {
+            string type = string.Equals(spellTypePicker.SelectedItem?.ToString(), "Wizard", StringComparison.OrdinalIgnoreCase)
+                ? "wizard"
+                : "priest";
+            int maxLevel = string.Equals(type, "wizard", StringComparison.OrdinalIgnoreCase) ? 9 : 7;
+            var levels = Enumerable.Range(1, maxLevel).Select(i => i.ToString()).ToList();
+            spellLevelPicker.ItemsSource = levels;
+
+            string preferred = current.SpellLevel > 0 && current.SpellLevel <= maxLevel
+                ? current.SpellLevel.ToString()
+                : "1";
+            spellLevelPicker.SelectedItem = preferred;
+        }
+
+        RefreshSpellLevels();
+        spellTypePicker.SelectionChanged += (_, _) => RefreshSpellLevels();
+        panel.Children.Add(spellLevelPicker);
+
+        panel.Children.Add(new TextBlock { Text = "Usage", Margin = new Thickness(0, 10, 0, 4) });
+        var usagePicker = new ComboBox
+        {
+            Height = 30,
+            ItemsSource = new[] { "Once per week", "Per day" },
+            SelectedItem = current.IsDaily ? "Per day" : "Once per week",
+        };
+        panel.Children.Add(usagePicker);
+
+        panel.Children.Add(new TextBlock { Text = "Uses per day", Margin = new Thickness(0, 10, 0, 4) });
+        var usesPicker = new ComboBox
+        {
+            Height = 30,
+            ItemsSource = Enumerable.Range(1, 9).Select(i => i.ToString()).ToList(),
+            SelectedItem = Math.Max(1, current.UsesPerDay).ToString(),
+            IsEnabled = current.IsDaily,
+        };
+        usagePicker.SelectionChanged += (_, _) =>
+        {
+            bool isDaily = string.Equals(usagePicker.SelectedItem?.ToString(), "Per day", StringComparison.OrdinalIgnoreCase);
+            usesPicker.IsEnabled = isDaily;
+            if (!isDaily)
+                usesPicker.SelectedItem = "1";
+        };
+        panel.Children.Add(usesPicker);
+
+        var buttons = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Margin = new Thickness(0, 14, 0, 0)
+        };
+        var ok = new Button { Content = "OK", Width = 80, Margin = new Thickness(0, 0, 8, 0), IsDefault = true };
+        var cancel = new Button { Content = "Cancel", Width = 80, IsCancel = true };
+        ok.Click += (_, _) => window.DialogResult = true;
+        cancel.Click += (_, _) => window.DialogResult = false;
+        buttons.Children.Add(ok);
+        buttons.Children.Add(cancel);
+        panel.Children.Add(buttons);
+
+        window.Content = panel;
+        if (window.ShowDialog() != true)
+            return null;
+
+        string spellName = spellNameInput.Text.Trim();
+        if (string.IsNullOrWhiteSpace(spellName))
+        {
+            MessageBox.Show("Enter the exact spell name for this granted power.", "Selection Required", MessageBoxButton.OK, MessageBoxImage.Information);
+            return null;
+        }
+
+        bool isWizard = string.Equals(spellTypePicker.SelectedItem?.ToString(), "Wizard", StringComparison.OrdinalIgnoreCase);
+        bool isDaily = string.Equals(usagePicker.SelectedItem?.ToString(), "Per day", StringComparison.OrdinalIgnoreCase);
+        int spellLevel = int.TryParse(spellLevelPicker.SelectedItem?.ToString(), out int parsedLevel) ? parsedLevel : 1;
+        int usesPerDay = isDaily && int.TryParse(usesPicker.SelectedItem?.ToString(), out int parsedUses) ? parsedUses : 1;
+
+        return RulesEngine.BuildSpellLikeGrantedPowerSelectionText(
+            isWizard ? "wizard" : "priest",
+            spellLevel,
+            isDaily,
+            usesPerDay,
+            spellName);
+    }
+
+    private static string? PromptForClassAbilitySelectionOption(
+        string abilityName,
+        IReadOnlyList<string> options,
+        string existing)
+    {
+        var window = new Window
+        {
+            Title = $"{abilityName} selection",
+            Width = 560,
+            Height = 220,
+            WindowStartupLocation = WindowStartupLocation.CenterScreen,
+            ResizeMode = ResizeMode.NoResize,
+        };
+
+        var panel = new StackPanel { Margin = new Thickness(14) };
+        panel.Children.Add(new TextBlock
+        {
+            Text = "Select one option:",
+            Margin = new Thickness(0, 0, 0, 8),
+        });
+
+        var picker = new ComboBox
+        {
+            Height = 30,
+            MinWidth = 340,
+            ItemsSource = options,
+        };
+
+        string existingValue = (existing ?? string.Empty).Trim();
+        if (!string.IsNullOrWhiteSpace(existingValue))
+            picker.SelectedItem = options.FirstOrDefault(o => string.Equals(o, existingValue, StringComparison.OrdinalIgnoreCase));
+        if (picker.SelectedItem is null && options.Count > 0)
+            picker.SelectedIndex = 0;
+
+        panel.Children.Add(picker);
+
+        var buttons = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Margin = new Thickness(0, 12, 0, 0)
+        };
+        var ok = new Button { Content = "OK", Width = 80, Margin = new Thickness(0, 0, 8, 0), IsDefault = true };
+        var cancel = new Button { Content = "Cancel", Width = 80, IsCancel = true };
+        ok.Click += (_, _) => window.DialogResult = true;
+        cancel.Click += (_, _) => window.DialogResult = false;
+        buttons.Children.Add(ok);
+        buttons.Children.Add(cancel);
+        panel.Children.Add(buttons);
+
+        window.Content = panel;
+        bool? result = window.ShowDialog();
+        if (result != true)
+            return null;
+
+        return (picker.SelectedItem?.ToString() ?? string.Empty).Trim();
+    }
+
     private void BtnSelectSpheres_Click(object sender, RoutedEventArgs e)
     {
         if (!IsPlayersOptionMode)
             return;
 
-        if (_activeClass?.Id != "cleric") return;
+        if (_activeClass is null)
+            return;
+
+        bool isCleric = string.Equals(_activeClass.Id, "cleric", StringComparison.OrdinalIgnoreCase);
+        bool isPaladinAlternate = ShouldConfigurePaladinSpheres(_activeClass);
+        bool isRangerAlternate = ShouldConfigureRangerSpheres(_activeClass);
+        if (!isCleric && !isPaladinAlternate && !isRangerAlternate)
+            return;
+
         var dialog = new SphereSelectionDialog(CharGenClassScreen.NormalizeSphereSelections(_app.CharGen.SelectedSpheres));
         if (dialog.ShowDialog() == true)
         {
-            _app.CharGen.SelectedSpheres = dialog.GetSelections();
+            var selections = dialog.GetSelections();
+            if (isRangerAlternate)
+            {
+                selections = NormalizeRangerAlternateSpheres(selections);
+                if (!IsValidRangerSphereSwap(selections))
+                {
+                    MessageBox.Show(
+                        "Ranger alternate sphere access must keep exactly one default minor sphere (Animal or Plant) and swap the other for one different minor sphere.",
+                        "Invalid Sphere Selection",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                    return;
+                }
+            }
+
+            _app.CharGen.SelectedSpheres = selections;
             if (_app.CharGen.SelectedSpheres.Count > 0)
             {
                 RemoveSphereAccessAbilitiesFromSelection();
@@ -974,7 +1940,7 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
         if (!IsPlayersOptionMode)
             return;
 
-        if (!IsRogueClass(_activeClass?.Id)) return;
+        if (_activeClass is null || !ClassSupportsRogueSkillConfiguration(_activeClass)) return;
 
         var selectedSkillIds = GetSelectedRogueSkillIds();
         if (selectedSkillIds.Count == 0)
@@ -1069,6 +2035,24 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
                 && classSpheres.Count == 0)
             {
                 configWarnings.Add($"{cls.Name}: no priest spheres selected.");
+            }
+
+            bool hasPaladinAlternateSpheres = classAbilityIds.Any(entry =>
+                string.Equals(RulesEngine.ExtractClassAbilityBaseId(entry), "paladin_alternate_sphere_access", StringComparison.OrdinalIgnoreCase));
+            if (string.Equals(cls.Id, "paladin", System.StringComparison.OrdinalIgnoreCase)
+                && hasPaladinAlternateSpheres
+                && classSpheres.Count == 0)
+            {
+                configWarnings.Add($"{cls.Name}: alternate sphere access selected but no spheres configured.");
+            }
+
+            bool hasRangerAlternateSpheres = classAbilityIds.Any(entry =>
+                string.Equals(RulesEngine.ExtractClassAbilityBaseId(entry), "ranger_alternate_sphere_access", StringComparison.OrdinalIgnoreCase));
+            if (string.Equals(cls.Id, "ranger", System.StringComparison.OrdinalIgnoreCase)
+                && hasRangerAlternateSpheres
+                && !IsValidRangerSphereSwap(NormalizeRangerAlternateSpheres(classSpheres)))
+            {
+                configWarnings.Add($"{cls.Name}: alternate sphere access must swap exactly one default minor sphere (Animal or Plant).");
             }
 
             if (string.Equals(cls.Id, "wizard", System.StringComparison.OrdinalIgnoreCase))

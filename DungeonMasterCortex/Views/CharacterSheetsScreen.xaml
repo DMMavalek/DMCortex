@@ -13,7 +13,7 @@
 
         <StackPanel Grid.Row="0">
             <TextBlock Text="CHARACTER SHEET" Style="{StaticResource TitleText}" FontSize="22"/>
-            <TextBlock Text="Click any section header to expand or collapse it." Style="{StaticResource SubtitleText}" Margin="0,4,0,0"/>
+            <TextBlock Text="Drag section headers to reorder. Right-click a section for Move to Column 1/2/3." Style="{StaticResource SubtitleText}" Margin="0,4,0,0"/>
         </StackPanel>
 
         <Border Grid.Row="2"
@@ -24,26 +24,29 @@
                 Padding="14">
             <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="8"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
                 <!-- Sheet sections — populated in code-behind as collapsible Expanders -->
-                <ScrollViewer Grid.Row="2"
+                <ScrollViewer Grid.Row="0"
                               VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled"
                               Padding="0,0,4,0">
-                    <StackPanel x:Name="SheetPanel" Margin="0,0,0,4"/>
+                    <StackPanel x:Name="LaneSurface"
+                                Margin="0,0,0,4"
+                                AllowDrop="True"
+                                DragOver="LaneSurface_DragOver"
+                                Drop="LaneSurface_Drop"/>
                 </ScrollViewer>
 
-                <TextBlock Grid.Row="4" x:Name="StatusText" Style="{StaticResource SubtitleText}" TextWrapping="Wrap"/>
+                <TextBlock Grid.Row="1" x:Name="StatusText" Style="{StaticResource SubtitleText}" TextWrapping="Wrap"/>
             </Grid>
         </Border>
 
         <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
             <Button x:Name="BtnBack" Content="◀ CLOSE SHEET" Style="{StaticResource GoldButton}" Margin="0,0,16,0" Click="BtnBack_Click"/>
+            <Button x:Name="BtnToggleExpandCollapse" Content="EXPAND ALL" Style="{StaticResource DarkButton}" Margin="0,0,8,0" Click="BtnToggleExpandCollapse_Click"/>
             <Button x:Name="BtnCopySummary" Content="COPY SHEET" Style="{StaticResource GoldButton}" Margin="0,0,8,0" Click="BtnCopySummary_Click"/>
             <Button x:Name="BtnPrintSummary" Content="PRINT SHEET" Style="{StaticResource GoldButton}" Click="BtnPrintSummary_Click"/>
         </StackPanel>

@@ -134,10 +134,15 @@ public class RulesEngine
                 && budgetEl.ValueKind == JsonValueKind.Number
                 ? budgetEl.GetInt32()
                 : 0;
+            var startingFundsRoll = cp.Value.TryGetProperty("starting_funds_roll", out var fundsEl)
+                ? fundsEl.GetString() ?? string.Empty
+                : cp.Value.TryGetProperty("starting_gold_roll", out var goldRollEl)
+                    ? goldRollEl.GetString() ?? string.Empty
+                    : string.Empty;
             var specializations = ParseSpecializations(cp.Value);
             var source = ParseSourceTag(cp.Value);
             var rulesMode = ParseClassRulesMode(cp.Value, budget, classAbilities, defaultRulesMode);
-            Classes[cp.Name] = new ClassDefinition(cp.Name, name, mins, allowed, classAbilities, budget, specializations, source, rulesMode);
+            Classes[cp.Name] = new ClassDefinition(cp.Name, name, mins, allowed, classAbilities, budget, specializations, source, rulesMode, startingFundsRoll);
         }
     }
 
@@ -780,6 +785,12 @@ public class RulesEngine
             writer.WriteStartArray("required_nwps");
             foreach (var n in k.RequiredNwpIds) writer.WriteStringValue(n);
             writer.WriteEndArray();
+            if (!string.IsNullOrWhiteSpace(k.StartingFundsRollOverride))
+                writer.WriteString("starting_funds_roll_override", k.StartingFundsRollOverride);
+            if (k.StartingFundsGoldBonus != 0)
+                writer.WriteNumber("starting_funds_gold_bonus", k.StartingFundsGoldBonus);
+            if (k.StartingFundsMultiplierPercent != 100)
+                writer.WriteNumber("starting_funds_multiplier_percent", k.StartingFundsMultiplierPercent);
             writer.WriteEndObject();
         }
         writer.WriteEndArray();
@@ -835,8 +846,32 @@ public class RulesEngine
                     foreach (var n in reqEl.EnumerateArray())
                         if (n.GetString() is string rs) requiredNwpIds.Add(rs);
 
+                string startingFundsRollOverride = k.TryGetProperty("starting_funds_roll_override", out var fundsOverrideEl)
+                    ? fundsOverrideEl.GetString() ?? string.Empty
+                    : string.Empty;
+                int startingFundsGoldBonus = k.TryGetProperty("starting_funds_gold_bonus", out var fundsBonusEl)
+                    && fundsBonusEl.ValueKind == JsonValueKind.Number
+                    ? fundsBonusEl.GetInt32()
+                    : 0;
+                int startingFundsMultiplierPercent = k.TryGetProperty("starting_funds_multiplier_percent", out var fundsMultiplierEl)
+                    && fundsMultiplierEl.ValueKind == JsonValueKind.Number
+                    ? fundsMultiplierEl.GetInt32()
+                    : 100;
+
                 if (!string.IsNullOrEmpty(id))
-                    Kits.Add(new KitDefinition(id, name, description, source, allowedRaces, allowedClasses, freeNwpIds, requiredNwpIds, rulesMode));
+                    Kits.Add(new KitDefinition(
+                        id,
+                        name,
+                        description,
+                        source,
+                        allowedRaces,
+                        allowedClasses,
+                        freeNwpIds,
+                        requiredNwpIds,
+                        rulesMode,
+                        startingFundsRollOverride,
+                        startingFundsGoldBonus,
+                        startingFundsMultiplierPercent));
             }
         }
         catch { /* non-fatal: kits are optional */ }
@@ -2001,6 +2036,9 @@ public class RulesEngine
         {
             Id = id,
             Description = desc,
+            Category = item.TryGetProperty("category", out var catEl) && catEl.ValueKind == JsonValueKind.String
+                ? (catEl.GetString() ?? string.Empty)
+                : string.Empty,
             PointCost = resolvedCost,
             AutoGranted = explicitAuto,
             AllowMultiple = item.TryGetProperty("allow_multiple", out var multiEl)
@@ -2148,6 +2186,191 @@ public class RulesEngine
             return string.Empty;
 
         return selectionEntry[(split + ClassAbilitySelectionTextDelimiter.Length)..].Trim();
+    }
+
+    public readonly record struct SpellLikeGrantedPowerSelection(
+        string SpellType,
+        int SpellLevel,
+        bool IsDaily,
+        int UsesPerDay,
+        string SpellName);
+
+    public static string BuildSpellLikeGrantedPowerSelectionText(
+        string spellType,
+        int spellLevel,
+        bool isDaily,
+        int usesPerDay,
+        string? spellName)
+    {
+        string normalizedSpellType = string.Equals(spellType, "wizard", StringComparison.OrdinalIgnoreCase)
+            ? "wizard"
+            : "priest";
+        int normalizedLevel = Math.Max(1, spellLevel);
+        bool normalizedDaily = isDaily;
+        int normalizedUses = normalizedDaily ? Math.Max(1, usesPerDay) : 1;
+        string normalizedName = (spellName ?? string.Empty).Trim().Replace("|", "/");
+
+        return string.Join("|",
+            normalizedSpellType,
+            normalizedLevel.ToString(),
+            normalizedDaily ? "daily" : "weekly",
+            normalizedUses.ToString(),
+            normalizedName);
+    }
+
+    public static bool TryParseSpellLikeGrantedPowerSelection(
+        string? playerText,
+        out SpellLikeGrantedPowerSelection selection)
+    {
+        selection = default;
+        if (string.IsNullOrWhiteSpace(playerText))
+            return false;
+
+        var parts = playerText.Split('|');
+        if (parts.Length < 5)
+            return false;
+
+        string spellType = string.Equals(parts[0].Trim(), "wizard", StringComparison.OrdinalIgnoreCase)
+            ? "wizard"
+            : "priest";
+
+        if (!int.TryParse(parts[1].Trim(), out int spellLevel) || spellLevel < 1)
+            return false;
+
+        bool isDaily = string.Equals(parts[2].Trim(), "daily", StringComparison.OrdinalIgnoreCase);
+        if (!isDaily && !string.Equals(parts[2].Trim(), "weekly", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        if (!int.TryParse(parts[3].Trim(), out int usesPerDay) || usesPerDay < 1)
+            return false;
+
+        if (!isDaily)
+            usesPerDay = 1;
+
+        string spellName = string.Join("|", parts.Skip(4)).Trim();
+        if (string.IsNullOrWhiteSpace(spellName))
+            return false;
+
+        int maxLevel = string.Equals(spellType, "wizard", StringComparison.OrdinalIgnoreCase) ? 9 : 7;
+        if (spellLevel > maxLevel)
+            return false;
+
+        selection = new SpellLikeGrantedPowerSelection(spellType, spellLevel, isDaily, usesPerDay, spellName);
+        return true;
+    }
+
+    public static int GetConfiguredClassAbilityPointCost(AbilityDefinition ability, string? selectionEntry)
+    {
+        if (ability is null)
+            return 0;
+
+        string playerText = ExtractClassAbilityPlayerText(selectionEntry);
+        if (string.Equals(ability.Id, "cleric_spell_like_granted_power", StringComparison.OrdinalIgnoreCase)
+            && TryParseSpellLikeGrantedPowerSelection(playerText, out var spellLikeSelection))
+        {
+            int levelCost = string.Equals(spellLikeSelection.SpellType, "wizard", StringComparison.OrdinalIgnoreCase)
+                ? spellLikeSelection.SpellLevel * 2
+                : spellLikeSelection.SpellLevel;
+
+            return 10
+                + levelCost
+                + (spellLikeSelection.IsDaily ? 5 : 0)
+                + (Math.Max(1, spellLikeSelection.UsesPerDay) - 1) * levelCost;
+        }
+
+        return ability.PointCost;
+    }
+
+    public static string FormatClassAbilitySelectionText(string abilityId, string? playerText)
+    {
+        if (string.IsNullOrWhiteSpace(playerText))
+            return string.Empty;
+
+        if (string.Equals(abilityId, "cleric_spell_like_granted_power", StringComparison.OrdinalIgnoreCase)
+            && TryParseSpellLikeGrantedPowerSelection(playerText, out var spellLikeSelection))
+        {
+            string usage = spellLikeSelection.IsDaily
+                ? $"{spellLikeSelection.UsesPerDay}/day"
+                : "1/week";
+            string spellType = string.Equals(spellLikeSelection.SpellType, "wizard", StringComparison.OrdinalIgnoreCase)
+                ? "Wizard"
+                : "Priest";
+            return $"{spellType} {FormatSpellLevelLabel(spellLikeSelection.SpellLevel)} {spellLikeSelection.SpellName} ({usage})";
+        }
+
+        return playerText.Trim();
+    }
+
+    private static string FormatSpellLevelLabel(int level)
+    {
+        int normalized = Math.Max(1, level);
+        int mod100 = normalized % 100;
+        string suffix = mod100 is 11 or 12 or 13
+            ? "th"
+            : (normalized % 10) switch
+            {
+                1 => "st",
+                2 => "nd",
+                3 => "rd",
+                _ => "th",
+            };
+        return $"{normalized}{suffix}-level";
+    }
+
+    public static string AdjustSpellCastTimeForSlowerCasting(string? rawCastTime)
+    {
+        string castTime = (rawCastTime ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(castTime))
+            return string.Empty;
+
+        var longCastMatch = Regex.Match(castTime, @"(?<value>\d+)\s*(?<unit>rounds?|rds?\.?|rd\.?|turns?|turn\.?|hours?|hrs?\.?|hr\.?|days?)", RegexOptions.IgnoreCase);
+        if (longCastMatch.Success && int.TryParse(longCastMatch.Groups["value"].Value, out int longValue))
+        {
+            int doubled = Math.Max(1, longValue * 2);
+            return castTime.Remove(longCastMatch.Groups["value"].Index, longCastMatch.Groups["value"].Length)
+                .Insert(longCastMatch.Groups["value"].Index, doubled.ToString());
+        }
+
+        var shortCastMatch = Regex.Match(castTime, @"\d+");
+        if (shortCastMatch.Success && int.TryParse(shortCastMatch.Value, out int shortValue))
+        {
+            int adjusted = shortValue + 3;
+            return castTime.Remove(shortCastMatch.Index, shortCastMatch.Length)
+                .Insert(shortCastMatch.Index, adjusted.ToString());
+        }
+
+        return castTime + " (+3)";
+    }
+
+    public static string AdjustSpellCastTimeToNextTimeUnit(string? rawCastTime)
+    {
+        string castTime = (rawCastTime ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(castTime))
+            return string.Empty;
+
+        var longCastMatch = Regex.Match(castTime, @"(?<value>\d+)\s*(?<unit>rounds?|rds?\.?|rd\.?|turns?|turn\.?|hours?|hrs?\.?|hr\.?|days?)", RegexOptions.IgnoreCase);
+        if (longCastMatch.Success && int.TryParse(longCastMatch.Groups["value"].Value, out int value))
+        {
+            string unitToken = longCastMatch.Groups["unit"].Value.Trim().TrimEnd('.').ToLowerInvariant();
+            string nextUnit = unitToken switch
+            {
+                "rd" or "rds" or "round" or "rounds" => value == 1 ? "turn" : "turns",
+                "turn" or "turns" => value == 1 ? "hour" : "hours",
+                "hr" or "hrs" or "hour" or "hours" => value == 1 ? "day" : "days",
+                "day" or "days" => value == 1 ? "day" : "days",
+                _ => value == 1 ? "round" : "rounds",
+            };
+
+            string replacement = $"{value} {nextUnit}";
+            return castTime.Remove(longCastMatch.Index, longCastMatch.Length)
+                .Insert(longCastMatch.Index, replacement);
+        }
+
+        var shortCastMatch = Regex.Match(castTime, @"\d+");
+        if (shortCastMatch.Success)
+            return "1 round";
+
+        return castTime + " (next time unit)";
     }
 
     private static bool InferAutoGranted(string description)
@@ -2332,6 +2555,17 @@ public class RulesEngine
                 .ToList();
         }
 
+        // In core mode, avoid generic "Basic ..." placeholders when concrete
+        // subraces are available for selection.
+        if (string.Equals(mode, "core_rules", StringComparison.OrdinalIgnoreCase))
+        {
+            var nonBasic = subraces
+                .Where(r => !r.Name.StartsWith("Basic ", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            if (nonBasic.Count > 0)
+                subraces = nonBasic;
+        }
+
         // Player's Option request: default halfling should expose all halfling racial abilities as choices.
         if (string.Equals(mode, "players_option", StringComparison.OrdinalIgnoreCase) &&
             string.Equals(baseId, "halfling", StringComparison.OrdinalIgnoreCase))
@@ -2357,6 +2591,12 @@ public class RulesEngine
                 .OrderBy(r => r.Name.StartsWith("Basic ", StringComparison.OrdinalIgnoreCase) ? 1 : 0)
                 .ThenBy(r => r.Name)
                 .ToList();
+
+            var nonBasic = subraces
+                .Where(r => !r.Name.StartsWith("Basic ", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            if (nonBasic.Count > 0)
+                subraces = nonBasic;
         }
 
         if (subraces.Count > 0) return subraces;
@@ -2377,10 +2617,11 @@ public class RulesEngine
 
     private static bool IsRedundantZeroCostBaseSubrace(RaceDefinition race, string baseRaceId)
     {
-        if (race.StructuredAbilities.Count == 0) return false;
-        if (race.StructuredAbilities.Any(a => a.PointCost != 0)) return false;
-
-        return IsBaseNameMatch(race.Name, baseRaceId);
+        // A race entry whose Id is the same as the base race ID is a self-referential
+        // base race definition (e.g., core "elf" entry with Id="elf", BaseRaceId="elf").
+        // These are not real selectable subraces — filter them so the fallback can surface
+        // the named Player's Option subraces instead.
+        return string.Equals(race.Id, baseRaceId, StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsBaseNameMatch(string? raceName, string? baseRaceId)
@@ -2637,6 +2878,321 @@ public class RulesEngine
     {
         AddWizardSchoolOptions();
         AddClericSphereOptions();
+
+        AddAbilityIfMissing("fighter", new AbilityDefinition
+        {
+            Id = "fighter_1d12_hit_points",
+            Description = "1d12 for hit points (10): Use d12 hit die instead of d10.",
+            PointCost = 10,
+            AutoGranted = false,
+            Effect = new AbilityEffect { HpDiceExpression = "1d12" }
+        });
+        AddAbilityIfMissing("fighter", new AbilityDefinition
+        {
+            Id = "fighter_defense_bonus",
+            Description = "Defense bonus (10): +2 bonus to Armor Class if unarmored and unencumbered.",
+            PointCost = 10,
+            AutoGranted = false,
+            Effect = new AbilityEffect { AcBonus = -2, AcBonusRequiresNoArmor = true }
+        });
+        AddAbilityIfMissing("fighter", new AbilityDefinition
+        {
+            Id = "fighter_poison_resistance",
+            Description = "Poison resistance (5): +1 to saving throws vs poison.",
+            PointCost = 5,
+            AutoGranted = false,
+            Effect = new AbilityEffect { SaveBonuses = new Dictionary<string, int> { ["poison"] = 1 } }
+        });
+        AddAbilityIfMissing("fighter", new AbilityDefinition
+        {
+            Id = "fighter_building",
+            Description = "Building (5): Construct heavy war machines, siege engines, and siege towers.",
+            PointCost = 5,
+            AutoGranted = false,
+        });
+        AddAbilityIfMissing("fighter", new AbilityDefinition
+        {
+            Id = "fighter_leadership",
+            Description = "Leadership (5): Command and coordinate large troop forces.",
+            PointCost = 5,
+            AutoGranted = false,
+        });
+        AddAbilityIfMissing("fighter", new AbilityDefinition
+        {
+            Id = "fighter_followers",
+            Description = "Followers (5/10): Attract followers by establishing a stronghold (earlier access at 10 points).",
+            PointCost = 5,
+            AutoGranted = false,
+        });
+        AddAbilityIfMissing("fighter", new AbilityDefinition
+        {
+            Id = "fighter_increased_movement",
+            Description = "Increased movement (5): Base movement 15 instead of 12.",
+            PointCost = 5,
+            AutoGranted = false,
+            Effect = new AbilityEffect { MovementBonus = 3 }
+        });
+        AddAbilityIfMissing("fighter", new AbilityDefinition
+        {
+            Id = "fighter_magic_resistance",
+            Description = "Magic resistance (10): Gain 2% magic resistance per level.",
+            PointCost = 10,
+            AutoGranted = false,
+        });
+        AddAbilityIfMissing("fighter", new AbilityDefinition
+        {
+            Id = "fighter_move_silently",
+            Description = "Move silently (10): Move silently chance equals Dexterity plus level (armor limited).",
+            PointCost = 10,
+            AutoGranted = false,
+            Effect = new AbilityEffect { GrantsStealth = true }
+        });
+        AddAbilityIfMissing("fighter", new AbilityDefinition
+        {
+            Id = "fighter_supervisor",
+            Description = "Supervisor (5): Supervise defensive works and field fortifications.",
+            PointCost = 5,
+            AutoGranted = false,
+        });
+        AddAbilityIfMissing("fighter", new AbilityDefinition
+        {
+            Id = "fighter_war_machines",
+            Description = "War machines (5): Operate heavy war machines and siege engines.",
+            PointCost = 5,
+            AutoGranted = false,
+        });
+
+        AddAbilityIfMissing("bard", new AbilityDefinition
+        {
+            Id = "bard_alter_moods",
+            Description = "Alter moods (5): Shift audience reaction through performance.",
+            PointCost = 5,
+            AutoGranted = false,
+        });
+        AddAbilityIfMissing("bard", new AbilityDefinition
+        {
+            Id = "bard_animal_friendship",
+            Description = "Animal friendship (10): Cast animal friendship equivalent once per day.",
+            PointCost = 10,
+            AutoGranted = false,
+        });
+        AddAbilityIfMissing("bard", new AbilityDefinition
+        {
+            Id = "bard_charm_resistance",
+            Description = "Charm resistance (5): +1 to saving throws vs charm-like effects.",
+            PointCost = 5,
+            AutoGranted = false,
+            Effect = new AbilityEffect { SaveBonuses = new Dictionary<string, int> { ["charm"] = 1 } }
+        });
+        AddAbilityIfMissing("bard", new AbilityDefinition
+        {
+            Id = "bard_counter_effects",
+            Description = "Counter effects (10): Counter magical song/music attacks with performance.",
+            PointCost = 10,
+            AutoGranted = false,
+        });
+        AddAbilityIfMissing("bard", new AbilityDefinition
+        {
+            Id = "bard_detect_magic",
+            Description = "Detect magic (10): Spot magical radiations and intensity by sight.",
+            PointCost = 10,
+            AutoGranted = false,
+        });
+        AddAbilityIfMissing("bard", new AbilityDefinition
+        {
+            Id = "bard_detect_noise",
+            Description = "Detect noise (5): Hear sounds others usually cannot.",
+            PointCost = 5,
+            AutoGranted = false,
+        });
+        AddAbilityIfMissing("bard", new AbilityDefinition
+        {
+            Id = "bard_history",
+            Description = "History (10): Lore recall and magical item history insight.",
+            PointCost = 10,
+            AutoGranted = false,
+        });
+        AddAbilityIfMissing("bard", new AbilityDefinition
+        {
+            Id = "bard_rally_friends",
+            Description = "Rally friends (5): Inspire allies before battle.",
+            PointCost = 5,
+            AutoGranted = false,
+        });
+        AddAbilityIfMissing("bard", new AbilityDefinition
+        {
+            Id = "bard_sound_resistance",
+            Description = "Sound resistance (5): +2 to saves vs sound-based magical attacks.",
+            PointCost = 5,
+            AutoGranted = false,
+            Effect = new AbilityEffect { SaveBonuses = new Dictionary<string, int> { ["sound"] = 2 } }
+        });
+        AddAbilityIfMissing("bard", new AbilityDefinition
+        {
+            Id = "bard_wizard_spells",
+            Description = "Wizard spells (10): Gain bard spellcasting progression.",
+            PointCost = 10,
+            AutoGranted = false,
+        });
+        AddAbilityIfMissing("bard", new AbilityDefinition
+        {
+            Id = "bard_accelerated_spell_progression",
+            Description = "Accelerated spell progression (15): Use bard spell chart as one level higher.",
+            PointCost = 15,
+            AutoGranted = false,
+        });
+        AddAbilityIfMissing("bard", new AbilityDefinition
+        {
+            Id = "bard_school_specialization",
+            Description = "School specialization (10): Specialize in enchantment/charm, illusion, or song magic.",
+            PointCost = 10,
+            AutoGranted = false,
+        });
+        AddAbilityIfMissing("bard", new AbilityDefinition
+        {
+            Id = "bard_armor_and_spell_use",
+            Description = "Armor and spell use (5/10): Cast spells in leather or in any bard-allowed armor.",
+            PointCost = 5,
+            AutoGranted = false,
+        });
+        AddAbilityIfMissing("bard", new AbilityDefinition
+        {
+            Id = "bard_wizard_magical_item_use",
+            Description = "Wizard magical item use (10): Use wizard-only magical items (except rods/staves).",
+            PointCost = 10,
+            AutoGranted = false,
+        });
+        AddAbilityIfMissing("bard", new AbilityDefinition
+        {
+            Id = "bard_climb_walls",
+            Description = "Climb walls (5): Bards can climb smooth or vertical surfaces.",
+            PointCost = 5,
+            AutoGranted = false,
+        });
+        AddAbilityIfMissing("bard", new AbilityDefinition
+        {
+            Id = "bard_pick_pockets",
+            Description = "Pick pockets (10): The bard can pilfer small items from pouches, pockets, belts, and similar places.",
+            PointCost = 10,
+            AutoGranted = false,
+        });
+        AddAbilityIfMissing("bard", new AbilityDefinition
+        {
+            Id = "bard_read_languages",
+            Description = "Read languages (5): The bard can read additional languages.",
+            PointCost = 5,
+            AutoGranted = false,
+        });
+        AddAbilityIfMissing("bard", new AbilityDefinition
+        {
+            Id = "bard_scroll_use",
+            Description = "Scroll use (5/10): Improves the bard's ability to use spell scrolls.",
+            PointCost = 5,
+            AutoGranted = false,
+        });
+        AddAbilityIfMissing("bard", new AbilityDefinition
+        {
+            Id = "bard_weapon_specialization",
+            Description = "Weapon specialization (10): The bard can specialize in a particular weapon.",
+            PointCost = 10,
+            AutoGranted = false,
+        });
+        AddAbilityIfMissing("bard", new AbilityDefinition
+        {
+            Id = "bard_restriction_awkward_casting_method",
+            Description = "Restriction - Awkward casting method: Gain 5 CP.",
+            PointCost = -5,
+            AutoGranted = false,
+        });
+        AddAbilityIfMissing("bard", new AbilityDefinition
+        {
+            Id = "bard_restriction_opposition_school",
+            Description = "Restriction - Opposition school (per school): Gain 5 CP.",
+            PointCost = -5,
+            AutoGranted = false,
+            AllowMultiple = true,
+            RequiresPlayerText = true,
+        });
+        AddAbilityIfMissing("bard", new AbilityDefinition
+        {
+            Id = "bard_restriction_reduced_spell_power",
+            Description = "Restriction - Reduced spell power: Gain 10 CP.",
+            PointCost = -10,
+            AutoGranted = false,
+        });
+        AddAbilityIfMissing("bard", new AbilityDefinition
+        {
+            Id = "bard_restriction_reduced_spell_progression",
+            Description = "Restriction - Reduced spell progression: Gain 15 CP.",
+            PointCost = -15,
+            AutoGranted = false,
+        });
+        AddAbilityIfMissing("bard", new AbilityDefinition
+        {
+            Id = "bard_restriction_unreliable_casting_method",
+            Description = "Restriction - Unreliable casting method: Gain 5 CP.",
+            PointCost = -5,
+            AutoGranted = false,
+        });
+        AddAbilityIfMissing("fighter", new AbilityDefinition
+        {
+            Id = "fighter_spell_resistance",
+            Description = "Spell resistance (5): +1 to saving throws vs spells.",
+            PointCost = 5,
+            AutoGranted = false,
+            Effect = new AbilityEffect { SaveBonuses = new Dictionary<string, int> { ["magic"] = 1 } }
+        });
+        AddAbilityIfMissing("fighter", new AbilityDefinition
+        {
+            Id = "fighter_weapon_specialization",
+            Description = "Weapon specialization (5): May specialize in a selected weapon (specialization CP cost still required).",
+            PointCost = 5,
+            AutoGranted = false,
+        });
+        AddAbilityIfMissing("fighter", new AbilityDefinition
+        {
+            Id = "fighter_multiple_specialization",
+            Description = "Multiple specialization (10): May specialize in multiple weapons.",
+            PointCost = 10,
+            AutoGranted = false,
+        });
+        AddAbilityIfMissing("fighter", new AbilityDefinition
+        {
+            Id = "fighter_restriction_limited_armor_chain",
+            Description = "Restriction - Limited armor (chain or lighter): Gain 5 CP.",
+            PointCost = -5,
+            AutoGranted = false,
+        });
+        AddAbilityIfMissing("fighter", new AbilityDefinition
+        {
+            Id = "fighter_restriction_limited_armor_studded",
+            Description = "Restriction - Limited armor (studded leather or lighter): Gain 10 CP.",
+            PointCost = -10,
+            AutoGranted = false,
+        });
+        AddAbilityIfMissing("fighter", new AbilityDefinition
+        {
+            Id = "fighter_restriction_limited_armor_none",
+            Description = "Restriction - No armor: Gain 15 CP.",
+            PointCost = -15,
+            AutoGranted = false,
+        });
+        AddAbilityIfMissing("fighter", new AbilityDefinition
+        {
+            Id = "fighter_restriction_limited_weapon_selection",
+            Description = "Restriction - Limited weapon selection: Gain 5 CP.",
+            PointCost = -5,
+            AutoGranted = false,
+        });
+        AddAbilityIfMissing("fighter", new AbilityDefinition
+        {
+            Id = "fighter_restriction_limited_magical_item_use",
+            Description = "Restriction - Limited magical item use (per barred category): Gain 5 CP.",
+            PointCost = -5,
+            AutoGranted = false,
+            AllowMultiple = true,
+            RequiresPlayerText = true,
+        });
 
         AddAbilityIfMissing("fighter", new AbilityDefinition
         {
@@ -3933,7 +4489,7 @@ public class RulesEngine
                 Id = ability.Id,
                 Description = ability.Description,
                 Category = ability.Category,
-                PointCost = ability.PointCost,
+                PointCost = GetConfiguredClassAbilityPointCost(ability, entry),
                 AutoGranted = ability.AutoGranted,
                 AllowMultiple = ability.AllowMultiple,
                 RequiresPlayerText = ability.RequiresPlayerText,
@@ -3943,7 +4499,7 @@ public class RulesEngine
 
             string playerText = ExtractClassAbilityPlayerText(entry);
             if (!string.IsNullOrWhiteSpace(playerText) && ability.RequiresPlayerText)
-                cloned.Description = $"{ability.Description} [Selection: {playerText}]";
+                cloned.Description = $"{ability.Description} [Selection: {FormatClassAbilitySelectionText(ability.Id, playerText)}]";
 
             selected.Add(cloned);
         }
@@ -4385,6 +4941,19 @@ public class RulesEngine
             ["bard_read_languages"] = "read_languages",
         };
 
+    public static readonly IReadOnlyDictionary<string, string> ClericThiefAbilitySelectionToSkillId =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Pick Pockets"] = "pick_pockets",
+            ["Open Locks"] = "open_locks",
+            ["Find/Remove Traps"] = "find_remove_traps",
+            ["Move Silently"] = "move_silently",
+            ["Hide in Shadows"] = "hide_in_shadows",
+            ["Detect Noise"] = "detect_noise",
+            ["Climb Walls"] = "climb_walls",
+            ["Read Languages"] = "read_languages",
+        };
+
     public static readonly Dictionary<string, string> RogueSkillNames =
         new(StringComparer.OrdinalIgnoreCase)
         {
@@ -4500,7 +5069,7 @@ public class RulesEngine
 
     private static readonly string[] DexterityAdjustedRogueSkills =
     {
-        "pick_pockets", "open_locks", "find_remove_traps", "move_silently", "hide_in_shadows"
+        "pick_pockets", "open_locks", "find_remove_traps", "move_silently", "hide_in_shadows", "climb_walls"
     };
 
     public static int GetRogueSkillCreationPool() => 60;
@@ -4527,6 +5096,17 @@ public class RulesEngine
             var abilityId = ExtractClassAbilityBaseId(selectionEntry);
             if (RogueSkillAbilityToSkillId.TryGetValue(abilityId, out var skillId) && !result.Contains(skillId))
                 result.Add(skillId);
+
+            if (string.Equals(abilityId, "cleric_thief_ability", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(abilityId, "wizard_thief_ability", StringComparison.OrdinalIgnoreCase))
+            {
+                string playerText = FormatClassAbilitySelectionText(abilityId, ExtractClassAbilityPlayerText(selectionEntry));
+                if (ClericThiefAbilitySelectionToSkillId.TryGetValue(playerText, out var clericSkillId)
+                    && !result.Contains(clericSkillId))
+                {
+                    result.Add(clericSkillId);
+                }
+            }
         }
         return result;
     }
@@ -4551,18 +5131,23 @@ public class RulesEngine
         if (!DexterityAdjustedRogueSkills.Contains(skillId, StringComparer.OrdinalIgnoreCase))
             return 0;
 
-        return dexterity switch
-        {
-            <= 9 => skillId == "pick_pockets" ? -15 : skillId == "open_locks" ? -10 : skillId == "find_remove_traps" ? -10 : skillId == "move_silently" ? -20 : -10,
-            10 => skillId == "pick_pockets" ? -10 : skillId == "open_locks" ? -5 : skillId == "find_remove_traps" ? -10 : skillId == "move_silently" ? -15 : -5,
-            11 => skillId == "pick_pockets" ? -5 : skillId == "open_locks" ? 0 : skillId == "find_remove_traps" ? -5 : skillId == "move_silently" ? -10 : 0,
-            12 => skillId == "move_silently" ? -5 : 0,
-            <= 15 => 0,
-            16 => skillId == "open_locks" ? 5 : 0,
-            17 => skillId == "pick_pockets" ? 5 : skillId == "open_locks" ? 10 : skillId == "move_silently" ? 5 : skillId == "hide_in_shadows" ? 5 : 0,
-            18 => skillId == "pick_pockets" ? 10 : skillId == "open_locks" ? 15 : skillId == "find_remove_traps" ? 5 : skillId == "move_silently" ? 10 : 10,
-            _ => skillId == "pick_pockets" ? 15 : skillId == "open_locks" ? 20 : skillId == "find_remove_traps" ? 10 : skillId == "move_silently" ? 15 : 15,
-        };
+        int aimAdj = SubAbilityTables.GetRogueAimAdjustment(skillId, dexterity);
+        if (aimAdj != 0)
+            return aimAdj;
+
+        int balanceAdj = SubAbilityTables.GetRogueBalanceAdjustment(skillId, dexterity);
+        if (balanceAdj != 0)
+            return balanceAdj;
+
+        // Derived mapping for dexterity-sensitive rogue skills not explicitly listed
+        // in PO tables so they still scale from the same Aim/Balance progression.
+        if (string.Equals(skillId, "find_remove_traps", StringComparison.OrdinalIgnoreCase))
+            return SubAbilityTables.GetRogueAimAdjustment("open_locks", dexterity);
+
+        if (string.Equals(skillId, "hide_in_shadows", StringComparison.OrdinalIgnoreCase))
+            return SubAbilityTables.GetRogueBalanceAdjustment("move_silently", dexterity);
+
+        return 0;
     }
 
     public static int GetRogueSkillArmorAdjustment(string skillId, string? armorProfile)

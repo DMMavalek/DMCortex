@@ -69,6 +69,17 @@ public partial class OptionsScreen : UserControl, IScreen
         MessageBox.Show(message, "Activation", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
+    private void BtnReleaseNotes_Click(object sender, RoutedEventArgs e)
+    {
+        var owner = Window.GetWindow(this);
+        var dialog = new ReleaseNotesDialog
+        {
+            Owner = owner,
+        };
+
+        dialog.ShowDialog();
+    }
+
     private readonly MainWindow _app;
     public UIElement View => this;
 

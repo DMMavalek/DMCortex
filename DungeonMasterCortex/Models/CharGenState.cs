@@ -36,6 +36,15 @@ namespace DungeonMasterCortex.Models
         public List<string> SelectedNonweaponProficiencyIds { get; set; } = new();
         public List<WeaponProficiencySelection> SelectedWeaponProficiencies { get; set; } = new();
         public List<EquipmentSelection> SelectedEquipment { get; set; } = new();
+        public List<GemEntry> StartingGems { get; set; } = new();
+        public int StartingPlatinumPieces { get; set; } = 0;
+        public int StartingGoldPieces { get; set; } = 0;
+        public int StartingSilverPieces { get; set; } = 0;
+        public int StartingCopperPieces { get; set; } = 0;
+        public int StartingGemCount { get; set; } = 0;
+        public int StartingGemValueGoldPieces { get; set; } = 0;
+        public bool StartingFundsAssigned { get; set; } = false;
+        public string StartingFundsRollSummary { get; set; } = "";
         public List<string> WizardSpellbookIds { get; set; } = new();
         public List<NamedSpellList> WizardSpellLists { get; set; } = new();
         public string EquippedArmorId { get; set; } = "";
@@ -68,6 +77,7 @@ namespace DungeonMasterCortex.Models
         public Dictionary<string, int> BaselineNonweaponProficiencyImprovements { get; set; } = new();
         public List<string> BaselineWeaponProficiencyIds { get; set; } = new();
         public List<WeaponProficiencySelection> BaselineWeaponProficiencies { get; set; } = new();
+        public List<EquipmentSelection> BaselineEquipmentSelections { get; set; } = new();
 
         // Methods
         public void Clear()
@@ -90,6 +100,15 @@ namespace DungeonMasterCortex.Models
             SelectedNonweaponProficiencyIds.Clear();
             SelectedWeaponProficiencies.Clear();
             SelectedEquipment.Clear();
+            StartingGems.Clear();
+            StartingPlatinumPieces = 0;
+            StartingGoldPieces = 0;
+            StartingSilverPieces = 0;
+            StartingCopperPieces = 0;
+            StartingGemCount = 0;
+            StartingGemValueGoldPieces = 0;
+            StartingFundsAssigned = false;
+            StartingFundsRollSummary = "";
             WizardSpellbookIds.Clear();
             WizardSpellLists.Clear();
             EquippedArmorId = "";
@@ -122,6 +141,7 @@ namespace DungeonMasterCortex.Models
             BaselineNonweaponProficiencyImprovements.Clear();
             BaselineWeaponProficiencyIds.Clear();
             BaselineWeaponProficiencies.Clear();
+            BaselineEquipmentSelections.Clear();
         }
 
         public void RecalculateLevelFromExistingExperience()

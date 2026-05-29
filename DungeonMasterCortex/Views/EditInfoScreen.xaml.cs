@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Globalization;
+using System.Text.RegularExpressions;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
@@ -93,6 +94,20 @@ public partial class EditInfoScreen : UserControl, IScreen
     private List<CustomEquipmentData> _equipmentItems = new();
     private string _selectedEquipmentId = "";
     private const string EquipmentAllCategories = "(All Categories)";
+    private const string CharacterInventoryAllCategories = "(All Categories)";
+    private static readonly string[] CharacterInventorySortOptions =
+    {
+        "Name (A-Z)",
+        "Name (Z-A)",
+        "Quantity (High-Low)",
+        "Cost (High-Low)",
+    };
+    private static readonly Regex CoinValueRegex = new(
+        @"(?<amount>\d[\d,]*)\s*(?<coin>pp|gp|ep|sp|cp)\b",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex BareValueRegex = new(
+        @"(?<low>\d[\d,]*)(?:\s*[-–]\s*(?<high>\d[\d,]*))?",
+        RegexOptions.Compiled);
     private bool _showMagicalEquipment = false;
     private bool _demoViewOnlyNoticeShown;
     private string _activeCharacterEditorSubTab = "update";
@@ -493,6 +508,9 @@ public partial class EditInfoScreen : UserControl, IScreen
         "players_option" => "PO",
         _ => "All",
     };
+
+    private static bool IsPlayersOptionCharacter(CharacterSheet c)
+        => string.Equals((c.CharacterMode ?? string.Empty).Trim(), "players_option", StringComparison.OrdinalIgnoreCase);
 
     private void ShowCharacterEditorSubTab(string subTab)
     {
@@ -1277,6 +1295,13 @@ public partial class EditInfoScreen : UserControl, IScreen
         CharCpGainInput.Text = "0";
         CharSpendNwpCpInput.Text = "0";
         CharSpendWeaponCpInput.Text = "0";
+
+        bool showCpControls = IsPlayersOptionCharacter(c);
+        CharUpdateHeader.Text = showCpControls ? "Level-Up & CP Spending" : "Level-Up Progress";
+        CharAddCpPanel.Visibility = showCpControls ? Visibility.Visible : Visibility.Collapsed;
+        CharSpendCpGrid.Visibility = showCpControls ? Visibility.Visible : Visibility.Collapsed;
+        CharSpendCpButton.Visibility = showCpControls ? Visibility.Visible : Visibility.Collapsed;
+
         if (!wealthInitialized)
             CharLevelupInfo.Text = "";
         RefreshCharacterProgressSummary(c);
@@ -1578,7 +1603,7 @@ public partial class EditInfoScreen : UserControl, IScreen
         var c = _app.Characters[idx];
         int xpGain = ParseNonNegativeInt(CharXpGainInput.Text);
         int hpGain = ParseNonNegativeInt(CharHpGainInput.Text);
-        int cpGain = ParseNonNegativeInt(CharCpGainInput.Text);
+        int cpGain = IsPlayersOptionCharacter(c) ? ParseNonNegativeInt(CharCpGainInput.Text) : 0;
 
         int primeXpBonus = CharacterProgressionService.GetPrimeRequisiteBonusPercent(c);
         int abilityXpBonus = c.Bonuses?.XpModifierPercent ?? 0;
@@ -1658,6 +1683,12 @@ public partial class EditInfoScreen : UserControl, IScreen
             return;
 
         var c = _app.Characters[idx];
+        if (!IsPlayersOptionCharacter(c))
+        {
+            CharLevelupInfo.Text = "Core Rules characters do not use Character Point spending.";
+            return;
+        }
+
         int nwpSpend = ParseNonNegativeInt(CharSpendNwpCpInput.Text);
         int weaponSpend = ParseNonNegativeInt(CharSpendWeaponCpInput.Text);
         int totalSpend = nwpSpend + weaponSpend;
@@ -1706,13 +1737,16 @@ public partial class EditInfoScreen : UserControl, IScreen
             return;
         }
 
-        if (!TryShowBuyItemDialog(library, out var item, out int quantity))
+        if (!TryShowBuyItemDialog(library, out var item, out int quantity, out bool useOverrideCost, out int overrideGp, out int overrideSp, out int overrideCp))
             return;
 
-        int totalGp = item.CostGold * quantity;
-        int totalSp = item.CostSilver * quantity;
-        int totalCp = item.CostCopper * quantity;
+        ResolvePurchaseUnitCost(c, item, useOverrideCost, overrideGp, overrideSp, overrideCp, out int unitGp, out int unitSp, out int unitCp);
+
+        int totalGp = unitGp * quantity;
+        int totalSp = unitSp * quantity;
+        int totalCp = unitCp * quantity;
         int totalCostCopper = CharacterWealthService.ToCopper(totalGp, totalSp, totalCp);
+        int copperBeforePurchase = CharacterWealthService.GetTotalCopper(c);
 
         if (totalCostCopper <= 0)
         {
@@ -1743,7 +1777,9 @@ public partial class EditInfoScreen : UserControl, IScreen
                 ItemId = item.Id,
                 Category = item.Categories.FirstOrDefault() ?? "Equipment",
                 ItemName = item.Name,
-                CostText = BuildCostText(item),
+                CostText = useOverrideCost
+                    ? BuildCostText(unitGp, unitSp, unitCp)
+                    : BuildCostText(item),
                 Quantity = quantity,
                 IsArmor = item.IsArmor,
                 ArmorClassValue = item.ArmorClassValue,
@@ -1754,9 +1790,9 @@ public partial class EditInfoScreen : UserControl, IScreen
                 WeaponDamageLarge = item.WeaponDamageLarge,
                 WeaponType = item.WeaponType,
                 WeaponSize = item.WeaponSize,
-                CostGoldEach = item.CostGold,
-                CostSilverEach = item.CostSilver,
-                CostCopperEach = item.CostCopper,
+                CostGoldEach = Math.Max(0, unitGp),
+                CostSilverEach = Math.Max(0, unitSp),
+                CostCopperEach = Math.Max(0, unitCp),
                 SizeClassEach = item.SizeClass,
                 WeightEach = item.Weight,
             });
@@ -1783,11 +1819,11 @@ public partial class EditInfoScreen : UserControl, IScreen
             if (string.IsNullOrWhiteSpace(existing.WeaponSize))
                 existing.WeaponSize = item.WeaponSize;
             if (existing.CostGoldEach <= 0)
-                existing.CostGoldEach = item.CostGold;
+                existing.CostGoldEach = Math.Max(0, unitGp);
             if (existing.CostSilverEach <= 0)
-                existing.CostSilverEach = item.CostSilver;
+                existing.CostSilverEach = Math.Max(0, unitSp);
             if (existing.CostCopperEach <= 0)
-                existing.CostCopperEach = item.CostCopper;
+                existing.CostCopperEach = Math.Max(0, unitCp);
             if (string.IsNullOrWhiteSpace(existing.SizeClassEach))
                 existing.SizeClassEach = item.SizeClass;
             if (existing.WeightEach <= 0)
@@ -1809,8 +1845,9 @@ public partial class EditInfoScreen : UserControl, IScreen
 
         RefreshCharacterProgressSummary(c);
         CharNotes.Text = string.Join("\n", c.Notes);
+        int copperAfterPurchase = CharacterWealthService.GetTotalCopper(c);
         CharLevelupInfo.Text = totalCostCopper > 0
-            ? $"Purchased {item.Name} x{quantity}. Deducted {CharacterWealthService.FormatCoins(totalCostCopper)}."
+            ? $"Purchased {item.Name} x{quantity}. Deducted {CharacterWealthService.FormatCoins(totalCostCopper)}. Funds: {CharacterWealthService.FormatCoins(copperBeforePurchase)} -> {CharacterWealthService.FormatCoins(copperAfterPurchase)}."
             : $"Added {item.Name} x{quantity} (no cost recorded).";
     }
 
@@ -1821,7 +1858,17 @@ public partial class EditInfoScreen : UserControl, IScreen
             return;
 
         var c = _app.Characters[idx];
-        if (!TryShowSellDialog(c, out string removeItemId, out int removeQuantity, out int gp, out int sp, out int cp, out string note))
+        if (!TryShowSellDialog(
+            c,
+            out string removeItemId,
+            out int removeQuantity,
+            out int pp,
+            out int gp,
+            out int sp,
+            out int cp,
+            out int gems,
+            out int gemValueEachGp,
+            out string note))
             return;
 
         bool removedItem = false;
@@ -1853,23 +1900,42 @@ public partial class EditInfoScreen : UserControl, IScreen
             removedItem = true;
         }
 
-        int addedCopper = CharacterWealthService.ToCopper(gp, sp, cp);
-        if (addedCopper <= 0 && !removedItem)
+        int addedCopper = CharacterWealthService.ToCopper(pp, gp, sp, cp);
+        int gemCountToAdd = Math.Max(0, gems);
+        int gemEachValueGp = Math.Max(0, gemValueEachGp);
+        int gemValueToAddGp = gemCountToAdd * gemEachValueGp;
+        bool addedGemOnly = gemCountToAdd > 0;
+
+        if (addedCopper <= 0 && !addedGemOnly && !removedItem)
         {
             CharLevelupInfo.Text = "No changes requested. Set an item quantity to remove and/or add funds.";
             return;
         }
 
         if (addedCopper > 0)
-            CharacterWealthService.Add(c, gp, sp, cp);
+            CharacterWealthService.Add(c, pp, gp, sp, cp);
+        if (addedGemOnly)
+        {
+            c.Gems ??= new List<GemEntry>();
+            c.Gems.Add(new GemEntry
+            {
+                Name = "Gem",
+                Quantity = gemCountToAdd,
+                ValueGoldPieces = gemEachValueGp,
+            });
+            c.GemCount = c.Gems.Sum(x => Math.Max(1, x.Quantity));
+            c.GemValueGoldPieces = c.Gems.Sum(x => Math.Max(1, x.Quantity) * Math.Max(0, x.ValueGoldPieces));
+        }
+
+        string addedFundsText = FormatAddedFunds(pp, gp, sp, cp, gemCountToAdd, gemEachValueGp);
 
         string reason = string.IsNullOrWhiteSpace(note) ? "sale/funds added" : note.Trim();
-        if (removedItem && addedCopper > 0)
-            c.Notes.Add($"Sold {removedItemName} x{removeQuantity} ({reason}); added {CharacterWealthService.FormatCoins(addedCopper)}.");
+        if (removedItem && (addedCopper > 0 || addedGemOnly))
+            c.Notes.Add($"Sold {removedItemName} x{removeQuantity} ({reason}); added {addedFundsText}.");
         else if (removedItem)
             c.Notes.Add($"Removed {removedItemName} x{removeQuantity} from equipment ({reason}).");
         else
-            c.Notes.Add($"Funds added ({reason}): {CharacterWealthService.FormatCoins(addedCopper)}.");
+            c.Notes.Add($"Funds added ({reason}): {addedFundsText}.");
 
         c.LastModified = System.DateTime.Now;
         c.Revision += 1;
@@ -1877,12 +1943,12 @@ public partial class EditInfoScreen : UserControl, IScreen
 
         RefreshCharacterProgressSummary(c);
         CharNotes.Text = string.Join("\n", c.Notes);
-        if (removedItem && addedCopper > 0)
-            CharLevelupInfo.Text = $"Removed {removedItemName} x{removeQuantity} and added {CharacterWealthService.FormatCoins(addedCopper)}.";
+        if (removedItem && (addedCopper > 0 || addedGemOnly))
+            CharLevelupInfo.Text = $"Removed {removedItemName} x{removeQuantity} and added {addedFundsText}.";
         else if (removedItem)
             CharLevelupInfo.Text = $"Removed {removedItemName} x{removeQuantity}.";
         else
-            CharLevelupInfo.Text = $"Added {CharacterWealthService.FormatCoins(addedCopper)} to {c.Name}.";
+            CharLevelupInfo.Text = $"Added {addedFundsText} to {c.Name}.";
     }
 
     private void RefreshCharacterProgressSummary(CharacterSheet c)
@@ -1894,14 +1960,338 @@ public partial class EditInfoScreen : UserControl, IScreen
             : "No per-level HP history recorded yet.";
 
         CharCoinSummary.Text = CharacterWealthService.FormatCoins(c);
+        EnsureCharacterInventorySortOptions();
+        PopulateCharacterInventoryCategoryFilter(c);
+        RefreshGemInventoryList(c);
+        RefreshCharacterInventorySections(c);
+
+        bool showCpSummary = IsPlayersOptionCharacter(c);
+        string cpSummary = showCpSummary
+            ? $"CP Unspent: {c.UnspentCharacterPoints}    CP Spent (NWP): {c.SpentNwpCharacterPoints}    CP Spent (Weapon): {c.SpentWeaponCharacterPoints}\n"
+            : string.Empty;
 
         CharProgressSummary.Text =
             $"Level: {c.Level}    XP: {c.ExperiencePoints:n0}    HP: {c.HitPoints}\n"
             + $"Armor Class: {c.ArmorClass}    Rogue Armor Profile: {c.RogueSkillArmorProfile}\n"
-            + $"CP Unspent: {c.UnspentCharacterPoints}    CP Spent (NWP): {c.SpentNwpCharacterPoints}    CP Spent (Weapon): {c.SpentWeaponCharacterPoints}\n"
+            + cpSummary
             + $"Unspent proficiency choices: {c.UnspentProficiencyChoices}"
             + $"\nHP by level: {hpAudit}"
             + (c.UnspentRogueSkillPoints > 0 ? $"    Unspent rogue skill points: {c.UnspentRogueSkillPoints}" : string.Empty);
+    }
+
+    private void RefreshGemInventoryList(CharacterSheet c)
+    {
+        if (CharGemList is null)
+            return;
+
+        CharGemList.Items.Clear();
+
+        var gems = (c.Gems ?? new List<GemEntry>())
+            .Where(x => Math.Max(1, x.Quantity) > 0)
+            .OrderByDescending(x => Math.Max(0, x.ValueGoldPieces))
+            .ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (gems.Count == 0)
+        {
+            int gemCount = Math.Max(0, c.GemCount);
+            int totalValue = Math.Max(0, c.GemValueGoldPieces);
+            if (gemCount > 0)
+                CharGemList.Items.Add($"Gems x{gemCount} ({totalValue} gp total)");
+            else
+                CharGemList.Items.Add("(none)");
+            return;
+        }
+
+        foreach (var gem in gems)
+        {
+            int qty = Math.Max(1, gem.Quantity);
+            int valueEach = Math.Max(0, gem.ValueGoldPieces);
+            int valueTotal = qty * valueEach;
+            CharGemList.Items.Add($"{gem.Name} x{qty} - {valueEach} gp each ({valueTotal} gp total)");
+        }
+    }
+
+    private void RefreshCharacterInventorySections(CharacterSheet c)
+    {
+        if (CharInventorySectionsPanel is null)
+            return;
+
+        CharInventorySectionsPanel.Children.Clear();
+
+        string search = (CharInventorySearchBox?.Text ?? string.Empty).Trim();
+        string selectedCategory = CharInventoryCategoryFilter?.SelectedItem as string ?? CharacterInventoryAllCategories;
+        string sortMode = CharInventorySort?.SelectedItem as string ?? CharacterInventorySortOptions[0];
+
+        var inventoryRows = new List<(string Category, string Name, int Quantity, int UnitCopper, string DisplayText)>();
+
+        foreach (var item in (c.EquipmentSelections ?? new List<EquipmentSelection>()).Where(x => x.Quantity > 0))
+        {
+            string category = string.IsNullOrWhiteSpace(item.Category) ? "Equipment" : item.Category.Trim();
+            int unitCopper = CharacterWealthService.ToCopper(item.CostGoldEach, item.CostSilverEach, item.CostCopperEach);
+            string display = unitCopper > 0
+                ? $"{item.ItemName} x{item.Quantity} - {CharacterWealthService.FormatCoins(unitCopper)} each"
+                : $"{item.ItemName} x{item.Quantity}";
+            inventoryRows.Add((category, item.ItemName, item.Quantity, unitCopper, display));
+        }
+
+        foreach (var gem in (c.Gems ?? new List<GemEntry>()).Where(x => Math.Max(1, x.Quantity) > 0))
+        {
+            int quantity = Math.Max(1, gem.Quantity);
+            int valueEachGp = Math.Max(0, gem.ValueGoldPieces);
+            int unitCopper = CharacterWealthService.ToCopper(valueEachGp, 0, 0);
+            string gemName = string.IsNullOrWhiteSpace(gem.Name) ? "Gem" : gem.Name.Trim();
+            string display = $"{gemName} x{quantity} - {valueEachGp} gp each ({valueEachGp * quantity} gp total)";
+            inventoryRows.Add(("Gems", gemName, quantity, unitCopper, display));
+        }
+
+        if (!inventoryRows.Any(x => string.Equals(x.Category, "Gems", StringComparison.OrdinalIgnoreCase)) && c.GemCount > 0)
+        {
+            int qty = Math.Max(0, c.GemCount);
+            int totalValueGp = Math.Max(0, c.GemValueGoldPieces);
+            int eachGp = qty > 0 ? Math.Max(0, totalValueGp / qty) : 0;
+            int unitCopper = CharacterWealthService.ToCopper(eachGp, 0, 0);
+            inventoryRows.Add(("Gems", "Gem", qty, unitCopper, $"Gem x{qty} - {totalValueGp} gp total"));
+        }
+
+        var filtered = inventoryRows
+            .Where(x => selectedCategory == CharacterInventoryAllCategories
+                || string.Equals(x.Category, selectedCategory, StringComparison.OrdinalIgnoreCase))
+            .Where(x => string.IsNullOrWhiteSpace(search)
+                || x.Name.Contains(search, StringComparison.OrdinalIgnoreCase)
+                || x.Category.Contains(search, StringComparison.OrdinalIgnoreCase)
+                || x.DisplayText.Contains(search, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        if (filtered.Count == 0)
+        {
+            CharInventorySectionsPanel.Children.Add(new TextBlock
+            {
+                Text = "No inventory items.",
+                Style = (Style)FindResource("SubtitleText"),
+                Margin = new Thickness(6, 2, 0, 2),
+            });
+            return;
+        }
+
+        var grouped = filtered
+            .GroupBy(x => x.Category)
+            .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        foreach (var group in grouped)
+        {
+            var list = new ListBox
+            {
+                Style = (Style)FindResource("DarkListBox"),
+                ItemContainerStyle = (Style)FindResource("DarkListBoxItem"),
+                MinHeight = 48,
+                MaxHeight = 170,
+            };
+
+            IEnumerable<(string Category, string Name, int Quantity, int UnitCopper, string DisplayText)> sortedGroup = sortMode switch
+            {
+                "Name (Z-A)" => group.OrderByDescending(x => x.Name, StringComparer.OrdinalIgnoreCase),
+                "Quantity (High-Low)" => group.OrderByDescending(x => x.Quantity).ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase),
+                "Cost (High-Low)" => group.OrderByDescending(x => x.UnitCopper).ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase),
+                _ => group.OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase),
+            };
+
+            foreach (var item in sortedGroup)
+                list.Items.Add(item.DisplayText);
+
+            CharInventorySectionsPanel.Children.Add(new Expander
+            {
+                Header = $"{group.Key} ({group.Count()})",
+                IsExpanded = true,
+                Margin = new Thickness(0, 0, 0, 6),
+                Content = list,
+            });
+        }
+    }
+
+    private void EnsureCharacterInventorySortOptions()
+    {
+        if (CharInventorySort is null)
+            return;
+
+        if (CharInventorySort.Items.Count == 0)
+        {
+            foreach (var option in CharacterInventorySortOptions)
+                CharInventorySort.Items.Add(option);
+            CharInventorySort.SelectedIndex = 0;
+        }
+    }
+
+    private void PopulateCharacterInventoryCategoryFilter(CharacterSheet c)
+    {
+        if (CharInventoryCategoryFilter is null)
+            return;
+
+        var categories = new List<string> { CharacterInventoryAllCategories };
+        categories.AddRange((c.EquipmentSelections ?? new List<EquipmentSelection>())
+            .Where(x => x.Quantity > 0)
+            .Select(x => string.IsNullOrWhiteSpace(x.Category) ? "Equipment" : x.Category.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase));
+
+        bool hasGemEntries = (c.Gems?.Count ?? 0) > 0 || c.GemCount > 0;
+        if (hasGemEntries && !categories.Contains("Gems", StringComparer.OrdinalIgnoreCase))
+            categories.Add("Gems");
+
+        string previous = CharInventoryCategoryFilter.SelectedItem as string ?? CharacterInventoryAllCategories;
+        CharInventoryCategoryFilter.ItemsSource = categories;
+        CharInventoryCategoryFilter.SelectedItem = categories.Contains(previous, StringComparer.OrdinalIgnoreCase)
+            ? categories.First(x => string.Equals(x, previous, StringComparison.OrdinalIgnoreCase))
+            : CharacterInventoryAllCategories;
+    }
+
+    private void CharInventorySearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        => RefreshSelectedCharacterInventorySections();
+
+    private void CharInventoryCategoryFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        => RefreshSelectedCharacterInventorySections();
+
+    private void CharInventorySort_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        => RefreshSelectedCharacterInventorySections();
+
+    private void RefreshSelectedCharacterInventorySections()
+    {
+        int idx = CharList.SelectedIndex;
+        if (idx < 0 || idx >= _app.Characters.Count)
+            return;
+
+        RefreshCharacterInventorySections(_app.Characters[idx]);
+    }
+
+    private static void ResolvePurchaseUnitCost(
+        CharacterSheet character,
+        CustomEquipmentData item,
+        bool useOverride,
+        int overrideGp,
+        int overrideSp,
+        int overrideCp,
+        out int unitGp,
+        out int unitSp,
+        out int unitCp)
+    {
+        if (useOverride)
+        {
+            unitGp = Math.Max(0, overrideGp);
+            unitSp = Math.Max(0, overrideSp);
+            unitCp = Math.Max(0, overrideCp);
+            return;
+        }
+
+        ResolveUnitCostFromItemData(item, out unitGp, out unitSp, out unitCp);
+
+        if (unitGp > 0 || unitSp > 0 || unitCp > 0)
+            return;
+
+        string canonicalItemId = EquipmentLibraryService.CanonicalizeId(item.Id);
+        var existing = (character.EquipmentSelections ?? new List<EquipmentSelection>())
+            .FirstOrDefault(x => string.Equals(EquipmentLibraryService.CanonicalizeId(x.ItemId), canonicalItemId, StringComparison.OrdinalIgnoreCase));
+        if (existing is not null && (existing.CostGoldEach > 0 || existing.CostSilverEach > 0 || existing.CostCopperEach > 0))
+        {
+            unitGp = Math.Max(0, existing.CostGoldEach);
+            unitSp = Math.Max(0, existing.CostSilverEach);
+            unitCp = Math.Max(0, existing.CostCopperEach);
+            return;
+        }
+
+        ResolveUnitCostFromItemData(item, out unitGp, out unitSp, out unitCp);
+    }
+
+    private static void ResolveUnitCostFromItemData(CustomEquipmentData item, out int gp, out int sp, out int cp)
+    {
+        gp = Math.Max(0, item.CostGold);
+        sp = Math.Max(0, item.CostSilver);
+        cp = Math.Max(0, item.CostCopper);
+
+        if (gp > 0 || sp > 0 || cp > 0)
+            return;
+
+        if (TryExtractCoinTotals(item.Name, out int parsedGp, out int parsedSp, out int parsedCp)
+            || TryExtractCoinTotals(item.Description, out parsedGp, out parsedSp, out parsedCp))
+        {
+            gp = parsedGp;
+            sp = parsedSp;
+            cp = parsedCp;
+            return;
+        }
+
+        if (TryExtractBareGoldValue(item.Name, out int bareNameGp)
+            || TryExtractBareGoldValue(item.Description, out bareNameGp))
+        {
+            gp = bareNameGp;
+            sp = 0;
+            cp = 0;
+        }
+    }
+
+    private static bool TryExtractCoinTotals(string? text, out int gp, out int sp, out int cp)
+    {
+        gp = 0;
+        sp = 0;
+        cp = 0;
+
+        string value = (text ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(value))
+            return false;
+
+        int totalCopper = 0;
+        foreach (Match match in CoinValueRegex.Matches(value))
+        {
+            if (!int.TryParse(match.Groups["amount"].Value.Replace(",", string.Empty), out int amount))
+                continue;
+
+            string coin = match.Groups["coin"].Value.ToLowerInvariant();
+            totalCopper += coin switch
+            {
+                "pp" => amount * 500,
+                "gp" => amount * 100,
+                "ep" => amount * 50,
+                "sp" => amount * 10,
+                "cp" => amount,
+                _ => 0,
+            };
+        }
+
+        if (totalCopper <= 0)
+            return false;
+
+        CharacterWealthService.FromCopper(totalCopper, out gp, out sp, out cp);
+        return true;
+    }
+
+    private static bool TryExtractBareGoldValue(string? text, out int gp)
+    {
+        gp = 0;
+        string value = (text ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(value))
+            return false;
+
+        int best = 0;
+        foreach (Match match in BareValueRegex.Matches(value))
+        {
+            string lowText = match.Groups["low"].Value.Replace(",", string.Empty);
+            if (!int.TryParse(lowText, out int low))
+                continue;
+
+            int candidate = low;
+            string highText = match.Groups["high"].Value.Replace(",", string.Empty);
+            if (match.Groups["high"].Success && int.TryParse(highText, out int high))
+                candidate = Math.Max(low, high);
+
+            if (candidate > best)
+                best = candidate;
+        }
+
+        if (best <= 0)
+            return false;
+
+        gp = best;
+        return true;
     }
 
     private static int ParseNonNegativeInt(string text)
@@ -1920,20 +2310,63 @@ public partial class EditInfoScreen : UserControl, IScreen
         return string.Join(" ", parts);
     }
 
-    private bool TryShowBuyItemDialog(IReadOnlyList<CustomEquipmentData> items, out CustomEquipmentData item, out int quantity)
+    private static string BuildCostText(int gp, int sp, int cp)
+    {
+        var parts = new List<string>();
+        if (gp > 0) parts.Add($"{gp}gp");
+        if (sp > 0) parts.Add($"{sp}sp");
+        if (cp > 0) parts.Add($"{cp}cp");
+        return string.Join(" ", parts);
+    }
+
+    private static string FormatAddedFunds(int pp, int gp, int sp, int cp, int gems, int gemValueEachGp)
+    {
+        var parts = new List<string>();
+        if (pp > 0) parts.Add($"{pp} pp");
+        if (gp > 0) parts.Add($"{gp} gp");
+        if (sp > 0) parts.Add($"{sp} sp");
+        if (cp > 0) parts.Add($"{cp} cp");
+        if (gems > 0)
+        {
+            int totalGp = Math.Max(0, gems * Math.Max(0, gemValueEachGp));
+            parts.Add(totalGp > 0
+                ? $"{gems} gem{(gems == 1 ? string.Empty : "s")} ({totalGp} gp value)"
+                : $"{gems} gem{(gems == 1 ? string.Empty : "s")}");
+        }
+
+        return parts.Count > 0 ? string.Join(", ", parts) : "0 cp";
+    }
+
+    private bool TryShowBuyItemDialog(
+        IReadOnlyList<CustomEquipmentData> items,
+        out CustomEquipmentData item,
+        out int quantity,
+        out bool useOverrideCost,
+        out int overrideGp,
+        out int overrideSp,
+        out int overrideCp)
     {
         item = items[0];
         quantity = 1;
+        useOverrideCost = false;
+        overrideGp = 0;
+        overrideSp = 0;
+        overrideCp = 0;
+
+        bool selectedOverride = false;
+        int selectedOverrideGp = 0;
+        int selectedOverrideSp = 0;
+        int selectedOverrideCp = 0;
 
         var dialog = new Window
         {
             Title = "Buy Item",
             Width = 520,
-            Height = 250,
+            Height = 350,
             ResizeMode = ResizeMode.NoResize,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
             Owner = Window.GetWindow(this),
-            Content = BuildBuyDialogContent(items, out ComboBox itemCombo, out TextBox qtyBox),
+            Content = BuildBuyDialogContent(items, out ComboBox itemCombo, out TextBox qtyBox, out CheckBox overrideCheck, out TextBox gpBox, out TextBox spBox, out TextBox cpBox),
         };
 
         if (dialog.ShowDialog() != true)
@@ -1949,22 +2382,50 @@ public partial class EditInfoScreen : UserControl, IScreen
             return false;
         }
 
+        selectedOverride = overrideCheck.IsChecked == true;
+        if (selectedOverride)
+        {
+            selectedOverrideGp = ParseNonNegativeInt(gpBox.Text);
+            selectedOverrideSp = ParseNonNegativeInt(spBox.Text);
+            selectedOverrideCp = ParseNonNegativeInt(cpBox.Text);
+        }
+
         item = selected;
         quantity = parsedQty;
+        useOverrideCost = selectedOverride;
+        overrideGp = selectedOverrideGp;
+        overrideSp = selectedOverrideSp;
+        overrideCp = selectedOverrideCp;
         return true;
     }
 
-    private static UIElement BuildBuyDialogContent(IReadOnlyList<CustomEquipmentData> items, out ComboBox itemCombo, out TextBox qtyBox)
+    private static UIElement BuildBuyDialogContent(
+        IReadOnlyList<CustomEquipmentData> items,
+        out ComboBox itemCombo,
+        out TextBox qtyBox,
+        out CheckBox overrideCheck,
+        out TextBox gpBox,
+        out TextBox spBox,
+        out TextBox cpBox)
     {
+        ComboBox itemComboLocal;
+        TextBox qtyBoxLocal;
+        CheckBox overrideCheckLocal;
+        TextBox gpBoxLocal;
+        TextBox spBoxLocal;
+        TextBox cpBoxLocal;
+
         var root = new Grid { Margin = new Thickness(12) };
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
         root.Children.Add(new TextBlock { Text = "Item", Margin = new Thickness(0, 0, 0, 4) });
-        itemCombo = new ComboBox
+        itemComboLocal = new ComboBox
         {
             ItemsSource = items,
             SelectedIndex = 0,
@@ -1972,15 +2433,119 @@ public partial class EditInfoScreen : UserControl, IScreen
             Margin = new Thickness(0, 0, 0, 10),
             MinHeight = 26,
         };
-        Grid.SetRow(itemCombo, 1);
-        root.Children.Add(itemCombo);
+        Grid.SetRow(itemComboLocal, 1);
+        root.Children.Add(itemComboLocal);
 
         var qtyPanel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 10) };
         qtyPanel.Children.Add(new TextBlock { Text = "Quantity", Width = 90, VerticalAlignment = VerticalAlignment.Center });
-        qtyBox = new TextBox { Text = "1", Width = 90, VerticalContentAlignment = VerticalAlignment.Center };
-        qtyPanel.Children.Add(qtyBox);
+        qtyBoxLocal = new TextBox { Text = "1", Width = 90, VerticalContentAlignment = VerticalAlignment.Center };
+        qtyPanel.Children.Add(qtyBoxLocal);
         Grid.SetRow(qtyPanel, 2);
         root.Children.Add(qtyPanel);
+
+        overrideCheckLocal = new CheckBox
+        {
+            Content = "Override unit cost",
+            Margin = new Thickness(0, 0, 0, 8),
+        };
+        Grid.SetRow(overrideCheckLocal, 3);
+        root.Children.Add(overrideCheckLocal);
+
+        var overrideGrid = new Grid { Margin = new Thickness(0, 0, 0, 10) };
+        overrideGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        overrideGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(10) });
+        overrideGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        overrideGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(10) });
+        overrideGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+        gpBoxLocal = new TextBox { Text = "0", VerticalContentAlignment = VerticalAlignment.Center };
+        spBoxLocal = new TextBox { Text = "0", VerticalContentAlignment = VerticalAlignment.Center };
+        cpBoxLocal = new TextBox { Text = "0", VerticalContentAlignment = VerticalAlignment.Center };
+
+        var gpPanel = new StackPanel();
+        gpPanel.Children.Add(new TextBlock { Text = "GP" });
+        gpPanel.Children.Add(gpBoxLocal);
+        Grid.SetColumn(gpPanel, 0);
+        overrideGrid.Children.Add(gpPanel);
+
+        var spPanel = new StackPanel();
+        spPanel.Children.Add(new TextBlock { Text = "SP" });
+        spPanel.Children.Add(spBoxLocal);
+        Grid.SetColumn(spPanel, 2);
+        overrideGrid.Children.Add(spPanel);
+
+        var cpPanel = new StackPanel();
+        cpPanel.Children.Add(new TextBlock { Text = "CP" });
+        cpPanel.Children.Add(cpBoxLocal);
+        Grid.SetColumn(cpPanel, 4);
+        overrideGrid.Children.Add(cpPanel);
+
+        Grid.SetRow(overrideGrid, 4);
+        root.Children.Add(overrideGrid);
+
+        var totalPreview = new TextBlock
+        {
+            Margin = new Thickness(0, 0, 0, 10),
+            TextWrapping = TextWrapping.Wrap,
+        };
+        Grid.SetRow(totalPreview, 5);
+        root.Children.Add(totalPreview);
+
+        void ToggleOverrideFields()
+        {
+            bool enabled = overrideCheckLocal.IsChecked == true;
+            gpBoxLocal.IsEnabled = enabled;
+            spBoxLocal.IsEnabled = enabled;
+            cpBoxLocal.IsEnabled = enabled;
+            UpdateTotalPreview();
+        }
+
+        void UpdateTotalPreview()
+        {
+            if (itemComboLocal.SelectedItem is not CustomEquipmentData selected)
+            {
+                totalPreview.Text = "Total: 0 cp";
+                return;
+            }
+
+            int quantity = Math.Max(1, ParseNonNegativeInt(qtyBoxLocal.Text));
+            bool useOverride = overrideCheckLocal.IsChecked == true;
+
+            int unitGp;
+            int unitSp;
+            int unitCp;
+            if (useOverride)
+            {
+                unitGp = ParseNonNegativeInt(gpBoxLocal.Text);
+                unitSp = ParseNonNegativeInt(spBoxLocal.Text);
+                unitCp = ParseNonNegativeInt(cpBoxLocal.Text);
+            }
+            else
+            {
+                ResolveUnitCostFromItemData(selected, out unitGp, out unitSp, out unitCp);
+            }
+
+            int totalGp = unitGp * quantity;
+            int totalSp = unitSp * quantity;
+            int totalCp = unitCp * quantity;
+            int totalCopper = CharacterWealthService.ToCopper(totalGp, totalSp, totalCp);
+
+            string unitText = BuildCostText(unitGp, unitSp, unitCp);
+            string totalText = CharacterWealthService.FormatCoins(totalCopper);
+            totalPreview.Text = string.IsNullOrWhiteSpace(unitText)
+                ? $"Total: {totalText} ({quantity} item{(quantity == 1 ? string.Empty : "s")}, no unit cost recorded)"
+                : $"Total: {totalText} ({quantity} item{(quantity == 1 ? string.Empty : "s")} @ {unitText})";
+        }
+
+        overrideCheckLocal.Checked += (_, _) => ToggleOverrideFields();
+        overrideCheckLocal.Unchecked += (_, _) => ToggleOverrideFields();
+        itemComboLocal.SelectionChanged += (_, _) => UpdateTotalPreview();
+        qtyBoxLocal.TextChanged += (_, _) => UpdateTotalPreview();
+        gpBoxLocal.TextChanged += (_, _) => UpdateTotalPreview();
+        spBoxLocal.TextChanged += (_, _) => UpdateTotalPreview();
+        cpBoxLocal.TextChanged += (_, _) => UpdateTotalPreview();
+        ToggleOverrideFields();
+        UpdateTotalPreview();
 
         var buttonPanel = new StackPanel
         {
@@ -1992,19 +2557,39 @@ public partial class EditInfoScreen : UserControl, IScreen
         ok.Click += (_, _) => Window.GetWindow(ok)!.DialogResult = true;
         buttonPanel.Children.Add(cancel);
         buttonPanel.Children.Add(ok);
-        Grid.SetRow(buttonPanel, 4);
+        Grid.SetRow(buttonPanel, 6);
         root.Children.Add(buttonPanel);
+
+        itemCombo = itemComboLocal;
+        qtyBox = qtyBoxLocal;
+        overrideCheck = overrideCheckLocal;
+        gpBox = gpBoxLocal;
+        spBox = spBoxLocal;
+        cpBox = cpBoxLocal;
 
         return root;
     }
 
-    private bool TryShowSellDialog(CharacterSheet character, out string removeItemId, out int removeQuantity, out int gp, out int sp, out int cp, out string note)
+    private bool TryShowSellDialog(
+        CharacterSheet character,
+        out string removeItemId,
+        out int removeQuantity,
+        out int pp,
+        out int gp,
+        out int sp,
+        out int cp,
+        out int gems,
+        out int gemValueEachGp,
+        out string note)
     {
         removeItemId = string.Empty;
         removeQuantity = 0;
+        pp = 0;
         gp = 0;
         sp = 0;
         cp = 0;
+        gems = 0;
+        gemValueEachGp = 0;
         note = string.Empty;
 
         var removableItems = (character.EquipmentSelections ?? new List<EquipmentSelection>())
@@ -2016,11 +2601,21 @@ public partial class EditInfoScreen : UserControl, IScreen
         {
             Title = "Sell / Unequip / Add Funds",
             Width = 520,
-            Height = 360,
+            Height = 430,
             ResizeMode = ResizeMode.NoResize,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
             Owner = Window.GetWindow(this),
-            Content = BuildSellDialogContent(removableItems, out ComboBox itemCombo, out TextBox qtyBox, out TextBox gpBox, out TextBox spBox, out TextBox cpBox, out TextBox noteBox),
+            Content = BuildSellDialogContent(
+                removableItems,
+                out ComboBox itemCombo,
+                out TextBox qtyBox,
+                out TextBox ppBox,
+                out TextBox gpBox,
+                out TextBox spBox,
+                out TextBox cpBox,
+                out TextBox gemsBox,
+                out TextBox gemValueBox,
+                out TextBox noteBox),
         };
 
         if (dialog.ShowDialog() != true)
@@ -2036,9 +2631,12 @@ public partial class EditInfoScreen : UserControl, IScreen
             }
         }
 
+        pp = ParseNonNegativeInt(ppBox.Text);
         gp = ParseNonNegativeInt(gpBox.Text);
         sp = ParseNonNegativeInt(spBox.Text);
         cp = ParseNonNegativeInt(cpBox.Text);
+        gems = ParseNonNegativeInt(gemsBox.Text);
+        gemValueEachGp = ParseNonNegativeInt(gemValueBox.Text);
         note = noteBox.Text;
         return true;
     }
@@ -2047,12 +2645,16 @@ public partial class EditInfoScreen : UserControl, IScreen
         IReadOnlyList<EquipmentSelection> removableItems,
         out ComboBox itemCombo,
         out TextBox qtyBox,
+        out TextBox ppBox,
         out TextBox gpBox,
         out TextBox spBox,
         out TextBox cpBox,
+        out TextBox gemsBox,
+        out TextBox gemValueBox,
         out TextBox noteBox)
     {
         var root = new Grid { Margin = new Thickness(12) };
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -2097,37 +2699,67 @@ public partial class EditInfoScreen : UserControl, IScreen
         coinGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         coinGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         coinGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        coinGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
+        ppBox = new TextBox { Text = "0", Margin = new Thickness(0, 0, 8, 0), VerticalContentAlignment = VerticalAlignment.Center };
         gpBox = new TextBox { Text = "0", Margin = new Thickness(0, 0, 8, 0), VerticalContentAlignment = VerticalAlignment.Center };
         spBox = new TextBox { Text = "0", Margin = new Thickness(0, 0, 8, 0), VerticalContentAlignment = VerticalAlignment.Center };
         cpBox = new TextBox { Text = "0", VerticalContentAlignment = VerticalAlignment.Center };
 
+        var ppPanel = new StackPanel();
+        ppPanel.Children.Add(new TextBlock { Text = "PP" });
+        ppPanel.Children.Add(ppBox);
+        Grid.SetColumn(ppPanel, 0);
+        coinGrid.Children.Add(ppPanel);
+
         var gpPanel = new StackPanel();
         gpPanel.Children.Add(new TextBlock { Text = "GP" });
         gpPanel.Children.Add(gpBox);
-        Grid.SetColumn(gpPanel, 0);
+        Grid.SetColumn(gpPanel, 1);
         coinGrid.Children.Add(gpPanel);
 
         var spPanel = new StackPanel();
         spPanel.Children.Add(new TextBlock { Text = "SP" });
         spPanel.Children.Add(spBox);
-        Grid.SetColumn(spPanel, 1);
+        Grid.SetColumn(spPanel, 2);
         coinGrid.Children.Add(spPanel);
 
         var cpPanel = new StackPanel();
         cpPanel.Children.Add(new TextBlock { Text = "CP" });
         cpPanel.Children.Add(cpBox);
-        Grid.SetColumn(cpPanel, 2);
+        Grid.SetColumn(cpPanel, 3);
         coinGrid.Children.Add(cpPanel);
 
         Grid.SetRow(coinGrid, 4);
         root.Children.Add(coinGrid);
 
+        var gemGrid = new Grid { Margin = new Thickness(0, 0, 0, 10) };
+        gemGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        gemGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+        gemsBox = new TextBox { Text = "0", Margin = new Thickness(0, 0, 8, 0), VerticalContentAlignment = VerticalAlignment.Center };
+        gemValueBox = new TextBox { Text = "0", VerticalContentAlignment = VerticalAlignment.Center };
+
+        var gemsPanel = new StackPanel();
+        gemsPanel.Children.Add(new TextBlock { Text = "Gems Qty" });
+        gemsPanel.Children.Add(gemsBox);
+        Grid.SetColumn(gemsPanel, 0);
+        gemGrid.Children.Add(gemsPanel);
+
+        var gemValuePanel = new StackPanel();
+        gemValuePanel.Children.Add(new TextBlock { Text = "Gem Value Each (GP)" });
+        gemValuePanel.Children.Add(gemValueBox);
+        Grid.SetColumn(gemValuePanel, 1);
+        gemGrid.Children.Add(gemValuePanel);
+
+        Grid.SetRow(gemGrid, 5);
+        root.Children.Add(gemGrid);
+
         root.Children.Add(new TextBlock { Text = "Note (optional)", Margin = new Thickness(0, 0, 0, 4) });
-        Grid.SetRow(root.Children[^1], 5);
+        Grid.SetRow(root.Children[^1], 6);
 
         noteBox = new TextBox { Margin = new Thickness(0, 0, 0, 8), MinHeight = 26 };
-        Grid.SetRow(noteBox, 6);
+        Grid.SetRow(noteBox, 7);
         root.Children.Add(noteBox);
 
         var buttonPanel = new StackPanel
@@ -2140,7 +2772,7 @@ public partial class EditInfoScreen : UserControl, IScreen
         ok.Click += (_, _) => Window.GetWindow(ok)!.DialogResult = true;
         buttonPanel.Children.Add(cancel);
         buttonPanel.Children.Add(ok);
-        Grid.SetRow(buttonPanel, 7);
+        Grid.SetRow(buttonPanel, 8);
         root.Children.Add(buttonPanel);
 
         return root;
@@ -2871,7 +3503,10 @@ public partial class EditInfoScreen : UserControl, IScreen
             allowedClasses,
             existingKit?.FreeNwpIds ?? new List<string>(),
             existingKit?.RequiredNwpIds ?? new List<string>(),
-            SelectedKitRulesMode(KitEditRulesMode));
+            SelectedKitRulesMode(KitEditRulesMode),
+            existingKit?.StartingFundsRollOverride ?? string.Empty,
+            existingKit?.StartingFundsGoldBonus ?? 0,
+            existingKit?.StartingFundsMultiplierPercent ?? 100);
 
         var allKits = _app.Rules.Kits.Where(k => k.Id != id).Append(updated);
         _app.Rules.SaveKitDefinitions(allKits);

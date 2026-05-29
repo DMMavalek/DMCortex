@@ -728,7 +728,7 @@ public partial class MainWindow : Window
     }
 
     private void BtnJumpClassAbilities_Click(object sender, RoutedEventArgs e) => GoTo("chargen_class_abilities");
-    private void BtnJumpOptions_Click(object sender, RoutedEventArgs e) => GoTo("options");
+    private void BtnJumpOptions_Click(object sender, RoutedEventArgs e) => GoTo("chargen_character_options");
     private void BtnJumpWeaponProf_Click(object sender, RoutedEventArgs e) => GoTo("chargen_weapon_prof");
     private void BtnJumpEquipment_Click(object sender, RoutedEventArgs e) => GoTo("chargen_equipment");
     private void BtnJumpSpells_Click(object sender, RoutedEventArgs e)
@@ -1006,6 +1006,9 @@ public partial class MainWindow : Window
             .ToList();
         CharGen.BaselineWeaponProficiencies = CharGen.SelectedWeaponProficiencies
             .Select(CloneWeaponSelection)
+            .ToList();
+        CharGen.BaselineEquipmentSelections = CharGen.SelectedEquipment
+            .Select(CloneEquipmentSelection)
             .ToList();
 
         CharGen.SyncLegacyFieldsFromNew();

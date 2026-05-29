@@ -379,8 +379,6 @@ public class CharacterOptionCatalogService
         var legacy = LoadLegacyNonweaponProficiencies();
         var supplement = LoadPdfNonweaponProficiencies();
 
-        // Merge: detect Core/PO crossover by Category|Name and combine fields.
-        // For crossover entries keep core-facing fields from legacy and PO-facing fields from PO.
         // Custom overrides still have highest priority.
         var merged = new Dictionary<string, NonweaponProficiencyDefinition>(StringComparer.OrdinalIgnoreCase);
         foreach (var nwp in legacy)

@@ -57,6 +57,29 @@ public partial class CharGenWizardSpellsScreen : UserControl, IScreen
         }
     }
     private const string AllSchools = "(All Schools)";
+    private static readonly Dictionary<string, string> WizardSchoolAccessByAbilityId = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["wizard_school_abjuration"] = "Abjuration",
+        ["wizard_school_alchemy"] = "Alchemy",
+        ["wizard_school_alteration"] = "Alteration",
+        ["wizard_school_artifice"] = "Artifice",
+        ["wizard_school_conjuration_summoning"] = "Conjuration/Summoning",
+        ["wizard_school_dimensional"] = "Dimensional",
+        ["wizard_school_divination"] = "Divination",
+        ["wizard_school_elemental_air"] = "Elemental (Air)",
+        ["wizard_school_elemental_earth"] = "Elemental (Earth)",
+        ["wizard_school_elemental_fire"] = "Elemental (Fire)",
+        ["wizard_school_elemental_water"] = "Elemental (Water)",
+        ["wizard_school_enchantment_charm"] = "Enchantment/Charm",
+        ["wizard_school_force"] = "Force",
+        ["wizard_school_geometry"] = "Geometry",
+        ["wizard_school_illusion"] = "Illusion",
+        ["wizard_school_invocation_evocation"] = "Invocation/Evocation",
+        ["wizard_school_necromancy"] = "Necromancy",
+        ["wizard_school_shadow"] = "Shadow",
+        ["wizard_school_song"] = "Song",
+        ["wizard_school_wild"] = "Wild Magic",
+    };
 
     private void AvailableSpellList_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
     {
@@ -494,7 +517,19 @@ public partial class CharGenWizardSpellsScreen : UserControl, IScreen
             return;
         }
 
-        int learnChance = GetLearnSpellChancePercent();
+        int spellLevel = ParseSpellLevel(row.Spell.Level);
+        int maxKnownPerLevel = GetMaxSpellsKnownPerLevelForLearning();
+        if (spellLevel > 0 && maxKnownPerLevel >= 0)
+        {
+            int knownAtLevel = CountKnownArcaneSpellsAtLevel(spellLevel);
+            if (knownAtLevel >= maxKnownPerLevel)
+            {
+                LearnRollResult.Text = $"Cannot learn {row.Spell.Name}: level {spellLevel} already at max known spells ({knownAtLevel}/{maxKnownPerLevel}).";
+                return;
+            }
+        }
+
+        int learnChance = GetLearnSpellChancePercent(row.Spell);
         int roll = ParseManualRoll(out bool usedManual);
         bool success = roll <= learnChance;
 
@@ -902,7 +937,24 @@ public partial class CharGenWizardSpellsScreen : UserControl, IScreen
             }
         }
 
+        AddSchoolAccessFromWizardSchoolAbilities(selected);
+
         return selected;
+    }
+
+    private void AddSchoolAccessFromWizardSchoolAbilities(HashSet<string> selected)
+    {
+        foreach (string selectionEntry in _app.CharGen.SelectedClassAbilityIds)
+        {
+            string baseId = RulesEngine.ExtractClassAbilityBaseId(selectionEntry);
+            if (!WizardSchoolAccessByAbilityId.TryGetValue(baseId, out string? school)
+                || string.IsNullOrWhiteSpace(school))
+                continue;
+
+            string normalized = NormalizeWizardSchoolName(school);
+            if (!string.IsNullOrWhiteSpace(normalized))
+                selected.Add(normalized);
+        }
     }
 
     private HashSet<string> GetWizardOppositionSchools()
@@ -974,12 +1026,11 @@ public partial class CharGenWizardSpellsScreen : UserControl, IScreen
         if (string.IsNullOrWhiteSpace(schoolsText))
             return tokens;
 
-        foreach (string raw in Regex.Split(schoolsText, @"\s*(,|;|/|\||&|\band\b)\s*", RegexOptions.IgnoreCase))
+        foreach (string raw in Regex.Split(schoolsText, @"\s*(,|;|\||&|\band\b)\s*", RegexOptions.IgnoreCase))
         {
             if (string.IsNullOrWhiteSpace(raw)
                 || raw == ","
                 || raw == ";"
-                || raw == "/"
                 || raw == "|"
                 || raw == "&"
                 || string.Equals(raw, "and", StringComparison.OrdinalIgnoreCase))
@@ -997,12 +1048,31 @@ public partial class CharGenWizardSpellsScreen : UserControl, IScreen
 
     private static string NormalizeWizardSchoolName(string school)
     {
-        string token = (school ?? string.Empty).Trim();
+        string token = Regex.Replace((school ?? string.Empty).Trim(), @"\s+", " ");
         if (string.IsNullOrWhiteSpace(token))
             return string.Empty;
 
         if (token.Equals("Greater Divination", StringComparison.OrdinalIgnoreCase))
             return "Divination";
+
+        if (token.Equals("Invocation", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Evocation", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Invocation/Evocation", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Evocation/Invocation", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Invocation/Evocation";
+        }
+
+        if (token.Equals("Conjuration", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Summon", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Summoning", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Conjuration/Summon", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Summon/Conjuration", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Conjuration/Summoning", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Summoning/Conjuration", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Conjuration/Summoning";
+        }
 
         return token;
     }
@@ -1095,6 +1165,35 @@ public partial class CharGenWizardSpellsScreen : UserControl, IScreen
         return GetLearnChanceFromIntelligence(intelligence);
     }
 
+    private int GetLearnSpellChancePercent(SpellDefinition spell)
+    {
+        int baseChance = GetLearnSpellChancePercent();
+        if (baseChance <= 0)
+            return 0;
+
+        int penalty = GetWizardLearningPenaltyPercent(spell);
+        return Math.Clamp(baseChance - penalty, 1, 100);
+    }
+
+    private int GetWizardLearningPenaltyPercent(SpellDefinition spell)
+    {
+        if (!HasSelectedClassAbility("wizard_restriction_learning_penalty"))
+            return 0;
+
+        string favoredSchool = GetClassAbilitySelections("wizard_restriction_learning_penalty")
+            .Select(NormalizeWizardSchoolName)
+            .FirstOrDefault(s => !string.IsNullOrWhiteSpace(s))
+            ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(favoredSchool))
+            return 0;
+
+        var spellSchools = ParseSpellSchoolTokens(spell.Schools);
+        if (spellSchools.Count == 0)
+            return 0;
+
+        return spellSchools.Contains(favoredSchool) ? 0 : 15;
+    }
+
     private void RefreshDailySlotSummary()
     {
         var slots = GetDailyWizardSlotsByLevel();
@@ -1112,8 +1211,27 @@ public partial class CharGenWizardSpellsScreen : UserControl, IScreen
     private Dictionary<int, int> GetDailyWizardSlotsByLevel()
     {
         int characterLevel = Math.Clamp(_app.CharGen.CharacterLevel, 1, 20);
-        if (!WizardSpellLimitsByCharacterLevel.TryGetValue(characterLevel, out var slots))
+        if (!WizardSpellLimitsByCharacterLevel.TryGetValue(characterLevel, out var slotRow))
             return new Dictionary<int, int>();
+
+        int[] slots = slotRow.ToArray();
+        if (HasSelectedClassAbility("wizard_restriction_reduced_spell_progression"))
+        {
+            for (int i = 0; i < slots.Length; i++)
+            {
+                if (slots[i] > 0)
+                    slots[i] = Math.Max(0, slots[i] - 1);
+            }
+        }
+
+        if (HasWizardSpecialistPackageSelected())
+        {
+            for (int i = 0; i < slots.Length; i++)
+            {
+                if (slots[i] > 0)
+                    slots[i] += 1;
+            }
+        }
 
         var result = new Dictionary<int, int>();
         for (int i = 0; i < slots.Length; i++)
@@ -1160,6 +1278,62 @@ public partial class CharGenWizardSpellsScreen : UserControl, IScreen
         if (intelligence == 22) return 98;
         if (intelligence == 23) return 99;
         return 100;
+    }
+
+    private int GetMaxSpellsKnownPerLevelForLearning()
+    {
+        int intelligence = _app.CharGen.ModifiedAbilities.GetValueOrDefault("int", _app.CharGen.Abilities.GetValueOrDefault("int", 10));
+        int baseLimit = GetMaxSpellsPerLevelFromIntelligence(intelligence);
+        if (!HasSelectedClassAbility("wizard_restriction_reduced_spell_knowledge"))
+            return baseLimit;
+
+        return Math.Max(0, baseLimit / 2);
+    }
+
+    private static int GetMaxSpellsPerLevelFromIntelligence(int intelligence)
+    {
+        return intelligence switch
+        {
+            <= 8 => 0,
+            9 => 6,
+            10 or 11 or 12 => 7,
+            13 or 14 => 9,
+            15 or 16 => 11,
+            17 => 14,
+            18 => 18,
+            _ => 99,
+        };
+    }
+
+    private bool HasSelectedClassAbility(string abilityId)
+    {
+        return _app.CharGen.SelectedClassAbilityIds
+            .Select(RulesEngine.ExtractClassAbilityBaseId)
+            .Any(id => string.Equals(id, abilityId, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private bool HasWizardSpecialistPackageSelected()
+    {
+        if (!string.IsNullOrWhiteSpace(_app.CharGen.WizardSpecializationId))
+            return true;
+
+        return _app.CharGen.SelectedClassAbilityIds
+            .Select(RulesEngine.ExtractClassAbilityBaseId)
+            .Any(id => id.StartsWith("wizard_specialist_", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private IEnumerable<string> GetClassAbilitySelections(string abilityId)
+    {
+        foreach (string selectionEntry in _app.CharGen.SelectedClassAbilityIds)
+        {
+            string baseId = RulesEngine.ExtractClassAbilityBaseId(selectionEntry);
+            if (!string.Equals(baseId, abilityId, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            string playerText = RulesEngine.FormatClassAbilitySelectionText(baseId, RulesEngine.ExtractClassAbilityPlayerText(selectionEntry));
+            if (!string.IsNullOrWhiteSpace(playerText))
+                yield return playerText;
+        }
     }
 
     private void UpdateLearnChanceText()

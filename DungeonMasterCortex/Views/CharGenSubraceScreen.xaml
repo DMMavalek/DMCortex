@@ -37,13 +37,13 @@
                        VerticalAlignment="Stretch" Margin="0,20"/>
 
             <StackPanel Grid.Column="2" Margin="20,0,0,0">
-                <TextBlock Text="CP Summary" Style="{StaticResource TitleText}"
+                <TextBlock x:Name="CpPanelHeader" Text="CP Summary" Style="{StaticResource TitleText}"
                            FontSize="20" Margin="0,0,0,4"/>
-                <TextBlock Text="Points remaining after defaults and selections"
+                <TextBlock x:Name="CpPanelSubtitle" Text="Points remaining after defaults and selections"
                            Style="{StaticResource SubtitleText}" Margin="0,0,0,16"/>
                 <Rectangle Height="1" Fill="{StaticResource BrushBorder}" Margin="0,0,0,12"/>
 
-                <Border Background="{StaticResource BrushCard}"
+                <Border x:Name="CpBudgetBorder" Background="{StaticResource BrushCard}"
                         BorderBrush="{StaticResource BrushBorder2}"
                         BorderThickness="1" CornerRadius="2" Padding="16" Height="88" Margin="0,0,0,10">
                     <StackPanel>

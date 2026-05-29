@@ -37,12 +37,33 @@
                 <TextBlock x:Name="SingleClassLabel" Text="Classes available for your race:"
                            Style="{StaticResource LabelText}" Margin="0,0,0,6"/>
                 <ListBox x:Name="ClassList" Style="{StaticResource DarkListBox}"
-                         ItemContainerStyle="{StaticResource DarkListBoxItem}"
                          ScrollViewer.VerticalScrollBarVisibility="Auto"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                          SelectionChanged="ClassList_SelectionChanged"
                          MouseRightButtonUp="ClassList_MouseRightButtonUp"
-                         Height="220"/>
+                         Height="220">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem" BasedOn="{StaticResource DarkListBoxItem}">
+                            <Setter Property="IsEnabled" Value="{Binding IsEnabled}"/>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Name}" ToolTip="{Binding AvailabilityHint}" TextWrapping="Wrap">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{StaticResource BrushText}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsEnabled}" Value="False">
+                                                <Setter Property="Foreground" Value="#C05050"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
             </StackPanel>
 
             <!-- Multi-Class Mode -->
@@ -62,8 +83,18 @@
                                               Checked="MultiClassCheckbox_Changed"
                                               Unchecked="MultiClassCheckbox_Changed"
                                               MouseEnter="MultiClassCheckbox_MouseEnter"
-                                              Foreground="{StaticResource BrushText}"
-                                              Tag="{Binding Id}"/>
+                                              Tag="{Binding Id}">
+                                        <CheckBox.Style>
+                                            <Style TargetType="CheckBox">
+                                                <Setter Property="Foreground" Value="{StaticResource BrushText}"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsEnabled}" Value="False">
+                                                        <Setter Property="Foreground" Value="#C05050"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </CheckBox.Style>
+                                    </CheckBox>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>

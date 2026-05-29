@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -12,6 +13,69 @@ namespace DungeonMasterCortex.Views;
 public partial class CharGenReviewScreen : UserControl, IScreen
 {
     private readonly MainWindow _app;
+
+    private static bool HasSelectedClassAbility(CharGenState cg, string abilityId)
+    {
+        if (string.IsNullOrWhiteSpace(abilityId))
+            return false;
+
+        if (cg.SelectedClassAbilityIds
+            .Select(RulesEngine.ExtractClassAbilityBaseId)
+            .Any(id => string.Equals(id, abilityId, StringComparison.OrdinalIgnoreCase)))
+        {
+            return true;
+        }
+
+        foreach (var byClass in cg.SelectedAbilitiesByClass.Values)
+        {
+            if (byClass
+                .Select(RulesEngine.ExtractClassAbilityBaseId)
+                .Any(id => string.Equals(id, abilityId, StringComparison.OrdinalIgnoreCase)))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private int GetEffectiveWeaponCpUsedForState(CharGenState cg, IEnumerable<string> classIds, IEnumerable<WeaponProficiencySelection> selections)
+    {
+        bool hasProficiencyEase = HasSelectedClassAbility(cg, "fighter_proficiency_ease");
+
+        int ApplyEase(int value)
+            => !hasProficiencyEase || value <= 0
+                ? value
+                : Math.Max(1, (value + 1) / 2);
+
+        int total = 0;
+        foreach (var selection in selections)
+        {
+            int cost = _app.Rules.GetWeaponProficiencyCpCost(classIds, selection.ProficiencyId, selection.ProficiencyType, selection.Specialized);
+            if (cost < 0)
+                cost = RulesEngine.GetWeaponProficiencySlotCost(selection.ProficiencyType) + (selection.Specialized ? 1 : 0);
+
+            cost = ApplyEase(cost);
+
+            if (selection.WeaponOfChoice)
+            {
+                int choiceCost = _app.Rules.GetWeaponProficiencyCpCost(classIds, "weapon_of_choice", "combat_option", specialized: false);
+                if (choiceCost > 0)
+                    cost += ApplyEase(choiceCost);
+            }
+
+            if (selection.WeaponExpertise)
+            {
+                int expertiseCost = _app.Rules.GetWeaponProficiencyCpCost(classIds, "weapon_expertise", "combat_option", specialized: false);
+                if (expertiseCost > 0)
+                    cost += ApplyEase(expertiseCost);
+            }
+
+            total += Math.Max(0, cost);
+        }
+
+        return total;
+    }
     private bool _suppressCoreStatsRefresh;
     public UIElement View => this;
 
@@ -42,6 +106,18 @@ public partial class CharGenReviewScreen : UserControl, IScreen
     private static readonly Brush ChaColor = BrushFromHex("#C78B6D");
     private static readonly Brush AccentGold = BrushFromHex("#E8C050");
     private static readonly Brush AccentNeutral = BrushFromHex("#C4A468");
+    private static readonly Regex CoinRangeRegex = new(
+        @"(?<low>\d[\d,]*)\s*(?:-|–|to)\s*(?<high>\d[\d,]*)\s*(?<coin>pp|gp|ep|sp|cp)\b",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex CoinValueRegex = new(
+        @"(?<value>\d[\d,]*)\s*(?<coin>pp|gp|ep|sp|cp)\b",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex BareRangeRegex = new(
+        @"(?<low>\d[\d,]*)\s*(?:-|–|to)\s*(?<high>\d[\d,]*)",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex BareNumberRegex = new(
+        @"\d[\d,]*",
+        RegexOptions.Compiled);
     private static readonly Dictionary<string, string[]> NwpAbilityFamilyMap = new(StringComparer.OrdinalIgnoreCase)
     {
         ["Strength"] = new[] { "str_stamina", "str_muscle" },
@@ -239,7 +315,7 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                     ? new List<string>()
                     : new List<string> { cg.ClassId };
             int slotsUsed = string.Equals(cg.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase)
-                ? _app.Rules.GetTotalWeaponProficiencyCpUsed(classIds, cg.SelectedWeaponProficiencies)
+                ? GetEffectiveWeaponCpUsedForState(cg, classIds, cg.SelectedWeaponProficiencies)
                 : RulesEngine.GetTotalWeaponProficiencySlotsUsed(cg.SelectedWeaponProficiencies);
             var wpNames = cg.SelectedWeaponProficiencies
                 .Select(wp => wp.Specialized ? $"{wp.DisplayName} ★" : wp.DisplayName)
@@ -297,34 +373,30 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                 spellcastingLines.Add($"Wizard schools opposed: {string.Join(", ", opposed)}");
         }
 
-        if (string.Equals(cg.ClassId, "thief", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(cg.ClassId, "bard", StringComparison.OrdinalIgnoreCase))
+        var selectedSkillIds = RulesEngine.GetRogueSkillIdsForAbilitySelection(cg.SelectedClassAbilityIds);
+        if (selectedSkillIds.Count > 0)
         {
-            var selectedSkillIds = RulesEngine.GetRogueSkillIdsForAbilitySelection(cg.SelectedClassAbilityIds);
-            if (selectedSkillIds.Count > 0)
-            {
-                int level = Math.Max(1, cg.CharacterLevel);
-                int dex = cg.ModifiedAbilities.TryGetValue("dex", out var modifiedDex)
-                    ? modifiedDex
-                    : cg.Abilities.GetValueOrDefault("dex", 10);
-                string raceId = string.IsNullOrWhiteSpace(cg.BaseRaceId) ? cg.RaceId : cg.BaseRaceId;
+            int level = Math.Max(1, cg.CharacterLevel);
+            int dex = cg.ModifiedAbilities.TryGetValue("dex", out var modifiedDex)
+                ? modifiedDex
+                : cg.Abilities.GetValueOrDefault("dex", 10);
+            string raceId = string.IsNullOrWhiteSpace(cg.BaseRaceId) ? cg.RaceId : cg.BaseRaceId;
 
-                var breakdown = RulesEngine.BuildRogueSkillBreakdown(
-                    selectedSkillIds,
-                    raceId,
-                    dex,
-                    cg.RogueSkillArmorProfile,
-                    cg.SelectedRogueSkillPoints,
-                    level);
+            var breakdown = RulesEngine.BuildRogueSkillBreakdown(
+                selectedSkillIds,
+                raceId,
+                dex,
+                cg.RogueSkillArmorProfile,
+                cg.SelectedRogueSkillPoints,
+                level);
 
-                int pool = RulesEngine.GetRogueSkillPointPoolForLevel(level);
-                int spent = breakdown.Sum(x => x.AllocatedPoints);
-                int remaining = pool - spent;
-                var finalSkills = string.Join(", ", breakdown.Select(x => $"{x.SkillName} {x.FinalScore}%"));
+            int pool = RulesEngine.GetRogueSkillPointPoolForLevel(level);
+            int spent = breakdown.Sum(x => x.AllocatedPoints);
+            int remaining = pool - spent;
+            var finalSkills = string.Join(", ", breakdown.Select(x => $"{x.SkillName} {x.FinalScore}%"));
 
-                spellcastingLines.Add($"Rogue skill points: {spent}/{pool} (remaining {remaining})");
-                spellcastingLines.Add($"Rogue skills: {finalSkills}");
-            }
+            spellcastingLines.Add($"Rogue skill points: {spent}/{pool} (remaining {remaining})");
+            spellcastingLines.Add($"Rogue skills: {finalSkills}");
         }
 
         if (spellcastingLines.Count > 0)
@@ -402,7 +474,7 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                 });
             }
 
-            var totals = SubAbilityTables.CalculateTotals(effectiveSubAbilities, cg.ExceptionalStrength, cg.ClassId);
+            var totals = SubAbilityTables.CalculateTotals(effectiveSubAbilities, cg.ExceptionalStrength, GetEffectiveClassIdForConBonus(cg));
             SumSubAbilityBreakdown.ItemsSource = subLines;
 
             var notes = totals.ToNotes();
@@ -488,10 +560,10 @@ public partial class CharGenReviewScreen : UserControl, IScreen
         int totalHpPerLevelBonus = conHpBonus + previewSheet.Bonuses.HpPerLevel;
         int ac = previewSheet.ArmorClass;
         int baseThac0 = GetBaseThac0(cg.ClassId, level);
-        int effectiveThac0 = baseThac0 - previewSheet.Bonuses.AttackBonus;
+        int effectiveThac0 = baseThac0;
 
         CoreStatsSummary.Text = $"Level {level}  |  HP {hp}  |  AC {ac}  |  THAC0 {effectiveThac0}"
-            + $"\nBase THAC0 {baseThac0}{(previewSheet.Bonuses.AttackBonus != 0 ? $", attack bonus {FormatSigned(previewSheet.Bonuses.AttackBonus)}" : string.Empty)}"
+            + $"\nBase THAC0 {baseThac0}"
             + $"\nClass hit die d{GetClassHitDie(cg.ClassId)}, HP bonus/level {FormatSigned(totalHpPerLevelBonus)} ({FormatSigned(conHpBonus)} CON{(previewSheet.Bonuses.HpPerLevel != 0 ? $", {FormatSigned(previewSheet.Bonuses.HpPerLevel)} racial/class" : string.Empty)}), level-1 HP mode: {(maxHpAtLevelOne ? "max" : "average")}";
     }
 
@@ -654,7 +726,7 @@ public partial class CharGenReviewScreen : UserControl, IScreen
         foreach (var key in effectiveSubAbilities.Keys.ToList())
             effectiveSubAbilities[key] = Math.Clamp(effectiveSubAbilities[key], 1, 20);
 
-        var subTotals = SubAbilityTables.CalculateTotals(effectiveSubAbilities, cg.ExceptionalStrength, cg.ClassId);
+        var subTotals = SubAbilityTables.CalculateTotals(effectiveSubAbilities, cg.ExceptionalStrength, GetEffectiveClassIdForConBonus(cg));
         bonuses.AttackBonus += subTotals.MeleeAttackBonus;
         bonuses.DamageBonus += subTotals.MeleeDamageBonus;
         bonuses.AcBonus += subTotals.ArmorClassAdjustment;
@@ -829,6 +901,7 @@ public partial class CharGenReviewScreen : UserControl, IScreen
             }
 
             var existing = _app.Characters[cg.LevelUpCharacterIndex];
+            string wealthAdjustmentMessage = string.Empty;
 
             if (_app.License.IsDemoMode)
             {
@@ -843,6 +916,36 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                         MessageBoxImage.Information);
                     return;
                 }
+            }
+
+            var baselineEquipment = (cg.BaselineEquipmentSelections?.Count ?? 0) > 0
+                ? cg.BaselineEquipmentSelections
+                : existing.EquipmentSelections;
+            int baselineEquipmentCopper = SumEquipmentCostCopper(baselineEquipment);
+            int updatedEquipmentCopper = SumEquipmentCostCopper(cg.SelectedEquipment);
+            int equipmentDeltaCopper = updatedEquipmentCopper - baselineEquipmentCopper;
+            if (equipmentDeltaCopper > 0)
+            {
+                int availableCopper = CharacterWealthService.GetTotalCopper(existing);
+                if (availableCopper < equipmentDeltaCopper)
+                {
+                    MessageBox.Show(
+                        $"Not enough funds for equipment changes.\n\nNeed: {CharacterWealthService.FormatCoins(equipmentDeltaCopper)}\nAvailable: {CharacterWealthService.FormatCoins(availableCopper)}",
+                        "Insufficient Funds",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return;
+                }
+
+                CharacterWealthService.SetFromCopper(existing, availableCopper - equipmentDeltaCopper);
+                wealthAdjustmentMessage = $"Spent for equipment changes: {CharacterWealthService.FormatCoins(equipmentDeltaCopper)}.";
+            }
+            else if (equipmentDeltaCopper < 0)
+            {
+                int refundCopper = Math.Abs(equipmentDeltaCopper);
+                int availableCopper = CharacterWealthService.GetTotalCopper(existing);
+                CharacterWealthService.SetFromCopper(existing, availableCopper + refundCopper);
+                wealthAdjustmentMessage = $"Funds returned from sold/removed equipment: {CharacterWealthService.FormatCoins(refundCopper)}.";
             }
 
             var currentClassIds = cg.SelectedClassIds.Count > 0
@@ -862,8 +965,8 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                 int baselineNwpCp = CalculateTotalNwpCp(cg.BaselineNonweaponProficiencyIds, cg.BaselineNonweaponProficiencyImprovements, nwpDefinitions);
 
                 var classIdsForWeaponCp = currentClassIds.Count > 0 ? currentClassIds : new List<string> { cg.ClassId };
-                int currentWeaponCp = _app.Rules.GetTotalWeaponProficiencyCpUsed(classIdsForWeaponCp, cg.SelectedWeaponProficiencies);
-                int baselineWeaponCp = _app.Rules.GetTotalWeaponProficiencyCpUsed(classIdsForWeaponCp, cg.BaselineWeaponProficiencies);
+                int currentWeaponCp = GetEffectiveWeaponCpUsedForState(cg, classIdsForWeaponCp, cg.SelectedWeaponProficiencies);
+                int baselineWeaponCp = GetEffectiveWeaponCpUsedForState(cg, classIdsForWeaponCp, cg.BaselineWeaponProficiencies);
 
                 int cpSpentThisCycle = Math.Max(0, currentNwpCp - baselineNwpCp) + Math.Max(0, currentWeaponCp - baselineWeaponCp);
                 if (cpSpentThisCycle > existing.UnspentCharacterPoints)
@@ -1004,7 +1107,7 @@ public partial class CharGenReviewScreen : UserControl, IScreen
             existing.WizardSpellLists = BuildSafeWizardSpellLists(cg.WizardSpellLists, existing.WizardSpellbookIds);
 
             RebuildSheetAbilityStateForSelectedClasses(existing, cg);
-            existing.Thac0 = GetBaseThac0(existing.ClassId, Math.Max(1, existing.Level)) - existing.Bonuses.AttackBonus;
+            existing.Thac0 = GetBaseThac0(existing.ClassId, Math.Max(1, existing.Level));
             
             // DEBUG: Log spell data after filtering
             System.Diagnostics.Debug.WriteLine($"[LevelUp-Saved] existing.WizardSpellbookIds count: {existing.WizardSpellbookIds?.Count ?? 0}");
@@ -1057,6 +1160,8 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                 : $"{existing.Name} was updated (no level change).";
             if (hpIgnored)
                 completion += "\n\nHP gain was not applied because no level was gained.";
+            if (!string.IsNullOrWhiteSpace(wealthAdjustmentMessage))
+                completion += $"\n\n{wealthAdjustmentMessage}";
 
             MessageBox.Show(
                 completion,
@@ -1128,10 +1233,36 @@ public partial class CharGenReviewScreen : UserControl, IScreen
             for (int level = 2; level <= configuredLevel; level++)
                 sheet.HitPointGainByLevel[level] = perLevelGain;
         }
-        sheet.Thac0 = GetBaseThac0(cg.ClassId, configuredLevel) - sheet.Bonuses.AttackBonus;
+        sheet.Thac0 = GetBaseThac0(cg.ClassId, configuredLevel);
         CharacterProgressionService.InitializeCharacterProgression(sheet, seedLevelRewards: true);
-        if (CharacterWealthService.EnsureStartingFunds(sheet))
+        bool assignedStartingFundsFromCharGen = !cg.IsLevelUpMode
+            && cg.StartingFundsAssigned
+            && !cg.IsExistingCharacterMode;
+        if (assignedStartingFundsFromCharGen)
+        {
+            sheet.PlatinumPieces = Math.Max(0, cg.StartingPlatinumPieces);
+            sheet.GoldPieces = Math.Max(0, cg.StartingGoldPieces);
+            sheet.SilverPieces = Math.Max(0, cg.StartingSilverPieces);
+            sheet.CopperPieces = Math.Max(0, cg.StartingCopperPieces);
+            sheet.GemCount = Math.Max(0, cg.StartingGemCount);
+            sheet.GemValueGoldPieces = Math.Max(0, cg.StartingGemValueGoldPieces);
+            sheet.Gems = cg.StartingGems
+                .Select(x => new GemEntry
+                {
+                    Name = x.Name,
+                    Quantity = Math.Max(1, x.Quantity),
+                    ValueGoldPieces = Math.Max(0, x.ValueGoldPieces),
+                })
+                .ToList();
+            sheet.StartingFundsAssigned = true;
             sheet.Notes.Add($"Starting funds: {CharacterWealthService.FormatCoins(sheet)}");
+            if (!string.IsNullOrWhiteSpace(cg.StartingFundsRollSummary))
+                sheet.Notes.Add($"Starting funds roll: {cg.StartingFundsRollSummary}");
+        }
+        else if (CharacterWealthService.EnsureStartingFunds(sheet))
+        {
+            sheet.Notes.Add($"Starting funds: {CharacterWealthService.FormatCoins(sheet)}");
+        }
         sheet.Notes.Add($"Core stats: Level {sheet.Level}, HP {sheet.HitPoints}, AC {sheet.ArmorClass}, THAC0 {sheet.Thac0}");
         sheet.ClassMode = cg.ClassMode;
         sheet.ClassIds = cg.SelectedClassIds
@@ -1255,7 +1386,7 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                     : new List<string> { cg.ClassId };
             int intScore = cg.ModifiedAbilities.GetValueOrDefault("int", cg.Abilities.GetValueOrDefault("int", 10));
             int weaponBaseBudget = _app.Rules.GetWeaponCpBudget(classIdsForWeaponCp, intScore);
-            int weaponSpent = _app.Rules.GetTotalWeaponProficiencyCpUsed(classIdsForWeaponCp, cg.SelectedWeaponProficiencies);
+            int weaponSpent = GetEffectiveWeaponCpUsedForState(cg, classIdsForWeaponCp, cg.SelectedWeaponProficiencies);
 
             sheet.SpentNwpCharacterPoints = Math.Max(0, nwpSpent);
             sheet.SpentWeaponCharacterPoints = Math.Max(0, weaponSpent);
@@ -1464,7 +1595,7 @@ public partial class CharGenReviewScreen : UserControl, IScreen
         int improvement = cpSpent / Math.Max(1, cpPerPoint);
         int familyScore = GetReviewNwpFamilyScore(cg, proficiency);
         int target = isPo
-            ? Math.Max(0, proficiency.PlayersOptionBaseRating) + GetReviewTable44Modifier(familyScore) + improvement
+            ? Math.Max(5, proficiency.PlayersOptionBaseRating) + GetReviewTable44Modifier(familyScore) + improvement
             : familyScore + proficiency.CheckModifier + improvement;
         string summary = isPo && improvement > 0
             ? $"{proficiency.Name} {target} (+{cpSpent} CP)"
@@ -1504,6 +1635,7 @@ public partial class CharGenReviewScreen : UserControl, IScreen
             "free_spoken" => "Free Spoken Language",
             "modern_languages" => "Modern Languages",
             "ancient_languages" => "Ancient Languages",
+            "animal_languages" => "Animal Languages",
             "reading_writing" => "Reading/Writing",
             _ => language.SourceKey,
         };
@@ -1723,6 +1855,109 @@ public partial class CharGenReviewScreen : UserControl, IScreen
         return added;
     }
 
+    private static int SumEquipmentCostCopper(IEnumerable<EquipmentSelection>? selections)
+    {
+        if (selections is null)
+            return 0;
+
+        long total = 0;
+        foreach (var selection in selections)
+        {
+            int quantity = Math.Max(1, selection?.Quantity ?? 1);
+            int unitCostCopper = ResolveEquipmentUnitCostCopper(selection);
+            total += (long)quantity * unitCostCopper;
+            if (total > int.MaxValue)
+                return int.MaxValue;
+        }
+
+        return (int)Math.Max(0, total);
+    }
+
+    private static int ResolveEquipmentUnitCostCopper(EquipmentSelection? selection)
+    {
+        if (selection is null)
+            return 0;
+
+        int explicitCostCopper = CharacterWealthService.ToCopper(
+            0,
+            Math.Max(0, selection.CostGoldEach),
+            Math.Max(0, selection.CostSilverEach),
+            Math.Max(0, selection.CostCopperEach));
+        if (explicitCostCopper > 0)
+            return explicitCostCopper;
+
+        return TryParseCostTextToCopper(selection.CostText, out int parsedCopper)
+            ? parsedCopper
+            : 0;
+    }
+
+    private static bool TryParseCostTextToCopper(string? text, out int copper)
+    {
+        copper = 0;
+        if (string.IsNullOrWhiteSpace(text))
+            return false;
+
+        string normalized = CoinRangeRegex.Replace(text, m =>
+        {
+            string high = m.Groups["high"].Value;
+            string coin = m.Groups["coin"].Value;
+            return $"{high}{coin}";
+        });
+
+        long total = 0;
+        bool foundCoinValue = false;
+        foreach (Match match in CoinValueRegex.Matches(normalized))
+        {
+            if (!TryParsePositiveInt(match.Groups["value"].Value, out int value))
+                continue;
+
+            string coin = match.Groups["coin"].Value;
+            int multiplier = coin.Equals("pp", StringComparison.OrdinalIgnoreCase) ? 500
+                : coin.Equals("gp", StringComparison.OrdinalIgnoreCase) ? 100
+                : coin.Equals("ep", StringComparison.OrdinalIgnoreCase) ? 50
+                : coin.Equals("sp", StringComparison.OrdinalIgnoreCase) ? 10
+                : 1;
+            total += (long)value * multiplier;
+            foundCoinValue = true;
+        }
+
+        if (foundCoinValue)
+        {
+            copper = total > int.MaxValue ? int.MaxValue : (int)Math.Max(0, total);
+            return copper > 0;
+        }
+
+        var bareRange = BareRangeRegex.Match(text);
+        if (bareRange.Success
+            && TryParsePositiveInt(bareRange.Groups["high"].Value, out int rangeHighGp)
+            && rangeHighGp > 0)
+        {
+            copper = rangeHighGp > (int.MaxValue / 100) ? int.MaxValue : rangeHighGp * 100;
+            return true;
+        }
+
+        var bareNumber = BareNumberRegex.Match(text);
+        if (bareNumber.Success
+            && TryParsePositiveInt(bareNumber.Value, out int gp)
+            && gp > 0)
+        {
+            copper = gp > (int.MaxValue / 100) ? int.MaxValue : gp * 100;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool TryParsePositiveInt(string value, out int parsed)
+    {
+        parsed = 0;
+        if (string.IsNullOrWhiteSpace(value))
+            return false;
+
+        string normalized = value.Replace(",", string.Empty).Trim();
+        return int.TryParse(normalized, out parsed) && parsed >= 0;
+    }
+
     /// <summary>
     /// Ensures a wizard character has at least one default spellbook.
     /// If the character is a wizard and has no spellbooks, creates a Standard Spellbook.
@@ -1796,6 +2031,21 @@ public partial class CharGenReviewScreen : UserControl, IScreen
 
         var digits = new string(levelText.Where(char.IsDigit).ToArray());
         return int.TryParse(digits, out int parsed) ? Math.Max(0, parsed) : 1;
+    }
+
+    // Returns "cleric_warrior" when the cleric has Warrior Priests, so CalculateTotals
+    // applies the warrior CON HP bonus (+3 at CON 17, +4 at CON 18+).
+    private static string GetEffectiveClassIdForConBonus(CharGenState cg)
+    {
+        if (string.Equals(cg.ClassId, "cleric", StringComparison.OrdinalIgnoreCase))
+        {
+            bool hasWarriorPriests = cg.SelectedClassAbilityIds.Any(entry =>
+                string.Equals(RulesEngine.ExtractClassAbilityBaseId(entry),
+                    "cleric_warrior_priests", StringComparison.OrdinalIgnoreCase));
+            if (hasWarriorPriests)
+                return "cleric_warrior";
+        }
+        return cg.ClassId;
     }
 }
 

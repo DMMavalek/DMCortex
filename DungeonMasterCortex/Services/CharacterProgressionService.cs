@@ -156,7 +156,8 @@ public static class CharacterProgressionService
         if (character.ExperiencePoints < minXpForCurrentLevel)
             character.ExperiencePoints = minXpForCurrentLevel;
 
-        character.Thac0 = GetBaseThac0(classToken, clampedLevel) - character.Bonuses.AttackBonus;
+        // THAC0 should remain the class/level baseline. Attack bonuses are applied at attack resolution time.
+        character.Thac0 = GetBaseThac0(character, classToken, clampedLevel);
         character.AttackRate = GetWarriorAttackRate(classToken, clampedLevel);
 
         ApplySpellSlotProgression(character, classToken, clampedLevel);
@@ -202,7 +203,7 @@ public static class CharacterProgressionService
         {
             for (int level = oldLevel + 1; level <= targetLevel; level++)
             {
-                int hpGain = CalculateHitPointGainForLevel(character, classToken, level);
+                int hpGain = CalculateHitPointGainForLevel(character, level);
                 character.HitPoints += hpGain;
                 RecordHitPointGainAtLevel(character, level, hpGain);
             }
@@ -210,7 +211,8 @@ public static class CharacterProgressionService
 
         int levelsGained = targetLevel - oldLevel;
         character.Level = targetLevel;
-        character.Thac0 = GetBaseThac0(classToken, targetLevel) - character.Bonuses.AttackBonus;
+        // THAC0 should remain the class/level baseline. Attack bonuses are applied at attack resolution time.
+        character.Thac0 = GetBaseThac0(character, classToken, targetLevel);
         character.AttackRate = GetWarriorAttackRate(classToken, targetLevel);
         ApplySpellSlotProgression(character, classToken, targetLevel);
 
@@ -293,8 +295,22 @@ public static class CharacterProgressionService
     /// </summary>
     public static int GetConAndClassHpBonus(CharacterSheet character)
     {
-        int conMod = GetConHitPointBonus(character.Abilities.GetValueOrDefault("con", 10), character.ClassId);
+        int conMod = GetConHitPointBonus(character, character.ClassId);
         return conMod + character.Bonuses.HpPerLevel;
+    }
+
+    public static int GetConHitPointBonus(CharacterSheet character, string classId)
+    {
+        int con = character.Abilities.GetValueOrDefault("con", 10);
+        string token = ResolvePrimaryClassToken(classId);
+
+        if (token is "wizard" or "mage" or "illusionist"
+            && HasSelectedClassAbility(character, "wizard_constitution_adjustment", "wizard_warrior_hit_point_bonus"))
+        {
+            return GetConHitPointBonus(con, "fighter");
+        }
+
+        return GetConHitPointBonus(con, token);
     }
 
     public static int GetConHitPointBonus(int con, string classId)
@@ -330,18 +346,23 @@ public static class CharacterProgressionService
             ? character.ClassIds
             : new List<string> { character.ClassId };
 
+        int con = character.Abilities.GetValueOrDefault("con", 10);
         int totalRoll = 0;
         foreach (var id in classIds)
         {
+            string token = ResolvePrimaryClassToken(id);
             var p = GetHitPointProfile(ResolvePrimaryClassToken(id));
             if (level <= p.HitDieLevels)
                 totalRoll += Random.Shared.Next(1, p.HitDie + 1);
             else
                 totalRoll += p.PostCapGain;
+
+            totalRoll += GetConHitPointBonus(character, token) + character.Bonuses.HpPerLevel;
         }
-        int baseRoll = classIds.Count > 1 ? (int)Math.Round((double)totalRoll / classIds.Count) : totalRoll;
-        int bonus = GetConAndClassHpBonus(character);
-        return Math.Max(1, baseRoll + bonus);
+
+        // Multiclass gains are additive: roll/apply each class once per level.
+        int baseRoll = totalRoll;
+        return Math.Max(1, baseRoll);
     }
 
     public static int GetMinimumExperienceForLevel(string classId, int level)
@@ -429,13 +450,24 @@ public static class CharacterProgressionService
         };
     }
 
-    private static int CalculateHitPointGainForLevel(CharacterSheet character, string classToken, int level)
+    private static int CalculateHitPointGainForLevel(CharacterSheet character, int level)
     {
-        var profile = GetHitPointProfile(classToken);
-        int conMod = GetConHitPointBonus(character.Abilities.GetValueOrDefault("con", 10), classToken);
-        int baseGain = level <= profile.HitDieLevels ? ((profile.HitDie + 1) / 2) : profile.PostCapGain;
+        var classTokens = character.ClassMode == "multiclass" && character.ClassIds.Count > 0
+            ? character.ClassIds
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Select(ResolvePrimaryClassToken)
+                .ToList()
+            : new List<string> { ResolvePrimaryClassToken(character.ClassId) };
 
-        int total = baseGain + conMod + character.Bonuses.HpPerLevel;
+        int total = 0;
+        foreach (string token in classTokens)
+        {
+            var profile = GetHitPointProfile(token);
+            int conMod = GetConHitPointBonus(character, token);
+            int baseGain = level <= profile.HitDieLevels ? ((profile.HitDie + 1) / 2) : profile.PostCapGain;
+            total += baseGain + conMod + character.Bonuses.HpPerLevel;
+        }
+
         return Math.Max(1, total);
     }
 
@@ -460,9 +492,17 @@ public static class CharacterProgressionService
         _ => 2,
     };
 
-    private static int GetBaseThac0(string classId, int level)
+    private static int GetBaseThac0(CharacterSheet character, string classId, int level)
     {
         int clampedLevel = Math.Max(1, level);
+
+        if (classId is "wizard" or "mage" or "illusionist"
+            && HasSelectedClassAbility(character, "wizard_combat_bonus"))
+        {
+            // Wizard combat bonus uses rogue THAC0 progression.
+            return 20 - ((clampedLevel - 1) / 2);
+        }
+
         return classId switch
         {
             "fighter" or "paladin" or "ranger" => 20 - (clampedLevel - 1),
@@ -484,28 +524,157 @@ public static class CharacterProgressionService
 
     private static void ApplySpellSlotProgression(CharacterSheet character, string classId, int level)
     {
-        character.DivineSpellSlots = BuildSlotDictionary(GetDivineSlots(classId, level));
-        character.ArcaneSpellSlots = BuildSlotDictionary(GetArcaneSlots(classId, level));
+        character.DivineSpellSlots = BuildSlotDictionary(GetDivineSlots(character, classId, level));
+        character.ArcaneSpellSlots = BuildSlotDictionary(GetArcaneSlots(character, classId, level));
     }
 
-    private static int[] GetDivineSlots(string classId, int level)
+    private static int[] GetDivineSlots(CharacterSheet character, string classId, int level)
     {
         if (classId is "cleric" or "druid")
             return GetTableRow(PriestSpellSlotsByLevel, level, 7);
 
         if (classId == "paladin")
+        {
+            bool isPlayersOption = string.Equals(character.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase);
+            if (isPlayersOption)
+            {
+                bool hasBaselineProgression = HasSelectedClassAbility(character, "paladin_priest_spells");
+                bool hasLevel4Progression = HasSelectedClassAbility(character, "paladin_increased_spell_progression_cp15");
+                bool hasLevel7Progression = HasSelectedClassAbility(character, "paladin_increased_spell_progression_cp10");
+
+                if (hasBaselineProgression || hasLevel4Progression)
+                    return GetTableRow(PaladinSpellSlotsByLevel, level, 4);
+
+                if (hasLevel7Progression)
+                {
+                    if (level < 7)
+                        return Array.Empty<int>();
+
+                    // Level-7 progression uses the same paladin curve shifted three levels later.
+                    return GetTableRow(PaladinSpellSlotsByLevel, level - 3, 4);
+                }
+
+                return Array.Empty<int>();
+            }
+
             return GetTableRow(PaladinSpellSlotsByLevel, level, 4);
+        }
 
         if (classId == "ranger")
+        {
+            bool isPlayersOption = string.Equals(character.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase);
+            if (isPlayersOption)
+            {
+                bool hasLevel4Progression = HasSelectedClassAbility(character, "ranger_increased_spell_progression_cp12");
+                bool hasLevel7Progression = HasSelectedClassAbility(character, "ranger_increased_spell_progression_cp7");
+                bool hasBaselineProgression = HasSelectedClassAbility(character, "ranger_priest_spells");
+
+                if (hasLevel4Progression)
+                    return GetTableRow(RangerSpellSlotsByLevel, level + 4, 3);
+
+                if (hasLevel7Progression)
+                {
+                    if (level < 7)
+                        return Array.Empty<int>();
+
+                    return GetTableRow(RangerSpellSlotsByLevel, level + 1, 3);
+                }
+
+                if (hasBaselineProgression)
+                    return GetTableRow(RangerSpellSlotsByLevel, level, 3);
+
+                return Array.Empty<int>();
+            }
+
             return GetTableRow(RangerSpellSlotsByLevel, level, 3);
+        }
 
         return Array.Empty<int>();
     }
 
-    private static int[] GetArcaneSlots(string classId, int level)
+    private static bool HasSelectedClassAbility(CharacterSheet character, params string[] abilityIds)
+    {
+        if (abilityIds is null || abilityIds.Length == 0)
+            return false;
+
+        var wanted = new HashSet<string>(abilityIds.Where(id => !string.IsNullOrWhiteSpace(id)), StringComparer.OrdinalIgnoreCase);
+        if (wanted.Count == 0)
+            return false;
+
+        if (character.SelectedClassAbilityIds.Any(entry =>
+            wanted.Contains(RulesEngine.ExtractClassAbilityBaseId(entry))))
+        {
+            return true;
+        }
+
+        foreach (var (_, entries) in character.SelectedAbilitiesByClass)
+        {
+            if (entries is null)
+                continue;
+
+            if (entries.Any(entry => wanted.Contains(RulesEngine.ExtractClassAbilityBaseId(entry))))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool HasWizardSpecialistPackage(CharacterSheet character)
+    {
+        if (!string.IsNullOrWhiteSpace(character.WizardSpecializationId))
+            return true;
+
+        return HasSelectedClassAbility(
+            character,
+            "wizard_specialist_abjurer",
+            "wizard_specialist_alchemist",
+            "wizard_specialist_transmuter",
+            "wizard_specialist_conjurer",
+            "wizard_specialist_diviner",
+            "wizard_specialist_enchanter",
+            "wizard_specialist_geometer",
+            "wizard_specialist_illusionist",
+            "wizard_specialist_invoker",
+            "wizard_specialist_necromancer",
+            "wizard_specialist_shadow",
+            "wizard_specialist_song_wizard");
+    }
+
+    private static int[] GetArcaneSlots(CharacterSheet character, string classId, int level)
     {
         if (classId is "wizard" or "mage" or "illusionist")
-            return GetTableRow(WizardSpellSlotsByLevel, level, 9);
+        {
+            int[] baseSlots = GetTableRow(WizardSpellSlotsByLevel, level, 9).ToArray();
+
+            if (HasSelectedClassAbility(character, "wizard_restriction_reduced_spell_progression"))
+            {
+                for (int i = 0; i < baseSlots.Length; i++)
+                {
+                    if (baseSlots[i] > 0)
+                        baseSlots[i] = Math.Max(0, baseSlots[i] - 1);
+                }
+            }
+
+            if (HasSelectedClassAbility(character, "wizard_bonus_spells_cp10", "wizard_bonus_spells_cp15"))
+            {
+                for (int i = 0; i < baseSlots.Length; i++)
+                {
+                    if (baseSlots[i] > 0)
+                        baseSlots[i] += 1;
+                }
+            }
+
+            if (HasWizardSpecialistPackage(character))
+            {
+                for (int i = 0; i < baseSlots.Length; i++)
+                {
+                    if (baseSlots[i] > 0)
+                        baseSlots[i] += 1;
+                }
+            }
+
+            return baseSlots;
+        }
 
         return Array.Empty<int>();
     }

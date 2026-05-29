@@ -371,8 +371,30 @@ public partial class CharGenSubAbilitiesScreen : UserControl, IScreen
 
     private void SyncExceptionalStrengthEligibility()
     {
-        bool isWarrior = WarriorClasses.Contains(_app.CharGen.ClassId,
-            StringComparer.OrdinalIgnoreCase);
+        var effectiveClassIds = _app.CharGen.SelectedClassIds.Count > 0
+            ? _app.CharGen.SelectedClassIds
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList()
+            : string.IsNullOrWhiteSpace(_app.CharGen.ClassId)
+                ? new List<string>()
+                : new List<string> { _app.CharGen.ClassId };
+
+        bool isWarrior = effectiveClassIds.Any(classId =>
+            WarriorClasses.Contains(classId, StringComparer.OrdinalIgnoreCase));
+
+        var selectedAbilityEntries = _app.CharGen.SelectedClassAbilityIds
+            .Concat(_app.CharGen.SelectedAbilitiesByClass.Values.SelectMany(entries => entries ?? Enumerable.Empty<string>()));
+        bool hasWarriorPriests = selectedAbilityEntries.Any(entry =>
+            string.Equals(RulesEngine.ExtractClassAbilityBaseId(entry),
+                "cleric_warrior_priests", StringComparison.OrdinalIgnoreCase));
+
+        // Warrior Priests: clerics with this ability qualify for exceptional strength
+        if (!isWarrior
+            && effectiveClassIds.Any(classId => string.Equals(classId, "cleric", StringComparison.OrdinalIgnoreCase)))
+        {
+            isWarrior = hasWarriorPriests;
+        }
 
         // Use ModifiedAbilities if available (with racial modifiers), otherwise fall back to base
         int strBase = _app.CharGen.ModifiedAbilities.Count > 0

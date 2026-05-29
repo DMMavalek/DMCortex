@@ -83,24 +83,31 @@ public partial class CharGenRaceScreen : UserControl, IScreen
         // This shows the actual stat deltas players will receive after subrace selection.
         var previewRace = ResolvePreviewRace(race);
 
-        var cpRace = race;
-        if (!string.IsNullOrWhiteSpace(_app.CharGen.RaceId) &&
-            _app.Rules.Races.TryGetValue(_app.CharGen.RaceId, out var selectedRace) &&
-            string.Equals(selectedRace.BaseRaceId, race.BaseRaceId, System.StringComparison.OrdinalIgnoreCase))
-        {
-            cpRace = selectedRace;
-        }
-
-        var selectedIds = string.Equals(cpRace.Id, _app.CharGen.RaceId, System.StringComparison.OrdinalIgnoreCase)
-            ? _app.CharGen.SelectedRacialAbilityIds
-            : Enumerable.Empty<string>();
-        var cp = _app.Rules.BuildRacialAbilityPackage(cpRace.Id, selectedIds);
         bool isPlayersOption = string.Equals(_app.CharGen.CharacterMode, "players_option", System.StringComparison.OrdinalIgnoreCase);
-        if (isPlayersOption && cp.budget > 0)
+        if (isPlayersOption)
         {
-            CpSummary.Text = $"Remaining CP: {cp.remaining}  (Spent {cp.spent} / {cp.budget})";
-            CpSummary.Foreground = new SolidColorBrush(
-                (Color)ColorConverter.ConvertFromString(cp.remaining < 0 ? "#C02828" : cp.remaining == 0 ? "#E8C050" : "#C4A468"));
+            var cpRace = race;
+            if (!string.IsNullOrWhiteSpace(_app.CharGen.RaceId) &&
+                _app.Rules.Races.TryGetValue(_app.CharGen.RaceId, out var selectedRace) &&
+                string.Equals(selectedRace.BaseRaceId, race.BaseRaceId, System.StringComparison.OrdinalIgnoreCase))
+            {
+                cpRace = selectedRace;
+            }
+
+            var selectedIds = string.Equals(cpRace.Id, _app.CharGen.RaceId, System.StringComparison.OrdinalIgnoreCase)
+                ? _app.CharGen.SelectedRacialAbilityIds
+                : Enumerable.Empty<string>();
+            var cp = _app.Rules.BuildRacialAbilityPackage(cpRace.Id, selectedIds);
+            if (cp.budget > 0)
+            {
+                CpSummary.Text = $"Remaining CP: {cp.remaining}  (Spent {cp.spent} / {cp.budget})";
+                CpSummary.Foreground = new SolidColorBrush(
+                    (Color)ColorConverter.ConvertFromString(cp.remaining < 0 ? "#C02828" : cp.remaining == 0 ? "#E8C050" : "#C4A468"));
+            }
+            else
+            {
+                CpSummary.Text = "";
+            }
         }
         else
         {
@@ -168,7 +175,8 @@ public partial class CharGenRaceScreen : UserControl, IScreen
                 foreach (var ability in previewRace.StructuredAbilities)
                 {
                     var tag = ability.AutoGranted ? "AUTO" : "OPTION";
-                    sb.AppendLine($"  • [{tag}] ({ability.PointCost}) {ability.Description}");
+                    var cpTag = isPlayersOption ? $" ({ability.PointCost})" : string.Empty;
+                    sb.AppendLine($"  • [{tag}]{cpTag} {ability.Description}");
                 }
             }
             else

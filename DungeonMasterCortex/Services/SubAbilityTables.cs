@@ -36,6 +36,26 @@ public static class SubAbilityTables
         };
     }
 
+    public static int GetRogueAimAdjustment(string skillId, int dexterityScore)
+    {
+        var (_, pickPocketsAdj, openLocksAdj) = AimData(dexterityScore);
+        if (string.Equals(skillId, "pick_pockets", StringComparison.OrdinalIgnoreCase))
+            return pickPocketsAdj;
+        if (string.Equals(skillId, "open_locks", StringComparison.OrdinalIgnoreCase))
+            return openLocksAdj;
+        return 0;
+    }
+
+    public static int GetRogueBalanceAdjustment(string skillId, int dexterityScore)
+    {
+        var (_, _, moveSilentlyAdj, climbWallsAdj) = BalanceData(dexterityScore);
+        if (string.Equals(skillId, "move_silently", StringComparison.OrdinalIgnoreCase))
+            return moveSilentlyAdj;
+        if (string.Equals(skillId, "climb_walls", StringComparison.OrdinalIgnoreCase))
+            return climbWallsAdj;
+        return 0;
+    }
+
     /// <summary>
     /// Aggregates all selected sub-abilities into concrete mechanical totals.
     /// Keys are expected in full form, e.g. "str_muscle", "wis_perception".
@@ -245,23 +265,32 @@ public static class SubAbilityTables
 
     private static (int missileAdj, int pickPocketsAdj, int openLocksAdj) AimData(int score)
     {
-        int adj = score switch
-        {
-            1        => -6,
-            2        => -4,
-            3        => -3,
-            4 or 5   => -2,
-            6 or 7   => -1,
-            8 or 9 or 10 or 11 or 12 or 13 or 14 or 15 => 0,
-            16       => +1,
-            17 or 18 => +2,
-            19 or 20 => +3,
-            _        => 0
-        };
+        int clamped = Math.Clamp(score, 3, 25);
 
-        // Keep lockpicking/pickpocketing tied to the same dexterity accuracy band.
-        int skillAdj = adj;
-        return (adj, skillAdj, skillAdj);
+        return clamped switch
+        {
+            3  => (-3, -30, -30),
+            4  => (-2, -25, -25),
+            5  => (-1, -25, -20),
+            6  => ( 0, -20, -20),
+            7  => ( 0, -20, -15),
+            8  => ( 0, -15, -15),
+            9  => ( 0, -15, -10),
+            10 => ( 0, -10,  -5),
+            11 => ( 0,  -5,   0),
+            >= 12 and <= 15 => (0, 0, 0),
+            16 => (+1,  0,  +5),
+            17 => (+2, +5, +10),
+            18 => (+2, +10, +15),
+            19 => (+3, +15, +20),
+            20 => (+3, +20, +20),
+            21 => (+4, +20, +25),
+            22 => (+4, +25, +25),
+            23 => (+4, +25, +30),
+            24 => (+5, +30, +30),
+            25 => (+5, +30, +35),
+            _  => (0, 0, 0)
+        };
     }
 
     // ── DEX: Balance ────────────────────────────────────────────────────────
@@ -274,49 +303,34 @@ public static class SubAbilityTables
 
     private static (int reactionAdj, int defenseAdj, int moveSilentlyAdj, int climbWallsAdj) BalanceData(int score)
     {
-        int reactionAdj = score switch
-        {
-            1 => -6,
-            2 => -4,
-            3 => -3,
-            4 => -2,
-            5 => -1,
-            6 or 7 or 8 or 9 or 10 or 11 or 12 or 13 or 14 or 15 => 0,
-            16 => +1,
-            17 or 18 => +2,
-            19 or 20 => +3,
-            _ => 0
-        };
+        int clamped = Math.Clamp(score, 3, 25);
 
-        int defenseAdj = score switch
+        return clamped switch
         {
-            1 or 2 => +5,
-            3 => +4,
-            4 => +3,
-            5 => +2,
-            6 => +1,
-            7 or 8 or 9 or 10 or 11 or 12 or 13 or 14 => 0,
-            15 => -1,
-            16 => -2,
-            17 => -3,
-            18 or 19 or 20 => -4,
-            _ => 0
+            3  => (-3, +4, -30, -30),
+            4  => (-2, +3, -30, -25),
+            5  => (-1, +2, -30, -20),
+            6  => ( 0, +1, -25, -20),
+            7  => ( 0,  0, -25, -15),
+            8  => ( 0,  0, -20, -15),
+            9  => ( 0,  0, -20, -10),
+            10 => ( 0,  0, -15,  -5),
+            11 => ( 0,  0, -10,   0),
+            12 => ( 0,  0,  -5,   0),
+            >= 13 and <= 14 => (0, 0, 0, 0),
+            15 => ( 0, -1,   0,   0),
+            16 => (+1, -2,   0,   0),
+            17 => (+2, -3,  +5,  +5),
+            18 => (+2, -4, +10, +10),
+            19 => (+3, -4, +15, +15),
+            20 => (+3, -4, +15, +20),
+            21 => (+4, -5, +20, +20),
+            22 => (+4, -5, +20, +25),
+            23 => (+5, -6, +25, +25),
+            24 => (+5, -6, +25, +30),
+            25 => (+5, -6, +30, +30),
+            _  => (0, 0, 0, 0)
         };
-
-        int skillAdj = score switch
-        {
-            <= 3 => -4,
-            <= 5 => -3,
-            <= 8 => -2,
-            <= 14 => 0,
-            15 => +1,
-            16 => +2,
-            17 => +3,
-            18 => +4,
-            _ => +5
-        };
-
-        return (reactionAdj, defenseAdj, skillAdj, skillAdj);
     }
 
     // ── CON: Health ─────────────────────────────────────────────────────────
@@ -388,7 +402,8 @@ public static class SubAbilityTables
         if (string.Equals(classId, "fighter", StringComparison.OrdinalIgnoreCase)
             || string.Equals(classId, "paladin", StringComparison.OrdinalIgnoreCase)
             || string.Equals(classId, "ranger", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(classId, "warrior", StringComparison.OrdinalIgnoreCase))
+            || string.Equals(classId, "warrior", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(classId, "cleric_warrior", StringComparison.OrdinalIgnoreCase))
         {
             hp = score switch
             {

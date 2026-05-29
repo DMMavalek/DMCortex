@@ -434,6 +434,7 @@
   "classes": {
     "cleric": {
       "name": "Cleric",
+      "starting_funds_roll": "3d6x10",
       "ability_minimums": {
         "wis": 9
       },
@@ -502,19 +503,13 @@
         "cleric_restriction_reduced_hit_points",
         "cleric_restriction_reduced_spell_progression",
         "cleric_restriction_slower_casting_times",
-        "cleric_restriction_weapon_restriction_cp5",
-        "cleric_restriction_weapon_restriction_cp15",
         "cleric_restriction_behavior_taboo",
-        "cleric_restriction_ceremony_observance",
-        "cleric_restriction_fanaticism",
         "cleric_restriction_limited_spell_selection",
         "cleric_restriction_talisman",
-        "cleric_sphere_minor_all",
         "cleric_sphere_major_all",
         "cleric_sphere_minor_animal",
         "cleric_sphere_major_animal",
         "cleric_sphere_minor_astral",
-        "cleric_sphere_major_astral",
         "cleric_sphere_minor_chaos",
         "cleric_sphere_major_chaos",
         "cleric_sphere_minor_charm",
@@ -576,6 +571,7 @@
     },
     "fighter": {
       "name": "Fighter",
+      "starting_funds_roll": "5d4x10",
       "ability_minimums": {
         "str": 9
       },
@@ -612,6 +608,7 @@
     },
     "paladin": {
       "name": "Paladin",
+      "starting_funds_roll": "5d4x10",
       "ability_minimums": {
         "cha": 17,
         "con": 9,
@@ -652,6 +649,7 @@
     },
     "psionicist": {
       "name": "Psionicist",
+      "starting_funds_roll": "3d4x10",
       "ability_minimums": {
         "con": 11,
         "int": 12,
@@ -695,6 +693,7 @@
     },
     "ranger": {
       "name": "Ranger",
+      "starting_funds_roll": "5d4x10",
       "ability_minimums": {
         "con": 14,
         "dex": 13,
@@ -740,6 +739,7 @@
     },
     "thief": {
       "name": "Thief",
+      "starting_funds_roll": "2d6x10",
       "ability_minimums": {
         "dex": 9
       },
@@ -782,6 +782,7 @@
     },
     "wizard": {
       "name": "Wizard",
+      "starting_funds_roll": "2d4x10",
       "ability_minimums": {
         "int": 9
       },
@@ -1132,6 +1133,7 @@
     },
     "druid": {
       "name": "Druid",
+      "starting_funds_roll": "3d6x10",
       "ability_minimums": {
         "cha": 15,
         "wis": 12
@@ -1151,7 +1153,9 @@
         "druid_fire_electrical_resistance",
         "druid_shapechange_cp10",
         "druid_shapechange_cp15",
-        "druid_restriction_armor_restriction",
+        "druid_restriction_limited_armor_chain",
+        "druid_restriction_limited_armor_studded",
+        "druid_restriction_limited_armor_none",
         "druid_restriction_awkward_casting_method",
         "druid_restriction_difficult_spell_acquisition",
         "druid_restriction_hazardous_spells",
@@ -1173,6 +1177,7 @@
     },
     "bard": {
       "name": "Bard",
+      "starting_funds_roll": "3d6x10",
       "ability_minimums": {
         "cha": 15,
         "dex": 12,
@@ -1425,7 +1430,7 @@
       }
     },
     "cleric_extended_spell_duration_cp10": {
-      "description": "Extended spell duration (10): Increase noninstantaneous spell duration.",
+      "description": "Extended spell duration (10): Increase noninstantaneous spell duration by 50%.",
       "point_cost": 10,
       "auto_granted": false,
       "allow_multiple": false,
@@ -1433,7 +1438,7 @@
       "allow_purchase_after_level_one": true
     },
     "cleric_extended_spell_duration_cp15": {
-      "description": "Extended spell duration (15): Increase noninstantaneous spell duration.",
+      "description": "Extended spell duration (15): Double noninstantaneous spell duration.",
       "point_cost": 15,
       "auto_granted": false,
       "allow_multiple": false,
@@ -1457,7 +1462,7 @@
       "allow_purchase_after_level_one": true
     },
     "cleric_pass_without_trace_cp5": {
-      "description": "Pass without trace (5): Gain pass without trace at 3rd level or earlier.",
+      "description": "Pass without trace (5): Gain pass without trace as a bonus spell at 3rd level.",
       "point_cost": 5,
       "auto_granted": false,
       "allow_multiple": false,
@@ -1465,7 +1470,7 @@
       "allow_purchase_after_level_one": true
     },
     "cleric_pass_without_trace_cp7": {
-      "description": "Pass without trace (7): Gain pass without trace at 3rd level or earlier.",
+      "description": "Pass without trace (7): Gain pass without trace as a bonus spell at 1st level.",
       "point_cost": 7,
       "auto_granted": false,
       "allow_multiple": false,
@@ -1593,15 +1598,15 @@
       "allow_purchase_after_level_one": true
     },
     "cleric_proficiency_crossovers": {
-      "description": "Proficiency group crossovers (5\u002B): Select NWP from an additional character group (warrior, wizard, rogue, etc.) at no penalty. 5 CP per extra group.",
+      "description": "Proficiency group crossovers (5\u002B): Select one additional NWP class group (Warrior, Mage, or Rogue) to buy without crossover penalty. This option is repeatable for 5 CP per additional group.",
       "point_cost": 5,
       "auto_granted": false,
-      "allow_multiple": false,
-      "requires_player_text": false,
+      "allow_multiple": true,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "cleric_purify_water": {
-      "description": "Purify water (5): Once per day, use purify food and drink applied to water or brine only.",
+      "description": "Purify water (5): Gain purify water as a 1/day bonus spell at 1st level.",
       "point_cost": 5,
       "auto_granted": false,
       "allow_multiple": false,
@@ -1645,7 +1650,7 @@
       "point_cost": -5,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "cleric_restriction_difficult_spell_acquisition": {
@@ -1665,11 +1670,11 @@
       "allow_purchase_after_level_one": true
     },
     "cleric_restriction_limited_magical_item_use": {
-      "description": "Restriction - Limited magical item use (per category): Gain 5 CP.",
+      "description": "Restriction - Limited magical item use (5\u002B): Select one barred item category (Potions/Oils/Scrolls; Rings; Rods/Staves/Wands; Miscellaneous Magic; Weapons and Armor). Gain 5 CP per selected category.",
       "point_cost": -5,
       "auto_granted": false,
-      "allow_multiple": false,
-      "requires_player_text": false,
+      "allow_multiple": true,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "cleric_restriction_reduced_hit_points": {
@@ -2329,7 +2334,7 @@
       "point_cost": 5,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": false
     },
     "fighter_concentrated_strength": {
@@ -2356,7 +2361,7 @@
       "point_cost": 5,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": false
     },
     "fighter_iaijutsu": {
@@ -2375,7 +2380,7 @@
       "point_cost": 10,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": false
     },
     "fighter_mythic_lore": {
@@ -2426,7 +2431,7 @@
       "point_cost": 5,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "paladin_curative": {
@@ -2442,7 +2447,7 @@
       "point_cost": 5,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "paladin_faithful_mount": {
@@ -2450,7 +2455,7 @@
       "point_cost": 5,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "paladin_healing": {
@@ -2466,7 +2471,7 @@
       "point_cost": 5,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "paladin_poison_resistance": {
@@ -2556,7 +2561,7 @@
       "point_cost": 7,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "paladin_increased_spell_progression_cp10": {
@@ -2611,8 +2616,8 @@
       "description": "Restriction - Limited magical item use (per barred category): Gain 5 CP.",
       "point_cost": -5,
       "auto_granted": false,
-      "allow_multiple": false,
-      "requires_player_text": false,
+      "allow_multiple": true,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "paladin_divine_aura": {
@@ -2684,7 +2689,7 @@
       "point_cost": 15,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "psionicist_defense_mode_bonus": {
@@ -2806,7 +2811,7 @@
       "point_cost": -15,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "psionicist_restriction_no_combat_modes": {
@@ -3053,8 +3058,8 @@
       "description": "Restriction - Limited magical item use (per barred category): Gain 5 CP.",
       "point_cost": -5,
       "auto_granted": false,
-      "allow_multiple": false,
-      "requires_player_text": false,
+      "allow_multiple": true,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "ranger_trailblazer": {
@@ -3353,51 +3358,51 @@
       "allow_purchase_after_level_one": true
     },
     "wizard_dispel_cp10": {
-      "description": "Dispel (10): Daily targeted dispel against one linked spell category.",
+      "description": "Dispel (10): Select one school/category; gain 1/day targeted dispel against that selection.",
       "point_cost": 10,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "wizard_dispel_cp15": {
-      "description": "Dispel (15): Daily targeted dispel against one linked spell category.",
+      "description": "Dispel (15): Select one school/category; gain 2/day targeted dispel against that selection.",
       "point_cost": 15,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "wizard_no_components_cp5": {
-      "description": "No components (5): Designate spells requiring no material components.",
+      "description": "No components (5): Select one arcane spell that requires no material components.",
       "point_cost": 5,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "wizard_no_components_cp8": {
-      "description": "No components (8): Designate spells requiring no material components.",
+      "description": "No components (8): Select two arcane spells that require no material components.",
       "point_cost": 8,
       "auto_granted": false,
-      "allow_multiple": false,
-      "requires_player_text": false,
+      "allow_multiple": true,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "wizard_range_increase_cp5": {
-      "description": "Range increase (5): Increase ranged spell distance by 25% or 50%.",
+      "description": "Range increase (5): Increase arcane spell range by 25% (numeric ranges only).",
       "point_cost": 5,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "wizard_range_increase_cp7": {
-      "description": "Range increase (7): Increase ranged spell distance by 25% or 50%.",
+      "description": "Range increase (7): Increase arcane spell range by 50% (numeric ranges only).",
       "point_cost": 7,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "wizard_weapon_selection_cp10": {
@@ -3420,8 +3425,8 @@
       "description": "Thief ability (10\u002B): Purchase one or more thief abilities.",
       "point_cost": 10,
       "auto_granted": false,
-      "allow_multiple": false,
-      "requires_player_text": false,
+      "allow_multiple": true,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "wizard_hit_point_bonus": {
@@ -3478,7 +3483,7 @@
       "point_cost": 10,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "wizard_priestly_wizard_cp15": {
@@ -3486,31 +3491,31 @@
       "point_cost": 15,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "wizard_signature_spell_levels_1_3": {
       "description": "Signature spell I (levels 1-3, 2 CP): Choose one signature spell for levels 1-3.",
       "point_cost": 2,
       "auto_granted": false,
-      "allow_multiple": false,
-      "requires_player_text": false,
+      "allow_multiple": true,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "wizard_signature_spell_levels_4_6": {
       "description": "Signature spell II (levels 4-6, 4 CP): Choose one signature spell for levels 4-6.",
       "point_cost": 4,
       "auto_granted": false,
-      "allow_multiple": false,
-      "requires_player_text": false,
+      "allow_multiple": true,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "wizard_signature_spell_levels_7_9": {
       "description": "Signature spell III (levels 7-9, 6 CP): Choose one signature spell for levels 7-9.",
       "point_cost": 6,
       "auto_granted": false,
-      "allow_multiple": false,
-      "requires_player_text": false,
+      "allow_multiple": true,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "wizard_enhanced_casting_level": {
@@ -3518,7 +3523,7 @@
       "point_cost": 10,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "wizard_followers": {
@@ -3534,7 +3539,7 @@
       "point_cost": 10,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "wizard_learning_bonus_cp5": {
@@ -3542,7 +3547,7 @@
       "point_cost": 5,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "wizard_learning_bonus_cp7": {
@@ -3550,7 +3555,7 @@
       "point_cost": 7,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "wizard_persistent_spell_effect": {
@@ -3558,7 +3563,7 @@
       "point_cost": 15,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "wizard_proficiency_crossovers": {
@@ -3566,7 +3571,7 @@
       "point_cost": 5,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "wizard_research_bonus": {
@@ -3574,7 +3579,7 @@
       "point_cost": 5,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "wizard_school_knowledge_cp5": {
@@ -3714,23 +3719,23 @@
       "allow_purchase_after_level_one": true
     },
     "wizard_restriction_learning_penalty": {
-      "description": "Restriction - Learning penalty outside favored school: Gain 5 CP.",
+      "description": "Restriction - Learning penalty outside favored school: Choose a favored school; spells from other schools are harder to learn.",
       "point_cost": -5,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "wizard_restriction_limited_magical_item_use": {
-      "description": "Restriction - Limited magical item use (per barred category): Gain 5 CP.",
+      "description": "Restriction - Limited magical item use: Select barred magical item categories.",
       "point_cost": -5,
       "auto_granted": false,
-      "allow_multiple": false,
-      "requires_player_text": false,
+      "allow_multiple": true,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "wizard_restriction_reduced_spell_progression": {
-      "description": "Restriction - Reduced spell progression: Gain 15 CP.",
+      "description": "Restriction - Reduced spell progression: Reduce arcane slot progression by one slot at each spell level where slots are available.",
       "point_cost": -15,
       "auto_granted": false,
       "allow_multiple": false,
@@ -3742,7 +3747,7 @@
       "point_cost": -5,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "wizard_restriction_hazardous_spells": {
@@ -3765,7 +3770,7 @@
       }
     },
     "wizard_restriction_reduced_spell_knowledge": {
-      "description": "Restriction - Reduced spell knowledge (7): Maximum spells known per level is halved (or capped at 10 if Intelligence would allow knowing all spells). Gain 7 CP.",
+      "description": "Restriction - Reduced spell knowledge (7): Maximum spells known per level is halved from the Intelligence-based limit.",
       "point_cost": -7,
       "auto_granted": false,
       "allow_multiple": false,
@@ -3773,7 +3778,7 @@
       "allow_purchase_after_level_one": true
     },
     "wizard_restriction_slower_casting_time_cp2": {
-      "description": "Restriction - Slower casting time (2): All casting times increase by 3 (2 CP), or jump to the next greater time unit \u2014 1-9 becomes 1 round, rounds become turns, etc. (5 CP). Gain 2 or 5 CP.",
+      "description": "Restriction - Slower casting time (2): Arcane cast times under one round gain +3; cast times of one round or longer are doubled.",
       "point_cost": 2,
       "auto_granted": false,
       "allow_multiple": false,
@@ -3781,7 +3786,7 @@
       "allow_purchase_after_level_one": true
     },
     "wizard_restriction_slower_casting_time_cp5": {
-      "description": "Restriction - Slower casting time (5): All casting times increase by 3 (2 CP), or jump to the next greater time unit \u2014 1-9 becomes 1 round, rounds become turns, etc. (5 CP). Gain 2 or 5 CP.",
+      "description": "Restriction - Slower casting time (5): Arcane cast times under one round become one full round; rounds escalate to turns (and larger units step up similarly).",
       "point_cost": 5,
       "auto_granted": false,
       "allow_multiple": false,
@@ -3793,7 +3798,7 @@
       "point_cost": -2,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "wizard_restriction_difficult_memorization": {
@@ -3801,7 +3806,7 @@
       "point_cost": -5,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "wizard_restriction_environmental_condition": {
@@ -3809,7 +3814,7 @@
       "point_cost": -5,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "wizard_restriction_supernatural_constraint": {
@@ -3817,7 +3822,7 @@
       "point_cost": -5,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "wizard_restriction_talisman": {
@@ -3825,19 +3830,19 @@
       "point_cost": -8,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "wizard_restriction_weapons_restriction_cp3": {
-      "description": "Restriction - Weapons restriction (3): May never have weapon proficiency (3 CP), or may never attempt to wield a weapon at all \u2014 doing so renders spellcasting impossible for one full month (5 CP). Gain 3 or 5 CP.",
+      "description": "Restriction - Weapons restriction (3): Restrict wizard weapon proficiencies to an explicit listed set of weapons.",
       "point_cost": 3,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "wizard_restriction_weapons_restriction_cp5": {
-      "description": "Restriction - Weapons restriction (5): May never have weapon proficiency (3 CP), or may never attempt to wield a weapon at all \u2014 doing so renders spellcasting impossible for one full month (5 CP). Gain 3 or 5 CP.",
+      "description": "Restriction - Weapons restriction (5): No weapon proficiencies allowed.",
       "point_cost": 5,
       "auto_granted": false,
       "allow_multiple": false,
@@ -4009,7 +4014,7 @@
       "point_cost": 8,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": false
     },
     "wizard_arcane_ward": {
@@ -4116,7 +4121,7 @@
       "point_cost": 10,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "druid_shapechange_cp15": {
@@ -4135,12 +4140,36 @@
       "requires_player_text": false,
       "allow_purchase_after_level_one": true
     },
+    "druid_restriction_limited_armor_chain": {
+      "description": "Restriction - Limited armor (chain or lighter): Gain 5 CP.",
+      "point_cost": -5,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "druid_restriction_limited_armor_studded": {
+      "description": "Restriction - Limited armor (studded leather or lighter): Gain 10 CP.",
+      "point_cost": -10,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
+    "druid_restriction_limited_armor_none": {
+      "description": "Restriction - No armor: Gain 15 CP.",
+      "point_cost": -15,
+      "auto_granted": false,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": true
+    },
     "druid_restriction_awkward_casting_method": {
       "description": "Restriction - Awkward casting method (5): Druid\u0027s spellcasting is obviously supernatural \u2014 glowing halo, peals of thunder, tremors, or nearby sensations alert any intelligent creature in earshot. Casting unobserved is nearly impossible. Gain 5 CP.",
       "point_cost": -5,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "druid_restriction_difficult_spell_acquisition": {
@@ -4163,8 +4192,8 @@
       "description": "Restriction - Limited magical item use (5\u002B): Druid is banned from certain magical item categories. For each barred category \u2014 potions/oils/scrolls; rings; rods/staves/wands; miscellaneous magic; weapons and armor \u2014 gain 5 CP.",
       "point_cost": -5,
       "auto_granted": false,
-      "allow_multiple": false,
-      "requires_player_text": false,
+      "allow_multiple": true,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "druid_restriction_reduced_hit_points_cp10": {
@@ -4258,7 +4287,7 @@
       "point_cost": -8,
       "auto_granted": false,
       "allow_multiple": false,
-      "requires_player_text": false,
+      "requires_player_text": true,
       "allow_purchase_after_level_one": true
     },
     "druid_woodland_stride": {

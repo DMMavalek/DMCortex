@@ -47,7 +47,25 @@ public partial class WizardSchoolsDialog : Window
     private static readonly string[] WizardSchools =
     {
         "Abjuration", "Alteration", "Conjuration/Summoning", "Divination",
-        "Enchantment/Charm", "Illusion", "Invocation/Evocation", "Necromancy"
+        "Enchantment/Charm", "Illusion", "Invocation/Evocation", "Necromancy",
+        "Alchemy", "Artifice", "Dimensional", "Force", "Geometry", "Shadow", "Song",
+        "Wild Magic", "Elemental (Air)", "Elemental (Earth)", "Elemental (Fire)", "Elemental (Water)"
+    };
+
+    private static readonly Dictionary<string, string> PrimarySchoolBySpecializationId = new(System.StringComparer.OrdinalIgnoreCase)
+    {
+        ["spec_abjurer"] = "Abjuration",
+        ["spec_alchemist"] = "Alchemy",
+        ["spec_transmuter"] = "Alteration",
+        ["spec_conjurer"] = "Conjuration/Summoning",
+        ["spec_diviner"] = "Divination",
+        ["spec_enchanter"] = "Enchantment/Charm",
+        ["spec_geometer"] = "Geometry",
+        ["spec_illusionist"] = "Illusion",
+        ["spec_invoker"] = "Invocation/Evocation",
+        ["spec_necromancer"] = "Necromancy",
+        ["spec_shadow"] = "Shadow",
+        ["spec_song_wizard"] = "Song",
     };
 
     private readonly ObservableCollection<SchoolItem> _items = new();
@@ -168,6 +186,8 @@ public partial class WizardSchoolsDialog : Window
                 item.IsEnabled  = !isOpposed;
                 if (isOpposed)
                     item.IsSelected = false;
+                else
+                    item.IsSelected = true;
             }
         }
         UpdateTotalCost();

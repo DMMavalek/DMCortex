@@ -15,6 +15,11 @@
                              Margin="0,8,0,0"
                              MinWidth="420"
                              ToolTip="Paste the activation response code here"/>
+                    <Button Content="Release Notes"
+                            Style="{StaticResource GoldButton}"
+                            Width="160"
+                            Margin="0,8,0,0"
+                            Click="BtnReleaseNotes_Click"/>
                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                         <Button Content="Check for Updates" Style="{StaticResource GoldButton}" Width="160" Margin="0,0,10,0" Click="BtnCheckUpdates_Click"/>
                         <Button x:Name="BtnRequestActivation"

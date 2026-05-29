@@ -126,6 +126,7 @@
             <Border Grid.Column="2" Background="{StaticResource BrushCard}"
                     BorderBrush="{StaticResource BrushBorder2}" BorderThickness="1"
                     CornerRadius="2" Padding="10">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -277,6 +278,7 @@
                         </Grid>
                     </Border>
                 </Grid>
+                </ScrollViewer>
             </Border>
         </Grid>
     </Grid>

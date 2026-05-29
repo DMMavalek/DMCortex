@@ -57,6 +57,18 @@ public class CharacterRosterScreen : UserControl, IScreen
         return 1;
     }
 
+    private static (int HitDie, int HitDieLevels, int PostCapGain) GetHitPointProfileForClass(string classId)
+    {
+        return (classId ?? string.Empty).Trim().ToLowerInvariant() switch
+        {
+            "fighter" or "paladin" or "ranger" => (10, 9, 3),
+            "cleric" or "druid" => (8, 9, 2),
+            "wizard" or "mage" or "illusionist" => (4, 10, 1),
+            "thief" or "bard" or "rogue" => (6, 10, 2),
+            _ => (6, 10, 2),
+        };
+    }
+
     private static string FormatLevelDisplay(CharacterSheet character)
     {
         int level = Math.Max(1, character.Level);
@@ -81,6 +93,9 @@ public class CharacterRosterScreen : UserControl, IScreen
 
         return mode;
     }
+
+    private static bool IsPlayersOptionCharacter(CharacterSheet character)
+        => string.Equals((character.CharacterMode ?? string.Empty).Trim(), "players_option", StringComparison.OrdinalIgnoreCase);
 
     public void OnEnter()
     {
@@ -829,6 +844,16 @@ public class CharacterRosterScreen : UserControl, IScreen
             return;
 
         var character = _app.Characters[selected.SourceIndex];
+        if (!IsPlayersOptionCharacter(character))
+        {
+            MessageBox.Show(
+                "CP adjustments are only available for Player's Option characters.",
+                "Core Rules",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
         int awardedCp = 0;
         var window = new Window
         {
@@ -898,7 +923,8 @@ public class CharacterRosterScreen : UserControl, IScreen
         int selectedHp = 0;
         int selectedCp = 0;
 
-        bool hasCpPerLevel = character.CpPerLevel > 0;
+        bool isPlayersOptionMode = IsPlayersOptionCharacter(character);
+        bool hasCpPerLevel = isPlayersOptionMode && character.CpPerLevel > 0;
         var (hitDie, _) = CharacterProgressionService.GetHitDieInfo(character, character.Level + 1);
         int hpBonus = CharacterProgressionService.GetConAndClassHpBonus(character);
         string bonusLabel = hpBonus >= 0 ? $"+{hpBonus}" : $"{hpBonus}";
@@ -907,6 +933,9 @@ public class CharacterRosterScreen : UserControl, IScreen
         int totalXpBonus = primeXpBonus + abilityXpBonus;
         bool hpWasRolled = false;
         bool willLevelUp = false;
+        int projectedLevel = Math.Max(1, character.Level);
+        int projectedLevelsGained = 0;
+        TextBlock? cpAutoText = null;
 
         var window = new Window
         {
@@ -995,14 +1024,24 @@ public class CharacterRosterScreen : UserControl, IScreen
         hpRow.Children.Add(rollBtn);
         panel.Children.Add(hpRow);
 
+        var hpBreakdownText = new TextBlock
+        {
+            Margin = new Thickness(0, 6, 0, 0),
+            Foreground = new SolidColorBrush(Color.FromRgb(0xC4, 0xA4, 0x68)),
+            TextWrapping = TextWrapping.Wrap,
+            Visibility = Visibility.Collapsed,
+        };
+        panel.Children.Add(hpBreakdownText);
+
         void RefreshLevelState()
         {
             int enteredXp = int.TryParse(xpBox.Text.Trim(), out int parsed) ? Math.Max(0, parsed) : 0;
             int pendingXp = GetEffectiveXpGain();
-            int projectedLevel = CharacterProgressionService.GetLevelForExperience(
+            projectedLevel = CharacterProgressionService.GetLevelForExperience(
                 character.ClassId,
                 Math.Max(0, character.ExperiencePoints) + pendingXp);
             willLevelUp = projectedLevel > Math.Max(1, character.Level);
+            projectedLevelsGained = Math.Max(0, projectedLevel - Math.Max(1, character.Level));
 
             if (totalXpBonus != 0)
             {
@@ -1014,10 +1053,13 @@ public class CharacterRosterScreen : UserControl, IScreen
 
             if (willLevelUp)
             {
-                levelStateText.Text = $"Level increase detected: {character.Level} -> {projectedLevel}. Enter or roll HP gain.";
+                string levelText = projectedLevelsGained == 1 ? "1 level" : $"{projectedLevelsGained} levels";
+                levelStateText.Text = $"Level increase detected: {character.Level} -> {projectedLevel} ({levelText}). Roll applies one HP gain per level.";
                 levelStateText.Foreground = new SolidColorBrush(Color.FromRgb(0xE8, 0xC0, 0x50));
                 hpRow.Visibility = Visibility.Visible;
                 rollBtn.IsEnabled = true;
+                if (cpAutoText is not null)
+                    cpAutoText.Text = $"CP auto-award for this update: {character.CpPerLevel} x {projectedLevelsGained} = {Math.Max(0, character.CpPerLevel) * projectedLevelsGained}.";
             }
             else
             {
@@ -1027,6 +1069,10 @@ public class CharacterRosterScreen : UserControl, IScreen
                 rollBtn.IsEnabled = false;
                 hpBox.Text = "0";
                 hpWasRolled = false;
+                hpBreakdownText.Text = string.Empty;
+                hpBreakdownText.Visibility = Visibility.Collapsed;
+                if (cpAutoText is not null)
+                    cpAutoText.Text = "CP auto-award for this update: 0 (no level gained).";
             }
         }
 
@@ -1037,26 +1083,70 @@ public class CharacterRosterScreen : UserControl, IScreen
 
         rollBtn.Click += (_, _) =>
         {
-            int rolled = CharacterProgressionService.RollHpForLevel(character, character.Level + 1);
-            hpBox.Text = rolled.ToString();
+            int startLevel = Math.Max(1, character.Level);
+            int totalRolled = 0;
+            int con = character.Abilities.GetValueOrDefault("con", 10);
+            var classIds = character.ClassMode == "multiclass" && character.ClassIds.Count > 0
+                ? character.ClassIds
+                    .Select(id => id ?? string.Empty)
+                    .Where(id => !string.IsNullOrWhiteSpace(id))
+                    .ToList()
+                : new List<string> { character.ClassId ?? string.Empty };
+
+            var breakdownLines = new List<string>();
+
+            for (int level = startLevel + 1; level <= projectedLevel; level++)
+            {
+                int levelTotal = 0;
+                var classParts = new List<string>();
+                foreach (string classId in classIds)
+                {
+                    string classToken = classId ?? string.Empty;
+                    var profile = GetHitPointProfileForClass(classToken);
+                    int baseRoll = level <= profile.HitDieLevels
+                        ? Random.Shared.Next(1, profile.HitDie + 1)
+                        : profile.PostCapGain;
+                    int classBonus = CharacterProgressionService.GetConHitPointBonus(con, classToken) + (character.Bonuses?.HpPerLevel ?? 0);
+                    int classTotal = Math.Max(1, baseRoll + classBonus);
+                    levelTotal += classTotal;
+
+                    string className = classToken;
+                    classParts.Add($"{className}: {baseRoll} + {classBonus} = {classTotal}");
+                }
+
+                totalRolled += levelTotal;
+                breakdownLines.Add($"L{level}: {string.Join(" | ", classParts)} => +{levelTotal} HP");
+            }
+
+            hpBox.Text = totalRolled.ToString();
             hpWasRolled = true;
+            hpBreakdownText.Text = "HP roll breakdown:\n" + string.Join("\n", breakdownLines);
+            hpBreakdownText.Visibility = Visibility.Visible;
         };
         // Reset flag if user edits manually after rolling
         hpBox.TextChanged += (_, _) => { if (!rollBtn.IsKeyboardFocusWithin) hpWasRolled = false; };
 
-        // ── CP row ────────────────────────────────────────────────────────────
+        // ── CP row (Player's Option only) ────────────────────────────────────
         TextBox? cpBox = null;
         CheckBox? saveCpPerLevelCheck = null;
-        if (hasCpPerLevel)
+        if (isPlayersOptionMode && hasCpPerLevel)
         {
+            cpAutoText = new TextBlock
+            {
+                Margin = new Thickness(0, 10, 0, 0),
+                Foreground = new SolidColorBrush(Color.FromRgb(0xE8, 0xC0, 0x50)),
+                TextWrapping = TextWrapping.Wrap,
+            };
+            panel.Children.Add(cpAutoText);
+
             panel.Children.Add(new TextBlock
             {
                 Text = $"Character Points: {character.CpPerLevel} / level  (from character sheet)",
-                Margin = new Thickness(0, 10, 0, 0),
+                Margin = new Thickness(0, 4, 0, 0),
                 Foreground = new SolidColorBrush(Color.FromRgb(0xE8, 0xC0, 0x50)),
             });
         }
-        else
+        else if (isPlayersOptionMode)
         {
             panel.Children.Add(new TextBlock { Text = "Character Point Gain:", Margin = new Thickness(0, 10, 0, 2) });
             cpBox = new TextBox { Text = "0", Padding = new Thickness(6, 3, 6, 3) };
@@ -1069,6 +1159,8 @@ public class CharacterRosterScreen : UserControl, IScreen
             };
             panel.Children.Add(saveCpPerLevelCheck);
         }
+
+        RefreshLevelState();
 
         // ── OK / Cancel ───────────────────────────────────────────────────────
         var actions = new StackPanel
@@ -1134,8 +1226,10 @@ public class CharacterRosterScreen : UserControl, IScreen
                 }
             }
 
-            int parsedCp = hasCpPerLevel ? character.CpPerLevel : 0;
-            if (!hasCpPerLevel && (!int.TryParse(cpBox!.Text.Trim(), out parsedCp) || parsedCp < 0))
+            int parsedCp = 0;
+            if (isPlayersOptionMode && hasCpPerLevel)
+                parsedCp = character.CpPerLevel;
+            else if (isPlayersOptionMode && (!int.TryParse(cpBox!.Text.Trim(), out parsedCp) || parsedCp < 0))
             {
                 MessageBox.Show("Enter a non-negative whole number for CP.", "Update", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
@@ -1143,8 +1237,11 @@ public class CharacterRosterScreen : UserControl, IScreen
 
             selectedXp = parsedXp;
             selectedHp = parsedHp;
-            selectedCp = parsedCp;
-            if (!hasCpPerLevel && saveCpPerLevelCheck?.IsChecked == true)
+            if (isPlayersOptionMode && hasCpPerLevel)
+                selectedCp = willLevelUpNow ? Math.Max(0, character.CpPerLevel) * Math.Max(0, projectedLevel - Math.Max(1, character.Level)) : 0;
+            else if (isPlayersOptionMode)
+                selectedCp = parsedCp;
+            if (!hasCpPerLevel && isPlayersOptionMode && saveCpPerLevelCheck?.IsChecked == true)
                 character.CpPerLevel = parsedCp;
             window.DialogResult = true;
         };

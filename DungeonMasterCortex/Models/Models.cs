@@ -184,7 +184,8 @@ public record ClassDefinition(
     int                     ClassPointBudget = 0,
     List<WizardSpecialization>? Specializations = null,
     string                  Source = "core",
-    string                  RulesMode = "all"
+    string                  RulesMode = "all",
+    string                  StartingFundsRoll = ""
 )
 {
     public bool IsCustom => string.Equals(Source, "custom", StringComparison.OrdinalIgnoreCase);
@@ -327,7 +328,10 @@ public record KitDefinition(
     List<string> AllowedClasses,
     List<string> FreeNwpIds,      // NWPs granted at no slot/CP cost
     List<string> RequiredNwpIds,  // NWPs the character must take (costs normally)
-    string RulesMode = "all"     // all | core_rules | players_option
+    string RulesMode = "all",    // all | core_rules | players_option
+    string StartingFundsRollOverride = "",
+    int StartingFundsGoldBonus = 0,
+    int StartingFundsMultiplierPercent = 100
 );
 
 public record MultiClassComboGroup(
@@ -502,9 +506,12 @@ public class CharacterSheet
     public int    ExperiencePoints { get; set; } = 0;
 
     // Character currency tracked in coin denominations.
+    public int PlatinumPieces { get; set; } = 0;
     public int GoldPieces { get; set; } = 0;
     public int SilverPieces { get; set; } = 0;
     public int CopperPieces { get; set; } = 0;
+    public int GemCount { get; set; } = 0;
+    public int GemValueGoldPieces { get; set; } = 0;
     public bool StartingFundsAssigned { get; set; } = false;
 
     // Base HP (hit die + CON mod) before bonuses
@@ -606,6 +613,7 @@ public class CharacterSheet
     public List<string> NonweaponProficiencyIds { get; set; } = new();
     public List<WeaponProficiencySelection> WeaponProficiencies { get; set; } = new();
     public List<EquipmentSelection> EquipmentSelections { get; set; } = new();
+    public List<GemEntry> Gems { get; set; } = new();
 
     // Selections added in the most recent level-up; locked during the next level-up cycle.
     public List<string> LockedLastLevelUpNonweaponIds { get; set; } = new();
@@ -646,13 +654,46 @@ public class CharacterSheet
     // Linked campaign for spell tracking (to sync with DM's calendar)
     public string LinkedCampaignIdForSpells { get; set; } = "";
 
+    // Saved character-sheet section layout by profile key (e.g. class/rules mode), per character.
+    public Dictionary<string, CharacterSheetLayoutPreference> SheetLayoutByProfile { get; set; } = new();
+
+    // Saved hidden character-sheet sections by profile key.
+    public Dictionary<string, List<string>> HiddenSectionKeysByProfile { get; set; } = new();
+
     public string LastModifiedDisplay => LastModified.ToString("yyyy-MM-dd");
+}
+
+public class CharacterSheetLayoutPreference
+{
+    public int LaneCount { get; set; } = 2;
+    public bool HasExpansionState { get; set; } = false;
+    public List<string> ExpandedSectionKeys { get; set; } = new();
+    public List<CharacterSheetLayoutPlacement> Placements { get; set; } = new();
+}
+
+public class CharacterSheetLayoutPlacement
+{
+    public string SectionKey { get; set; } = "";
+    // Legacy fixed-lane fields.
+    public int Lane { get; set; } = 0;
+    public int Order { get; set; } = 0;
+    // Adaptive-row fields.
+    public int Row { get; set; } = 0;
+    public int Column { get; set; } = 0;
+    public int Span { get; set; } = 1;
 }
 
 public class LanguageSelection
 {
     public string SourceKey { get; set; } = "free_spoken";
     public string LanguageName { get; set; } = "";
+}
+
+public class GemEntry
+{
+    public string Name { get; set; } = "Gem";
+    public int Quantity { get; set; } = 1;
+    public int ValueGoldPieces { get; set; } = 0;
 }
 
 public class NamedSpellList

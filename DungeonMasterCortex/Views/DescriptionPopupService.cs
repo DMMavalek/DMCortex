@@ -2,13 +2,14 @@
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Threading;
 
 namespace DungeonMasterCortex.Views;
 
 internal static class DescriptionPopupService
 {
     private static Window? _activePopup;
+    private static TextBlock? _activePopupText;
+    private static Window? _activeOwner;
 
     private static void ClosePopupSafely(Window? window)
     {
@@ -28,15 +29,32 @@ internal static class DescriptionPopupService
 
     public static void Show(Window? owner, string title, string text)
     {
+        string safeTitle = string.IsNullOrWhiteSpace(title) ? "Description" : title;
+        string safeText = string.IsNullOrWhiteSpace(text) ? "(no description available)" : text;
+
+        // Reuse the active popup for the same owner to avoid close/open flicker when
+        // users rapidly right-click between adjacent items.
+        if (_activePopup is not null
+            && _activePopup.IsVisible
+            && _activePopupText is not null
+            && ReferenceEquals(_activeOwner, owner))
+        {
+            _activePopup.Title = safeTitle;
+            _activePopupText.Text = safeText;
+            return;
+        }
+
         // Keep only one popup alive at a time to avoid stacked focus/click handlers.
         if (_activePopup is not null)
             ClosePopupSafely(_activePopup);
 
-        string safeTitle = string.IsNullOrWhiteSpace(title) ? "Description" : title;
-        string safeText = string.IsNullOrWhiteSpace(text) ? "(no description available)" : text;
-        IInputElement? restoreFocusTarget = owner is null
-            ? Keyboard.FocusedElement
-            : FocusManager.GetFocusedElement(owner) ?? Keyboard.FocusedElement;
+        var textBlock = new TextBlock
+        {
+            Text = safeText,
+            TextWrapping = TextWrapping.Wrap,
+            FontSize = 13,
+            Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EDE2C7")),
+        };
 
         var window = new Window
         {
@@ -46,6 +64,7 @@ internal static class DescriptionPopupService
             WindowStartupLocation = owner is not null ? WindowStartupLocation.CenterOwner : WindowStartupLocation.CenterScreen,
             Owner = owner,
             ShowInTaskbar = false,
+            ShowActivated = false,
             ResizeMode = ResizeMode.NoResize,
             WindowStyle = WindowStyle.ToolWindow,
             Background = Brushes.Black,
@@ -63,18 +82,14 @@ internal static class DescriptionPopupService
             Child = new ScrollViewer
             {
                 VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                Content = new TextBlock
-                {
-                    Text = safeText,
-                    TextWrapping = TextWrapping.Wrap,
-                    FontSize = 13,
-                    Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EDE2C7")),
-                }
+                Content = textBlock
             }
         };
 
         window.Content = border;
         _activePopup = window;
+        _activePopupText = textBlock;
+        _activeOwner = owner;
 
         // Click anywhere inside the popup to close it.
         window.PreviewMouseDown += (_, _) => window.Close();
@@ -91,40 +106,30 @@ internal static class DescriptionPopupService
             // doesn't activate accidental buttons/navigation under the pointer.
             ownerClickCloser = (_, me) =>
             {
-                // Allow right-click to continue so users can immediately open another description.
-                if (me.ChangedButton == MouseButton.Left)
-                    me.Handled = true;
+                // Right-click is reserved for switching descriptions; do not close here.
+                if (me.ChangedButton != MouseButton.Left)
+                    return;
 
+                me.Handled = true;
                 ClosePopupSafely(window);
             };
             owner.PreviewMouseDown += ownerClickCloser;
         }
 
-        // Also dismiss if focus goes elsewhere (alt-tab, click another app, etc.).
-        window.Deactivated += (_, _) => ClosePopupSafely(window);
-
         window.Closed += (_, _) =>
         {
             if (ReferenceEquals(_activePopup, window))
+            {
                 _activePopup = null;
+                _activePopupText = null;
+                _activeOwner = null;
+            }
 
             if (owner is not null && ownerClickCloser is not null)
                 owner.PreviewMouseDown -= ownerClickCloser;
 
             if (owner is null)
                 return;
-
-            owner.Dispatcher.BeginInvoke(() =>
-            {
-                if (!owner.IsVisible)
-                    return;
-
-                owner.Activate();
-                if (restoreFocusTarget is not null)
-                    Keyboard.Focus(restoreFocusTarget);
-                else if (owner.Content is IInputElement ownerContent)
-                    Keyboard.Focus(ownerContent);
-            }, DispatcherPriority.Input);
         };
 
         try
@@ -134,7 +139,11 @@ internal static class DescriptionPopupService
         catch
         {
             if (ReferenceEquals(_activePopup, window))
+            {
                 _activePopup = null;
+                _activePopupText = null;
+                _activeOwner = null;
+            }
         }
     }
 }

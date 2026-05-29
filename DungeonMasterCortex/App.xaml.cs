@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
@@ -17,10 +18,12 @@ public partial class App : Application
 {
 	private MainWindow? _mainWindow;
 	private static Mutex? _singleInstanceMutex;
+	private static bool _textBoxHandlersRegistered;
 
 	protected override void OnStartup(StartupEventArgs e)
 	{
 		base.OnStartup(e);
+		RegisterGlobalTextBoxFocusBehavior();
 		WriteStartupDiagnostics();
 
 		if (TryRedirectFromStagingCopy())
@@ -62,6 +65,45 @@ public partial class App : Application
 		TaskScheduler.UnobservedTaskException += OnTaskSchedulerUnobservedTaskException;
 
 		ShowSplashAndLaunchMain();
+	}
+
+	private static void RegisterGlobalTextBoxFocusBehavior()
+	{
+		if (_textBoxHandlersRegistered)
+			return;
+
+		EventManager.RegisterClassHandler(
+			typeof(TextBox),
+			UIElement.GotKeyboardFocusEvent,
+			new KeyboardFocusChangedEventHandler(OnTextBoxGotKeyboardFocus));
+
+		EventManager.RegisterClassHandler(
+			typeof(TextBox),
+			UIElement.PreviewMouseLeftButtonDownEvent,
+			new MouseButtonEventHandler(OnTextBoxPreviewMouseLeftButtonDown),
+			true);
+
+		_textBoxHandlersRegistered = true;
+	}
+
+	private static void OnTextBoxGotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+	{
+		if (sender is TextBox textBox && textBox.IsEnabled && !textBox.IsReadOnly)
+		{
+			textBox.SelectAll();
+		}
+	}
+
+	private static void OnTextBoxPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+	{
+		if (sender is not TextBox textBox || !textBox.IsEnabled || textBox.IsReadOnly)
+			return;
+
+		if (!textBox.IsKeyboardFocusWithin)
+		{
+			e.Handled = true;
+			textBox.Focus();
+		}
 	}
 
 	private static bool TryRedirectFromStagingCopy()

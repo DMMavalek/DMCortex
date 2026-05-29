@@ -14,7 +14,9 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
     private const string FreeSpokenLanguageSource = "free_spoken";
     private const string ModernLanguagesSource = "modern_languages";
     private const string AncientLanguagesSource = "ancient_languages";
+    private const string AnimalLanguagesSource = "animal_languages";
     private const string ReadingWritingSource = "reading_writing";
+    private const string PriestSecretLanguageSource = "priest_secret_language";
 
     private static readonly Dictionary<string, string[]> AbilityFamilyMap = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -31,7 +33,9 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
         [FreeSpokenLanguageSource] = "Free Spoken Language",
         [ModernLanguagesSource] = "Modern Languages",
         [AncientLanguagesSource] = "Ancient Languages",
+        [AnimalLanguagesSource] = "Animal Languages",
         [ReadingWritingSource] = "Reading/Writing",
+        [PriestSecretLanguageSource] = "Priest Secret Language",
     };
 
     private readonly MainWindow _app;
@@ -74,6 +78,13 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
             OverallCpPanel.Visibility = IsPlayersOptionMode ? Visibility.Visible : Visibility.Collapsed;
         if (NwpAdjustmentButtons != null)
             NwpAdjustmentButtons.Visibility = IsPlayersOptionMode ? Visibility.Visible : Visibility.Collapsed;
+
+        if (TraitsTab != null)
+            TraitsTab.Visibility = IsPlayersOptionMode ? Visibility.Visible : Visibility.Collapsed;
+        if (DisadvantagesTab != null)
+            DisadvantagesTab.Visibility = IsPlayersOptionMode ? Visibility.Visible : Visibility.Collapsed;
+        if (!IsPlayersOptionMode && OptionsTabControl != null && NwpTab != null)
+            OptionsTabControl.SelectedItem = NwpTab;
 
         RefreshAll();
     }
@@ -502,6 +513,20 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
         return new List<string>();
     }
 
+    private int GetBaseAbilityScore(string ability)
+    {
+        return ability switch
+        {
+            "Strength" => _app.CharGen.ModifiedAbilities.GetValueOrDefault("str", _app.CharGen.Abilities.GetValueOrDefault("str", 10)),
+            "Dexterity" => _app.CharGen.ModifiedAbilities.GetValueOrDefault("dex", _app.CharGen.Abilities.GetValueOrDefault("dex", 10)),
+            "Constitution" => _app.CharGen.ModifiedAbilities.GetValueOrDefault("con", _app.CharGen.Abilities.GetValueOrDefault("con", 10)),
+            "Intelligence" => _app.CharGen.ModifiedAbilities.GetValueOrDefault("int", _app.CharGen.Abilities.GetValueOrDefault("int", 10)),
+            "Wisdom" => _app.CharGen.ModifiedAbilities.GetValueOrDefault("wis", _app.CharGen.Abilities.GetValueOrDefault("wis", 10)),
+            "Charisma" => _app.CharGen.ModifiedAbilities.GetValueOrDefault("cha", _app.CharGen.Abilities.GetValueOrDefault("cha", 10)),
+            _ => 10,
+        };
+    }
+
     private static List<string> ExpandClassIdsForNwpEligibility(IEnumerable<string> classIds)
     {
         var expanded = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -734,6 +759,34 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
                 groups.Add("wizard");
             if (id.Contains("psionic", StringComparison.OrdinalIgnoreCase))
                 groups.Add("psionicist");
+        }
+
+        foreach (string extraGroup in GetPurchasedClassAbilityNwpGroups())
+            groups.Add(extraGroup);
+
+        return groups;
+    }
+
+    private HashSet<string> GetPurchasedClassAbilityNwpGroups()
+    {
+        var groups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (string classId in GetEffectiveClassIds())
+        {
+            foreach (string selectionEntry in GetSelectedAbilityIdsForClass(classId))
+            {
+                string baseId = RulesEngine.ExtractClassAbilityBaseId(selectionEntry);
+                if (!string.Equals(baseId, "cleric_proficiency_crossovers", StringComparison.OrdinalIgnoreCase)
+                    && !string.Equals(baseId, "wizard_proficiency_crossovers", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                string selectedGroup = NormalizeGroupToken(RulesEngine.ExtractClassAbilityPlayerText(selectionEntry));
+                if (string.IsNullOrWhiteSpace(selectedGroup))
+                    continue;
+
+                if (selectedGroup is "warrior" or "priest" or "rogue" or "wizard")
+                    groups.Add(selectedGroup);
+            }
         }
 
         return groups;
@@ -1020,6 +1073,9 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
             && _app.CharGen.SubAbilities.Count > 0
             )
         {
+            if (checkAbility is "Strength" or "Dexterity" or "Constitution" or "Intelligence" or "Wisdom" or "Charisma")
+                return GetBaseAbilityScore(checkAbility);
+
             // Direct sub-ability key (e.g. "str_stamina")
             if (_app.CharGen.SubAbilities.TryGetValue(checkAbility, out int directScore))
                 return directScore;
@@ -1053,7 +1109,7 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
     {
         if (string.Equals(_app.CharGen.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase))
         {
-            int baseRating = Math.Max(0, proficiency.PlayersOptionBaseRating);
+            int baseRating = GetMinimumPoBaseRating(proficiency);
             int improvement = GetNwpImprovement(proficiency.Id);
             int relevantScore = GetRelevantSubAbilityScore(proficiency);
             int poTable44Bonus = GetTable44Modifier(relevantScore);
@@ -1085,7 +1141,7 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
 
         if (string.Equals(_app.CharGen.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase))
         {
-            int baseRating = Math.Max(0, proficiency.PlayersOptionBaseRating);
+            int baseRating = GetMinimumPoBaseRating(proficiency);
             int relevantScore = GetRelevantSubAbilityScore(proficiency);
             int poTable44Bonus = GetTable44Modifier(relevantScore);
             int poImprovement = GetNwpImprovement(proficiency.Id);
@@ -1572,8 +1628,12 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
             _app.CharGen.SelectedLanguages.Add(selection);
 
         RefreshAll();
-        int targetIndex = editIndex ?? (_app.CharGen.SelectedLanguages.Count - 1);
-        SelectLanguageListItem(targetIndex);
+        ClearLanguageSelections();
+        SelectLanguageSource(sourceKey);
+        LanguageNameTextBox.Text = string.Empty;
+        BtnRemoveLanguage.IsEnabled = false;
+        UpdateLanguageEditorHelp();
+        LanguageNameTextBox.Focus();
     }
 
     private void BtnRemoveLanguage_Click(object sender, RoutedEventArgs e)
@@ -1600,7 +1660,7 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
 
         if (string.Equals(_app.CharGen.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase))
         {
-            int baseRating = Math.Max(0, proficiency.PlayersOptionBaseRating);
+            int baseRating = GetMinimumPoBaseRating(proficiency);
             int relevantScore = GetRelevantSubAbilityScore(proficiency);
             int poTable44Bonus = GetTable44Modifier(relevantScore);
             int poImprovement = GetNwpImprovement(proficiency.Id);
@@ -1647,6 +1707,9 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
         return $"{proficiency.Name} ({coreCostLabel}), base {baseScore}, bonus {FormatSigned(totalBonus)} ({bonusBreakdown}), target {target}{noteSuffix}{kitTag}";
     }
 
+    private static int GetMinimumPoBaseRating(NonweaponProficiencyDefinition proficiency)
+        => Math.Max(5, proficiency.PlayersOptionBaseRating);
+
     private Dictionary<string, int> GetLanguageAllowanceBySource()
     {
         return new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
@@ -1654,8 +1717,37 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
             [FreeSpokenLanguageSource] = 1,
             [ModernLanguagesSource] = GetLanguageSlotsFromNwp(ModernLanguagesSource),
             [AncientLanguagesSource] = GetLanguageSlotsFromNwp(AncientLanguagesSource),
+            [AnimalLanguagesSource] = HasSelectedClassAbility("druid_communicate_with_creatures")
+                ? Math.Max(1, _app.CharGen.CharacterLevel)
+                : 0,
             [ReadingWritingSource] = GetLanguageSlotsFromNwp(ReadingWritingSource),
+            [PriestSecretLanguageSource] = HasSelectedClassAbility("cleric_secret_language") ? 1 : 0,
         };
+    }
+
+    private bool HasSelectedClassAbility(string abilityId)
+    {
+        if (string.IsNullOrWhiteSpace(abilityId))
+            return false;
+
+        if (_app.CharGen.SelectedClassAbilityIds
+            .Select(RulesEngine.ExtractClassAbilityBaseId)
+            .Any(id => string.Equals(id, abilityId, StringComparison.OrdinalIgnoreCase)))
+        {
+            return true;
+        }
+
+        foreach (var classSelections in _app.CharGen.SelectedAbilitiesByClass.Values)
+        {
+            if (classSelections
+                .Select(RulesEngine.ExtractClassAbilityBaseId)
+                .Any(id => string.Equals(id, abilityId, StringComparison.OrdinalIgnoreCase)))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private int GetLanguageSlotsFromNwp(string sourceKey)
@@ -1723,6 +1815,13 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
                 message = $"Too many languages are assigned to {LanguageSourceLabels[kv.Key]}: {used}/{kv.Value}. Remove or reassign entries in the Languages tab before continuing.";
                 return false;
             }
+        }
+
+        int freeSpokenUsed = GetSelectedLanguageCount(FreeSpokenLanguageSource);
+        if (freeSpokenUsed <= 0)
+        {
+            message = "Select at least one Free Spoken Language before continuing.";
+            return false;
         }
 
         message = string.Empty;
@@ -1813,7 +1912,9 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
 
     private static bool IsSpokenLanguageSource(string sourceKey)
         => string.Equals(sourceKey, FreeSpokenLanguageSource, StringComparison.OrdinalIgnoreCase)
-            || string.Equals(sourceKey, ModernLanguagesSource, StringComparison.OrdinalIgnoreCase);
+            || string.Equals(sourceKey, ModernLanguagesSource, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(sourceKey, AnimalLanguagesSource, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(sourceKey, PriestSecretLanguageSource, StringComparison.OrdinalIgnoreCase);
 
     private static string NormalizeCompact(string value)
         => new string(value.Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant();
@@ -1821,6 +1922,9 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
     private string GetSubAbilitySourceLabel(NonweaponProficiencyDefinition proficiency)
     {
         string checkAbility = GetActiveCheckAbility(proficiency);
+        if (checkAbility is "Strength" or "Dexterity" or "Constitution" or "Intelligence" or "Wisdom" or "Charisma")
+            return checkAbility;
+
         var relevantKeys = GetRelevantSubAbilityKeys(checkAbility);
         if (relevantKeys.Count > 0)
         {
@@ -1859,7 +1963,11 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
 
     private int GetRelevantSubAbilityScore(NonweaponProficiencyDefinition proficiency)
     {
-        var keys = GetRelevantSubAbilityKeys(GetActiveCheckAbility(proficiency));
+        string checkAbility = GetActiveCheckAbility(proficiency);
+        if (checkAbility is "Strength" or "Dexterity" or "Constitution" or "Intelligence" or "Wisdom" or "Charisma")
+            return GetBaseAbilityScore(checkAbility);
+
+        var keys = GetRelevantSubAbilityKeys(checkAbility);
         if (keys.Count == 0)
             return GetEffectiveNwpFamilyScore(proficiency);
 

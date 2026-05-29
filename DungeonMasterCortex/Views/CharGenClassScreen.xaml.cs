@@ -13,6 +13,7 @@ public class MultiClassItem : INotifyPropertyChanged
 {
     public string Id { get; set; } = "";
     public string Name { get; set; } = "";
+    public bool IsBaseEligible { get; set; } = true;
     private bool _isSelected;
     public bool IsSelected
     {
@@ -26,6 +27,14 @@ public class MultiClassItem : INotifyPropertyChanged
         set { _isEnabled = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsEnabled))); }
     }
     public event PropertyChangedEventHandler? PropertyChanged;
+}
+
+public class SingleClassItem
+{
+    public string Id { get; set; } = "";
+    public string Name { get; set; } = "";
+    public bool IsEnabled { get; set; } = true;
+    public string AvailabilityHint { get; set; } = "";
 }
 
 public class ClassRequirementRow
@@ -43,6 +52,7 @@ public partial class CharGenClassScreen : UserControl, IScreen
     public UIElement View => this;
 
     private List<ClassDefinition> _eligible = new();
+    private List<SingleClassItem> _singleClassItems = new();
 
     // SphereCosts / CalculateSphereCpCost kept here because SphereSelectionDialog references them.
     internal static readonly Dictionary<string, (int minor, int major)> SphereCosts =
@@ -156,15 +166,20 @@ public partial class CharGenClassScreen : UserControl, IScreen
                 }
             }
 
-            _eligible = new List<ClassDefinition>(_app.Rules.EligibleClasses(_app.CharGen.RaceId, _app.CharGen.CharacterMode));
+            _eligible = _app.Rules.Classes.Values
+                .Where(ClassModeAllowed)
+                .OrderBy(c => c.Name, System.StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            _singleClassItems = BuildSingleClassItems();
 
             // Update race-filtered labels
             if (_app.Rules.Races.TryGetValue(_app.CharGen.RaceId, out var raceForLabel))
             {
                 string rn = raceForLabel.Name;
-                ClassScreenSubtitle.Text = $"Step 5  \u00b7  Showing {_eligible.Count} classes available for {rn}";
-                SingleClassLabel.Text    = $"Classes available for {rn}:";
-                MultiClassLabel.Text     = $"Classes available for {rn} (check 2+):";
+                int enabledCount = _singleClassItems.Count(x => x.IsEnabled);
+                ClassScreenSubtitle.Text = $"Step 5  \u00b7  {enabledCount} of {_singleClassItems.Count} classes currently available for {rn}";
+                SingleClassLabel.Text    = $"Classes for {rn} (unavailable entries are grayed out):";
+                MultiClassLabel.Text     = $"Classes for {rn} (check 2+, unavailable entries are grayed out):";
             }
 
             bool isHuman = _app.CharGen.RaceId == "human" ||
@@ -202,20 +217,19 @@ public partial class CharGenClassScreen : UserControl, IScreen
         SingleClassPanel.Visibility = mode == "multiclass" ? Visibility.Collapsed : Visibility.Visible;
         MultiClassPanel.Visibility = mode == "multiclass" ? Visibility.Visible : Visibility.Collapsed;
 
-        ClassList.Items.Clear();
+        ClassList.ItemsSource = null;
         MultiClassCheckList.ItemsSource = null;
         MultiClassValidation.Text = "";
 
         if (mode != "multiclass")
         {
-            foreach (var c in _eligible)
-                ClassList.Items.Add(c.Name);
+            ClassList.ItemsSource = _singleClassItems;
 
             if (!string.IsNullOrEmpty(_app.CharGen.ClassId))
             {
-                int idx = _eligible.FindIndex(c => c.Id == _app.CharGen.ClassId);
-                if (idx >= 0)
-                    ClassList.SelectedIndex = idx;
+                var selectedItem = _singleClassItems.FirstOrDefault(c => string.Equals(c.Id, _app.CharGen.ClassId, StringComparison.OrdinalIgnoreCase));
+                if (selectedItem is not null)
+                    ClassList.SelectedItem = selectedItem;
             }
 
             if (ClassList.SelectedIndex < 0)
@@ -282,7 +296,19 @@ public partial class CharGenClassScreen : UserControl, IScreen
     private void PopulateMultiClassList()
     {
         var classItems = _eligible
-            .Select(c => new MultiClassItem { Id = c.Id, Name = c.Name, IsSelected = _app.CharGen.SelectedClassIds.Contains(c.Id) })
+            .Select(c =>
+            {
+                var issues = _app.Rules.Validate(_app.CharGen.RaceId, c.Id, _app.CharGen.Abilities);
+                bool isEligible = issues.Count == 0;
+                return new MultiClassItem
+                {
+                    Id = c.Id,
+                    Name = c.Name,
+                    IsSelected = _app.CharGen.SelectedClassIds.Contains(c.Id),
+                    IsBaseEligible = isEligible,
+                    IsEnabled = isEligible,
+                };
+            })
             .ToList();
         foreach (var item in classItems)
             item.PropertyChanged += (s, e) => { if (e.PropertyName == nameof(MultiClassItem.IsSelected)) SyncMultiClassSelection(); };
@@ -325,7 +351,7 @@ public partial class CharGenClassScreen : UserControl, IScreen
 
         if (selected.Count == 0)
         {
-            foreach (var item in items) item.IsEnabled = true;
+            foreach (var item in items) item.IsEnabled = item.IsBaseEligible;
             return;
         }
 
@@ -333,7 +359,7 @@ public partial class CharGenClassScreen : UserControl, IScreen
         if (combos.Count == 0)
         {
             // Race has no defined combos — no restriction
-            foreach (var item in items) item.IsEnabled = true;
+            foreach (var item in items) item.IsEnabled = item.IsBaseEligible;
             return;
         }
 
@@ -344,7 +370,7 @@ public partial class CharGenClassScreen : UserControl, IScreen
         {
             // Shouldn't happen in normal flow, but keep selected enabled only
             foreach (var item in items)
-                item.IsEnabled = item.IsSelected;
+                item.IsEnabled = item.IsSelected || item.IsBaseEligible;
             return;
         }
 
@@ -355,7 +381,43 @@ public partial class CharGenClassScreen : UserControl, IScreen
                 reachable.Add(id);
 
         foreach (var item in items)
-            item.IsEnabled = item.IsSelected || reachable.Contains(item.Id);
+            item.IsEnabled = item.IsSelected || (item.IsBaseEligible && reachable.Contains(item.Id));
+    }
+
+    private bool ClassModeAllowed(ClassDefinition cls)
+    {
+        string mode = (_app.CharGen.CharacterMode ?? string.Empty).Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(mode))
+            mode = "core_rules";
+
+        string classMode = (cls.RulesMode ?? string.Empty).Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(classMode))
+            classMode = "all";
+
+        return classMode == "all" || classMode == mode;
+    }
+
+    private List<SingleClassItem> BuildSingleClassItems()
+    {
+        var items = new List<SingleClassItem>();
+        foreach (var cls in _eligible)
+        {
+            var issues = _app.Rules.Validate(_app.CharGen.RaceId, cls.Id, _app.CharGen.Abilities);
+            bool isEnabled = issues.Count == 0;
+            string hint = isEnabled
+                ? "Available"
+                : string.Join(" | ", issues.Distinct(StringComparer.OrdinalIgnoreCase));
+
+            items.Add(new SingleClassItem
+            {
+                Id = cls.Id,
+                Name = cls.Name,
+                IsEnabled = isEnabled,
+                AvailabilityHint = hint,
+            });
+        }
+
+        return items;
     }
 
     // ── Right-panel display ──────────────────────────────────────────────────
@@ -434,12 +496,21 @@ public partial class CharGenClassScreen : UserControl, IScreen
             ClassAutoAbilitiesCard.Visibility = Visibility.Collapsed;
         }
 
-        // Optional abilities count
-        int optCount = GetPreviewOptionalAbilityCount(cls);
-        if (optCount > 0)
+        bool isPlayersOption = string.Equals(_app.CharGen.CharacterMode, "players_option", System.StringComparison.OrdinalIgnoreCase);
+
+        // Optional abilities are only player-selected in Player's Option mode.
+        if (isPlayersOption)
         {
-            ClassOptionalAbilitiesText.Text = $"{optCount} optional abilit{(optCount == 1 ? "y" : "ies")} to choose from on the next screen.";
-            ClassOptionalAbilitiesCard.Visibility = Visibility.Visible;
+            int optCount = GetPreviewOptionalAbilityCount(cls);
+            if (optCount > 0)
+            {
+                ClassOptionalAbilitiesText.Text = $"{optCount} optional abilit{(optCount == 1 ? "y" : "ies")} to choose from on the next screen.";
+                ClassOptionalAbilitiesCard.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                ClassOptionalAbilitiesCard.Visibility = Visibility.Collapsed;
+            }
         }
         else
         {
@@ -503,9 +574,20 @@ public partial class CharGenClassScreen : UserControl, IScreen
 
     private void ClassList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        int idx = ClassList.SelectedIndex;
-        if (idx < 0) return;
-        var cls = _eligible[idx];
+        if (ClassList.SelectedItem is not SingleClassItem selected)
+            return;
+
+        if (!selected.IsEnabled)
+        {
+            ValidationLabel.Text = "\u26a0  That class is unavailable due to current race/ability restrictions.";
+            ValidationLabel.Foreground = Brushes.Red;
+            return;
+        }
+
+        var cls = _eligible.FirstOrDefault(x => string.Equals(x.Id, selected.Id, StringComparison.OrdinalIgnoreCase));
+        if (cls is null)
+            return;
+
         ShowClassInfo(cls);
         ValidateLive(cls);
 
@@ -531,9 +613,12 @@ public partial class CharGenClassScreen : UserControl, IScreen
 
     private void ClassList_MouseRightButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
-        int idx = ClassList.SelectedIndex;
-        if (idx < 0 || idx >= _eligible.Count) return;
-        ShowClassInfo(_eligible[idx]);
+        if (ClassList.SelectedItem is not SingleClassItem selected)
+            return;
+        var cls = _eligible.FirstOrDefault(x => string.Equals(x.Id, selected.Id, StringComparison.OrdinalIgnoreCase));
+        if (cls is null)
+            return;
+        ShowClassInfo(cls);
     }
 
     private void ValidateLive(ClassDefinition cls)
@@ -603,14 +688,31 @@ public partial class CharGenClassScreen : UserControl, IScreen
         }
         else
         {
-            int idx = ClassList.SelectedIndex;
-            if (idx < 0)
+            if (ClassList.SelectedItem is not SingleClassItem selected)
             {
                 MessageBox.Show("Please choose a class.", "Selection Required",
                     MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            var cls    = _eligible[idx];
+
+            if (!selected.IsEnabled)
+            {
+                MessageBox.Show(
+                    "That class is unavailable due to current race/ability restrictions.",
+                    "Selection Restricted",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            var cls = _eligible.FirstOrDefault(c => string.Equals(c.Id, selected.Id, StringComparison.OrdinalIgnoreCase));
+            if (cls is null)
+            {
+                MessageBox.Show("Please choose a valid class.", "Selection Required",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             var issues = _app.Rules.Validate(_app.CharGen.RaceId, cls.Id, _app.CharGen.Abilities);
             if (issues.Count > 0)
             {
