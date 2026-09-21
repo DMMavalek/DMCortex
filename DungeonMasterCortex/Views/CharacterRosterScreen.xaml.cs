@@ -24,12 +24,6 @@ public class CharacterRosterScreen : UserControl, IScreen
     private readonly DataGrid CharacterGrid;
     private readonly TextBlock RosterStatus;
     private readonly ComboBox PartyFilterCombo;
-    private readonly ListBox PartyList;
-    private readonly TextBlock SelectedCharacterText;
-    private readonly TextBlock SelectedCharacterDetails;
-    private readonly TextBox PlayerNameEditor;
-    private readonly TextBox PartyNameEditor;
-    private readonly TextBlock PartyStatus;
     private string _activePartyFilter = string.Empty;
     private bool _isRefreshingPartyControls;
 
@@ -38,23 +32,27 @@ public class CharacterRosterScreen : UserControl, IScreen
     public CharacterRosterScreen(MainWindow app)
     {
         _app = app;
-        (CharacterGrid, RosterStatus, PartyFilterCombo, PartyList, SelectedCharacterText, SelectedCharacterDetails, PlayerNameEditor, PartyNameEditor, PartyStatus) = BuildUi();
+        (CharacterGrid, RosterStatus, PartyFilterCombo) = BuildUi();
     }
 
-    private static int GetDisplayedClassCount(CharacterSheet character)
+    private static List<string> GetDisplayedClassIds(CharacterSheet character)
     {
         if (character.ClassIds is { Count: > 0 })
-            return character.ClassIds.Count;
+        {
+            return character.ClassIds
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
 
         if (!string.IsNullOrWhiteSpace(character.ClassId))
         {
-            var parts = character.ClassId
-                .Split(new[] { '/', '+', ',', ';', '|' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            if (parts.Length > 1)
-                return parts.Length;
+            return character.ClassId
+                .Split(new[] { '/', '+', ',', ';', '|' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList();
         }
 
-        return 1;
+        return new List<string>();
     }
 
     private static (int HitDie, int HitDieLevels, int PostCapGain) GetHitPointProfileForClass(string classId)
@@ -65,21 +63,58 @@ public class CharacterRosterScreen : UserControl, IScreen
             "cleric" or "druid" => (8, 9, 2),
             "wizard" or "mage" or "illusionist" => (4, 10, 1),
             "thief" or "bard" or "rogue" => (6, 10, 2),
+            _ when RulesEngine.IsPriestClassId(classId) => (8, 9, 2),
             _ => (6, 10, 2),
         };
     }
 
     private static string FormatLevelDisplay(CharacterSheet character)
     {
-        int level = Math.Max(1, character.Level);
-        int classCount = Math.Max(1, GetDisplayedClassCount(character));
-        if (classCount <= 1)
-            return level.ToString();
+        var classIds = GetDisplayedClassIds(character);
+        if (classIds.Count <= 1)
+            return Math.Max(1, character.Level).ToString();
 
-        var parts = new List<string>(classCount);
-        for (int i = 0; i < classCount; i++)
-            parts.Add(level.ToString());
-        return string.Join("/", parts);
+        return string.Join("/", classIds.Select(classId =>
+            CharacterProgressionService.GetLevelForExperience(classId, character.ExperiencePoints)));
+    }
+
+    private static string FormatExperienceDisplay(CharacterSheet character)
+    {
+        string experience = Math.Max(0, character.ExperiencePoints).ToString("N0");
+        int classCount = Math.Max(1, GetDisplayedClassIds(character).Count);
+        return classCount == 1
+            ? experience
+            : string.Join("/", Enumerable.Repeat(experience, classCount));
+    }
+
+    private static int GetCalculatedOverallLevel(CharacterSheet character, int experiencePoints)
+    {
+        var classIds = GetDisplayedClassIds(character);
+        if (classIds.Count == 0)
+            classIds.Add(character.ClassId);
+        return classIds
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Select(id => CharacterProgressionService.GetLevelForExperience(id, experiencePoints))
+            .DefaultIfEmpty(1)
+            .Min();
+    }
+
+    private static int GetCalculatedClassLevelsGained(CharacterSheet character, int experiencePoints)
+    {
+        var classIds = GetDisplayedClassIds(character);
+        if (classIds.Count == 0)
+            classIds.Add(character.ClassId);
+
+        return classIds
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Sum(id =>
+            {
+                int currentLevel = character.ClassLevels.TryGetValue(id, out int savedLevel)
+                    ? savedLevel
+                    : CharacterProgressionService.GetLevelForExperience(id, character.ExperiencePoints);
+                int projectedLevel = CharacterProgressionService.GetLevelForExperience(id, experiencePoints);
+                return Math.Max(0, projectedLevel - Math.Max(1, currentLevel));
+            });
     }
 
     private static string FormatRulesetDisplay(CharacterSheet character)
@@ -103,7 +138,7 @@ public class CharacterRosterScreen : UserControl, IScreen
         RefreshGrid();
     }
 
-    private (DataGrid Grid, TextBlock Status, ComboBox FilterCombo, ListBox PartyList, TextBlock SelectedCharacterText, TextBlock SelectedCharacterDetails, TextBox PlayerEditor, TextBox PartyEditor, TextBlock PartyStatus) BuildUi()
+    private (DataGrid Grid, TextBlock Status, ComboBox FilterCombo) BuildUi()
     {
         var root = new Grid { Margin = new Thickness(28, 16, 28, 16) };
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -130,16 +165,19 @@ public class CharacterRosterScreen : UserControl, IScreen
         };
         actions.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         actions.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        const double actionButtonWidth = 132;
 
         var actionsTop = new StackPanel
         {
             Orientation = Orientation.Horizontal,
             HorizontalAlignment = HorizontalAlignment.Right
         };
-        actionsTop.Children.Add(CreateHeaderButton("+ NEW CHARACTER", 170, BtnNewCharacter_Click));
-        actionsTop.Children.Add(CreateHeaderButton("+ ADD EXISTING", 170, BtnAddExistingCharacter_Click));
-        actionsTop.Children.Add(CreateHeaderButton("REFRESH", 100, BtnRefresh_Click));
-        actionsTop.Children.Add(CreateHeaderButton("CHAR SHEETS", 130, BtnCharacterSheets_Click, isLast: true));
+        actionsTop.Children.Add(CreateHeaderButton("+ NEW CHARACTER", actionButtonWidth, BtnNewCharacter_Click));
+        actionsTop.Children.Add(CreateHeaderButton("+ ADD EXISTING", actionButtonWidth, BtnAddExistingCharacter_Click));
+        actionsTop.Children.Add(CreateHeaderButton("IMPORT CUSTOM", actionButtonWidth, BtnImportCustomPack_Click));
+        actionsTop.Children.Add(CreateHeaderButton("REFRESH", actionButtonWidth, BtnRefresh_Click));
+        actionsTop.Children.Add(CreateHeaderButton("CHAR SHEETS", actionButtonWidth, BtnCharacterSheets_Click));
+        actionsTop.Children.Add(CreateHeaderButton("PARTIES", actionButtonWidth, BtnPartyManagement_Click, isLast: true));
         Grid.SetRow(actionsTop, 0);
 
         var actionsBottom = new StackPanel
@@ -148,10 +186,11 @@ public class CharacterRosterScreen : UserControl, IScreen
             HorizontalAlignment = HorizontalAlignment.Right,
             Margin = new Thickness(0, 6, 0, 0)
         };
-        actionsBottom.Children.Add(CreateHeaderButton("UPDATE", 100, BtnLevelUp_Click));
-        actionsBottom.Children.Add(CreateHeaderButton("SPELL TRACKER", 140, BtnSpellTracker_Click));
-        actionsBottom.Children.Add(CreateHeaderButton("± CP ADJUST", 120, BtnAwardBonusCp_Click));
-        actionsBottom.Children.Add(CreateHeaderButton("◀ HUB", 100, BtnHub_Click, isLast: true));
+        actionsBottom.Children.Add(CreateHeaderButton("UPDATE", actionButtonWidth, BtnLevelUp_Click));
+        actionsBottom.Children.Add(CreateHeaderButton("IN GAME", actionButtonWidth, BtnInGame_Click));
+        actionsBottom.Children.Add(CreateHeaderButton("SPELL TRACKER", actionButtonWidth, BtnSpellTracker_Click));
+        actionsBottom.Children.Add(CreateHeaderButton("± CP ADJUST", actionButtonWidth, BtnAwardBonusCp_Click));
+        actionsBottom.Children.Add(CreateHeaderButton("◀ HUB", actionButtonWidth, BtnHub_Click, isLast: true));
         Grid.SetRow(actionsBottom, 1);
 
         actions.Children.Add(actionsTop);
@@ -167,7 +206,6 @@ public class CharacterRosterScreen : UserControl, IScreen
 
         var content = new Grid();
         content.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-        content.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         content.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         content.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         Grid.SetRow(content, 2);
@@ -206,7 +244,7 @@ public class CharacterRosterScreen : UserControl, IScreen
         AddTextColumn(grid, "Race", "Race", 70);
         AddTextColumn(grid, "Class", "Class", 85);
         AddTextColumn(grid, "Lvl", "Level", 45);
-        AddTextColumn(grid, "XP", "ExperiencePoints", 70);
+        AddTextColumn(grid, "XP", "Experience", 110);
         AddTextColumn(grid, "HP", "HitPoints", 45);
         AddTextColumn(grid, "AC", "ArmorClass", 40);
         AddTextColumn(grid, "THAC0", "Thac0", 50);
@@ -231,135 +269,21 @@ public class CharacterRosterScreen : UserControl, IScreen
         };
         bottomActions.Children.Add(CreateHeaderButton("⬆  EXPORT", 110, BtnExport_Click));
         bottomActions.Children.Add(CreateHeaderButton("⬇  IMPORT", 110, BtnImport_Click));
-        bottomActions.Children.Add(CreateHeaderButton("🗑  DELETE", 110, BtnDelete_Click, isLast: true, style: "DangerButton"));
+        bottomActions.Children.Add(CreateHeaderButton("🗑  DELETE", 110, BtnDelete_Click, isLast: false, style: "DangerButton"));
+
+        // Party filter inline with bottom actions
+        bottomActions.Children.Add(new TextBlock
+        {
+            Text = "Party Filter:",
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(20, 0, 6, 0)
+        });
+        var filterCombo = new ComboBox { MinWidth = 180, VerticalAlignment = VerticalAlignment.Center };
+        filterCombo.SelectionChanged += PartyFilterCombo_SelectionChanged;
+        bottomActions.Children.Add(filterCombo);
+
         Grid.SetRow(bottomActions, 2);
         content.Children.Add(bottomActions);
-
-        var partyPanel = new Border
-        {
-            Margin = new Thickness(0, 12, 0, 0),
-            Padding = new Thickness(10),
-            BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(6)
-        };
-        partyPanel.SetResourceReference(BorderBrushProperty, "BrushBorder");
-        partyPanel.SetResourceReference(BackgroundProperty, "BrushInputBg");
-        Grid.SetRow(partyPanel, 3);
-
-        var partyLayout = new Grid();
-        partyLayout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(250) });
-        partyLayout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(14) });
-        partyLayout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        partyLayout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        partyLayout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        partyLayout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-
-        var partyTitle = new TextBlock
-        {
-            Text = "PARTY MANAGEMENT",
-            FontSize = 16,
-            Margin = new Thickness(0, 0, 0, 6),
-        };
-        partyTitle.SetResourceReference(StyleProperty, "TitleText");
-        Grid.SetColumnSpan(partyTitle, 3);
-        Grid.SetRow(partyTitle, 0);
-        partyLayout.Children.Add(partyTitle);
-
-        var leftPanel = new StackPanel
-        {
-            Orientation = Orientation.Vertical,
-            Margin = new Thickness(0, 0, 0, 0)
-        };
-        Grid.SetColumn(leftPanel, 0);
-        Grid.SetRow(leftPanel, 1);
-        Grid.SetRowSpan(leftPanel, 2);
-
-        leftPanel.Children.Add(new TextBlock { Text = "Party Filter", Margin = new Thickness(0, 0, 0, 2) });
-        var filterCombo = new ComboBox
-        {
-            Margin = new Thickness(0, 0, 0, 8),
-            MinWidth = 220
-        };
-        filterCombo.SelectionChanged += PartyFilterCombo_SelectionChanged;
-        leftPanel.Children.Add(filterCombo);
-
-        leftPanel.Children.Add(new TextBlock { Text = "Known Parties", Margin = new Thickness(0, 0, 0, 2) });
-        var partyList = new ListBox
-        {
-            MinHeight = 74,
-            MaxHeight = 96,
-            Margin = new Thickness(0, 0, 0, 4)
-        };
-        partyList.SelectionChanged += PartyList_SelectionChanged;
-        leftPanel.Children.Add(partyList);
-        partyLayout.Children.Add(leftPanel);
-
-        var rightPanel = new StackPanel
-        {
-            Orientation = Orientation.Vertical,
-            Margin = new Thickness(0, 0, 0, 0)
-        };
-        Grid.SetColumn(rightPanel, 2);
-        Grid.SetRow(rightPanel, 1);
-        Grid.SetRowSpan(rightPanel, 2);
-
-        var selectedCharacterText = new TextBlock
-        {
-            Text = "Selected character: none",
-            Margin = new Thickness(0, 0, 0, 6)
-        };
-        selectedCharacterText.SetResourceReference(StyleProperty, "SubtitleText");
-        rightPanel.Children.Add(selectedCharacterText);
-
-        var selectedCharacterDetails = new TextBlock
-        {
-            Text = "Level: -   HP: -   Race: -   Class: -",
-            Margin = new Thickness(0, 0, 0, 10),
-            TextWrapping = TextWrapping.Wrap
-        };
-        selectedCharacterDetails.SetResourceReference(StyleProperty, "SubtitleText");
-        rightPanel.Children.Add(selectedCharacterDetails);
-
-        rightPanel.Children.Add(new TextBlock { Text = "Player Name", Margin = new Thickness(0, 0, 0, 2) });
-        var playerNameEditor = new TextBox
-        {
-            Margin = new Thickness(0, 0, 0, 8),
-            Padding = new Thickness(6, 3, 6, 3)
-        };
-        rightPanel.Children.Add(playerNameEditor);
-
-        rightPanel.Children.Add(new TextBlock { Text = "Party Name", Margin = new Thickness(0, 0, 0, 2) });
-        var partyNameEditor = new TextBox
-        {
-            Margin = new Thickness(0, 0, 0, 8),
-            Padding = new Thickness(6, 3, 6, 3)
-        };
-        rightPanel.Children.Add(partyNameEditor);
-
-        var assignRow = new StackPanel
-        {
-            Orientation = Orientation.Horizontal,
-            Margin = new Thickness(0, 0, 0, 8)
-        };
-        assignRow.Children.Add(CreateHeaderButton("ASSIGN TO PARTY", 118, BtnAssignToSelectedParty_Click));
-        assignRow.Children.Add(CreateHeaderButton("APPLY", 84, BtnApplyToCharacter_Click));
-        assignRow.Children.Add(CreateHeaderButton("CLEAR", 84, BtnClearCharacterParty_Click));
-        assignRow.Children.Add(CreateHeaderButton("CREATE", 84, BtnCreateParty_Click));
-        assignRow.Children.Add(CreateHeaderButton("RENAME", 96, BtnRenameSelectedParty_Click));
-        assignRow.Children.Add(CreateHeaderButton("DELETE", 88, BtnDeleteSelectedParty_Click, isLast: true, style: "DangerButton"));
-        rightPanel.Children.Add(assignRow);
-
-        var partyStatus = new TextBlock
-        {
-            Margin = new Thickness(0, 2, 0, 0),
-            TextWrapping = TextWrapping.Wrap,
-        };
-        partyStatus.SetResourceReference(StyleProperty, "SubtitleText");
-        rightPanel.Children.Add(partyStatus);
-        partyLayout.Children.Add(rightPanel);
-
-        partyPanel.Child = partyLayout;
-        content.Children.Add(partyPanel);
 
         root.Children.Add(content);
         Content = new ScrollViewer
@@ -368,7 +292,7 @@ public class CharacterRosterScreen : UserControl, IScreen
             HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
             Content = root
         };
-        return (grid, status, filterCombo, partyList, selectedCharacterText, selectedCharacterDetails, playerNameEditor, partyNameEditor, partyStatus);
+        return (grid, status, filterCombo);
     }
 
     private Button CreateHeaderButton(string content, double width, RoutedEventHandler onClick, bool isLast = false, string style = "GoldButton")
@@ -406,6 +330,20 @@ public class CharacterRosterScreen : UserControl, IScreen
         _app.OpenCharacterSheets(selectedIndex);
     }
 
+    private void BtnInGame_Click(object sender, RoutedEventArgs e)
+    {
+        if (CharacterGrid.SelectedItem is not CharacterRow selected
+            || selected.SourceIndex < 0
+            || selected.SourceIndex >= _app.Characters.Count)
+        {
+            MessageBox.Show("Select a character in the roster first.", "In-Game Character",
+                            MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        _app.OpenInGameCharacter(selected.SourceIndex);
+    }
+
     private void BtnSpellTracker_Click(object sender, RoutedEventArgs e)
     {
         if (CharacterGrid.SelectedItem is not CharacterRow selected
@@ -435,14 +373,36 @@ public class CharacterRosterScreen : UserControl, IScreen
         {
             Title          = "Export Character",
             FileName       = $"{c.Name}.json",
-            Filter         = "JSON files (*.json)|*.json|All files (*.*)|*.*",
+            Filter         = "Codex character (*.json)|*.json|Foundry exchange (*.foundry.json)|*.foundry.json|All files (*.*)|*.*",
+            FilterIndex    = 1,
             DefaultExt     = ".json"
         };
         if (dlg.ShowDialog() != true) return;
 
         try
         {
-            var json = JsonSerializer.Serialize(c, new JsonSerializerOptions { WriteIndented = true });
+            IReadOnlyList<SpellDefinition> candidates = FoundryCharacterExchangeService.GetExportSpellCandidates(c, _app.Rules);
+            if (candidates.Count > 0)
+            {
+                IReadOnlySet<string> requiredIds = FoundryCharacterExchangeService.GetRequiredSpellIds(c);
+                var spellDialog = new SpellExportSelectionDialog(c, candidates, requiredIds)
+                {
+                    Owner = Window.GetWindow(this),
+                };
+                if (spellDialog.ShowDialog() != true)
+                    return;
+
+                c.ExportSpellIds = spellDialog.GetSelectedSpellIds();
+                c.HasExplicitSpellExportSelection = true;
+                c.LastModified = DateTime.Now;
+                c.Revision = Math.Max(1, c.Revision + 1);
+                _app.SaveCharacters();
+            }
+
+            var exportOptions = new JsonSerializerOptions { WriteIndented = true };
+            var json = dlg.FilterIndex == 2
+                ? FoundryCharacterExchangeService.Export(c, exportOptions, _app.Rules, _app.CharacterOptions.GetCatalog())
+                : FoundryCharacterExchangeService.ExportCodex(c, exportOptions, _app.Rules, _app.CharacterOptions.GetCatalog());
             File.WriteAllText(dlg.FileName, json);
             MessageBox.Show($"{c.Name} exported successfully.", "Export",
                             MessageBoxButton.OK, MessageBoxImage.Information);
@@ -459,7 +419,7 @@ public class CharacterRosterScreen : UserControl, IScreen
         var dlg = new OpenFileDialog
         {
             Title      = "Import Character(s)",
-            Filter     = "JSON files (*.json)|*.json|All files (*.*)|*.*",
+            Filter     = "Character files (*.json;*.pdf)|*.json;*.pdf|JSON files (*.json)|*.json|Mapped PDF sheets (*.pdf)|*.pdf|All files (*.*)|*.*",
             DefaultExt = ".json",
             Multiselect = true
         };
@@ -467,13 +427,42 @@ public class CharacterRosterScreen : UserControl, IScreen
 
         int imported = 0;
         var errors   = new List<string>();
+        var warnings = new List<string>();
         var opts     = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        var pdfImporter = new MappedCharacterSheetPdfImportService();
 
         foreach (var file in dlg.FileNames)
         {
             try
             {
+                if (string.Equals(System.IO.Path.GetExtension(file), ".pdf", StringComparison.OrdinalIgnoreCase))
+                {
+                    MappedCharacterSheetPdfImportService.ImportResult result = pdfImporter.Import(
+                        file,
+                        _app.Rules,
+                        _app.CharacterOptions.GetCatalog());
+                    _app.Characters.Add(result.Character);
+                    imported++;
+                    warnings.AddRange(result.Warnings.Select(warning => $"{System.IO.Path.GetFileName(file)}: {warning}"));
+                    continue;
+                }
+
                 var text = File.ReadAllText(file);
+                if (FoundryCharacterExchangeService.TryImport(
+                    text,
+                    opts,
+                    out CharacterSheet? exchanged,
+                    out string exchangeWarning,
+                    _app.Rules,
+                    _app.CharacterOptions.GetCatalog()))
+                {
+                    _app.Characters.Add(exchanged!);
+                    imported++;
+                    if (!string.IsNullOrWhiteSpace(exchangeWarning))
+                        warnings.Add($"{System.IO.Path.GetFileName(file)}: {exchangeWarning}");
+                    continue;
+                }
+
                 // Try single character first, then array
                 CharacterSheet? single = null;
                 List<CharacterSheet>? many = null;
@@ -508,8 +497,15 @@ public class CharacterRosterScreen : UserControl, IScreen
         var msg = $"{imported} character{(imported == 1 ? "" : "s")} imported.";
         if (errors.Count > 0)
             msg += "\n\nErrors:\n" + string.Join("\n", errors);
+        if (warnings.Count > 0)
+        {
+            const int visibleWarningLimit = 12;
+            msg += "\n\nImport notes:\n" + string.Join("\n", warnings.Take(visibleWarningLimit));
+            if (warnings.Count > visibleWarningLimit)
+                msg += $"\n...and {warnings.Count - visibleWarningLimit} more note(s).";
+        }
         MessageBox.Show(msg, "Import", MessageBoxButton.OK,
-                        errors.Count > 0 ? MessageBoxImage.Warning : MessageBoxImage.Information);
+                        errors.Count > 0 || warnings.Count > 0 ? MessageBoxImage.Warning : MessageBoxImage.Information);
     }
 
     private void BtnDelete_Click(object sender, RoutedEventArgs e)
@@ -569,21 +565,11 @@ public class CharacterRosterScreen : UserControl, IScreen
 
     private void CharacterGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (CharacterGrid.SelectedItem is CharacterRow selected && selected.SourceIndex >= 0 && selected.SourceIndex < _app.Characters.Count)
-        {
-            var character = _app.Characters[selected.SourceIndex];
-            SelectedCharacterText.Text = $"Selected character: {character.Name}";
-            SelectedCharacterDetails.Text = $"Edition: {FormatRulesetDisplay(character)}   Level: {Math.Max(1, character.Level)}   HP: {character.HitPoints}   Race: {(string.IsNullOrWhiteSpace(character.RaceName) ? character.RaceId : character.RaceName)}   Class: {(string.IsNullOrWhiteSpace(character.ClassName) ? character.ClassId : character.ClassName)}";
-            PlayerNameEditor.Text = character.PlayerName ?? string.Empty;
-            PartyNameEditor.Text = character.Party ?? string.Empty;
-            return;
-        }
-
-        SelectedCharacterText.Text = "Selected character: none";
-        SelectedCharacterDetails.Text = "Edition: -   Level: -   HP: -   Race: -   Class: -";
-        PlayerNameEditor.Text = string.Empty;
-        PartyNameEditor.Text = string.Empty;
+        // selection tracking used by double-click / level-up; no party panel to update
     }
+
+    private void BtnPartyManagement_Click(object sender, RoutedEventArgs e)
+        => _app.GoTo("party_management");
 
     private void PartyFilterCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -603,188 +589,43 @@ public class CharacterRosterScreen : UserControl, IScreen
         RefreshGrid();
     }
 
-    private void PartyList_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (PartyList.SelectedItem is string selected)
-            PartyNameEditor.Text = selected;
-    }
-
-    private void BtnAssignToSelectedParty_Click(object sender, RoutedEventArgs e)
-    {
-        if (CharacterGrid.SelectedItem is not CharacterRow selected || selected.SourceIndex < 0 || selected.SourceIndex >= _app.Characters.Count)
-        {
-            MessageBox.Show("Select a character in the roster first.", "Party Management", MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
-        }
-
-        if (PartyList.SelectedItem is not string selectedParty || string.IsNullOrWhiteSpace(selectedParty))
-        {
-            MessageBox.Show("Select a party from Known Parties first.", "Party Management", MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
-        }
-
-        var character = _app.Characters[selected.SourceIndex];
-        character.Party = selectedParty;
-        character.LastModified = DateTime.Now;
-        character.Revision = Math.Max(1, character.Revision + 1);
-
-        _app.SaveCharacters();
-        RefreshGrid();
-        PartyStatus.Text = $"Assigned {character.Name} to party '{selectedParty}'.";
-    }
-
-    private void BtnApplyToCharacter_Click(object sender, RoutedEventArgs e)
-    {
-        if (CharacterGrid.SelectedItem is not CharacterRow selected || selected.SourceIndex < 0 || selected.SourceIndex >= _app.Characters.Count)
-        {
-            MessageBox.Show("Select a character in the roster first.", "Party Management", MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
-        }
-
-        var character = _app.Characters[selected.SourceIndex];
-        string newPlayerName = (PlayerNameEditor.Text ?? string.Empty).Trim();
-        string newPartyName = (PartyNameEditor.Text ?? string.Empty).Trim();
-
-        character.PlayerName = newPlayerName;
-        character.Party = newPartyName;
-        character.LastModified = DateTime.Now;
-        character.Revision = Math.Max(1, character.Revision + 1);
-
-        _app.SaveCharacters();
-        RefreshGrid();
-        PartyStatus.Text = string.IsNullOrWhiteSpace(newPartyName)
-            ? $"Updated {character.Name}. Character is now unassigned."
-            : $"Updated {character.Name}. Assigned to party '{newPartyName}'.";
-    }
-
-    private void BtnClearCharacterParty_Click(object sender, RoutedEventArgs e)
-    {
-        if (CharacterGrid.SelectedItem is not CharacterRow selected || selected.SourceIndex < 0 || selected.SourceIndex >= _app.Characters.Count)
-        {
-            MessageBox.Show("Select a character in the roster first.", "Party Management", MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
-        }
-
-        var character = _app.Characters[selected.SourceIndex];
-        character.Party = string.Empty;
-        character.LastModified = DateTime.Now;
-        character.Revision = Math.Max(1, character.Revision + 1);
-
-        _app.SaveCharacters();
-        RefreshGrid();
-        PartyStatus.Text = $"Cleared party assignment for {character.Name}.";
-    }
-
-    private void BtnCreateParty_Click(object sender, RoutedEventArgs e)
-    {
-        string newPartyName = (PartyNameEditor.Text ?? string.Empty).Trim();
-        if (string.IsNullOrWhiteSpace(newPartyName))
-        {
-            MessageBox.Show("Enter a party name first.", "Party Management", MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
-        }
-
-        if (CharacterGrid.SelectedItem is not CharacterRow selected || selected.SourceIndex < 0 || selected.SourceIndex >= _app.Characters.Count)
-        {
-            MessageBox.Show("Select a character to seed the new party.", "Party Management", MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
-        }
-
-        var character = _app.Characters[selected.SourceIndex];
-        character.Party = newPartyName;
-        character.LastModified = DateTime.Now;
-        character.Revision = Math.Max(1, character.Revision + 1);
-
-        _app.SaveCharacters();
-        _activePartyFilter = newPartyName;
-        RefreshGrid();
-        PartyStatus.Text = $"Created/updated party '{newPartyName}' with {character.Name}.";
-    }
-
-    private void BtnRenameSelectedParty_Click(object sender, RoutedEventArgs e)
-    {
-        if (PartyList.SelectedItem is not string selectedParty || string.IsNullOrWhiteSpace(selectedParty))
-        {
-            MessageBox.Show("Select a party from Known Parties first.", "Party Management", MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
-        }
-
-        string newPartyName = (PartyNameEditor.Text ?? string.Empty).Trim();
-        if (string.IsNullOrWhiteSpace(newPartyName))
-        {
-            MessageBox.Show("Enter a new party name.", "Party Management", MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
-        }
-
-        if (string.Equals(selectedParty, newPartyName, StringComparison.OrdinalIgnoreCase))
-        {
-            PartyStatus.Text = "Party name is unchanged.";
-            return;
-        }
-
-        int updatedCount = 0;
-        foreach (var character in _app.Characters)
-        {
-            if (!string.Equals((character.Party ?? string.Empty).Trim(), selectedParty, StringComparison.OrdinalIgnoreCase))
-                continue;
-
-            character.Party = newPartyName;
-            character.LastModified = DateTime.Now;
-            character.Revision = Math.Max(1, character.Revision + 1);
-            updatedCount++;
-        }
-
-        if (updatedCount == 0)
-        {
-            PartyStatus.Text = "No members were found for the selected party.";
-            return;
-        }
-
-        _app.SaveCharacters();
-        _activePartyFilter = newPartyName;
-        RefreshGrid();
-        PartyStatus.Text = $"Renamed party '{selectedParty}' to '{newPartyName}' for {updatedCount} character{(updatedCount == 1 ? "" : "s")}.";
-    }
-
-    private void BtnDeleteSelectedParty_Click(object sender, RoutedEventArgs e)
-    {
-        if (PartyList.SelectedItem is not string selectedParty || string.IsNullOrWhiteSpace(selectedParty))
-        {
-            MessageBox.Show("Select a party from Known Parties first.", "Party Management", MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
-        }
-
-        var confirm = MessageBox.Show(
-            $"Remove party '{selectedParty}' from all of its members?",
-            "Delete Party",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning);
-        if (confirm != MessageBoxResult.Yes)
-            return;
-
-        int updatedCount = 0;
-        foreach (var character in _app.Characters)
-        {
-            if (!string.Equals((character.Party ?? string.Empty).Trim(), selectedParty, StringComparison.OrdinalIgnoreCase))
-                continue;
-
-            character.Party = string.Empty;
-            character.LastModified = DateTime.Now;
-            character.Revision = Math.Max(1, character.Revision + 1);
-            updatedCount++;
-        }
-
-        _app.SaveCharacters();
-        _activePartyFilter = string.Empty;
-        RefreshGrid();
-        PartyStatus.Text = $"Deleted party '{selectedParty}'. Cleared assignment for {updatedCount} character{(updatedCount == 1 ? "" : "s")}.";
-    }
-
     private void CharacterGrid_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
         => DoLevelUp();
 
     private void BtnLevelUp_Click(object sender, RoutedEventArgs e)
         => DoLevelUp();
+
+    private void BtnImportCustomPack_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title = "Import Custom Classes and Races",
+            Filter = "Dungeon Master Cortex custom packs (*.json)|*.json|All files (*.*)|*.*",
+            CheckFileExists = true,
+            Multiselect = false,
+        };
+
+        if (dialog.ShowDialog() != true)
+            return;
+
+        try
+        {
+            var (racesImported, classesImported) = _app.Rules.ImportCustomRacesAndClasses(dialog.FileName);
+            MessageBox.Show(
+                $"Custom content is ready to use.\n\nClasses imported: {classesImported}\nRaces imported: {racesImported}",
+                "Import Complete",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"The custom pack could not be imported.\n\n{ex.Message}",
+                "Import Error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
 
     private void DoLevelUp()
     {
@@ -799,6 +640,55 @@ public class CharacterRosterScreen : UserControl, IScreen
 
         var character = _app.Characters[selected.SourceIndex];
 
+        if (!PromptForLevelUpGains(character, out int xpGain, out int hpGain, out int cpGain,
+                out int levelsDrained, out int drainHpLoss))
+            return;
+
+        if (levelsDrained > 0)
+        {
+            var drain = CharacterProgressionService.ApplyLevelDrain(character, levelsDrained, drainHpLoss);
+            character.Notes.Add(
+                $"Level drain: level {drain.OldLevel} to {drain.NewLevel}; " +
+                $"XP {drain.OldExperience:N0} to {drain.NewExperience:N0}; HP lost {drain.HitPointsLost}.");
+            character.LastModified = DateTime.Now;
+            character.Revision = Math.Max(1, character.Revision + 1);
+            _app.SaveCharacters();
+            RefreshGrid();
+            MessageBox.Show(
+                $"{character.Name} was drained from level {drain.OldLevel} to {drain.NewLevel}.\n\n" +
+                $"XP: {drain.OldExperience:N0} -> {drain.NewExperience:N0}\n" +
+                $"HP lost: {drain.HitPointsLost}",
+                "Level Drain Applied",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        int adjustedExperience = (int)Math.Clamp((long)Math.Max(0, character.ExperiencePoints) + xpGain, 0L, int.MaxValue);
+        int projectedOverallLevel = GetCalculatedOverallLevel(character, adjustedExperience);
+        if (projectedOverallLevel <= Math.Max(1, character.Level))
+        {
+            var adjustment = CharacterProgressionService.ApplyExperienceAdjustment(character, xpGain);
+            if (hpGain != 0)
+            {
+                character.HitPoints = Math.Max(1, character.HitPoints + hpGain);
+                character.CurrentHitPoints = Math.Clamp(character.CurrentHitPoints + hpGain, 0, character.HitPoints);
+            }
+            if (cpGain > 0)
+                character.UnspentCharacterPoints += cpGain;
+
+            character.Notes.Add(
+                $"Manual update: XP {adjustment.OldExperience:N0} to {adjustment.NewExperience:N0}; " +
+                $"level {adjustment.OldLevel} to {adjustment.NewLevel}; HP adjustment {hpGain:+#;-#;0}.");
+            character.LastModified = DateTime.Now;
+            character.Revision = Math.Max(1, character.Revision + 1);
+            _app.SaveCharacters();
+            RefreshGrid();
+            _app.StartPlayerLevelUp(selected.SourceIndex, 0, 0, 0);
+            _app.GoTo("chargen_character_options");
+            return;
+        }
+
         if (_app.License.IsDemoMode && character.Level >= _app.License.DemoMaxLevel)
         {
             MessageBox.Show(
@@ -808,9 +698,6 @@ public class CharacterRosterScreen : UserControl, IScreen
                 MessageBoxImage.Information);
             return;
         }
-
-        if (!PromptForLevelUpGains(character, out int xpGain, out int hpGain, out int cpGain))
-            return;
 
         _app.StartPlayerLevelUp(selected.SourceIndex, xpGain, hpGain, cpGain);
         _app.GoTo("chargen_character_options");
@@ -914,14 +801,19 @@ public class CharacterRosterScreen : UserControl, IScreen
             MessageBoxImage.Information);
     }
 
-    private static bool PromptForLevelUpGains(CharacterSheet character, out int xpGain, out int hpGain, out int cpGain)
+    private static bool PromptForLevelUpGains(CharacterSheet character, out int xpGain, out int hpGain, out int cpGain,
+        out int levelsDrained, out int drainHpLoss)
     {
         xpGain = 0;
         hpGain = 0;
         cpGain = 0;
+        levelsDrained = 0;
+        drainHpLoss = 0;
         int selectedXp = 0;
         int selectedHp = 0;
         int selectedCp = 0;
+        int selectedLevelsDrained = 0;
+        int selectedDrainHpLoss = 0;
 
         bool isPlayersOptionMode = IsPlayersOptionCharacter(character);
         bool hasCpPerLevel = isPlayersOptionMode && character.CpPerLevel > 0;
@@ -935,6 +827,7 @@ public class CharacterRosterScreen : UserControl, IScreen
         bool willLevelUp = false;
         int projectedLevel = Math.Max(1, character.Level);
         int projectedLevelsGained = 0;
+        int projectedClassLevelsGained = 0;
         TextBlock? cpAutoText = null;
 
         var window = new Window
@@ -942,6 +835,7 @@ public class CharacterRosterScreen : UserControl, IScreen
             Title = $"Update — {character.Name}",
             Width = 380,
             SizeToContent = SizeToContent.Height,
+            MaxHeight = Math.Max(500, SystemParameters.WorkArea.Height - 80),
             WindowStartupLocation = WindowStartupLocation.CenterScreen,
             ResizeMode = ResizeMode.NoResize,
             WindowStyle = WindowStyle.SingleBorderWindow,
@@ -965,7 +859,7 @@ public class CharacterRosterScreen : UserControl, IScreen
         panel.Children.Add(levelStateText);
 
         // ── XP row ────────────────────────────────────────────────────────────
-        panel.Children.Add(new TextBlock { Text = "Experience Gain:", Margin = new Thickness(0, 6, 0, 2) });
+        panel.Children.Add(new TextBlock { Text = "Experience Adjustment (+/-):", Margin = new Thickness(0, 6, 0, 2) });
         var xpBox = new TextBox { Text = "0", Padding = new Thickness(6, 3, 6, 3) };
         panel.Children.Add(xpBox);
 
@@ -995,8 +889,8 @@ public class CharacterRosterScreen : UserControl, IScreen
 
         int GetEffectiveXpGain()
         {
-            int entered = int.TryParse(xpBox.Text.Trim(), out int parsed) ? Math.Max(0, parsed) : 0;
-            if (entered == 0 || totalXpBonus == 0 || xpAlreadyIncludesBonus.IsChecked == true)
+            int entered = int.TryParse(xpBox.Text.Trim(), out int parsed) ? parsed : 0;
+            if (entered <= 0 || totalXpBonus == 0 || xpAlreadyIncludesBonus.IsChecked == true)
                 return entered;
             return CharacterProgressionService.ApplyExperienceBonus(entered, totalXpBonus);
         }
@@ -1004,7 +898,7 @@ public class CharacterRosterScreen : UserControl, IScreen
         // ── HP row ────────────────────────────────────────────────────────────
         panel.Children.Add(new TextBlock
         {
-            Text = $"HP Gain  (d{hitDie}, bonuses {bonusLabel}):",
+            Text = $"HP Adjustment (+/-; roll d{hitDie}, bonuses {bonusLabel} on level gain):",
             Margin = new Thickness(0, 10, 0, 2)
         });
         var hpRow = new Grid();
@@ -1035,13 +929,13 @@ public class CharacterRosterScreen : UserControl, IScreen
 
         void RefreshLevelState()
         {
-            int enteredXp = int.TryParse(xpBox.Text.Trim(), out int parsed) ? Math.Max(0, parsed) : 0;
+            int enteredXp = int.TryParse(xpBox.Text.Trim(), out int parsed) ? parsed : 0;
             int pendingXp = GetEffectiveXpGain();
-            projectedLevel = CharacterProgressionService.GetLevelForExperience(
-                character.ClassId,
-                Math.Max(0, character.ExperiencePoints) + pendingXp);
+            int projectedExperience = (int)Math.Clamp((long)Math.Max(0, character.ExperiencePoints) + pendingXp, 0L, int.MaxValue);
+            projectedLevel = GetCalculatedOverallLevel(character, projectedExperience);
             willLevelUp = projectedLevel > Math.Max(1, character.Level);
             projectedLevelsGained = Math.Max(0, projectedLevel - Math.Max(1, character.Level));
+            projectedClassLevelsGained = GetCalculatedClassLevelsGained(character, projectedExperience);
 
             if (totalXpBonus != 0)
             {
@@ -1059,20 +953,23 @@ public class CharacterRosterScreen : UserControl, IScreen
                 hpRow.Visibility = Visibility.Visible;
                 rollBtn.IsEnabled = true;
                 if (cpAutoText is not null)
-                    cpAutoText.Text = $"CP auto-award for this update: {character.CpPerLevel} x {projectedLevelsGained} = {Math.Max(0, character.CpPerLevel) * projectedLevelsGained}.";
+                    cpAutoText.Text = $"CP auto-award for this update: {character.CpPerLevel} x {projectedClassLevelsGained} class level(s) = {Math.Max(0, character.CpPerLevel) * projectedClassLevelsGained}.";
             }
             else
             {
-                levelStateText.Text = "No level increase from current XP gain. HP gain is disabled for this update.";
+                levelStateText.Text = projectedLevel < Math.Max(1, character.Level)
+                    ? $"Level reduction detected: {character.Level} -> {projectedLevel}. HP changes remain manual."
+                    : "No level increase. XP and HP adjustments will be applied directly.";
                 levelStateText.Foreground = new SolidColorBrush(Color.FromRgb(0xC4, 0xA4, 0x68));
-                hpRow.Visibility = Visibility.Collapsed;
+                hpRow.Visibility = Visibility.Visible;
                 rollBtn.IsEnabled = false;
-                hpBox.Text = "0";
                 hpWasRolled = false;
                 hpBreakdownText.Text = string.Empty;
                 hpBreakdownText.Visibility = Visibility.Collapsed;
                 if (cpAutoText is not null)
-                    cpAutoText.Text = "CP auto-award for this update: 0 (no level gained).";
+                    cpAutoText.Text = projectedClassLevelsGained > 0
+                        ? $"CP auto-award for this update: {character.CpPerLevel} x {projectedClassLevelsGained} class level(s) = {Math.Max(0, character.CpPerLevel) * projectedClassLevelsGained}."
+                        : "CP auto-award for this update: 0 (no class level gained).";
             }
         }
 
@@ -1160,6 +1057,40 @@ public class CharacterRosterScreen : UserControl, IScreen
             panel.Children.Add(saveCpPerLevelCheck);
         }
 
+        panel.Children.Add(new Separator { Margin = new Thickness(0, 14, 0, 10) });
+        panel.Children.Add(new TextBlock
+        {
+            Text = "Level Drain",
+            FontWeight = FontWeights.Bold,
+            Foreground = new SolidColorBrush(Color.FromRgb(0xE8, 0xC0, 0x50)),
+        });
+        panel.Children.Add(new TextBlock
+        {
+            Text = "Use this instead of gains when energy drain or another effect removes levels.",
+            Margin = new Thickness(0, 2, 0, 8),
+            Style = (Style)Application.Current.FindResource("SubtitleText"),
+            TextWrapping = TextWrapping.Wrap,
+        });
+
+        var drainGrid = new Grid();
+        drainGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        drainGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(10) });
+        drainGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        var drainLevelPanel = new StackPanel();
+        drainLevelPanel.Children.Add(new TextBlock { Text = "Levels Drained:", Margin = new Thickness(0, 0, 0, 2) });
+        var drainLevelsBox = new TextBox { Text = "0", Padding = new Thickness(6, 3, 6, 3) };
+        drainLevelPanel.Children.Add(drainLevelsBox);
+        Grid.SetColumn(drainLevelPanel, 0);
+        drainGrid.Children.Add(drainLevelPanel);
+
+        var drainHpPanel = new StackPanel();
+        drainHpPanel.Children.Add(new TextBlock { Text = "HP Lost (0 = recorded):", Margin = new Thickness(0, 0, 0, 2) });
+        var drainHpBox = new TextBox { Text = "0", Padding = new Thickness(6, 3, 6, 3) };
+        drainHpPanel.Children.Add(drainHpBox);
+        Grid.SetColumn(drainHpPanel, 2);
+        drainGrid.Children.Add(drainHpPanel);
+        panel.Children.Add(drainGrid);
+
         RefreshLevelState();
 
         // ── OK / Cancel ───────────────────────────────────────────────────────
@@ -1175,16 +1106,67 @@ public class CharacterRosterScreen : UserControl, IScreen
         var ok = new Button { Content = "Start", Width = 80, IsDefault = true };
         ok.Click += (_, _) =>
         {
-            if (!int.TryParse(xpBox.Text.Trim(), out int enteredXp) || enteredXp < 0)
+            if (!int.TryParse(drainLevelsBox.Text.Trim(), out int parsedLevelsDrained) || parsedLevelsDrained < 0)
             {
-                MessageBox.Show("Enter a non-negative whole number for XP.", "Update", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Enter a non-negative whole number for levels drained.", "Update", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (!int.TryParse(drainHpBox.Text.Trim(), out int parsedDrainHpLoss) || parsedDrainHpLoss < 0)
+            {
+                MessageBox.Show("Enter a non-negative whole number for HP lost.", "Update", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (parsedLevelsDrained > 0)
+            {
+                int actualLevelsDrained = Math.Min(parsedLevelsDrained, Math.Max(0, character.Level - 1));
+                if (actualLevelsDrained <= 0)
+                {
+                    MessageBox.Show("A level 1 character cannot lose another level.", "Update", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                int targetLevel = character.Level - actualLevelsDrained;
+                bool hasRecordedHp = character.HitPointGainByLevel.Any(entry =>
+                    entry.Key > targetLevel && entry.Key <= character.Level && entry.Value > 0);
+                if (parsedDrainHpLoss <= 0 && !hasRecordedHp)
+                {
+                    MessageBox.Show(
+                        "No HP history exists for the drained level. Enter the HP lost before applying the drain.",
+                        "Update",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return;
+                }
+
+                var confirmation = MessageBox.Show(
+                    $"Apply {actualLevelsDrained} level drain to {character.Name}?\n\n" +
+                    $"Level: {character.Level} -> {targetLevel}\n" +
+                    "XP will move to the midpoint of the new level's progression band. " +
+                    (parsedDrainHpLoss > 0 ? $"HP lost: {parsedDrainHpLoss}." : "Recorded HP from the lost level(s) will be removed."),
+                    "Confirm Level Drain",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+                if (confirmation != MessageBoxResult.Yes)
+                    return;
+
+                selectedLevelsDrained = actualLevelsDrained;
+                selectedDrainHpLoss = parsedDrainHpLoss;
+                window.DialogResult = true;
+                return;
+            }
+
+            if (!int.TryParse(xpBox.Text.Trim(), out int enteredXp))
+            {
+                MessageBox.Show("Enter a whole number for XP adjustment.", "Update", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
             int parsedXp = GetEffectiveXpGain();
-            int projectedLevel = CharacterProgressionService.GetLevelForExperience(
-                character.ClassId,
-                Math.Max(0, character.ExperiencePoints) + parsedXp);
+            int projectedExperience = (int)Math.Clamp((long)Math.Max(0, character.ExperiencePoints) + parsedXp, 0L, int.MaxValue);
+            int projectedLevel = GetCalculatedOverallLevel(character, projectedExperience);
+            int projectedClassLevelsGainedNow = GetCalculatedClassLevelsGained(character, projectedExperience);
             bool willLevelUpNow = projectedLevel > Math.Max(1, character.Level);
 
             if (willLevelUpNow && !willLevelUp)
@@ -1198,15 +1180,14 @@ public class CharacterRosterScreen : UserControl, IScreen
                 return;
             }
 
-            int parsedHp = 0;
+            if (!int.TryParse(hpBox.Text.Trim(), out int parsedHp))
+            {
+                MessageBox.Show("Enter a whole number for HP adjustment.", "Update", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             if (willLevelUpNow)
             {
-                if (!int.TryParse(hpBox.Text.Trim(), out parsedHp) || parsedHp < 0)
-                {
-                    MessageBox.Show("Enter a non-negative whole number for HP.", "Update", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-
                 // If HP was typed manually, ask about bonuses
                 if (!hpWasRolled && parsedHp > 0)
                 {
@@ -1238,7 +1219,7 @@ public class CharacterRosterScreen : UserControl, IScreen
             selectedXp = parsedXp;
             selectedHp = parsedHp;
             if (isPlayersOptionMode && hasCpPerLevel)
-                selectedCp = willLevelUpNow ? Math.Max(0, character.CpPerLevel) * Math.Max(0, projectedLevel - Math.Max(1, character.Level)) : 0;
+                selectedCp = Math.Max(0, character.CpPerLevel) * projectedClassLevelsGainedNow;
             else if (isPlayersOptionMode)
                 selectedCp = parsedCp;
             if (!hasCpPerLevel && isPlayersOptionMode && saveCpPerLevelCheck?.IsChecked == true)
@@ -1257,6 +1238,8 @@ public class CharacterRosterScreen : UserControl, IScreen
         xpGain = selectedXp;
         hpGain = selectedHp;
         cpGain = selectedCp;
+        levelsDrained = selectedLevelsDrained;
+        drainHpLoss = selectedDrainHpLoss;
         return true;
     }
 
@@ -1282,7 +1265,7 @@ public class CharacterRosterScreen : UserControl, IScreen
                 Race = c.RaceName,
                 Class = c.ClassName,
                 Level = FormatLevelDisplay(c),
-                ExperiencePoints = c.ExperiencePoints,
+                Experience = FormatExperienceDisplay(c),
                 HitPoints = c.HitPoints,
                 ArmorClass = c.ArmorClass,
                 Thac0 = c.Thac0,
@@ -1324,11 +1307,6 @@ public class CharacterRosterScreen : UserControl, IScreen
             .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        string selectedParty = PartyList.SelectedItem as string ?? string.Empty;
-        PartyList.ItemsSource = knownParties;
-        if (!string.IsNullOrWhiteSpace(selectedParty) && knownParties.Any(x => string.Equals(x, selectedParty, StringComparison.OrdinalIgnoreCase)))
-            PartyList.SelectedItem = knownParties.First(x => string.Equals(x, selectedParty, StringComparison.OrdinalIgnoreCase));
-
         string currentFilterLabel = string.IsNullOrWhiteSpace(_activePartyFilter) ? AllPartiesFilterLabel : _activePartyFilter;
         var filterItems = new List<string> { AllPartiesFilterLabel, UnassignedPartyFilterLabel };
         filterItems.AddRange(knownParties);
@@ -1340,9 +1318,6 @@ public class CharacterRosterScreen : UserControl, IScreen
             PartyFilterCombo.SelectedItem = AllPartiesFilterLabel;
 
         _isRefreshingPartyControls = false;
-
-        int unassignedCount = _app.Characters.Count(x => string.IsNullOrWhiteSpace((x.Party ?? string.Empty).Trim()));
-        PartyStatus.Text = $"{knownParties.Count} part{(knownParties.Count == 1 ? "y" : "ies")} tracked, {unassignedCount} unassigned character{(unassignedCount == 1 ? "" : "s")}.";
     }
 
     private static bool PromptForExistingCharacterSetup(
@@ -1506,7 +1481,7 @@ public class CharacterRosterScreen : UserControl, IScreen
         public string Race { get; set; } = "";
         public string Class { get; set; } = "";
         public string Level { get; set; } = "";
-        public int ExperiencePoints { get; set; }
+        public string Experience { get; set; } = string.Empty;
         public int HitPoints { get; set; }
         public int ArmorClass { get; set; }
         public int Thac0 { get; set; }

@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace DungeonMasterCortex.Models;
 
@@ -13,6 +15,9 @@ public class CastSpellRecord
     public int SpellLevel { get; set; } = 0;
     public DateTime CastTime { get; set; } = DateTime.Now;
     public string Notes { get; set; } = "";
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement> ExtensionData { get; set; } = new();
 }
 
 /// <summary>
@@ -25,6 +30,9 @@ public class PreparedSpellRecord
     public int SpellLevel { get; set; } = 0;
     public string Sphere { get; set; } = "";  // Priest sphere (e.g., "Healing", "War", "Magic")
     public bool IsCast { get; set; } = false;  // Whether this prepared spell has been cast
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement> ExtensionData { get; set; } = new();
 }
 
 /// <summary>
@@ -51,6 +59,9 @@ public class DailySpellTracking
     // Timestamp when this day's tracking was created
     public DateTime CreatedOn { get; set; } = DateTime.Now;
     public DateTime LastModified { get; set; } = DateTime.Now;
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement> ExtensionData { get; set; } = new();
 
     // Helper: get a date key for lookup
     public string GetDateKey() => $"{Year:D4}_{Era}_{Month:D2}_{Day:D2}";
@@ -79,6 +90,9 @@ public class DivineSpellConfiguration
     // Psionicist power points (if applicable)
     public int PowerPoints { get; set; } = 0;
     public int MaxPowerPoints { get; set; } = 0;
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement> ExtensionData { get; set; } = new();
 }
 
 /// <summary>
@@ -99,6 +113,9 @@ public class ArcaneSpellConfiguration
 
     // Bonus spells from high INT (calculated separately)
     public Dictionary<int, int> BonusSpells { get; set; } = new();
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement> ExtensionData { get; set; } = new();
 }
 
 /// <summary>
@@ -136,6 +153,9 @@ public class CharacterSpellTracking
     // Timestamp when tracking was created
     public DateTime CreatedOn { get; set; } = DateTime.Now;
     public DateTime LastModified { get; set; } = DateTime.Now;
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement> ExtensionData { get; set; } = new();
 
     /// <summary>
     /// Get current available spell slots (accounting for cast spells).

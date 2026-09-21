@@ -16,8 +16,8 @@ namespace DungeonMasterCortex;
 public partial class MainWindow : Window
 {
     private const double DefaultUiFontSize = 14;
-    private const double DefaultWindowWidth = 980;
-    private const double DefaultWindowHeight = 700;
+    private const double DefaultWindowWidth = 1160;
+    private const double DefaultWindowHeight = 780;
     private bool _autoResizeWindow = true;
     private bool _checkForUpdatesOnStartup = true;
 
@@ -74,6 +74,7 @@ public partial class MainWindow : Window
         public double PreferredFontSize { get; set; } = 14;
         public bool AutoResizeWindow { get; set; } = true;
         public bool CheckForUpdatesOnStartup { get; set; } = true;
+        public string CharacterRosterRulesetFilter { get; set; } = "both";
         public Dictionary<string, List<string>> GlobalSpellTags { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     }
 
@@ -107,6 +108,8 @@ public partial class MainWindow : Window
     private Window? _spellTrackerWindow;
     private Views.SpellTrackerScreen? _spellTrackerScreen;
     private bool _suppressSpellTrackerCloseNavigation;
+    private string _spellTrackerReturnScreen = "characters";
+    private int _spellTrackerReturnCharacterIndex = -1;
     private readonly Dictionary<string, List<string>> _globalSpellTags = new(StringComparer.OrdinalIgnoreCase);
 
     // Optional requested initial tab when navigating into Edit Information.
@@ -114,6 +117,7 @@ public partial class MainWindow : Window
     public int PendingEditCharacterIndex { get; set; } = -1;
     public bool PendingCharacterLevelUpMode { get; set; } = false;
     public int PendingCharacterSheetIndex { get; set; } = -1;
+    public int PendingInGameCharacterIndex { get; set; } = -1;
     public int PendingSpellTrackerCharacterIndex { get; set; } = -1;
     public string PendingCombatMonsterId { get; set; } = "";
     public int PendingCombatMonsterQuantity { get; set; } = 1;
@@ -142,6 +146,7 @@ public partial class MainWindow : Window
             ["dice_roller"]       = new Lazy<IScreen>(() => new DiceRollerScreen(this)),
             ["hub"]               = new Lazy<IScreen>(() => new HubScreen(this)),
             ["characters"]        = new Lazy<IScreen>(() => new CharacterRosterScreen(this)),
+            ["party_management"]  = new Lazy<IScreen>(() => new PartyManagementScreen(this)),
             ["chargen_name"]      = new Lazy<IScreen>(() => new CharGenNameScreen(this)),
             ["chargen_abilities"] = new Lazy<IScreen>(() => new CharGenAbilitiesScreen(this)),
             ["chargen_subabilities"] = new Lazy<IScreen>(() => new CharGenSubAbilitiesScreen(this)),
@@ -159,6 +164,7 @@ public partial class MainWindow : Window
             ["sessions"]          = new Lazy<IScreen>(() => new SessionScreen(this)),
             ["campaign"]          = new Lazy<IScreen>(() => new CampaignScreen(this)),
             ["character_sheets"]  = new Lazy<IScreen>(() => new CharacterSheetsScreen(this)),
+            ["in_game_character"] = new Lazy<IScreen>(() => new InGameCharacterScreen(this)),
             ["spell_tracker"]     = new Lazy<IScreen>(() => new SpellTrackerScreen(this)),
             ["combat_tracker"]    = new Lazy<IScreen>(() => new CombatTrackerScreen(this)),
             ["edit_info"]         = new Lazy<IScreen>(() => new EditInfoScreen(this)),
@@ -190,6 +196,46 @@ public partial class MainWindow : Window
         {
             System.Diagnostics.Debug.WriteLine($"Error saving UI preferences: {ex.Message}");
         }
+    }
+
+    public string GetCharacterRosterRulesetFilterPreference()
+    {
+        try
+        {
+            var settings = ReadVersionSettings();
+            return NormalizeCharacterRosterRulesetFilter(settings.CharacterRosterRulesetFilter);
+        }
+        catch
+        {
+            return "both";
+        }
+    }
+
+    public void SaveCharacterRosterRulesetFilterPreference(string filter)
+    {
+        try
+        {
+            if (!Directory.Exists(CharacterSaveDirectory))
+                Directory.CreateDirectory(CharacterSaveDirectory);
+
+            var settings = ReadVersionSettings();
+            settings.CharacterRosterRulesetFilter = NormalizeCharacterRosterRulesetFilter(filter);
+            WriteVersionSettings(settings);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error saving roster ruleset filter preference: {ex.Message}");
+        }
+    }
+
+    private static string NormalizeCharacterRosterRulesetFilter(string? filter)
+    {
+        return (filter ?? string.Empty).Trim().ToLowerInvariant() switch
+        {
+            "po" => "po",
+            "c" => "c",
+            _ => "both",
+        };
     }
 
     private void ApplyUiPreferencesFromSettings()
@@ -372,6 +418,9 @@ public partial class MainWindow : Window
         try
         {
             Directory.CreateDirectory(CharacterSaveDirectory);
+            CharacterOptionCatalog catalog = CharacterOptions.GetCatalog();
+            foreach (CharacterSheet character in Characters)
+                FoundryCharacterExchangeService.SynchronizeCharacterData(character, Rules, catalog);
             var json = JsonSerializer.Serialize(Characters, CharacterSaveJsonOptions);
             
             // DEBUG: Log what we're saving
@@ -420,7 +469,23 @@ public partial class MainWindow : Window
                 }
             }
 
-            bool migrated = NormalizeLoadedCharacterEquipmentIds(loaded);
+            CharacterOptionCatalog catalog = CharacterOptions.GetCatalog();
+            bool migrated = false;
+            foreach (CharacterSheet character in loaded)
+            {
+                bool neededHydration = (character.EquipmentSelections.Count == 0 && character.Equipment.Count > 0)
+                    || (character.ArcaneSpells.Count == 0 && character.DivineSpells.Count == 0
+                        && character.PsionicPowers.Count == 0
+                        && (character.ArcaneSpellSlots.Any(slot => slot.Value > 0)
+                            || character.DivineSpellSlots.Any(slot => slot.Value > 0)))
+                    || character.StructuredAbilities.Any(ability =>
+                        string.IsNullOrWhiteSpace(ability.Name) || string.IsNullOrWhiteSpace(ability.Category));
+                FoundryCharacterExchangeService.SynchronizeCharacterData(character, Rules, catalog);
+                migrated |= neededHydration;
+            }
+
+            migrated = NormalizeLoadedCharacterEquipmentIds(loaded) || migrated;
+            migrated = NormalizeLoadedCharacterModes(loaded) || migrated;
 
             Characters.Clear();
             Characters.AddRange(loaded);
@@ -459,6 +524,10 @@ public partial class MainWindow : Window
                     ? EquipmentLibraryService.BuildId(selection.ItemName)
                     : EquipmentLibraryService.CanonicalizeId(selection.ItemId);
 
+                string normalizedCategory = EquipmentLibraryService.NormalizeCategoryLabel(selection.Category);
+                if (!string.Equals(selection.Category ?? string.Empty, normalizedCategory, StringComparison.Ordinal))
+                    changedAny = true;
+
                 if (!string.Equals((selection.ItemId ?? string.Empty).Trim(), canonicalId, StringComparison.Ordinal))
                     changedAny = true;
 
@@ -469,7 +538,10 @@ public partial class MainWindow : Window
                     mergedById[canonicalId] = new EquipmentSelection
                     {
                         ItemId = canonicalId,
-                        Category = string.IsNullOrWhiteSpace(selection.Category) ? (libraryItem?.Categories.FirstOrDefault() ?? string.Empty) : selection.Category,
+                        Category = EquipmentLibraryService.NormalizeCategoryLabel(
+                            string.IsNullOrWhiteSpace(selection.Category)
+                                ? (libraryItem?.Categories.FirstOrDefault() ?? string.Empty)
+                                : normalizedCategory),
                         ItemName = string.IsNullOrWhiteSpace(selection.ItemName) ? (libraryItem?.Name ?? string.Empty) : selection.ItemName,
                         CostText = selection.CostText,
                         Quantity = Math.Max(1, selection.Quantity),
@@ -493,6 +565,15 @@ public partial class MainWindow : Window
                         WeaponSize = string.IsNullOrWhiteSpace(selection.WeaponSize)
                             ? (libraryItem?.WeaponSize ?? string.Empty)
                             : selection.WeaponSize,
+                        WeaponAttackBonus = selection.WeaponAttackBonus != 0
+                            ? selection.WeaponAttackBonus
+                            : (libraryItem?.WeaponAttackBonus ?? 0),
+                        WeaponDamageBonus = selection.WeaponDamageBonus != 0
+                            ? selection.WeaponDamageBonus
+                            : (libraryItem?.WeaponDamageBonus ?? 0),
+                        WeaponThac0Modifier = selection.WeaponThac0Modifier != 0
+                            ? selection.WeaponThac0Modifier
+                            : (libraryItem?.WeaponThac0Modifier ?? 0),
                         CostGoldEach = Math.Max(0, selection.CostGoldEach > 0 ? selection.CostGoldEach : (libraryItem?.CostGold ?? 0)),
                         CostSilverEach = Math.Max(0, selection.CostSilverEach > 0 ? selection.CostSilverEach : (libraryItem?.CostSilver ?? 0)),
                         CostCopperEach = Math.Max(0, selection.CostCopperEach > 0 ? selection.CostCopperEach : (libraryItem?.CostCopper ?? 0)),
@@ -509,8 +590,8 @@ public partial class MainWindow : Window
 
                     if (string.IsNullOrWhiteSpace(existing.ItemName) && !string.IsNullOrWhiteSpace(selection.ItemName))
                         existing.ItemName = selection.ItemName;
-                    if (string.IsNullOrWhiteSpace(existing.Category) && !string.IsNullOrWhiteSpace(selection.Category))
-                        existing.Category = selection.Category;
+                    if (string.IsNullOrWhiteSpace(existing.Category) && !string.IsNullOrWhiteSpace(normalizedCategory))
+                        existing.Category = normalizedCategory;
                     if (string.IsNullOrWhiteSpace(existing.CostText) && !string.IsNullOrWhiteSpace(selection.CostText))
                         existing.CostText = selection.CostText;
                     if (!existing.IsArmor && selection.IsArmor)
@@ -535,6 +616,12 @@ public partial class MainWindow : Window
                         existing.WeaponType = selection.WeaponType;
                     if (string.IsNullOrWhiteSpace(existing.WeaponSize) && !string.IsNullOrWhiteSpace(selection.WeaponSize))
                         existing.WeaponSize = selection.WeaponSize;
+                    if (existing.WeaponAttackBonus == 0 && selection.WeaponAttackBonus != 0)
+                        existing.WeaponAttackBonus = selection.WeaponAttackBonus;
+                    if (existing.WeaponDamageBonus == 0 && selection.WeaponDamageBonus != 0)
+                        existing.WeaponDamageBonus = selection.WeaponDamageBonus;
+                    if (existing.WeaponThac0Modifier == 0 && selection.WeaponThac0Modifier != 0)
+                        existing.WeaponThac0Modifier = selection.WeaponThac0Modifier;
                     if (existing.CostGoldEach <= 0 && selection.CostGoldEach > 0)
                         existing.CostGoldEach = selection.CostGoldEach;
                     if (existing.CostSilverEach <= 0 && selection.CostSilverEach > 0)
@@ -571,6 +658,8 @@ public partial class MainWindow : Window
             string equippedArmorKey = EquipmentLibraryService.CanonicalizeId(character.EquippedArmorId);
             string equippedShieldKey = EquipmentLibraryService.CanonicalizeId(character.EquippedShieldId);
             string equippedWeaponKey = EquipmentLibraryService.CanonicalizeId(character.EquippedWeaponId);
+            string equippedMainWeaponKey = EquipmentLibraryService.CanonicalizeId(character.EquippedMainWeaponId);
+            string equippedOffHandWeaponKey = EquipmentLibraryService.CanonicalizeId(character.EquippedOffHandWeaponId);
 
             if (!string.IsNullOrWhiteSpace(equippedArmorKey) && !mergedById.ContainsKey(equippedArmorKey))
             {
@@ -587,6 +676,39 @@ public partial class MainWindow : Window
                 character.EquippedWeaponId = string.Empty;
                 changedAny = true;
             }
+            if (!string.IsNullOrWhiteSpace(equippedMainWeaponKey) && !mergedById.ContainsKey(equippedMainWeaponKey))
+            {
+                character.EquippedMainWeaponId = string.Empty;
+                changedAny = true;
+            }
+            if (!string.IsNullOrWhiteSpace(equippedOffHandWeaponKey) && !mergedById.ContainsKey(equippedOffHandWeaponKey))
+            {
+                character.EquippedOffHandWeaponId = string.Empty;
+                changedAny = true;
+            }
+
+            character.EquippedMagicalItemIds ??= new List<string>();
+            var normalizedMagicalIds = character.EquippedMagicalItemIds
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(EquipmentLibraryService.CanonicalizeId)
+                .Where(mergedById.ContainsKey)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Select(id => mergedById[id].ItemId)
+                .ToList();
+            if (!character.EquippedMagicalItemIds.SequenceEqual(normalizedMagicalIds, StringComparer.OrdinalIgnoreCase))
+            {
+                character.EquippedMagicalItemIds = normalizedMagicalIds;
+                changedAny = true;
+            }
+
+            // Keep legacy single weapon slot aligned with main weapon.
+            string canonicalMain = EquipmentLibraryService.CanonicalizeId(character.EquippedMainWeaponId);
+            string canonicalLegacy = EquipmentLibraryService.CanonicalizeId(character.EquippedWeaponId);
+            if (!string.Equals(canonicalMain, canonicalLegacy, StringComparison.OrdinalIgnoreCase))
+            {
+                character.EquippedWeaponId = character.EquippedMainWeaponId;
+                changedAny = true;
+            }
 
             int priorAc = character.ArmorClass;
             string priorProfile = character.RogueSkillArmorProfile ?? "no_armor";
@@ -598,18 +720,209 @@ public partial class MainWindow : Window
         return changedAny;
     }
 
+    private static bool NormalizeLoadedCharacterModes(List<Models.CharacterSheet> characters)
+    {
+        bool changedAny = false;
+
+        foreach (var character in characters)
+        {
+            string normalizedMode = InferCharacterModeFromSheet(character);
+            if (!string.Equals(character.CharacterMode, normalizedMode, StringComparison.OrdinalIgnoreCase))
+            {
+                character.CharacterMode = normalizedMode;
+                changedAny = true;
+            }
+
+            if (string.Equals(normalizedMode, "core_rules", StringComparison.OrdinalIgnoreCase)
+                && NormalizeCoreCharacterPointFields(character))
+            {
+                changedAny = true;
+            }
+        }
+
+        return changedAny;
+    }
+
+    private static bool NormalizeCoreCharacterPointFields(Models.CharacterSheet character)
+    {
+        bool changed = false;
+
+        if (character.UnspentCharacterPoints != 0)
+        {
+            character.UnspentCharacterPoints = 0;
+            changed = true;
+        }
+        if (character.SpentNwpCharacterPoints != 0)
+        {
+            character.SpentNwpCharacterPoints = 0;
+            changed = true;
+        }
+        if (character.SpentWeaponCharacterPoints != 0)
+        {
+            character.SpentWeaponCharacterPoints = 0;
+            changed = true;
+        }
+        if (character.CpPerLevel != 0)
+        {
+            character.CpPerLevel = 0;
+            changed = true;
+        }
+
+        if (character.RacialPointBudget != 0)
+        {
+            character.RacialPointBudget = 0;
+            changed = true;
+        }
+        if (character.RacialPointSpent != 0)
+        {
+            character.RacialPointSpent = 0;
+            changed = true;
+        }
+        if (character.RacialPointRemaining != 0)
+        {
+            character.RacialPointRemaining = 0;
+            changed = true;
+        }
+        if (character.ClassPointBudget != 0)
+        {
+            character.ClassPointBudget = 0;
+            changed = true;
+        }
+        if (character.ClassPointSpent != 0)
+        {
+            character.ClassPointSpent = 0;
+            changed = true;
+        }
+        if (character.ClassPointRemaining != 0)
+        {
+            character.ClassPointRemaining = 0;
+            changed = true;
+        }
+        if (character.ClassAbilityCarryoverPoints != 0)
+        {
+            character.ClassAbilityCarryoverPoints = 0;
+            changed = true;
+        }
+
+        if (NormalizeCoreLevelOneHitPoints(character))
+            changed = true;
+
+        return changed;
+    }
+
+    private static bool NormalizeCoreLevelOneHitPoints(Models.CharacterSheet character)
+    {
+        if (character.Level != 1)
+            return false;
+
+        int con = character.Abilities.GetValueOrDefault("con", 10);
+        int classHitDie = (character.ClassId ?? string.Empty).Trim().ToLowerInvariant() switch
+        {
+            "fighter" or "ranger" or "paladin" => 10,
+            "cleric" or "druid" or "thief" => 8,
+            "wizard" => 4,
+            "bard" or "psionicist" => 6,
+            _ when Services.RulesEngine.IsPriestClassId(character.ClassId) => 8,
+            _ => 6,
+        };
+
+        int cap = Math.Max(1, classHitDie + CharacterProgressionService.GetConHitPointBonus(con, character.ClassId ?? string.Empty));
+        bool changed = false;
+
+        if (character.HitPoints > cap)
+        {
+            character.HitPoints = cap;
+            changed = true;
+        }
+        if (character.BaseHitPoints > cap)
+        {
+            character.BaseHitPoints = cap;
+            changed = true;
+        }
+        if (character.CurrentHitPoints > character.HitPoints)
+        {
+            character.CurrentHitPoints = character.HitPoints;
+            changed = true;
+        }
+
+        if (character.HitPointGainByLevel.TryGetValue(1, out int levelOneGain) && levelOneGain > cap)
+        {
+            character.HitPointGainByLevel[1] = cap;
+            changed = true;
+        }
+
+        return changed;
+    }
+
+    private static string InferCharacterModeFromSheet(Models.CharacterSheet character)
+    {
+        string storedModeToken = CharGenState.NormalizeCharacterModeToken(character.CharacterMode);
+        string classModeToken = (character.ClassMode ?? string.Empty).Trim();
+        bool raceLooksPo = !string.IsNullOrWhiteSpace(character.RaceId)
+            && character.RaceId.Contains("_po", StringComparison.OrdinalIgnoreCase);
+        bool classModeLooksPo = string.Equals(classModeToken, "players_option", StringComparison.OrdinalIgnoreCase);
+        bool classModeLooksCore = string.Equals(classModeToken, "core_rules", StringComparison.OrdinalIgnoreCase);
+        bool hasSelectedClassAbilityChoices = character.SelectedClassAbilityIds.Count > 0
+            || character.SelectedAbilitiesByClass.Values.Any(ids => ids is { Count: > 0 });
+        bool hasPoProgressSignals = character.CpPerLevel > 0
+            || character.UnspentCharacterPoints > 0
+            || character.SpentNwpCharacterPoints > 0
+            || character.SpentWeaponCharacterPoints > 0
+            || hasSelectedClassAbilityChoices
+            || character.ClassAbilityCarryoverPoints > 0
+            || character.ClassPointSpent > 0;
+        bool hasPoBudgetOnlySignals = character.RacialPointBudget > 0
+            || character.ClassPointBudget > 0
+            || character.RacialPointRemaining > 0
+            || character.ClassPointRemaining > 0
+            || character.RacialPointSpent > 0;
+
+        // Keep an explicit saved mode stable unless there is a clear contradiction.
+        if (string.Equals(storedModeToken, "players_option", StringComparison.OrdinalIgnoreCase))
+        {
+            bool hasStrongPoSignals = raceLooksPo || classModeLooksPo || hasPoProgressSignals;
+            if (classModeLooksCore && !hasStrongPoSignals)
+                return "core_rules";
+            if (!hasStrongPoSignals)
+                return "core_rules";
+            return "players_option";
+        }
+
+        if (string.Equals(storedModeToken, "core_rules", StringComparison.OrdinalIgnoreCase))
+        {
+            if (raceLooksPo || classModeLooksPo || hasPoProgressSignals)
+                return "players_option";
+            return "core_rules";
+        }
+
+        if (raceLooksPo || classModeLooksPo)
+            return "players_option";
+
+        if (classModeLooksCore)
+            return "core_rules";
+
+        if (hasPoProgressSignals || hasPoBudgetOnlySignals)
+            return "players_option";
+
+        return "core_rules";
+    }
+
     // ── Navigation ────────────────────────────────────────────────────────────
 
     public void GoTo(string name, int direction = 1)
     {
+        if (Array.IndexOf(CharGenOrder, name) > 0)
+            CharGen.CharacterMode = ResolveCharGenCharacterMode();
+
         if (string.Equals(name, "hub", StringComparison.OrdinalIgnoreCase))
             CloseSpellTrackerWindow();
 
-        if (string.Equals(name, "sessions", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(name, "sessions", StringComparison.OrdinalIgnoreCase)
+            && !SessionService.NetworkingEnabled)
         {
             MessageBox.Show(
-                "Session Manager is hidden in this release.",
-                "Feature Hidden",
+                "Networking is disabled in this build.",
+                "Feature Disabled",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
             return;
@@ -699,6 +1012,31 @@ public partial class MainWindow : Window
             || string.Equals(id, "illusionist", StringComparison.OrdinalIgnoreCase));
     }
 
+    private string ResolveCharGenCharacterMode()
+    {
+        string normalized = CharGenState.NormalizeCharacterModeToken(CharGen.CharacterMode);
+
+        // In new-character flow, keep the user-selected rules mode stable.
+        // Automatic inference from in-progress selections can incorrectly flip
+        // a Core Rules character to Player's Option mid-wizard.
+        if (!CharGen.IsLevelUpMode && !CharGen.IsExistingCharacterMode)
+            return normalized;
+
+        if (string.Equals(normalized, "players_option", StringComparison.OrdinalIgnoreCase))
+            return "players_option";
+
+        bool raceLooksPo = (!string.IsNullOrWhiteSpace(CharGen.RaceId) && CharGen.RaceId.Contains("_po", StringComparison.OrdinalIgnoreCase))
+            || (!string.IsNullOrWhiteSpace(CharGen.BaseRaceId) && CharGen.BaseRaceId.Contains("_po", StringComparison.OrdinalIgnoreCase));
+
+        bool raceModePo = (!string.IsNullOrWhiteSpace(CharGen.RaceId)
+            && Rules.Races.TryGetValue(CharGen.RaceId, out var race)
+            && string.Equals(race.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase));
+
+        bool hasPoSignals = CharGen.RacialCarryoverToClassPoints > 0;
+
+        return (raceLooksPo || raceModePo || hasPoSignals) ? "players_option" : "core_rules";
+    }
+
     private bool ConfirmSensitiveLevelUpJump(string typeName)
     {
         if (!CharGen.IsLevelUpMode)
@@ -727,7 +1065,33 @@ public partial class MainWindow : Window
         GoTo("chargen_class");
     }
 
-    private void BtnJumpClassAbilities_Click(object sender, RoutedEventArgs e) => GoTo("chargen_class_abilities");
+    private void BtnJumpClassAbilities_Click(object sender, RoutedEventArgs e)
+    {
+        bool isPlayersOption = string.Equals(CharGen.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase);
+        if (!isPlayersOption)
+        {
+            bool canAdjustCore = CharGen.IsExistingCharacterMode || CharGen.IsLevelUpMode;
+            if (!canAdjustCore)
+            {
+                MessageBox.Show(
+                    "Class abilities/disadvantages are only available here for existing or update characters.",
+                    "Class Abilities Unavailable",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            var proceed = MessageBox.Show(
+                "Core Rules usually auto-grants class abilities. Open Class Abilities anyway?\n\nOnly proceed with DM approval.",
+                "Class Abilities",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+            if (proceed != MessageBoxResult.Yes)
+                return;
+        }
+
+        GoTo("chargen_class_abilities");
+    }
     private void BtnJumpOptions_Click(object sender, RoutedEventArgs e) => GoTo("chargen_character_options");
     private void BtnJumpWeaponProf_Click(object sender, RoutedEventArgs e) => GoTo("chargen_weapon_prof");
     private void BtnJumpEquipment_Click(object sender, RoutedEventArgs e) => GoTo("chargen_equipment");
@@ -737,6 +1101,16 @@ public partial class MainWindow : Window
             GoTo("chargen_wizard_spells");
     }
     private void BtnJumpReview_Click(object sender, RoutedEventArgs e) => GoTo("chargen_review");
+
+    private void BtnReportBugCharGen_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new BugReportDialog(this, License)
+        {
+            Owner = this,
+        };
+
+        dialog.ShowDialog();
+    }
 
     private void ShowNavigationError(string screenName, Exception exception)
     {
@@ -757,10 +1131,7 @@ public partial class MainWindow : Window
         {
             Owner = this,
             Title = "Navigation Error",
-            WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            ShowInTaskbar = false,
         };
-
         dialog.ShowDialog();
     }
 
@@ -819,6 +1190,22 @@ public partial class MainWindow : Window
 
     private void BtnBack_Click(object sender, RoutedEventArgs e) => _backAction?.Invoke();
     private void BtnNext_Click(object sender, RoutedEventArgs e) => _nextAction?.Invoke();
+    private void BtnHub_Click(object sender, RoutedEventArgs e)
+    {
+        bool isCharGenFlow = Array.IndexOf(CharGenOrder, _currentScreen) > 0;
+        if (isCharGenFlow)
+        {
+            var result = MessageBox.Show(
+                "Return to Character Creation? Unsaved character-creation progress may be lost.",
+                "Leave Character Creation",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+            if (result != MessageBoxResult.Yes)
+                return;
+        }
+
+        GoTo("characters", -1);
+    }
 
     public void OpenCharacterSheets(int characterIndex = -1)
     {
@@ -826,8 +1213,17 @@ public partial class MainWindow : Window
         GoTo("character_sheets");
     }
 
-    public void OpenSpellTracker(int characterIndex)
+    public void OpenInGameCharacter(int characterIndex)
     {
+        PendingInGameCharacterIndex = characterIndex;
+        GoTo("in_game_character");
+    }
+
+    public void OpenSpellTracker(int characterIndex, string returnScreen = "characters")
+    {
+        _spellTrackerReturnScreen = string.IsNullOrWhiteSpace(returnScreen) ? "characters" : returnScreen.Trim();
+        _spellTrackerReturnCharacterIndex = characterIndex;
+
         if (_spellTrackerWindow is null || _spellTrackerScreen is null)
         {
             _spellTrackerScreen = new Views.SpellTrackerScreen(this);
@@ -846,17 +1242,13 @@ public partial class MainWindow : Window
 
             _spellTrackerWindow.Closed += (_, _) =>
             {
-                bool shouldReturnToCharacters = !_suppressSpellTrackerCloseNavigation;
+                bool shouldNavigateAfterClose = !_suppressSpellTrackerCloseNavigation;
                 _suppressSpellTrackerCloseNavigation = false;
                 _spellTrackerWindow = null;
                 _spellTrackerScreen = null;
 
-                if (shouldReturnToCharacters)
-                {
-                    GoTo("characters", -1);
-                    Activate();
-                    Focus();
-                }
+                if (shouldNavigateAfterClose)
+                    NavigateAfterSpellTrackerClose();
             };
         }
 
@@ -885,7 +1277,23 @@ public partial class MainWindow : Window
             return;
         }
 
-        GoTo("characters", -1);
+        NavigateAfterSpellTrackerClose();
+    }
+
+    private void NavigateAfterSpellTrackerClose()
+    {
+        if (string.Equals(_spellTrackerReturnScreen, "in_game_character", StringComparison.OrdinalIgnoreCase)
+            && _spellTrackerReturnCharacterIndex >= 0
+            && _spellTrackerReturnCharacterIndex < Characters.Count)
+        {
+            PendingInGameCharacterIndex = _spellTrackerReturnCharacterIndex;
+            GoTo("in_game_character", -1);
+        }
+        else
+        {
+            GoTo("characters", -1);
+        }
+
         Activate();
         Focus();
     }
@@ -901,13 +1309,21 @@ public partial class MainWindow : Window
         CharGen.IsLevelUpMode = true;
         CharGen.LevelUpCharacterIndex = characterIndex;
         CharGen.ExistingStartingExperience = Math.Max(0, character.ExperiencePoints);
+        CharGen.ExistingStartingUnspentCharacterPoints = Math.Max(0, character.UnspentCharacterPoints);
         CharGen.LevelUpPendingExperienceGain = Math.Max(0, xpGain);
         CharGen.LevelUpPendingHitPointGain = Math.Max(0, hpGain);
-        bool isPlayersOption = string.Equals(character.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase);
+        string normalizedCharacterMode = InferCharacterModeFromSheet(character);
+        if (!string.Equals(character.CharacterMode, normalizedCharacterMode, StringComparison.OrdinalIgnoreCase))
+            character.CharacterMode = normalizedCharacterMode;
+        bool isPlayersOption = string.Equals(normalizedCharacterMode, "players_option", StringComparison.OrdinalIgnoreCase);
         CharGen.LevelUpPendingCharacterPointGain = isPlayersOption ? Math.Max(0, cpGain) : 0;
 
         CharGen.Name = character.Name;
-        CharGen.CharacterMode = string.IsNullOrWhiteSpace(character.CharacterMode) ? "core_rules" : character.CharacterMode;
+        CharGen.PlayerName = character.PlayerName;
+        CharGen.Gender = character.Gender;
+        CharGen.Alignment = character.Alignment;
+        CharGen.DeityId = character.DeityId;
+        CharGen.CharacterMode = normalizedCharacterMode;
         CharGen.RaceId = character.RaceId;
         CharGen.BaseRaceId = character.RaceId;
         CharGen.ClassId = character.ClassId;
@@ -919,6 +1335,11 @@ public partial class MainWindow : Window
 
         CharGen.Abilities = character.Abilities.ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase);
         CharGen.ModifiedAbilities = character.Abilities.ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase);
+        CharGen.SubAbilities = character.SubAbilities is { Count: > 0 }
+            ? new Dictionary<string, int>(character.SubAbilities, StringComparer.OrdinalIgnoreCase)
+            : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        CharGen.ExceptionalStrength = Math.Clamp(character.ExceptionalStrength, 0, 100);
+        CharGen.ExceptionalStrengthLocked = false;
 
         if (character.ClassIds.Count > 0)
         {
@@ -941,6 +1362,7 @@ public partial class MainWindow : Window
         CharGen.SelectedEquipment = character.EquipmentSelections
             .Select(CloneEquipmentSelection)
             .ToList();
+        CharGen.UseSpellComponents = character.UseSpellComponents;
         CharGen.WizardSpellbookIds = new List<string>(character.WizardSpellbookIds);
         CharGen.WizardSpellLists = character.WizardSpellLists
             .Select(list => new NamedSpellList
@@ -951,7 +1373,12 @@ public partial class MainWindow : Window
             .ToList();
         CharGen.EquippedArmorId = character.EquippedArmorId ?? string.Empty;
         CharGen.EquippedShieldId = character.EquippedShieldId ?? string.Empty;
-        CharGen.EquippedWeaponId = character.EquippedWeaponId ?? string.Empty;
+        CharGen.EquippedMainWeaponId = !string.IsNullOrWhiteSpace(character.EquippedMainWeaponId)
+            ? character.EquippedMainWeaponId
+            : (character.EquippedWeaponId ?? string.Empty);
+        CharGen.EquippedWeaponId = CharGen.EquippedMainWeaponId;
+        CharGen.EquippedOffHandWeaponId = character.EquippedOffHandWeaponId ?? string.Empty;
+        CharGen.EquippedMagicalItemIds = character.EquippedMagicalItemIds?.Where(x => !string.IsNullOrWhiteSpace(x)).ToList() ?? new List<string>();
         CharGen.KitId = character.KitId ?? string.Empty;
         CharGen.KitFreeNwpIds = character.KitFreeNwpIds ?? new List<string>();
         CharGen.KitRequiredNwpIds = character.KitRequiredNwpIds ?? new List<string>();
@@ -1001,6 +1428,10 @@ public partial class MainWindow : Window
         CharGen.BaselineNonweaponProficiencyImprovements = new Dictionary<string, int>(
             CharGen.SelectedNonweaponProficiencyImprovements,
             StringComparer.OrdinalIgnoreCase);
+        CharGen.BaselineTraitIds = new List<string>(CharGen.SelectedTraitIds);
+        CharGen.BaselineDisadvantageSeverities = new Dictionary<string, string>(
+            CharGen.SelectedDisadvantageSeverities,
+            StringComparer.OrdinalIgnoreCase);
         CharGen.BaselineWeaponProficiencyIds = CharGen.SelectedWeaponProficiencies
             .Select(x => x.ProficiencyId)
             .ToList();
@@ -1023,6 +1454,7 @@ public partial class MainWindow : Window
             Specialized = selection.Specialized,
             WeaponOfChoice = selection.WeaponOfChoice,
             WeaponExpertise = selection.WeaponExpertise,
+            WeaponMastery = selection.WeaponMastery,
         };
 
     private static EquipmentSelection CloneEquipmentSelection(EquipmentSelection selection)
@@ -1043,11 +1475,15 @@ public partial class MainWindow : Window
             WeaponDamageLarge = selection.WeaponDamageLarge ?? string.Empty,
             WeaponType = selection.WeaponType ?? string.Empty,
             WeaponSize = selection.WeaponSize ?? string.Empty,
+            WeaponAttackBonus = selection.WeaponAttackBonus,
+            WeaponDamageBonus = selection.WeaponDamageBonus,
+            WeaponThac0Modifier = selection.WeaponThac0Modifier,
             CostGoldEach = Math.Max(0, selection.CostGoldEach),
             CostSilverEach = Math.Max(0, selection.CostSilverEach),
             CostCopperEach = Math.Max(0, selection.CostCopperEach),
             SizeClassEach = string.IsNullOrWhiteSpace(selection.SizeClassEach) ? "Medium" : selection.SizeClassEach,
             WeightEach = Math.Max(0, selection.WeightEach),
+            UseAsOffHand = selection.UseAsOffHand,
         };
 
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)

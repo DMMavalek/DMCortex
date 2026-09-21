@@ -1,6 +1,127 @@
 Dungeon Master Cortex - Running Changelog
 ========================================
 
+v1.4.23 (2026-09-21)
+- Added a searchable, filterable spell-selection dialog before character export, with remembered stable-ID selections and automatic inclusion of prepared, cast, and spellbook spells.
+- Separated sphere-accessible divine spells from character-owned/exported spells so priest characters no longer export hundreds of unselected catalog entries.
+- Added versioned Codex/Foundry exchange payloads with complete spell definitions, preparation counts, casting pools, slot state, equipment, proficiencies, and saving throws.
+- Preserved complete Foundry source payloads and unknown nested properties across import/export while merging selected spell updates by stable ID.
+- Populated structured equipment from native and legacy character inventory records and added stable equipment aliases and state.
+- Populated structured ability names and categories during save/export.
+- Corrected multiclass saving throws to use each class's individual level before choosing the best target.
+
+v1.4.22 (2026-09-21)
+- Awarded configured Character Points whenever either class advances for multiclass characters, including advances that do not change the lower overall level.
+- Corrected ADD EXISTING historical CP reconstruction to count every individual class-level advance.
+- Corrected Druid class-point accounting so the fixed 60-CP sphere package is included consistently in spent, remaining, and proficiency carryover totals.
+- Prevented the Ranger Tracking class ability from charging a second purchase cost for the granted Tracking proficiency.
+- Added Ranger Tracking level bonuses and contextual Animal Lore and Animal Empathy modifiers to live and review proficiency targets.
+- Corrected ADD EXISTING weapon proficiency funds to include historical level-awarded CP.
+- Corrected final Character Point balance calculations so NWP overspending cannot be hidden before weapon costs are applied.
+- Expanded NWP review entries to show purchase, improvement, and total CP costs.
+
+v1.4.21 (2026-07-17)
+- Completed HTML export parity updates so character-sheet section row heights, column widths, and section placement match the in-app layout.
+- Added structured WEAPONS HTML rendering with the same table headers/columns used on Character Sheets.
+- Fixed HTML export section routing so Identity, Combat Statistics, Equipment, and Wealth content appear only in their correct sections.
+- Updated Character Identity HTML to explicit two-column field groups (Name/Player/Gender/Party/Ruleset/CPs and Race/Class/Level/Experience/Experience Needed).
+- Simplified Equipment export rows to item name + quantity only.
+- Removed base HP/AC text from Character Sheets combat statistics, keeping current values only.
+
+v1.4.20 (2026-07-11)
+- Improved character-sheet spell print pagination so spell content flows across pages without visual squeeze.
+- Added safer page-break slicing for SPELLS sections to avoid heading-only pages and reduce mid-row cutoffs.
+- Added HTML export from Character Sheets with a color-theme layout that mirrors the in-app sheet styling.
+- Fixed HTML export section mapping so WEAPONS/WEALTH/EQUIPMENT and ABILITIES sections bind to the correct source blocks.
+- Updated HTML export layout to keep section cards equal height per row and render WEAPONS as a full table (ROLE, WEAPON, THAC0, SF, APR, DMG, TYPE, SZ, PROF).
+- Corrected HTML Character Identity content to include only identity fields (no combat, coins, or equipment bleed-over).
+- Corrected HTML Wealth content population and simplified Equipment list entries to item names with quantity.
+- Removed HP/AC base-value text from Character Sheets combat stats, showing current values only.
+
+v1.4.19 (2026-07-11)
+- Corrected Core Rules level-1 HP handling to enforce class hit die plus Constitution bonus, including load-time normalization for stale inflated values.
+- Fixed nonweapon proficiency class-group mapping so priest-side access is correctly recognized for cleric, druid, and paladin.
+- Removed incorrect crossover penalties on Healing for cleric/paladin and on Blind Fighting for fighter by hardening known NWP class corrections.
+
+v1.4.18 (2026-07-06)
+- Corrected nonweapon proficiency class mapping so Observation is rogue-only and Ancient History is available to both priest and wizard groups.
+- Implemented bard Learning Bonus mechanics for nonweapon proficiencies: -1 purchase cost (minimum 1) on non-language NWPs.
+- Implemented bard Learning Bonus language behavior: Modern Languages and Ancient Languages grant two language entries per purchase while keeping normal language NWP cost.
+
+v1.4.17 (2026-07-06)
+- Implemented bard-specific rogue skill progression: fixed four bard skills with 20 points at level 1 and +15 per additional level.
+- Updated rogue skill allocation/review flows to use class-aware point pools and bard skill profile.
+- Applied selected racial/class sub-ability bonuses before the PO split screen so bonuses like Bard Appearance are visible before split adjustments.
+
+v1.4.16 (2026-07-06)
+- Added persistent character-sheet section expansion state by profile and restored black-and-white print style selection in the print flow.
+- Expanded character-sheet Wealth with Platinum, Gem Count, and total Gem Value rows.
+- Fixed Player's Option handling for environmental condition restriction scaling (-5/-10/-15/-20), including legacy text parsing and normalized selection labels.
+- Fixed Appearance Bonus to apply directly to CHA Appearance subability totals.
+
+v1.4.15 (2026-07-05)
+- Fixed installer release payload JSON encoding to UTF-8 after custom-rule scrubbing.
+- Resolved installed-app rules parse failure that caused fallback core-like racial selections and reduced class ability options.
+
+v1.4.14 (2026-07-05)
+- Hardened installed-runtime rules and assets discovery to prioritize executable/base-directory paths before fallback parent traversal.
+- Added rules/workbook load diagnostics at %LOCALAPPDATA%\\DMCortex\\logs\\rules-load.log to capture when fallback data is used.
+- Added safer handling for missing workbook/rules files so installed behavior can be diagnosed without silent regressions.
+
+v1.4.13 (2026-07-05)
+- Expanded updater shortcut cleanup to include installed shortcut names with spaces (for example, "Dungeon Master Codex.lnk" and "Player Codex.lnk").
+- Prevented stale shortcut targets from reopening older install paths after a GitHub update.
+
+v1.4.12 (2026-07-05)
+- Fixed in-app updater cache behavior to always download a fresh installer from GitHub before launch.
+- Prevented stale temp installers from being reused when release assets are re-uploaded under the same version/file name.
+
+v1.4.11 (2026-07-05)
+- Updated DM installer build flow to package a self-contained win-x64 publish payload so fresh installs no longer require separate .NET runtime prompts.
+- Rolled forward release version metadata and installer output naming to 1.4.11 for DM and Player setup packages.
+
+v1.4.10 (2026-07-05)
+- Added global character-mode normalization during char-gen navigation so installed builds cannot drift into core-rules racial ability behavior from legacy mode tokens.
+- Added save migration for loaded character mode values to canonical core_rules / players_option tokens.
+
+v1.4.09 (2026-07-05)
+- Fixed Player's Option racial ability flow when legacy mode text was loaded from existing characters.
+- Added shared character-mode canonicalization so race/subrace screens consistently treat Player's Option as players_option.
+
+v1.4.08 (2026-07-05)
+- Hardened runtime rules loading so failed/partial JSON reads no longer leave empty class/race catalogs in installed builds.
+- Added safe rollback to last known-good in-memory rules when file parsing fails during startup.
+
+v1.4.07 (2026-07-05)
+- Fixed installed-update character mode compatibility so legacy/stale mode text no longer hides races/classes in character creation.
+- Normalized loaded existing-character mode values to canonical core/Player's Option values before level-up and class eligibility checks.
+
+v1.4.06 (2026-07-05)
+- Fixed installed-update character creation edge case where stale/invalid race state could leave class selection empty.
+- Added defensive race normalization on class screen entry so valid class/racial ability flow is recovered automatically.
+
+v1.4.05 (2026-07-05)
+- Added in-app bug reporting via Report Bug dialog using the same support email path as activation requests.
+- Added quick Report Bug access from Options, Character Creation flow, and Edit Information screens.
+- Added structured bug report fields with auto-included diagnostics and clipboard fallback when SMTP sending fails.
+
+v1.4.04 (2026-07-05)
+- Fixed Player's Option global CP display mismatch so Character Options/NWP and Weapon Proficiencies show consistent remaining CP values.
+- Hardened release payload validation to verify spells, equipment, and class/race ability data are present in installer publish output.
+- Continued release safety checks to keep custom class/race content excluded from shipped payloads.
+
+v1.4.03 (2026-07-05)
+- Continued character creation workflow updates across class, class-ability, subrace, wizard spell, equipment, and review screens.
+- Expanded rules and backend updates for armor/equipment handling and character validation flow.
+- Improved character sheet and roster behavior, including related UI polish and edit screen updates.
+- Updated options/session screen behavior and supporting service logic for smoother navigation.
+- Included additional maintenance updates to hub/main window flow and general stability.
+
+v1.4.02 (2026-05-31)
+- Fixed core-rules character creation so classes stay selectable instead of being blocked out by early validation.
+- Updated class validation to use effective ability scores, including racial modifiers, when showing warnings.
+- Preserved the visible availability behavior for Player's Option and multiclass selection.
+
 v1.4.01 (2026-05-29)
 - Updated the character sheet layout system so sections can be expanded/collapsed, moved, and customized more reliably.
 - Improved print preview and print stability so preview opens consistently and mirrors the configured sheet layout.
@@ -59,12 +180,10 @@ v1.3.11 (2026-05-21)
 - Working on building more mechanics into the backend to affect the character sheets properly
 
 v1.3.01 (2026-05-20)
----------------------
 - Session Manager is now hidden for both Dungeon Master and Player editions in offline releases.
 - Added a navigation guard so direct links to Session Manager are blocked when networking is disabled.
 
 v1.3.00 (2026-05-19)
----------------------
 Coming Soon : Campaign Management via Local Area networking
 - Control Combat and Campaign Management at the table!
 [HIDE-START]
@@ -82,13 +201,11 @@ Coming Soon : Campaign Management via Local Area networking
 [HIDE-END]
 
 v1.2.04-v1.1.10 (2026-05-18)
----------------------
 - Made changes to code to make tasks in the Campaign Manager work properly
 - Updated some pages on the DM Editor to affect appearance
 - Added an Options section to allow resizing of screen, control updater, and deactivate software activation
 
 v1.2.03 (2026-05-12)
----------------------
 - Combat tracker and spell workflow improvements.
 - Quick cast flow improvements for speed and clarity.
 - Healing mode support in quick cast path.
@@ -96,7 +213,6 @@ v1.2.03 (2026-05-12)
 - Spell tracker UX refinements and cast details flow updates.
 
 v1.2.00
--------
 - Combat tracker enhancements:
   - Initiative order and round progression polish.
   - End-of-round review and round-complete feedback.
@@ -107,7 +223,6 @@ v1.2.00
   - Campaign color consistency and shared calendar support.
 
 v1.1.x and earlier
-------------------
 - Core AD&D 2e toolkit foundations.
 - Character generation workflows.
 - Campaign and DM utility foundations.

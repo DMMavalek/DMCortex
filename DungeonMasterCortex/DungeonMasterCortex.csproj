@@ -6,10 +6,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-    <Version>1.4.01</Version>
-    <AssemblyVersion>1.4.01.0</AssemblyVersion>
-    <FileVersion>1.4.01.0</FileVersion>
-    <InformationalVersion>1.4.01</InformationalVersion>
+    <Version>1.4.23</Version>
+    <AssemblyVersion>1.4.23.0</AssemblyVersion>
+    <FileVersion>1.4.23.0</FileVersion>
+    <InformationalVersion>1.4.23</InformationalVersion>
     <DefineConstants>$(DefineConstants);APP_EDITION_DM</DefineConstants>
   </PropertyGroup>
 
@@ -111,6 +111,16 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
+    <Content Include="..\Assets\Equipment\**\*">
+      <Link>Assets\Equipment\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Include="..\Assets\Magical Items\**\*">
+      <Link>Assets\Magical Items\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
     <Content Include="..\Assets\Spells\**\*">
       <Link>Assets\Spells\%(RecursiveDir)%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -126,12 +136,19 @@
 
   <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.104.1" />
+    <PackageReference Include="PDFsharp" Version="6.2.0" />
     <PackageReference Include="UglyToad.PdfPig" Version="1.7.0-custom-5" />
   </ItemGroup>
 
   <ItemGroup>
     <RequiredRuntimePayload Include="..\Assets\Class Abilities\**\*">
       <RelativeTargetPath>Assets\Class Abilities\%(RecursiveDir)%(Filename)%(Extension)</RelativeTargetPath>
+    </RequiredRuntimePayload>
+    <RequiredRuntimePayload Include="..\Assets\Equipment\**\*">
+      <RelativeTargetPath>Assets\Equipment\%(RecursiveDir)%(Filename)%(Extension)</RelativeTargetPath>
+    </RequiredRuntimePayload>
+    <RequiredRuntimePayload Include="..\Assets\Magical Items\**\*">
+      <RelativeTargetPath>Assets\Magical Items\%(RecursiveDir)%(Filename)%(Extension)</RelativeTargetPath>
     </RequiredRuntimePayload>
     <RequiredRuntimePayload Include="..\data\rulesets\**\*">
       <RelativeTargetPath>data\rulesets\%(RecursiveDir)%(Filename)%(Extension)</RelativeTargetPath>

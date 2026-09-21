@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace DungeonMasterCortex.Models;
 
@@ -19,6 +21,9 @@ public class AbilityEffect
 
     // Flat attack-roll bonus (THAC0 reduction)
     public int    AttackBonus         { get; set; } = 0;
+
+    // Grants +1 attack bonus every N levels (e.g. 3 => +1 at levels 3, 6, 9, ...)
+    public int    AttackBonusPerLevels { get; set; } = 0;
 
     // Flat bonus to weapon damage rolls
     public int    DamageBonus         { get; set; } = 0;
@@ -51,6 +56,9 @@ public class AbilityEffect
 
     // NWP check modifier (bonus to NWP ability score rolls)
     public int    NwpCheckBonus       { get; set; } = 0;
+
+    // Targeted NWP check modifiers keyed by proficiency id (e.g. nwp_riding_land)
+    public Dictionary<string, int> NwpCheckBonusesById { get; set; } = new();
 
     // Surprise roll modifier
     public int    SurpriseBonus       { get; set; } = 0;
@@ -97,6 +105,7 @@ public class AbilityEffect
 public class AbilityDefinition
 {
     public string         Id          { get; set; } = "";
+    public string         Name        { get; set; } = "";
     public string         Description { get; set; } = "";
     public string         Category    { get; set; } = "";   // for grouping/sorting in UI
     public int            PointCost   { get; set; } = 0;
@@ -127,6 +136,7 @@ public class AbilityBonuses
     public int    NwpSlotBonus        { get; set; } = 0;
     public int    NwpCostReduction    { get; set; } = 0;
     public int    NwpCheckBonus       { get; set; } = 0;
+    public Dictionary<string, int> NwpCheckBonusesById { get; set; } = new();
     public int    SurpriseBonus       { get; set; } = 0;
     public Dictionary<string, int> SubAbilityBonuses { get; set; } = new();
     public int    InfravisionFeet     { get; set; } = 0;
@@ -185,11 +195,24 @@ public record ClassDefinition(
     List<WizardSpecialization>? Specializations = null,
     string                  Source = "core",
     string                  RulesMode = "all",
-    string                  StartingFundsRoll = ""
+    string                  StartingFundsRoll = "",
+    Dictionary<string, string>? FixedSpheres = null,
+    string                  DeityId = "",
+    List<string>?           AllowedAlignments = null
 )
 {
     public bool IsCustom => string.Equals(Source, "custom", StringComparison.OrdinalIgnoreCase);
+    public bool IsSpecialtyPriest => Id.StartsWith("specialty_priest_", StringComparison.OrdinalIgnoreCase);
 }
+
+public record DeityDefinition(
+    string Id,
+    string Name,
+    string Alignment,
+    string Portfolio,
+    List<string> FollowerAlignments,
+    AbilityDefinition? FollowerAbility
+);
 
 public record RogueSkillBreakdown(
     string SkillId,
@@ -308,6 +331,13 @@ public class CustomEquipmentData
     public string WeaponType { get; set; } = "";
     public string WeaponSize { get; set; } = "";
 
+    // Magical modifiers and weapon overrides used by importer/editor flows.
+    public int EnchantmentBonus { get; set; } = 0;
+    public int WeaponAttackBonus { get; set; } = 0;
+    public int WeaponDamageBonus { get; set; } = 0;
+    public int WeaponThac0Modifier { get; set; } = 0;
+    public int ArmorClassModifier { get; set; } = 0;
+
     // Cost fields are stored by coin type to support mixed-economy tables.
     public int CostCopper { get; set; } = 0;
     public int CostSilver { get; set; } = 0;
@@ -317,6 +347,9 @@ public class CustomEquipmentData
     public int ContainerMaxItems { get; set; } = 0;
     public double ContainerMaxWeight { get; set; } = 0;
     public List<string> AllowedContentTags { get; set; } = new();
+
+    // Arbitrary metadata carried through magical-item import/editing.
+    public Dictionary<string, string> MagicalItemMetadata { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 }
 
 public record KitDefinition(
@@ -498,6 +531,9 @@ public class CharacterSheet
 {
     public string Name          { get; set; } = "";
     public string PlayerName    { get; set; } = "";
+    public string Gender        { get; set; } = "";
+    public string Alignment     { get; set; } = "";
+    public string DeityId       { get; set; } = "";
     public string Party         { get; set; } = "";
     public string RaceId        { get; set; } = "";
     public string ClassId       { get; set; } = "";
@@ -564,6 +600,15 @@ public class CharacterSheet
     public List<WizardSpellbook> WizardSpellbooks { get; set; } = new();
     public List<NamedSpellList> WizardSpellLists { get; set; } = new();
     public List<string> TrackedSpellIds { get; set; } = new();
+    public List<string> ExportSpellIds { get; set; } = new();
+    public bool HasExplicitSpellExportSelection { get; set; }
+    public List<CharacterSpellRecord> ArcaneSpells { get; set; } = new();
+    public List<CharacterSpellRecord> DivineSpells { get; set; } = new();
+    public List<CharacterSpellRecord> PsionicPowers { get; set; } = new();
+    public List<SpellCastingPoolRecord> CastingPools { get; set; } = new();
+    public Dictionary<int, int> RemainingArcaneSpellSlots { get; set; } = new();
+    public Dictionary<int, int> RemainingDivineSpellSlots { get; set; } = new();
+    public CharacterSavingThrows SavingThrows { get; set; } = new();
 
     public Dictionary<string, int> Abilities       { get; set; } = new();
     public List<string>            Notes           { get; set; } = new();
@@ -589,6 +634,7 @@ public class CharacterSheet
     public List<string>            SelectedClassAbilityIds { get; set; } = new();
     public string                  WizardSpecializationId  { get; set; } = "";
     public List<string>            NonweaponProficiencies { get; set; } = new();
+    public List<CharacterNonweaponProficiencyRecord> StructuredNonweaponProficiencies { get; set; } = new();
     public List<string>            Languages { get; set; } = new();
     public List<string>            Equipment { get; set; } = new();
     public List<string>            Traits { get; set; } = new();
@@ -608,12 +654,14 @@ public class CharacterSheet
     // Stored chargen identity for level-up/edit flows.
     public string ClassMode { get; set; } = "";
     public List<string> ClassIds { get; set; } = new();
+    public Dictionary<string, int> ClassLevels { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     // Structured selected options for later editing/level-up.
     public List<string> NonweaponProficiencyIds { get; set; } = new();
     public List<WeaponProficiencySelection> WeaponProficiencies { get; set; } = new();
     public List<EquipmentSelection> EquipmentSelections { get; set; } = new();
     public List<GemEntry> Gems { get; set; } = new();
+    public bool UseSpellComponents { get; set; } = false;
 
     // Selections added in the most recent level-up; locked during the next level-up cycle.
     public List<string> LockedLastLevelUpNonweaponIds { get; set; } = new();
@@ -638,6 +686,9 @@ public class CharacterSheet
     public string EquippedArmorId  { get; set; } = "";
     public string EquippedShieldId { get; set; } = "";
     public string EquippedWeaponId { get; set; } = "";
+    public string EquippedMainWeaponId { get; set; } = "";
+    public string EquippedOffHandWeaponId { get; set; } = "";
+    public List<string> EquippedMagicalItemIds { get; set; } = new();
     // Kit selection (from Complete Books of Races)
     public string KitId { get; set; } = "";
     public string KitName { get; set; } = "";
@@ -660,14 +711,119 @@ public class CharacterSheet
     // Saved hidden character-sheet sections by profile key.
     public Dictionary<string, List<string>> HiddenSectionKeysByProfile { get; set; } = new();
 
+    // Saved expanded/collapsed state by profile key (stores expanded section keys).
+    public Dictionary<string, List<string>> ExpandedSectionKeysByProfile { get; set; } = new();
+
+    // Complete source payload retained for lossless Foundry round-trips.
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public JsonElement? FoundrySourceData { get; set; }
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement> ExtensionData { get; set; } = new();
+
     public string LastModifiedDisplay => LastModified.ToString("yyyy-MM-dd");
+}
+
+public class CharacterSavingThrows
+{
+    [JsonPropertyName("paralyzationPoisonDeath")]
+    public int ParalyzationPoisonDeath { get; set; }
+    [JsonPropertyName("rodStaffWand")]
+    public int RodStaffWand { get; set; }
+    [JsonPropertyName("petrificationPolymorph")]
+    public int PetrificationPolymorph { get; set; }
+    [JsonPropertyName("breathWeapon")]
+    public int BreathWeapon { get; set; }
+    [JsonPropertyName("spell")]
+    public int Spell { get; set; }
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement> ExtensionData { get; set; } = new();
+}
+
+public class CharacterSpellRecord
+{
+    public string Id { get; set; } = "";
+    public string SpellId { get => Id; set => Id = value; }
+    public string Name { get; set; } = "";
+    public int Level { get; set; }
+    public string Category { get; set; } = "";
+    public string Sphere { get; set; } = "";
+    public string CastingPoolId { get; set; } = "";
+    public string EffectType { get; set; } = "";
+    public string Components { get; set; } = "";
+    public string Materials { get; set; } = "";
+    public string CastingTime { get; set; } = "";
+    public string Duration { get; set; } = "";
+    public string Range { get; set; } = "";
+    public string AreaOfEffect { get; set; } = "";
+    public string SavingThrow { get; set; } = "";
+    public string Reversal { get; set; } = "";
+    public string Schools { get; set; } = "";
+    public string Frequency { get; set; } = "";
+    public string Volume { get; set; } = "";
+    public string Page { get; set; } = "";
+    public bool IsHealing { get; set; }
+    public string Description { get; set; } = "";
+    public string BriefDescription { get; set; } = "";
+    public string Damage { get; set; } = "";
+    public string DamageStep { get; set; } = "";
+    public string DamageScaleStartLevel { get; set; } = "";
+    public string DamageScaleEveryLevels { get; set; } = "";
+    public string DamageMaxAtLevel { get; set; } = "";
+    public string DamageMax { get; set; } = "";
+    public bool Prepared { get; set; }
+    public int PreparedCount { get; set; }
+    public int RemainingPreparedCount { get; set; }
+    public int RemainingUses { get; set; }
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement> ExtensionData { get; set; } = new();
+}
+
+public class SpellCastingPoolRecord
+{
+    public string Id { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string Category { get; set; } = "";
+    public int MaxLevel { get; set; }
+    public Dictionary<int, SpellSlotState> Slots { get; set; } = new();
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement> ExtensionData { get; set; } = new();
+}
+
+public class SpellSlotState
+{
+    public int Max { get; set; }
+    public int Remaining { get; set; }
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement> ExtensionData { get; set; } = new();
+}
+
+public class CharacterNonweaponProficiencyRecord
+{
+    public string Id { get; set; } = "";
+    public string ProficiencyId { get; set; } = "";
+    public string DisplayName { get; set; } = "";
+    public string Ability { get; set; } = "";
+    public int CheckModifier { get; set; }
+    public int TargetNumber { get; set; }
+    public int InitialCost { get; set; }
+    public int ImprovementCharacterPoints { get; set; }
+    public int TotalCharacterPoints { get; set; }
+    public bool GrantedByClass { get; set; }
+    public string Notes { get; set; } = "";
+    public Dictionary<string, int> SpecialTargets { get; set; } = new();
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement> ExtensionData { get; set; } = new();
 }
 
 public class CharacterSheetLayoutPreference
 {
     public int LaneCount { get; set; } = 2;
-    public bool HasExpansionState { get; set; } = false;
-    public List<string> ExpandedSectionKeys { get; set; } = new();
     public List<CharacterSheetLayoutPlacement> Placements { get; set; } = new();
 }
 
@@ -802,14 +958,20 @@ public class WeaponProficiencySelection
     /// Whether this individual weapon is marked as Weapon Expertise.
     /// </summary>
     public bool   WeaponExpertise { get; set; } = false;
+    /// <summary>
+    /// Whether this specialized individual weapon has advanced to Weapon Mastery.
+    /// </summary>
+    public bool   WeaponMastery { get; set; } = false;
 }
 
 public class EquipmentSelection
 {
     // Stable catalog entry id, currently "<tableCode>|<itemName>".
     public string ItemId { get; set; } = "";
+    public string Id { get => ItemId; set => ItemId = value; }
     public string Category { get; set; } = "";
     public string ItemName { get; set; } = "";
+    public string Name { get => ItemName; set => ItemName = value; }
     public string CostText { get; set; } = "";
     public int Quantity { get; set; } = 1;
     public bool IsArmor { get; set; } = false;
@@ -822,11 +984,24 @@ public class EquipmentSelection
     public string WeaponDamageLarge { get; set; } = "";
     public string WeaponType { get; set; } = "";
     public string WeaponSize { get; set; } = "";
+    public int WeaponAttackBonus { get; set; } = 0;
+    public int WeaponDamageBonus { get; set; } = 0;
+    public int WeaponThac0Modifier { get; set; } = 0;
     public int CostGoldEach { get; set; } = 0;
     public int CostSilverEach { get; set; } = 0;
     public int CostCopperEach { get; set; } = 0;
     public string SizeClassEach { get; set; } = "Medium";
     public double WeightEach { get; set; } = 0;
+    public bool UseAsOffHand { get; set; } = false;
+    public bool Equipped { get; set; } = false;
+    public string Description { get; set; } = "";
+    public int Charges { get; set; } = 0;
+    public int RemainingUses { get; set; } = 0;
+    public string ContainerId { get; set; } = "";
+    public string AmmunitionId { get; set; } = "";
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement> ExtensionData { get; set; } = new();
 }
 
 public class Combatant
