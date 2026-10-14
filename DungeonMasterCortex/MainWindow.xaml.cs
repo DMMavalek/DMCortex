@@ -20,6 +20,7 @@ public partial class MainWindow : Window
     private const double DefaultWindowHeight = 780;
     private bool _autoResizeWindow = true;
     private bool _checkForUpdatesOnStartup = true;
+    private bool _characterLoadFailed;
 
     public bool AutoResizeWindow
     {
@@ -32,6 +33,24 @@ public partial class MainWindow : Window
         get => _checkForUpdatesOnStartup;
         set => _checkForUpdatesOnStartup = value;
     }
+
+    public string AppearanceMode { get; private set; } = "parchment";
+
+    public bool SetAppearanceMode(string? mode)
+    {
+        string normalized = NormalizeAppearanceMode(mode);
+        bool changed = !string.Equals(AppearanceMode, normalized, StringComparison.OrdinalIgnoreCase);
+        AppearanceMode = normalized;
+        return changed;
+    }
+
+    public static string GetSavedAppearanceMode() =>
+        NormalizeAppearanceMode(ReadVersionSettings().AppearanceMode);
+
+    private static string NormalizeAppearanceMode(string? mode) =>
+        string.Equals(mode, "high_contrast_dark", StringComparison.OrdinalIgnoreCase)
+            ? "high_contrast_dark"
+            : "parchment";
 
     // Set global font size for the application
     public void SetGlobalFontSize(double fontSize)
@@ -64,6 +83,8 @@ public partial class MainWindow : Window
         "DungeonMasterCortex");
 
     private static readonly string CharacterSavePath = System.IO.Path.Combine(CharacterSaveDirectory, "characters.json");
+    private static readonly string CharacterLoadErrorPath = System.IO.Path.Combine(CharacterSaveDirectory, "character-load-error.log");
+    private static readonly string EmptyRosterConfirmationPath = System.IO.Path.Combine(CharacterSaveDirectory, "characters-empty-confirmed.marker");
     private static readonly string VersionSettingsPath = System.IO.Path.Combine(CharacterSaveDirectory, "version.json");
 
     private sealed class VersionSettingsData
@@ -74,6 +95,7 @@ public partial class MainWindow : Window
         public double PreferredFontSize { get; set; } = 14;
         public bool AutoResizeWindow { get; set; } = true;
         public bool CheckForUpdatesOnStartup { get; set; } = true;
+        public string AppearanceMode { get; set; } = "parchment";
         public string CharacterRosterRulesetFilter { get; set; } = "both";
         public Dictionary<string, List<string>> GlobalSpellTags { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     }
@@ -190,6 +212,7 @@ public partial class MainWindow : Window
             settings.PreferredFontSize = FontSize;
             settings.AutoResizeWindow = _autoResizeWindow;
             settings.CheckForUpdatesOnStartup = _checkForUpdatesOnStartup;
+            settings.AppearanceMode = NormalizeAppearanceMode(AppearanceMode);
             WriteVersionSettings(settings);
         }
         catch (Exception ex)
@@ -250,6 +273,7 @@ public partial class MainWindow : Window
 
             _autoResizeWindow = settings.AutoResizeWindow;
             _checkForUpdatesOnStartup = settings.CheckForUpdatesOnStartup;
+            AppearanceMode = NormalizeAppearanceMode(settings.AppearanceMode);
             SetGlobalFontSize(fontSize);
             WindowState = settings.UseFullscreen ? WindowState.Maximized : WindowState.Normal;
 
@@ -413,8 +437,41 @@ public partial class MainWindow : Window
         return AppUpdateService.GetCurrentEdition();
     }
 
-    public void SaveCharacters()
+    public void SaveCharacters(bool allowEmptyRoster = false)
     {
+        if (!allowEmptyRoster && Characters.Count == 0 && File.Exists(CharacterSavePath))
+        {
+            try
+            {
+                var existingCharacters = JsonSerializer.Deserialize<List<Models.CharacterSheet>>(
+                    File.ReadAllText(CharacterSavePath));
+                if (existingCharacters is null)
+                {
+                    System.Diagnostics.Debug.WriteLine("[SaveJSON] Skipped empty save because the existing roster was JSON null.");
+                    return;
+                }
+
+                if (existingCharacters is { Count: > 0 })
+                {
+                    System.Diagnostics.Debug.WriteLine("[SaveJSON] Skipped empty save because the existing roster contains characters.");
+                    return;
+                }
+            }
+            catch
+            {
+                // A failed load must never be followed by an empty overwrite.
+                System.Diagnostics.Debug.WriteLine("[SaveJSON] Skipped empty save because the existing roster could not be read.");
+                return;
+            }
+        }
+
+        if (!allowEmptyRoster && _characterLoadFailed && Characters.Count == 0)
+        {
+            System.Diagnostics.Debug.WriteLine("[SaveJSON] Skipped empty save because the existing roster failed to load.");
+            return;
+        }
+
+        string? temporaryPath = null;
         try
         {
             Directory.CreateDirectory(CharacterSaveDirectory);
@@ -433,11 +490,51 @@ public partial class MainWindow : Window
                 }
             }
             
-            File.WriteAllText(CharacterSavePath, json);
+            temporaryPath = System.IO.Path.Combine(CharacterSaveDirectory, $"characters.{Guid.NewGuid():N}.tmp");
+            File.WriteAllText(temporaryPath, json);
+
+            if (File.Exists(CharacterSavePath))
+            {
+                string existingJson = File.ReadAllText(CharacterSavePath);
+                if (!string.Equals(existingJson, json, StringComparison.Ordinal))
+                {
+                    string backupPath = System.IO.Path.Combine(
+                        CharacterSaveDirectory,
+                        $"characters-{DateTime.UtcNow:yyyyMMddTHHmmssfffZ}-{Guid.NewGuid():N}.json.bak");
+                    File.Copy(CharacterSavePath, backupPath, overwrite: false);
+                }
+
+                File.Replace(temporaryPath, CharacterSavePath, destinationBackupFileName: null);
+            }
+            else
+            {
+                File.Move(temporaryPath, CharacterSavePath);
+            }
+
+            temporaryPath = null;
+            _characterLoadFailed = false;
+            try
+            {
+                if (allowEmptyRoster && Characters.Count == 0)
+                    File.WriteAllText(EmptyRosterConfirmationPath, DateTimeOffset.UtcNow.ToString("O"));
+                else if (Characters.Count > 0 && File.Exists(EmptyRosterConfirmationPath))
+                    File.Delete(EmptyRosterConfirmationPath);
+            }
+            catch (Exception markerException)
+            {
+                System.Diagnostics.Debug.WriteLine($"[SaveJSON] Could not update empty-roster confirmation marker: {markerException.Message}");
+            }
+
             System.Diagnostics.Debug.WriteLine($"[SaveJSON] Saved to: {CharacterSavePath}");
         }
         catch (Exception ex)
         {
+            if (temporaryPath is not null)
+            {
+                try { File.Delete(temporaryPath); }
+                catch { /* Preserve the original save even if temporary-file cleanup fails. */ }
+            }
+
             MessageBox.Show(
                 $"Unable to save characters to disk.\n\n{ex.Message}",
                 "Save Error",
@@ -456,7 +553,32 @@ public partial class MainWindow : Window
             var json = File.ReadAllText(CharacterSavePath);
             var loaded = JsonSerializer.Deserialize<List<Models.CharacterSheet>>(json);
             if (loaded is null)
-                return;
+                throw new JsonException("The character roster contained JSON null instead of a character list.");
+
+            bool migrated = false;
+            bool protectEmptyRoster = false;
+            if (loaded.Count == 0 && !IsEmptyRosterExplicitlyConfirmed())
+            {
+                List<Models.CharacterSheet>? backupCharacters = FindLatestNonEmptyCharacterBackup(out string? backupPath);
+                if (backupCharacters is not null && backupPath is not null)
+                {
+                    MessageBoxResult restoreBackup = MessageBox.Show(
+                        $"The shared roster is empty, but a backup contains {backupCharacters.Count} character(s). Restore that backup?\n\n{backupPath}",
+                        "Empty Roster Backup Found",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Warning);
+
+                    if (restoreBackup == MessageBoxResult.Yes)
+                    {
+                        loaded = backupCharacters;
+                        migrated = true;
+                    }
+                    else
+                    {
+                        protectEmptyRoster = true;
+                    }
+                }
+            }
 
             // DEBUG: Log what we're loading
             System.Diagnostics.Debug.WriteLine($"[LoadJSON] Loading {loaded.Count} characters from {CharacterSavePath}");
@@ -470,7 +592,6 @@ public partial class MainWindow : Window
             }
 
             CharacterOptionCatalog catalog = CharacterOptions.GetCatalog();
-            bool migrated = false;
             foreach (CharacterSheet character in loaded)
             {
                 bool neededHydration = (character.EquipmentSelections.Count == 0 && character.Equipment.Count > 0)
@@ -489,17 +610,71 @@ public partial class MainWindow : Window
 
             Characters.Clear();
             Characters.AddRange(loaded);
+            _characterLoadFailed = protectEmptyRoster;
 
             if (migrated)
                 SaveCharacters();
         }
         catch (Exception ex)
         {
+            _characterLoadFailed = true;
+            try
+            {
+                Directory.CreateDirectory(CharacterSaveDirectory);
+                File.AppendAllText(
+                    CharacterLoadErrorPath,
+                    $"{DateTimeOffset.Now:O}{Environment.NewLine}{ex}{Environment.NewLine}{Environment.NewLine}");
+            }
+            catch { /* The load warning below still reports the original failure. */ }
+
             MessageBox.Show(
-                $"Unable to load saved characters. Starting with an empty roster.\n\n{ex.Message}",
+                $"Unable to load saved characters. The existing roster will not be overwritten by an empty save.\n\n{ex.Message}\n\nDetails were also written to:\n{CharacterLoadErrorPath}",
                 "Load Error",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
+        }
+    }
+
+    private static List<Models.CharacterSheet>? FindLatestNonEmptyCharacterBackup(out string? backupPath)
+    {
+        backupPath = null;
+        if (!Directory.Exists(CharacterSaveDirectory))
+            return null;
+
+        foreach (string candidatePath in Directory
+            .EnumerateFiles(CharacterSaveDirectory, "characters-*.json.bak")
+            .OrderByDescending(File.GetLastWriteTimeUtc))
+        {
+            try
+            {
+                List<Models.CharacterSheet>? characters = JsonSerializer.Deserialize<List<Models.CharacterSheet>>(
+                    File.ReadAllText(candidatePath));
+                if (characters is { Count: > 0 })
+                {
+                    backupPath = candidatePath;
+                    return characters;
+                }
+            }
+            catch
+            {
+                // Ignore an unusable backup and continue to older snapshots.
+            }
+        }
+
+        return null;
+    }
+
+    private static bool IsEmptyRosterExplicitlyConfirmed()
+    {
+        try
+        {
+            return File.Exists(EmptyRosterConfirmationPath)
+                && File.Exists(CharacterSavePath)
+                && File.GetLastWriteTimeUtc(EmptyRosterConfirmationPath) >= File.GetLastWriteTimeUtc(CharacterSavePath);
+        }
+        catch
+        {
+            return false;
         }
     }
 
@@ -1411,6 +1586,9 @@ public partial class MainWindow : Window
         {
             CharGen.SelectedAbilitiesByClass[CharGen.ClassId] = new List<string>(character.SelectedClassAbilityIds);
         }
+        CharGen.SelectedClassAbilityIds = CharGen.SelectedAbilitiesByClass.TryGetValue(CharGen.ClassId, out var activeClassAbilities)
+            ? new List<string>(activeClassAbilities)
+            : new List<string>(character.SelectedClassAbilityIds);
         CharGen.SelectedTraitIds = new List<string>(character.SelectedTraitIds);
         CharGen.SelectedDisadvantageSeverities = new Dictionary<string, string>(character.SelectedDisadvantageSeverities, StringComparer.OrdinalIgnoreCase);
         CharGen.SelectedLanguages = character.SelectedLanguages
@@ -1455,6 +1633,8 @@ public partial class MainWindow : Window
             WeaponOfChoice = selection.WeaponOfChoice,
             WeaponExpertise = selection.WeaponExpertise,
             WeaponMastery = selection.WeaponMastery,
+            HighMastery = selection.HighMastery,
+            GrandMastery = selection.GrandMastery,
         };
 
     private static EquipmentSelection CloneEquipmentSelection(EquipmentSelection selection)
@@ -1599,7 +1779,7 @@ public partial class MainWindow : Window
         return versions;
     }
 
-    private VersionSettingsData ReadVersionSettings()
+    private static VersionSettingsData ReadVersionSettings()
     {
         try
         {
@@ -1616,7 +1796,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void WriteVersionSettings(VersionSettingsData data)
+    private static void WriteVersionSettings(VersionSettingsData data)
     {
         var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
         File.WriteAllText(VersionSettingsPath, json);

@@ -1,12 +1,38 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using DungeonMasterCortex.Services;
 
 namespace DungeonMasterCortex.Models
 {
     public class CharGenState
     {
+        public static string NormalizeCharacterModeToken(string? rawMode)
+        {
+            if (string.IsNullOrWhiteSpace(rawMode))
+                return "core_rules";
+
+            string compact = new string(rawMode
+                .Trim()
+                .ToLowerInvariant()
+                .Where(char.IsLetterOrDigit)
+                .ToArray());
+
+            if (compact is "playersoption" or "playersoptions" or "playeroption" or "playeroptions" or "po")
+                return "players_option";
+
+            if (compact is "corerules" or "core")
+                return "core_rules";
+
+            if (compact.Contains("player", StringComparison.Ordinal)
+                && compact.Contains("option", StringComparison.Ordinal))
+                return "players_option";
+
+            return "core_rules";
+        }
+
         public int ExistingStartingUnspentCharacterPoints { get; set; } = 0;
+        public int ExistingStartingHitPoints { get; set; } = 0;
         public Dictionary<string, string> SelectedNonweaponProficiencyNotes { get; set; } = new();
         public Dictionary<string, string> WizardSpecializationById { get; set; } = new();
         // Additional properties for review and compatibility
@@ -19,8 +45,13 @@ namespace DungeonMasterCortex.Models
         public bool ExistingExperienceIsGrandTotalForMulticlass { get; set; } = false;
         public int ExistingCpPerLevel { get; set; } = 0;
         public string Name         { get; set; } = "";
+        public string PlayerName    { get; set; } = "";
+        public string Gender        { get; set; } = "";
+        public string Alignment     { get; set; } = "";
+        public string DeityId       { get; set; } = "";
         public string CharacterMode { get; set; } = "core_rules";
         public string Method       { get; set; } = "method_v_4d6_drop_lowest";
+        public bool PendingDiceRoll { get; set; } = false;
         public Dictionary<string, int> Abilities    { get; set; } = new();
         public Dictionary<string, int> ModifiedAbilities { get; set; } = new();
         public Dictionary<string, int> RacialAbilityModifiers { get; set; } = new();
@@ -36,6 +67,7 @@ namespace DungeonMasterCortex.Models
         public List<string> SelectedNonweaponProficiencyIds { get; set; } = new();
         public List<WeaponProficiencySelection> SelectedWeaponProficiencies { get; set; } = new();
         public List<EquipmentSelection> SelectedEquipment { get; set; } = new();
+        public bool UseSpellComponents { get; set; } = false;
         public List<GemEntry> StartingGems { get; set; } = new();
         public int StartingPlatinumPieces { get; set; } = 0;
         public int StartingGoldPieces { get; set; } = 0;
@@ -50,6 +82,9 @@ namespace DungeonMasterCortex.Models
         public string EquippedArmorId { get; set; } = "";
         public string EquippedShieldId { get; set; } = "";
         public string EquippedWeaponId { get; set; } = "";
+        public string EquippedMainWeaponId { get; set; } = "";
+        public string EquippedOffHandWeaponId { get; set; } = "";
+        public List<string> EquippedMagicalItemIds { get; set; } = new();
         public string KitId { get; set; } = "";
         public List<string> KitFreeNwpIds { get; set; } = new();
         public List<string> KitRequiredNwpIds { get; set; } = new();
@@ -75,6 +110,8 @@ namespace DungeonMasterCortex.Models
         public Dictionary<string, Dictionary<string, bool>> SchoolsByClass { get; set; } = new();
         public List<string> BaselineNonweaponProficiencyIds { get; set; } = new();
         public Dictionary<string, int> BaselineNonweaponProficiencyImprovements { get; set; } = new();
+        public List<string> BaselineTraitIds { get; set; } = new();
+        public Dictionary<string, string> BaselineDisadvantageSeverities { get; set; } = new();
         public List<string> BaselineWeaponProficiencyIds { get; set; } = new();
         public List<WeaponProficiencySelection> BaselineWeaponProficiencies { get; set; } = new();
         public List<EquipmentSelection> BaselineEquipmentSelections { get; set; } = new();
@@ -83,8 +120,13 @@ namespace DungeonMasterCortex.Models
         public void Clear()
         {
             Name = "";
+            PlayerName = "";
+            Gender = "";
+            Alignment = "";
+            DeityId = "";
             CharacterMode = "core_rules";
             Method = "method_v_4d6_drop_lowest";
+            PendingDiceRoll = false;
             Abilities.Clear();
             ModifiedAbilities.Clear();
             RacialAbilityModifiers.Clear();
@@ -100,6 +142,7 @@ namespace DungeonMasterCortex.Models
             SelectedNonweaponProficiencyIds.Clear();
             SelectedWeaponProficiencies.Clear();
             SelectedEquipment.Clear();
+            UseSpellComponents = false;
             StartingGems.Clear();
             StartingPlatinumPieces = 0;
             StartingGoldPieces = 0;
@@ -114,16 +157,25 @@ namespace DungeonMasterCortex.Models
             EquippedArmorId = "";
             EquippedShieldId = "";
             EquippedWeaponId = "";
+            EquippedMainWeaponId = "";
+            EquippedOffHandWeaponId = "";
+            EquippedMagicalItemIds.Clear();
             KitId = "";
             KitFreeNwpIds.Clear();
             KitRequiredNwpIds.Clear();
             LockedNonweaponProficiencyIds.Clear();
             LockedWeaponProficiencyIds.Clear();
+            IsExistingCharacterMode = false;
+            ExistingStartingExperience = 0;
+            ExistingExperienceIsGrandTotalForMulticlass = false;
+            ExistingCpPerLevel = 0;
+            ExistingStartingUnspentCharacterPoints = 0;
             IsLevelUpMode = false;
             LevelUpCharacterIndex = -1;
             LevelUpPendingExperienceGain = 0;
             LevelUpPendingHitPointGain = 0;
             LevelUpPendingCharacterPointGain = 0;
+            ExistingStartingHitPoints = 0;
             SelectedSpheres.Clear();
             SelectedWizardSchools.Clear();
             SelectedAbilitiesByClass.Clear();
@@ -139,6 +191,8 @@ namespace DungeonMasterCortex.Models
             SchoolsByClass.Clear();
             BaselineNonweaponProficiencyIds.Clear();
             BaselineNonweaponProficiencyImprovements.Clear();
+            BaselineTraitIds.Clear();
+            BaselineDisadvantageSeverities.Clear();
             BaselineWeaponProficiencyIds.Clear();
             BaselineWeaponProficiencies.Clear();
             BaselineEquipmentSelections.Clear();
@@ -156,8 +210,40 @@ namespace DungeonMasterCortex.Models
             if (IsExistingCharacterMode)
             {
                 int experience = Math.Max(0, ExistingStartingExperience);
+                int classCount = SelectedClassIds
+                    .Where(id => !string.IsNullOrWhiteSpace(id))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .Count();
+                if (ExistingExperienceIsGrandTotalForMulticlass && classCount > 1)
+                    experience /= classCount;
                 CharacterLevel = Math.Max(1, CharacterProgressionService.GetLevelForExperience(ClassId, experience));
             }
+        }
+
+        public int GetExistingCharacterPointPool()
+        {
+            int levelAwards = Math.Max(0, ExistingCpPerLevel) * GetExistingClassLevelAdvances();
+            return Math.Max(0, ExistingStartingUnspentCharacterPoints) + levelAwards;
+        }
+
+        public int GetExistingClassLevelAdvances()
+        {
+            var classIds = SelectedClassIds
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            if (classIds.Count == 0 && !string.IsNullOrWhiteSpace(ClassId))
+                classIds.Add(ClassId);
+            if (classIds.Count == 0)
+                return Math.Max(0, CharacterLevel - 1);
+
+            int experience = Math.Max(0, ExistingStartingExperience);
+            if (ExistingExperienceIsGrandTotalForMulticlass && classIds.Count > 1)
+                experience /= classIds.Count;
+
+            return classIds.Sum(id => Math.Max(
+                0,
+                CharacterProgressionService.GetLevelForExperience(id, experience) - 1));
         }
 
         public void SyncLegacyFieldsFromNew() { /* Implement as needed */ }

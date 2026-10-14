@@ -22,6 +22,7 @@ public partial class CharGenNameScreen : UserControl, IScreen
             backAction: () => _app.GoTo("dice_roller", -1),
             nextAction: Advance);
         TxtName.Text = _app.CharGen.Name;
+        TxtPlayerName.Text = _app.CharGen.PlayerName;
         MethodSummary.Text = $"Rolling Method: {DungeonMasterCortex.Services.RulesEngine.MethodDisplay(_app.CharGen.Method)}";
     }
 
@@ -34,7 +35,15 @@ public partial class CharGenNameScreen : UserControl, IScreen
                             MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
-        _app.CharGen.Name   = name;
+        var playerName = TxtPlayerName.Text.Trim();
+        if (string.IsNullOrEmpty(playerName))
+        {
+            MessageBox.Show("Please enter a player name.", "Player Name Required",
+                            MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        _app.CharGen.Name       = name;
+        _app.CharGen.PlayerName = playerName;
         if (_app.CharGen.Abilities.Count == 0)
             _app.CharGen.Abilities = _app.Rules.GenerateAbilities(_app.CharGen.Method);
         _app.GoTo("chargen_abilities");

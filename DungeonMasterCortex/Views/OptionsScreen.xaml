@@ -3,7 +3,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Background="{StaticResource BrushPanel}">
     <Grid Margin="28,16">
-        <StackPanel>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0">
             <TextBlock Text="OPTIONS" Style="{StaticResource TitleText}" FontSize="22" Margin="0,0,0,16"/>
 
             <!-- Activation Status -->
@@ -34,10 +39,25 @@
                             Width="130"
                             Click="BtnApplyActivationCode_Click"/>
                     </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <Button x:Name="BtnReportBug"
+                                Content="Report Bug"
+                                Style="{StaticResource GoldButton}"
+                                Width="160"
+                                Click="BtnReportBug_Click"/>
+                    </StackPanel>
                 </StackPanel>
             </Border>
 
             <CheckBox x:Name="FullScreenCheckBox" Content="Enable Full Screen Mode" Margin="0,0,0,8"/>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                <TextBlock Text="Appearance:" Style="{StaticResource BodyText}"
+                           VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <ComboBox x:Name="AppearanceComboBox" Style="{StaticResource DarkComboBox}" Width="210">
+                    <ComboBoxItem Content="Parchment" Tag="parchment"/>
+                    <ComboBoxItem Content="High Contrast Dark" Tag="high_contrast_dark"/>
+                </ComboBox>
+            </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                 <TextBlock Text="Text Size:" VerticalAlignment="Center" Margin="0,0,8,0"/>
                 <ComboBox x:Name="TextSizeComboBox" Width="120">
@@ -49,10 +69,39 @@
             </StackPanel>
             <CheckBox x:Name="AutoResizeCheckBox" Content="Auto-resize window to match font size" Margin="0,0,0,8"/>
             <CheckBox x:Name="StartupUpdateCheckBox" Content="Check for updates automatically on startup" Margin="0,0,0,8"/>
-            <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+        </StackPanel>
+
+        <Grid Grid.Row="1" Margin="0,18,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Orientation="Horizontal">
                 <Button Content="APPLY" Style="{StaticResource GoldButton}" Width="120" Margin="0,0,10,0" Click="BtnApply_Click"/>
                 <Button Content="BACK TO HUB" Style="{StaticResource GoldButton}" Width="140" Click="BtnBackToHub_Click"/>
             </StackPanel>
-        </StackPanel>
+
+            <Button Grid.Column="1"
+                    x:Name="BtnDiscord"
+                    Click="DiscordLink_Click"
+                    Padding="14,8"
+                    Background="#5865F2"
+                    BorderBrush="#4752C4"
+                    BorderThickness="1"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom"
+                    Cursor="Hand"
+                    ToolTip="Join the Discord community">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Viewbox Width="18" Height="18" Margin="0,0,8,0">
+                        <Canvas Width="24" Height="24">
+                            <Path Fill="White" Data="M9.5,7.5 C10.33,7.5 11,8.17 11,9 C11,9.83 10.33,10.5 9.5,10.5 C8.67,10.5 8,9.83 8,9 C8,8.17 8.67,7.5 9.5,7.5 Z M14.5,7.5 C15.33,7.5 16,8.17 16,9 C16,9.83 15.33,10.5 14.5,10.5 C13.67,10.5 13,9.83 13,9 C13,8.17 13.67,7.5 14.5,7.5 Z M6,4.5 C4.34,4.5 3,5.84 3,7.5 V15.5 C3,17.16 4.34,18.5 6,18.5 H18 C19.66,18.5 21,17.16 21,15.5 V7.5 C21,5.84 19.66,4.5 18,4.5 H6 Z M6.5,6.5 H17.5 C18.33,6.5 19,7.17 19,8 V15 C19,15.83 18.33,16.5 17.5,16.5 H6.5 C5.67,16.5 5,15.83 5,15 V8 C5,7.17 5.67,6.5 6.5,6.5 Z"/>
+                        </Canvas>
+                    </Viewbox>
+                    <TextBlock Text="Discord" Foreground="White" FontWeight="Bold" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+        </Grid>
     </Grid>
 </UserControl>

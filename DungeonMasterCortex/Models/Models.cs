@@ -565,6 +565,9 @@ public class CharacterSheet
     // Effective AC after all bonuses are applied
     public int    ArmorClass      { get; set; } = 10;
 
+    // Effective AC against missile attacks (accounts for body shield etc.)
+    public int    MissileArmorClass { get; set; } = 10;
+
     // Armor profile used for conditional mechanics (e.g., no-armor AC bonuses).
     public string ArmorProfile    { get; set; } = "no_armor";
 
@@ -589,6 +592,8 @@ public class CharacterSheet
     public int UnspentCharacterPoints { get; set; } = 0;
     public int SpentNwpCharacterPoints { get; set; } = 0;
     public int SpentWeaponCharacterPoints { get; set; } = 0;
+    public int SpentHpRerollCharacterPoints { get; set; } = 0;
+    public Dictionary<int, int> HpRerollsByLevel { get; set; } = new();
 
     // HP gained when reaching each level (key = achieved level, value = HP gained at that level).
     public Dictionary<int, int> HitPointGainByLevel { get; set; } = new();
@@ -959,9 +964,17 @@ public class WeaponProficiencySelection
     /// </summary>
     public bool   WeaponExpertise { get; set; } = false;
     /// <summary>
-    /// Whether this specialized individual weapon has advanced to Weapon Mastery.
+    /// Whether this specialized individual weapon has advanced to Weapon Mastery (level 5+).
     /// </summary>
     public bool   WeaponMastery { get; set; } = false;
+    /// <summary>
+    /// Whether this specialized individual weapon has advanced to High Mastery (level 6+).
+    /// </summary>
+    public bool   HighMastery   { get; set; } = false;
+    /// <summary>
+    /// Whether this specialized individual weapon has advanced to Grand Mastery (level 9+, single-class Fighter).
+    /// </summary>
+    public bool   GrandMastery  { get; set; } = false;
 }
 
 public class EquipmentSelection

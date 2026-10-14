@@ -55,19 +55,6 @@ public class CharacterRosterScreen : UserControl, IScreen
         return new List<string>();
     }
 
-    private static (int HitDie, int HitDieLevels, int PostCapGain) GetHitPointProfileForClass(string classId)
-    {
-        return (classId ?? string.Empty).Trim().ToLowerInvariant() switch
-        {
-            "fighter" or "paladin" or "ranger" => (10, 9, 3),
-            "cleric" or "druid" => (8, 9, 2),
-            "wizard" or "mage" or "illusionist" => (4, 10, 1),
-            "thief" or "bard" or "rogue" => (6, 10, 2),
-            _ when RulesEngine.IsPriestClassId(classId) => (8, 9, 2),
-            _ => (6, 10, 2),
-        };
-    }
-
     private static string FormatLevelDisplay(CharacterSheet character)
     {
         var classIds = GetDisplayedClassIds(character);
@@ -213,14 +200,18 @@ public class CharacterRosterScreen : UserControl, IScreen
         var grid = new DataGrid
         {
             AutoGenerateColumns = false,
+            SelectionMode = DataGridSelectionMode.Extended,
+            SelectionUnit = DataGridSelectionUnit.FullRow,
+            ToolTip = "Select multiple rows with Ctrl-click or Shift-click, then choose EXPORT SELECTED.",
             HeadersVisibility = DataGridHeadersVisibility.Column,
             CanUserAddRows = false,
             CanUserDeleteRows = false,
             IsReadOnly = true,
             GridLinesVisibility = DataGridGridLinesVisibility.Horizontal,
-            AlternatingRowBackground = new SolidColorBrush(Color.FromArgb(0x20, 0xFF, 0xFF, 0xFF)),
+            AlternationCount = 2,
             BorderThickness = new Thickness(1)
         };
+        grid.SetResourceReference(DataGrid.RowStyleProperty, "AlternatingDataGridRow");
         grid.SetResourceReference(BackgroundProperty, "BrushInputBg");
         grid.SetResourceReference(ForegroundProperty, "BrushText");
         grid.SetResourceReference(BorderBrushProperty, "BrushBorder2");
@@ -267,7 +258,7 @@ public class CharacterRosterScreen : UserControl, IScreen
             HorizontalAlignment = HorizontalAlignment.Left,
             Margin = new Thickness(0, 10, 0, 0)
         };
-        bottomActions.Children.Add(CreateHeaderButton("⬆  EXPORT", 110, BtnExport_Click));
+        bottomActions.Children.Add(CreateHeaderButton("⬆  EXPORT SELECTED", 150, BtnExport_Click));
         bottomActions.Children.Add(CreateHeaderButton("⬇  IMPORT", 110, BtnImport_Click));
         bottomActions.Children.Add(CreateHeaderButton("🗑  DELETE", 110, BtnDelete_Click, isLast: false, style: "DangerButton"));
 
@@ -360,20 +351,29 @@ public class CharacterRosterScreen : UserControl, IScreen
 
     private void BtnExport_Click(object sender, RoutedEventArgs e)
     {
-        if (CharacterGrid.SelectedItem is not CharacterRow selected)
+        List<CharacterSheet> selectedCharacters = CharacterGrid.SelectedItems
+            .OfType<CharacterRow>()
+            .Where(row => row.SourceIndex >= 0 && row.SourceIndex < _app.Characters.Count)
+            .Select(row => _app.Characters[row.SourceIndex])
+            .Distinct()
+            .ToList();
+
+        if (selectedCharacters.Count == 0)
         {
-            MessageBox.Show("Select a character in the roster to export.", "Export",
+            MessageBox.Show("Select one or more characters in the roster to export.", "Export",
                             MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
-        if (selected.SourceIndex < 0 || selected.SourceIndex >= _app.Characters.Count) return;
 
-        var c = _app.Characters[selected.SourceIndex];
+        bool isBatchExport = selectedCharacters.Count > 1;
+        CharacterSheet c = selectedCharacters[0];
         var dlg = new SaveFileDialog
         {
-            Title          = "Export Character",
-            FileName       = $"{c.Name}.json",
-            Filter         = "Codex character (*.json)|*.json|Foundry exchange (*.foundry.json)|*.foundry.json|All files (*.*)|*.*",
+            Title          = isBatchExport ? $"Export {selectedCharacters.Count} Characters" : "Export Character",
+            FileName       = isBatchExport ? "Characters.json" : $"{c.Name}.json",
+            Filter         = isBatchExport
+                ? "Codex characters (*.json)|*.json|All files (*.*)|*.*"
+                : "Codex character (*.json)|*.json|Foundry exchange (*.foundry.json)|*.foundry.json|All files (*.*)|*.*",
             FilterIndex    = 1,
             DefaultExt     = ".json"
         };
@@ -381,30 +381,55 @@ public class CharacterRosterScreen : UserControl, IScreen
 
         try
         {
-            IReadOnlyList<SpellDefinition> candidates = FoundryCharacterExchangeService.GetExportSpellCandidates(c, _app.Rules);
-            if (candidates.Count > 0)
+            var pendingSpellSelections = new Dictionary<CharacterSheet, List<string>>();
+            foreach (CharacterSheet character in selectedCharacters)
             {
-                IReadOnlySet<string> requiredIds = FoundryCharacterExchangeService.GetRequiredSpellIds(c);
-                var spellDialog = new SpellExportSelectionDialog(c, candidates, requiredIds)
+                IReadOnlyList<SpellDefinition> candidates = FoundryCharacterExchangeService.GetExportSpellCandidates(character, _app.Rules);
+                if (candidates.Count == 0)
+                    continue;
+
+                IReadOnlySet<string> requiredIds = FoundryCharacterExchangeService.GetRequiredSpellIds(character);
+                var spellDialog = new SpellExportSelectionDialog(character, candidates, requiredIds)
                 {
                     Owner = Window.GetWindow(this),
                 };
                 if (spellDialog.ShowDialog() != true)
                     return;
 
-                c.ExportSpellIds = spellDialog.GetSelectedSpellIds();
-                c.HasExplicitSpellExportSelection = true;
-                c.LastModified = DateTime.Now;
-                c.Revision = Math.Max(1, c.Revision + 1);
-                _app.SaveCharacters();
+                pendingSpellSelections[character] = spellDialog.GetSelectedSpellIds();
             }
 
+            foreach ((CharacterSheet character, List<string> spellIds) in pendingSpellSelections)
+            {
+                character.ExportSpellIds = spellIds;
+                character.HasExplicitSpellExportSelection = true;
+                character.LastModified = DateTime.Now;
+                character.Revision = Math.Max(1, character.Revision + 1);
+            }
+
+            if (pendingSpellSelections.Count > 0)
+                _app.SaveCharacters();
+
             var exportOptions = new JsonSerializerOptions { WriteIndented = true };
-            var json = dlg.FilterIndex == 2
-                ? FoundryCharacterExchangeService.Export(c, exportOptions, _app.Rules, _app.CharacterOptions.GetCatalog())
-                : FoundryCharacterExchangeService.ExportCodex(c, exportOptions, _app.Rules, _app.CharacterOptions.GetCatalog());
+            string json;
+            if (isBatchExport)
+            {
+                foreach (CharacterSheet character in selectedCharacters)
+                    FoundryCharacterExchangeService.SynchronizeCharacterData(character, _app.Rules, _app.CharacterOptions.GetCatalog());
+                json = JsonSerializer.Serialize(selectedCharacters, exportOptions);
+            }
+            else
+            {
+                json = dlg.FilterIndex == 2
+                    ? FoundryCharacterExchangeService.Export(c, exportOptions, _app.Rules, _app.CharacterOptions.GetCatalog())
+                    : FoundryCharacterExchangeService.ExportCodex(c, exportOptions, _app.Rules, _app.CharacterOptions.GetCatalog());
+            }
+
             File.WriteAllText(dlg.FileName, json);
-            MessageBox.Show($"{c.Name} exported successfully.", "Export",
+            MessageBox.Show(isBatchExport
+                    ? $"{selectedCharacters.Count} characters exported successfully. Custom notes, abilities, equipment, proficiencies, and other character data are included."
+                    : $"{c.Name} exported successfully. Custom notes, abilities, equipment, proficiencies, and other character data are included.",
+                "Export",
                             MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)
@@ -526,7 +551,7 @@ public class CharacterRosterScreen : UserControl, IScreen
         if (result != MessageBoxResult.Yes) return;
 
         _app.Characters.RemoveAt(selected.SourceIndex);
-        _app.SaveCharacters();
+        _app.SaveCharacters(allowEmptyRoster: _app.Characters.Count == 0);
         RefreshGrid();
     }
 
@@ -898,13 +923,18 @@ public class CharacterRosterScreen : UserControl, IScreen
         // ── HP row ────────────────────────────────────────────────────────────
         panel.Children.Add(new TextBlock
         {
-            Text = $"HP Adjustment (+/-; roll d{hitDie}, bonuses {bonusLabel} on level gain):",
+            Text = $"HP Gain (enter final tabletop total, or roll 1d{hitDie}):",
             Margin = new Thickness(0, 10, 0, 2)
         });
         var hpRow = new Grid();
         hpRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         hpRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(80) });
-        var hpBox = new TextBox { Text = "0", Padding = new Thickness(6, 3, 6, 3) };
+        var hpBox = new TextBox
+        {
+            Text = "0",
+            Padding = new Thickness(6, 3, 6, 3),
+            ToolTip = "Enter the final HP gained from a tabletop roll. The value is applied exactly as entered unless the bonus option is selected."
+        };
         Grid.SetColumn(hpBox, 0);
         var rollBtn = new Button
         {
@@ -917,6 +947,22 @@ public class CharacterRosterScreen : UserControl, IScreen
         hpRow.Children.Add(hpBox);
         hpRow.Children.Add(rollBtn);
         panel.Children.Add(hpRow);
+
+        var addBonusesToManualHp = new CheckBox
+        {
+            Content = $"Add CON/class bonuses ({bonusLabel}) to manual entry",
+            Margin = new Thickness(0, 6, 0, 0),
+            Foreground = new SolidColorBrush(Color.FromRgb(0xC4, 0xA4, 0x68)),
+            IsChecked = false,
+        };
+        panel.Children.Add(addBonusesToManualHp);
+        panel.Children.Add(new TextBlock
+        {
+            Text = "Manual HP is applied exactly as typed unless the option above is checked. The Roll button always includes applicable bonuses.",
+            Margin = new Thickness(0, 3, 0, 0),
+            Style = (Style)Application.Current.FindResource("SubtitleText"),
+            TextWrapping = TextWrapping.Wrap,
+        });
 
         var hpBreakdownText = new TextBlock
         {
@@ -952,6 +998,7 @@ public class CharacterRosterScreen : UserControl, IScreen
                 levelStateText.Foreground = new SolidColorBrush(Color.FromRgb(0xE8, 0xC0, 0x50));
                 hpRow.Visibility = Visibility.Visible;
                 rollBtn.IsEnabled = true;
+                addBonusesToManualHp.IsEnabled = true;
                 if (cpAutoText is not null)
                     cpAutoText.Text = $"CP auto-award for this update: {character.CpPerLevel} x {projectedClassLevelsGained} class level(s) = {Math.Max(0, character.CpPerLevel) * projectedClassLevelsGained}.";
             }
@@ -963,6 +1010,8 @@ public class CharacterRosterScreen : UserControl, IScreen
                 levelStateText.Foreground = new SolidColorBrush(Color.FromRgb(0xC4, 0xA4, 0x68));
                 hpRow.Visibility = Visibility.Visible;
                 rollBtn.IsEnabled = false;
+                addBonusesToManualHp.IsEnabled = false;
+                addBonusesToManualHp.IsChecked = false;
                 hpWasRolled = false;
                 hpBreakdownText.Text = string.Empty;
                 hpBreakdownText.Visibility = Visibility.Collapsed;
@@ -999,7 +1048,7 @@ public class CharacterRosterScreen : UserControl, IScreen
                 foreach (string classId in classIds)
                 {
                     string classToken = classId ?? string.Empty;
-                    var profile = GetHitPointProfileForClass(classToken);
+                    var profile = CharacterProgressionService.GetHitPointProfile(character, classToken);
                     int baseRoll = level <= profile.HitDieLevels
                         ? Random.Shared.Next(1, profile.HitDie + 1)
                         : profile.PostCapGain;
@@ -1017,6 +1066,7 @@ public class CharacterRosterScreen : UserControl, IScreen
 
             hpBox.Text = totalRolled.ToString();
             hpWasRolled = true;
+            addBonusesToManualHp.IsChecked = false;
             hpBreakdownText.Text = "HP roll breakdown:\n" + string.Join("\n", breakdownLines);
             hpBreakdownText.Visibility = Visibility.Visible;
         };
@@ -1188,22 +1238,11 @@ public class CharacterRosterScreen : UserControl, IScreen
 
             if (willLevelUpNow)
             {
-                // If HP was typed manually, ask about bonuses
-                if (!hpWasRolled && parsedHp > 0)
+                if (!hpWasRolled && parsedHp > 0 && addBonusesToManualHp.IsChecked == true)
                 {
                     int bonus = CharacterProgressionService.GetConAndClassHpBonus(character);
                     if (bonus != 0)
-                    {
-                        string sign = bonus > 0 ? $"+{bonus}" : $"{bonus}";
-                        var ans = MessageBox.Show(
-                            $"You entered {parsedHp} HP manually.\n\n" +
-                            $"Add CON & class bonuses ({sign}) to make it {parsedHp + bonus}?",
-                            "Apply HP Bonuses?",
-                            MessageBoxButton.YesNo,
-                            MessageBoxImage.Question);
-                        if (ans == MessageBoxResult.Yes)
-                            parsedHp = Math.Max(1, parsedHp + bonus);
-                    }
+                        parsedHp = Math.Max(1, parsedHp + bonus);
                 }
             }
 

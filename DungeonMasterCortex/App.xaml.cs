@@ -64,7 +64,19 @@ public partial class App : Application
 		AppDomain.CurrentDomain.UnhandledException += OnCurrentDomainUnhandledException;
 		TaskScheduler.UnobservedTaskException += OnTaskSchedulerUnobservedTaskException;
 
+		ApplySavedAppearancePalette();
 		ShowSplashAndLaunchMain();
+	}
+
+	private void ApplySavedAppearancePalette()
+	{
+		if (!string.Equals(DungeonMasterCortex.MainWindow.GetSavedAppearanceMode(), "high_contrast_dark", StringComparison.OrdinalIgnoreCase))
+			return;
+
+		Resources.MergedDictionaries.Add(new ResourceDictionary
+		{
+			Source = new Uri("Themes/HighContrastDark.xaml", UriKind.Relative),
+		});
 	}
 
 	private static void RegisterGlobalTextBoxFocusBehavior()

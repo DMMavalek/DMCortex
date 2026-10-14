@@ -53,6 +53,8 @@ public partial class CharGenClassScreen : UserControl, IScreen
 
     private List<ClassDefinition> _eligible = new();
     private List<SingleClassItem> _singleClassItems = new();
+    private string _classSourceFilter = "all";
+    private bool _screenInitialized;
 
     // SphereCosts / CalculateSphereCpCost kept here because SphereSelectionDialog references them.
     internal static readonly Dictionary<string, (int minor, int major)> SphereCosts =
@@ -129,6 +131,7 @@ public partial class CharGenClassScreen : UserControl, IScreen
     {
         _app = app;
         InitializeComponent();
+        _screenInitialized = true;
     }
 
     public void OnEnter()
@@ -142,6 +145,8 @@ public partial class CharGenClassScreen : UserControl, IScreen
             _app.SetNavBar(5, isPO ? 9 : 8, "Class",
                 backAction: () => _app.GoTo("chargen_subrace", -1),
                 nextAction: Advance);
+
+            NormalizeSelectedRaceForCurrentRules();
 
             if (string.IsNullOrEmpty(_app.CharGen.RaceId))
             {
@@ -206,6 +211,46 @@ public partial class CharGenClassScreen : UserControl, IScreen
         }
     }
 
+    private void NormalizeSelectedRaceForCurrentRules()
+    {
+        if (_app.Rules.Races.TryGetValue(_app.CharGen.RaceId, out _))
+            return;
+
+        string? fallbackRaceId = null;
+
+        if (!string.IsNullOrWhiteSpace(_app.CharGen.BaseRaceId)
+            && _app.Rules.Races.TryGetValue(_app.CharGen.BaseRaceId, out _))
+        {
+            fallbackRaceId = _app.CharGen.BaseRaceId;
+        }
+        else if (!string.IsNullOrWhiteSpace(_app.CharGen.BaseRaceId))
+        {
+            fallbackRaceId = _app.Rules.RacesForMode(_app.CharGen.CharacterMode)
+                .FirstOrDefault(r => string.Equals(r.BaseRaceId, _app.CharGen.BaseRaceId, System.StringComparison.OrdinalIgnoreCase))
+                ?.Id;
+        }
+
+        if (string.IsNullOrWhiteSpace(fallbackRaceId))
+        {
+            fallbackRaceId = _app.Rules.RacesForMode(_app.CharGen.CharacterMode)
+                .FirstOrDefault(r => string.Equals(r.Id, "human", System.StringComparison.OrdinalIgnoreCase))
+                ?.Id;
+        }
+
+        if (string.IsNullOrWhiteSpace(fallbackRaceId))
+        {
+            fallbackRaceId = _app.Rules.RacesForMode(_app.CharGen.CharacterMode)
+                .FirstOrDefault()?.Id;
+        }
+
+        if (string.IsNullOrWhiteSpace(fallbackRaceId))
+            return;
+
+        _app.CharGen.RaceId = fallbackRaceId;
+        _app.CharGen.SelectedRacialAbilityIds.Clear();
+        _app.CharGen.ModifiedAbilities = _app.Rules.ApplyRacialModifiers(_app.CharGen.RaceId, _app.CharGen.Abilities);
+    }
+
     // ── Mode panel visibility ────────────────────────────────────────────────
 
     private List<KitDefinition> _availableKits = new();
@@ -241,6 +286,43 @@ public partial class CharGenClassScreen : UserControl, IScreen
         }
 
         RefreshKitPanel();
+    }
+
+    private IEnumerable<ClassDefinition> GetDisplayedClasses()
+    {
+        return _classSourceFilter switch
+        {
+            "custom" => _eligible.Where(cls => cls.IsCustom),
+            "standard" => _eligible.Where(cls => !cls.IsCustom),
+            _ => _eligible,
+        };
+    }
+
+    private void ClassSourceFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_screenInitialized || ClassSourceFilter.SelectedItem is not ComboBoxItem selected)
+            return;
+
+        _classSourceFilter = selected.Tag?.ToString() ?? "all";
+        _singleClassItems = BuildSingleClassItems();
+        RefreshUIForMode();
+        RefreshClassAvailabilityLabels();
+    }
+
+    private void RefreshClassAvailabilityLabels()
+    {
+        if (!_app.Rules.Races.TryGetValue(_app.CharGen.RaceId, out var race))
+            return;
+
+        string sourceLabel = _classSourceFilter switch
+        {
+            "custom" => "custom classes",
+            "standard" => "standard classes",
+            _ => "classes",
+        };
+        ClassScreenSubtitle.Text = $"Step 5  ·  {_singleClassItems.Count} {sourceLabel} shown for {race.Name}";
+        SingleClassLabel.Text = $"{char.ToUpperInvariant(sourceLabel[0])}{sourceLabel[1..]} for {race.Name}:";
+        MultiClassLabel.Text = $"{char.ToUpperInvariant(sourceLabel[0])}{sourceLabel[1..]} for {race.Name} (check 2+):";
     }
 
     private void RefreshKitPanel()
@@ -295,11 +377,14 @@ public partial class CharGenClassScreen : UserControl, IScreen
 
     private void PopulateMultiClassList()
     {
-        var classItems = _eligible
+        var displayedClasses = GetDisplayedClasses()
+            .Concat(_eligible.Where(cls => _app.CharGen.SelectedClassIds.Contains(cls.Id, StringComparer.OrdinalIgnoreCase)))
+            .DistinctBy(cls => cls.Id, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(cls => cls.Name, StringComparer.OrdinalIgnoreCase);
+        var classItems = displayedClasses
             .Select(c =>
             {
-                var issues = _app.Rules.Validate(_app.CharGen.RaceId, c.Id, _app.CharGen.Abilities);
-                bool isEligible = issues.Count == 0;
+                bool isEligible = ClassModeAllowed(c);
                 return new MultiClassItem
                 {
                     Id = c.Id,
@@ -386,6 +471,9 @@ public partial class CharGenClassScreen : UserControl, IScreen
 
     private bool ClassModeAllowed(ClassDefinition cls)
     {
+        if (cls.IsSpecialtyPriest && !_app.Rules.DeityRulesEnabled)
+            return false;
+
         string mode = (_app.CharGen.CharacterMode ?? string.Empty).Trim().ToLowerInvariant();
         if (string.IsNullOrWhiteSpace(mode))
             mode = "core_rules";
@@ -399,12 +487,13 @@ public partial class CharGenClassScreen : UserControl, IScreen
 
     private List<SingleClassItem> BuildSingleClassItems()
     {
+        var abilities = GetEffectiveAbilities();
         var items = new List<SingleClassItem>();
-        foreach (var cls in _eligible)
+        foreach (var cls in GetDisplayedClasses())
         {
-            var issues = _app.Rules.Validate(_app.CharGen.RaceId, cls.Id, _app.CharGen.Abilities);
-            bool isEnabled = issues.Count == 0;
-            string hint = isEnabled
+            string validationAlignment = cls.AllowedAlignments?.FirstOrDefault() ?? _app.CharGen.Alignment;
+            var issues = _app.Rules.Validate(_app.CharGen.RaceId, cls.Id, abilities, validationAlignment);
+            string hint = issues.Count == 0
                 ? "Available"
                 : string.Join(" | ", issues.Distinct(StringComparer.OrdinalIgnoreCase));
 
@@ -412,7 +501,7 @@ public partial class CharGenClassScreen : UserControl, IScreen
             {
                 Id = cls.Id,
                 Name = cls.Name,
-                IsEnabled = isEnabled,
+                IsEnabled = true,
                 AvailabilityHint = hint,
             });
         }
@@ -453,7 +542,7 @@ public partial class CharGenClassScreen : UserControl, IScreen
         }
 
         // Ability requirements with pass/fail
-        var abilities = _app.CharGen.Abilities;
+        var abilities = GetEffectiveAbilities();
         if (cls.AbilityMinimums.Count > 0)
         {
             var rows = cls.AbilityMinimums
@@ -577,13 +666,6 @@ public partial class CharGenClassScreen : UserControl, IScreen
         if (ClassList.SelectedItem is not SingleClassItem selected)
             return;
 
-        if (!selected.IsEnabled)
-        {
-            ValidationLabel.Text = "\u26a0  That class is unavailable due to current race/ability restrictions.";
-            ValidationLabel.Foreground = Brushes.Red;
-            return;
-        }
-
         var cls = _eligible.FirstOrDefault(x => string.Equals(x.Id, selected.Id, StringComparison.OrdinalIgnoreCase));
         if (cls is null)
             return;
@@ -623,7 +705,8 @@ public partial class CharGenClassScreen : UserControl, IScreen
 
     private void ValidateLive(ClassDefinition cls)
     {
-        var issues = _app.Rules.Validate(_app.CharGen.RaceId, cls.Id, _app.CharGen.Abilities);
+        string validationAlignment = cls.AllowedAlignments?.FirstOrDefault() ?? _app.CharGen.Alignment;
+        var issues = _app.Rules.Validate(_app.CharGen.RaceId, cls.Id, GetEffectiveAbilities(), validationAlignment);
         if (issues.Count > 0)
         {
             ValidationLabel.Text       = "\u26a0  " + issues[0];
@@ -695,16 +778,6 @@ public partial class CharGenClassScreen : UserControl, IScreen
                 return;
             }
 
-            if (!selected.IsEnabled)
-            {
-                MessageBox.Show(
-                    "That class is unavailable due to current race/ability restrictions.",
-                    "Selection Restricted",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                return;
-            }
-
             var cls = _eligible.FirstOrDefault(c => string.Equals(c.Id, selected.Id, StringComparison.OrdinalIgnoreCase));
             if (cls is null)
             {
@@ -713,7 +786,8 @@ public partial class CharGenClassScreen : UserControl, IScreen
                 return;
             }
 
-            var issues = _app.Rules.Validate(_app.CharGen.RaceId, cls.Id, _app.CharGen.Abilities);
+            string validationAlignment = cls.AllowedAlignments?.FirstOrDefault() ?? _app.CharGen.Alignment;
+            var issues = _app.Rules.Validate(_app.CharGen.RaceId, cls.Id, GetEffectiveAbilities(), validationAlignment);
             if (issues.Count > 0)
             {
                 var proceed = MessageBox.Show($"{issues[0]}\n\nProceed anyway?",
@@ -743,8 +817,12 @@ public partial class CharGenClassScreen : UserControl, IScreen
 
         _app.CharGen.RecalculateLevelFromExistingExperience();
 
-        // Core Rules: skip the class abilities screen entirely — all abilities are auto-granted.
-        if (!string.Equals(_app.CharGen.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase))
+        // Core Rules normally skip class abilities. Re-enable the class abilities
+        // screen for level 2+ existing/update flows (with DM warning on entry).
+        bool allowCoreClassAbilityAdjustments =
+            _app.CharGen.IsExistingCharacterMode || _app.CharGen.IsLevelUpMode;
+        if (!string.Equals(_app.CharGen.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase)
+            && !allowCoreClassAbilityAdjustments)
         {
             _app.CharGen.SelectedAbilitiesByClass.Clear();
             foreach (var classId in _app.CharGen.SelectedClassIds)
@@ -767,5 +845,13 @@ public partial class CharGenClassScreen : UserControl, IScreen
         }
 
         _app.GoTo("chargen_class_abilities");
+    }
+
+    private Dictionary<string, int> GetEffectiveAbilities()
+    {
+        if (_app.CharGen.ModifiedAbilities is { Count: > 0 })
+            return _app.CharGen.ModifiedAbilities;
+
+        return _app.CharGen.Abilities;
     }
 }

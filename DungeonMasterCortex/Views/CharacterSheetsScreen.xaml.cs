@@ -1,15 +1,19 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Text.RegularExpressions;
+using System.IO;
 using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Markup;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using Microsoft.Win32;
 using DungeonMasterCortex.Models;
 using DungeonMasterCortex.Services;
 
@@ -18,22 +22,60 @@ namespace DungeonMasterCortex.Views;
 public partial class CharacterSheetsScreen : UserControl, IScreen
 {
     private const string SectionDragDataFormat = "dmcortex.character-sheet.section";
+    private const int LayoutLaneCount = 6;
+    private const int DefaultSectionSpan = 2; // 1/3 width in a 6-lane layout
     private readonly MainWindow _app;
     private readonly Random _rng = new();
     private CharacterSheet? _selectedCharacter;
     private string _selectedCharacterSheetText = string.Empty;
     private readonly List<SectionCard> _sectionCards = new();
     private readonly Dictionary<string, SectionPlacement> _sectionLayoutByKey = new(StringComparer.OrdinalIgnoreCase);
-    private readonly HashSet<string> _expandedSectionKeys = new(StringComparer.OrdinalIgnoreCase);
-    private bool _hasSavedExpansionState;
-    private bool _suspendExpansionStateSave;
     private readonly HashSet<string> _hiddenSectionKeys = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _expandedSectionKeys = new(StringComparer.OrdinalIgnoreCase);
     private Point _dragStartPoint;
     private string? _dragSectionKey;
     private bool _dragDebugEnabled = true;
     private static readonly Dictionary<string, PrintLayoutOptions> PrintLayoutPresetsByProfile = new(StringComparer.OrdinalIgnoreCase);
-    private static readonly Dictionary<string, bool> SpellPrintGroupingByProfile = new(StringComparer.OrdinalIgnoreCase);
-    private static readonly Dictionary<string, PrintDocumentTheme> PrintThemeByProfile = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly Dictionary<string, string> TextSectionBySectionKey = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["character_identity"] = "CHARACTER SHEET",
+        ["ability_scores"] = "ABILITIES",
+        ["combat_statistics"] = "CORE COMBAT",
+        ["weapons"] = "WEAPONS",
+        ["saving_throws"] = "SAVING THROWS",
+        ["weapon_proficiencies"] = "WEAPON PROFICIENCIES",
+        ["turning_undead"] = "TURNING UNDEAD",
+        ["unarmed_combat"] = "UNARMED COMBAT",
+        ["nonweapon_proficiencies"] = "NONWEAPON PROFICIENCIES",
+        ["rogue_abilities"] = "ROGUE ABILITIES",
+        ["languages"] = "LANGUAGES",
+        ["equipment"] = "EQUIPMENT",
+        ["wealth"] = "WEALTH",
+        ["traits_disadvantages"] = "TRAITS / DISADVANTAGES",
+        ["abilities_special_powers"] = "ABILITIES & SPECIAL POWERS",
+        ["notes"] = "NOTES",
+        ["spells"] = "SPELLS",
+    };
+    private static readonly Dictionary<string, string> TextSectionByVisualTitle = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["CHARACTER IDENTITY"] = "CHARACTER SHEET",
+        ["ABILITY SCORES"] = "ABILITIES",
+        ["COMBAT STATISTICS"] = "CORE COMBAT",
+        ["WEAPONS"] = "WEAPONS",
+        ["SAVING THROWS"] = "SAVING THROWS",
+        ["WEAPON PROFICIENCIES"] = "WEAPON PROFICIENCIES",
+        ["TURNING UNDEAD"] = "TURNING UNDEAD",
+        ["UNARMED COMBAT"] = "UNARMED COMBAT",
+        ["NONWEAPON PROFICIENCIES"] = "NONWEAPON PROFICIENCIES",
+        ["ROGUE ABILITIES"] = "ROGUE ABILITIES",
+        ["LANGUAGES"] = "LANGUAGES",
+        ["EQUIPMENT"] = "EQUIPMENT",
+        ["WEALTH"] = "WEALTH",
+        ["TRAITS & DISADVANTAGES"] = "TRAITS / DISADVANTAGES",
+        ["ABILITIES & SPECIAL POWERS"] = "ABILITIES & SPECIAL POWERS",
+        ["NOTES"] = "NOTES",
+        ["SPELLS"] = "SPELLS",
+    };
 
     private sealed class SectionCard
     {
@@ -42,17 +84,59 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         public required Expander Expander { get; init; }
     }
 
+    private sealed class HtmlSectionLayout
+    {
+        public required string Key { get; init; }
+        public required string Title { get; init; }
+        public required string SourceHeading { get; init; }
+        public int Row { get; init; }
+        public int Lane { get; init; }
+        public int Span { get; init; }
+    }
+
+    private sealed class HtmlWeaponRow
+    {
+        public required string Role { get; init; }
+        public required string Weapon { get; init; }
+        public required string Thac0 { get; init; }
+        public required string Sf { get; init; }
+        public required string Apr { get; init; }
+        public required string DmgSm { get; init; }
+        public required string DmgL { get; init; }
+        public required string Type { get; init; }
+        public required string Size { get; init; }
+        public required string Prof { get; init; }
+        public bool IsProficient { get; init; }
+    }
+
     private sealed class SectionPlacement
     {
         public int Lane { get; set; }
         public int Order { get; set; }
-        public int Span { get; set; } = 1;
+        public int Span { get; set; } = DefaultSectionSpan;
     }
+
+    private static readonly (string Label, int Span)[] WidthPresets =
+    {
+        ("1/3 Row", 2),
+        ("1/2 Row", 3),
+        ("2/3 Row", 4),
+        ("Full Row", 6),
+    };
 
     private sealed class RowLaneTarget
     {
         public int Row { get; init; }
         public int Lane { get; init; }
+    }
+
+    private sealed class VisualThemeRestoreState
+    {
+        public List<(TextBlock element, Brush? foreground, Brush? background)> TextBlocks { get; } = new();
+        public List<(Border element, Brush? borderBrush, Brush? background)> Borders { get; } = new();
+        public List<(Control element, Brush? foreground, Brush? background, Brush? borderBrush)> Controls { get; } = new();
+        public List<(Panel element, Brush? background)> Panels { get; } = new();
+        public List<(Shape element, Brush? fill, Brush? stroke)> Shapes { get; } = new();
     }
 
     public UIElement View => this;
@@ -143,8 +227,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             _selectedCharacterSheetText = string.Empty;
             BtnPrintSummary.IsEnabled = false;
             BtnCopySummary.IsEnabled = false;
-            BtnToggleExpandCollapse.IsEnabled = false;
-            BtnToggleExpandCollapse.Content = "EXPAND ALL";
+            BtnExportHtml.IsEnabled = false;
             return;
         }
 
@@ -157,29 +240,8 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         PopulateSheetSections(_selectedCharacter);
         BtnPrintSummary.IsEnabled = true;
         BtnCopySummary.IsEnabled = true;
-        BtnToggleExpandCollapse.IsEnabled = true;
-        UpdateExpandCollapseToggleButton();
+        BtnExportHtml.IsEnabled = true;
     StatusText.Text = BuildStatusText($"Sheet generated for {_selectedCharacter.Name}.");
-    }
-
-    private IEnumerable<Expander> GetVisibleSectionExpanders()
-        => _sectionCards
-            .Select(card => card.Expander)
-            .Where(expander => expander.Visibility == Visibility.Visible);
-
-    private void UpdateExpandCollapseToggleButton()
-    {
-        var visible = GetVisibleSectionExpanders().ToList();
-        if (visible.Count == 0)
-        {
-            BtnToggleExpandCollapse.Content = "EXPAND ALL";
-            BtnToggleExpandCollapse.IsEnabled = false;
-            return;
-        }
-
-        BtnToggleExpandCollapse.IsEnabled = _selectedCharacter is not null;
-        bool allExpanded = visible.All(expander => expander.IsExpanded);
-        BtnToggleExpandCollapse.Content = allExpanded ? "COLLAPSE ALL" : "EXPAND ALL";
     }
 
     private static string BuildCharacterSummary(CharacterSheet c)
@@ -195,45 +257,82 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
              + $"Party: {party}\n"
              + $"Race: {race}\n"
              + $"Class: {cls}\n"
-             + $"Level: {levelText}    XP: {c.ExperiencePoints:n0}\n"
-             + $"HP: {c.HitPoints}    AC: {c.ArmorClass}    THAC0: {c.Thac0}\n"
-               + $"Coins: {c.PlatinumPieces}pp {c.GoldPieces}gp {c.SilverPieces}sp {c.CopperPieces}cp\n"
-             + $"Equipment lines: {(c.EquipmentSelections?.Count ?? 0)}";
+                         + $"Level: {levelText}    XP: {FormatExperienceDisplay(c)}";
     }
 
-    private static int GetDisplayedClassCount(CharacterSheet character)
+    private static List<string> GetDisplayedClassIds(CharacterSheet character)
     {
         if (character.ClassIds is { Count: > 0 })
-            return character.ClassIds.Count;
+        {
+            return character.ClassIds
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
 
         if (!string.IsNullOrWhiteSpace(character.ClassId))
         {
-            var parts = character.ClassId
-                .Split(new[] { '/', '+', ',', ';', '|' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            if (parts.Length > 1)
-                return parts.Length;
+            return character.ClassId
+                .Split(new[] { '/', '+', ',', ';', '|' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList();
         }
 
-        return 1;
+        return new List<string>();
+    }
+
+    private static string FormatClassLabel(string classId)
+    {
+        string normalized = (classId ?? string.Empty).Trim().Replace('_', ' ');
+        return CultureInfo.InvariantCulture.TextInfo.ToTitleCase(normalized);
     }
 
     private static string FormatLevelDisplay(CharacterSheet character)
     {
         int level = Math.Max(1, character.Level);
-        int classCount = Math.Max(1, GetDisplayedClassCount(character));
-        if (classCount <= 1)
+        var classIds = GetDisplayedClassIds(character);
+        if (classIds.Count <= 1)
             return level.ToString();
-        return string.Join("/", Enumerable.Repeat(level.ToString(), classCount));
+
+        int experience = Math.Max(0, character.ExperiencePoints);
+        return string.Join(" / ", classIds.Select(classId =>
+            $"{FormatClassLabel(classId)} {CharacterProgressionService.GetLevelForExperience(classId, experience)}"));
+    }
+
+    private static string FormatExperienceDisplay(CharacterSheet character)
+    {
+        int experience = Math.Max(0, character.ExperiencePoints);
+        var classIds = GetDisplayedClassIds(character);
+        if (classIds.Count <= 1)
+            return $"{experience:n0} XP";
+
+        return string.Join(" / ", classIds.Select(classId =>
+            $"{FormatClassLabel(classId)}: {experience:n0} XP"));
     }
 
     private static string FormatExperienceNeededDisplay(CharacterSheet character)
     {
+        int experience = Math.Max(0, character.ExperiencePoints);
+        var classIds = GetDisplayedClassIds(character);
+        if (classIds.Count > 1)
+        {
+            return string.Join(" / ", classIds.Select(classId =>
+            {
+                int classLevel = CharacterProgressionService.GetLevelForExperience(classId, experience);
+                if (classLevel >= 20)
+                    return $"{FormatClassLabel(classId)}: 0 XP (Max level)";
+
+                int nextLevelXp = CharacterProgressionService.GetMinimumExperienceForLevel(classId, classLevel + 1);
+                return $"{FormatClassLabel(classId)}: {Math.Max(0, nextLevelXp - experience):n0} XP";
+            }));
+        }
+
         int currentLevel = Math.Clamp(character.Level, 1, 20);
         if (currentLevel >= 20)
             return "0 XP (Max level)";
 
-        int nextLevelXp = CharacterProgressionService.GetMinimumExperienceForLevel(character.ClassId, currentLevel + 1);
-        int needed = Math.Max(0, nextLevelXp - Math.Max(0, character.ExperiencePoints));
+        string classId = classIds.FirstOrDefault() ?? character.ClassId;
+        int nextLevelXp = CharacterProgressionService.GetMinimumExperienceForLevel(classId, currentLevel + 1);
+        int needed = Math.Max(0, nextLevelXp - experience);
         return $"{needed:n0} XP";
     }
 
@@ -392,6 +491,110 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         return true;
     }
 
+    private static bool IsRogueClassCharacter(CharacterSheet character)
+    {
+        static bool IsRogueToken(string token)
+        {
+            string normalized = (token ?? string.Empty).Trim().ToLowerInvariant();
+            return normalized is "thief" or "bard" or "rogue";
+        }
+
+        if (character.ClassIds is { Count: > 0 } && character.ClassIds.Any(IsRogueToken))
+            return true;
+
+        if (!string.IsNullOrWhiteSpace(character.ClassId))
+        {
+            var parts = character.ClassId
+                .Split(new[] { '/', '+', ',', ';', '|' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (parts.Any(IsRogueToken))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static List<string> BuildRogueAbilityLines(CharacterSheet character)
+    {
+        if (IsPlayersOptionMode(character))
+        {
+            // In Player's Option mode, rogue abilities are opt-in from selected class abilities.
+            var selectedAbilityEntries = character.SelectedClassAbilityIds
+                .Concat(character.SelectedAbilitiesByClass.Values.SelectMany(entries => entries))
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+            var selectedSkillIds = RulesEngine.GetRogueSkillIdsForClassProfile(
+                character.ClassId,
+                selectedAbilityEntries)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (selectedSkillIds.Count == 0)
+                return new List<string>();
+
+            var selectedAllocations = character.SelectedRogueSkillPoints
+                .Where(kv => !string.IsNullOrWhiteSpace(kv.Key) && kv.Value > 0)
+                .ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase);
+
+            int dexterity = ResolveAbilityScore(character, "dex");
+            var breakdown = RulesEngine.BuildRogueSkillBreakdown(
+                selectedSkillIds,
+                character.RaceId,
+                dexterity,
+                character.RogueSkillArmorProfile,
+                selectedAllocations,
+                Math.Max(1, character.Level),
+                RulesEngine.UsesAutomaticRogueSkillProgression(character.ClassId));
+
+            return breakdown
+                .OrderBy(entry => entry.SkillName, StringComparer.OrdinalIgnoreCase)
+                .Select(FormatRogueSkillBreakdownLine)
+                .ToList();
+        }
+
+        // In Core mode, thieves and bards still use the base rogue skill list,
+        // but the final scores come from allocated points plus race/Dex/armor.
+        var coreSkillIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        IEnumerable<string> classTokens = character.ClassIds is { Count: > 0 }
+            ? character.ClassIds
+            : (character.ClassId ?? string.Empty)
+                .Split(new[] { '/', '+', ',', ';', '|' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        foreach (string rawToken in classTokens)
+        {
+            string token = (rawToken ?? string.Empty).Trim().ToLowerInvariant();
+            foreach (string skillId in RulesEngine.GetStandardCoreRogueSkillIdsForClassProfile(token))
+            {
+                coreSkillIds.Add(skillId);
+            }
+        }
+
+        if (coreSkillIds.Count == 0)
+            return new List<string>();
+
+        int coreDexterity = ResolveAbilityScore(character, "dex");
+        var coreBreakdown = RulesEngine.BuildRogueSkillBreakdown(
+            coreSkillIds,
+            character.RaceId,
+            coreDexterity,
+            character.RogueSkillArmorProfile,
+            character.SelectedRogueSkillPoints,
+            Math.Max(1, character.Level));
+
+        return coreBreakdown
+            .OrderBy(entry => entry.SkillName, StringComparer.OrdinalIgnoreCase)
+            .Select(FormatRogueSkillBreakdownLine)
+            .ToList();
+    }
+
+    private static string FormatRogueSkillBreakdownLine(RogueSkillBreakdown entry)
+    {
+        string racePart = entry.RacialAdjustment == 0 ? "Race 0%" : $"Race {FormatSigned(entry.RacialAdjustment)}%";
+        string dexPart = entry.DexterityAdjustment == 0 ? "Dex 0%" : $"Dex {FormatSigned(entry.DexterityAdjustment)}%";
+        string armorPart = entry.ArmorAdjustment == 0 ? "Armor 0%" : $"Armor {FormatSigned(entry.ArmorAdjustment)}%";
+        string addedPart = entry.AllocatedPoints == 0 ? "Added 0%" : $"Added +{entry.AllocatedPoints}%";
+        return $"{entry.SkillName}: Base {entry.BaseScore}% | {racePart} | {dexPart} | {armorPart} | {addedPart} | Total {entry.FinalScore}%";
+    }
+
     private string BuildCharacterSheetText(CharacterSheet c)
     {
         var traitNames = ResolveTraitNames(c);
@@ -405,7 +608,8 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             string.Empty,
             "=== CORE COMBAT ===",
             $"Attack Rate: {c.AttackRate}",
-            $"Base HP: {c.BaseHitPoints}    Base AC: {c.BaseArmorClass}",
+            $"Hit Points: {c.HitPoints}",
+            $"Armor Class: {c.ArmorClass}",
             $"Armor Profile: {c.ArmorProfile}    Rogue Armor Profile: {c.RogueSkillArmorProfile}",
             $"Movement: {c.Movement} (base {c.BaseMovement})",
             $"THAC0: {c.Thac0}",
@@ -416,19 +620,50 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
 
         if (string.Equals(c.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase))
         {
-            lines.Insert(8, $"Unspent CP: {c.UnspentCharacterPoints}    Spent NWP CP: {c.SpentNwpCharacterPoints}    Spent Weapon CP: {c.SpentWeaponCharacterPoints}");
+            string hpRerollText = c.SpentHpRerollCharacterPoints > 0 ? $"    Spent HP Reroll CP: {c.SpentHpRerollCharacterPoints}" : string.Empty;
+            lines.Insert(8, $"Unspent CP: {c.UnspentCharacterPoints}    Spent NWP CP: {c.SpentNwpCharacterPoints}    Spent Weapon CP: {c.SpentWeaponCharacterPoints}{hpRerollText}");
         }
 
+        bool isPlayersOption = IsPlayersOptionMode(c);
         foreach (string abilityKey in AbilityKeys)
         {
             int abilityScore = ResolveAbilityScore(c, abilityKey);
             lines.Add($"{abilityKey.ToUpperInvariant()}: {abilityScore}");
+
+            if (!isPlayersOption)
+            {
+                lines.Add($"  - {BuildCoreAbilityEffectSummary(c, abilityKey, abilityScore)}");
+                continue;
+            }
+
             foreach (string subKey in GetSubAbilityKeys(abilityKey))
             {
                 int subScore = ResolveSubAbilityScore(c, abilityKey, subKey, abilityScore);
+                string subScoreDisplay = FormatSubAbilityScore(c, abilityKey, subKey, subScore);
                 string effect = ResolveSubAbilityEffect(c, subKey, subScore);
-                lines.Add($"  - {GetSubAbilityDisplayLabel(c, subKey)}: {subScore} ({effect})");
+                lines.Add($"  - {GetSubAbilityDisplayLabel(c, subKey)}: {subScoreDisplay} ({effect})");
             }
+        }
+
+        lines.Add(string.Empty);
+        lines.Add("=== WEAPONS ===");
+        var carriedWeapons = c.EquipmentSelections
+            .Where(e => e.IsWeapon)
+            .OrderBy(e => e.ItemName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (carriedWeapons.Count > 0)
+        {
+            foreach (var weapon in carriedWeapons)
+            {
+                int quantity = Math.Max(1, weapon.Quantity);
+                string qty = quantity > 1 ? $" x{quantity}" : string.Empty;
+                string stats = $" [SF {weapon.WeaponSpeed}; Dmg {weapon.WeaponDamageSmallMedium}/{weapon.WeaponDamageLarge}; {weapon.WeaponType}; {weapon.WeaponSize}]";
+                lines.Add($"{weapon.ItemName}{qty}{stats}");
+            }
+        }
+        else
+        {
+            lines.Add("(none)");
         }
 
         lines.Add(string.Empty);
@@ -450,7 +685,15 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             foreach (var wp in c.WeaponProficiencies.OrderBy(x => x.DisplayName, StringComparer.OrdinalIgnoreCase))
             {
                 string spec = wp.Specialized ? " [Specialized]" : string.Empty;
-                lines.Add($"{wp.DisplayName} ({wp.ProficiencyType}){spec}");
+                string mastery = wp.GrandMastery
+                    ? " [Grand Mastery: +1 apr; +3 attack/+3 damage; upgraded damage dice; speed -3; crit on 16+]"
+                    : wp.HighMastery
+                    ? " [High Mastery: +3 attack/+3 damage; speed factor -3; crit on 16+; extreme missile range]"
+                    : wp.WeaponMastery
+                    ? " [Mastery: melee +3 attack/+3 damage; missile +2 attack beyond point blank, +3 attack/+3 damage at point blank]"
+                    : string.Empty;
+                string typeLabel = FormatProficiencyTypePlain(wp);
+                lines.Add($"{wp.DisplayName} ({typeLabel}){spec}{mastery}");
             }
         }
         else
@@ -463,7 +706,20 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         if (c.NonweaponProficiencies.Count > 0)
         {
             foreach (string nwp in c.NonweaponProficiencies.OrderBy(x => x, StringComparer.OrdinalIgnoreCase))
-                lines.Add(nwp);
+                lines.Add(AppendTrackingConditionalModifiers(c, nwp));
+        }
+        else
+        {
+            lines.Add("(none)");
+        }
+
+        lines.Add(string.Empty);
+        lines.Add("=== ROGUE ABILITIES ===");
+        var rogueAbilityLines = BuildRogueAbilityLines(c);
+        if (rogueAbilityLines.Count > 0)
+        {
+            foreach (string line in rogueAbilityLines)
+                lines.Add(line);
         }
         else
         {
@@ -493,14 +749,9 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         {
             foreach (var eq in c.EquipmentSelections.OrderBy(x => x.Category).ThenBy(x => x.ItemName, StringComparer.OrdinalIgnoreCase))
             {
-                string qty = $"x{Math.Max(1, eq.Quantity)}";
-                string weapon = eq.IsWeapon
-                    ? $" | Wpn SF {eq.WeaponSpeed}, Dmg {eq.WeaponDamageSmallMedium}/{eq.WeaponDamageLarge}, Type {eq.WeaponType}, Size {eq.WeaponSize}"
-                    : string.Empty;
-                string armor = eq.IsArmor
-                    ? $" | Armor AC {eq.ArmorClassValue} ({eq.RogueArmorProfile})"
-                    : string.Empty;
-                lines.Add($"{eq.ItemName} {qty} [{eq.Category}]{weapon}{armor}");
+                int quantity = Math.Max(1, eq.Quantity);
+                string qty = quantity > 1 ? $" x{quantity}" : string.Empty;
+                lines.Add($"{eq.ItemName}{qty}");
             }
         }
         else if (c.Equipment.Count > 0)
@@ -514,22 +765,44 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         }
 
         lines.Add(string.Empty);
-        lines.Add("=== GEMS ===");
-        var gemLines = BuildGemLines(c);
-        if (gemLines.Count > 0)
-        {
-            foreach (var gemLine in gemLines)
-                lines.Add(gemLine);
-        }
-        else
-        {
-            lines.Add("(none)");
-        }
+        lines.Add("=== WEALTH ===");
+        int totalGemValue = GetTotalGemValueGoldPieces(c);
+        int totalGemCount = GetTotalGemCount(c);
+        lines.Add($"Platinum Pieces: {c.PlatinumPieces}");
+        lines.Add($"Gold Pieces: {c.GoldPieces}");
+        lines.Add($"Silver Pieces: {c.SilverPieces}");
+        lines.Add($"Copper Pieces: {c.CopperPieces}");
+        lines.Add($"Gem Count: {totalGemCount}");
+        lines.Add($"Gem Value: {totalGemValue:n0} gp");
 
         lines.Add(string.Empty);
         lines.Add("=== TRAITS / DISADVANTAGES ===");
         lines.Add(traitNames.Count > 0 ? "Traits: " + string.Join(", ", traitNames) : "Traits: (none)");
         lines.Add(disadvantageNames.Count > 0 ? "Disadvantages: " + string.Join(", ", disadvantageNames) : "Disadvantages: (none)");
+
+        lines.Add(string.Empty);
+        lines.Add("=== ABILITIES & SPECIAL POWERS ===");
+        var unlockedStructuredAbilities = c.StructuredAbilities
+            .Where(ab => RulesEngine.AbilityUnlockLevel(ab) <= Math.Max(1, c.Level))
+            .ToList();
+        if (unlockedStructuredAbilities.Count > 0)
+        {
+            foreach (var ab in unlockedStructuredAbilities)
+            {
+                string name = ab.Id.Replace("_", " ");
+                string desc = string.IsNullOrWhiteSpace(ab.Description) ? string.Empty : $": {ab.Description}";
+                lines.Add($"{name}{desc}");
+            }
+        }
+        else if (c.RacialAbilities.Count > 0)
+        {
+            foreach (string ab in c.RacialAbilities)
+                lines.Add(ab);
+        }
+        else
+        {
+            lines.Add("(none)");
+        }
 
         lines.Add(string.Empty);
         lines.Add("=== NOTES ===");
@@ -616,9 +889,8 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
 
         if (IsWizardCaster(c))
         {
-            int maxArcaneLevel = GetHighestSpellLevel(c.ArcaneSpellSlots);
             var spellbookByLevel = GetAccessibleWizardSpellDefinitions(c)
-                .GroupBy(s => GetDisplayedWizardSpellLevelForReview(c, s, maxArcaneLevel))
+                .GroupBy(s => GetDisplayedWizardSpellLevelForReview(c, s))
                 .Where(g => g.Key != int.MaxValue)
                 .OrderBy(g => g.Key)
                 .ToList();
@@ -664,42 +936,41 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         _app.GoTo("characters", -1);
     }
 
-    private void BtnToggleExpandCollapse_Click(object sender, RoutedEventArgs e)
+    private void BtnResetLayout_Click(object sender, RoutedEventArgs e)
     {
         if (_selectedCharacter is null)
             return;
 
-        var visible = GetVisibleSectionExpanders().ToList();
-        if (visible.Count == 0)
+        string profileKey = BuildSheetLayoutProfileKey(_selectedCharacter);
+        _selectedCharacter.SheetLayoutByProfile.Remove(profileKey);
+        _selectedCharacter.HiddenSectionKeysByProfile.Remove(profileKey);
+        _hiddenSectionKeys.Clear();
+
+        LoadSavedSectionLayoutPreference(_selectedCharacter);
+        ApplyHiddenSectionVisibility();
+        RenderSectionCards();
+        _app.SaveCharacters();
+
+        BtnToggleExpandCollapse.Content = "EXPAND ALL";
+        StatusText.Text = BuildStatusText("Layout reset to default profile.");
+    }
+
+    private void BtnToggleExpandCollapse_Click(object sender, RoutedEventArgs e)
+    {
+        var expanders = GetLiveSectionExpanders()
+            .Where(x => x.Visibility == Visibility.Visible)
+            .ToList();
+        if (expanders.Count == 0)
             return;
 
-        bool allExpanded = visible.All(expander => expander.IsExpanded);
-        bool targetExpanded = !allExpanded;
+        bool allExpanded = expanders.All(x => x.IsExpanded);
+        bool shouldExpand = !allExpanded;
 
-        _suspendExpansionStateSave = true;
-        try
-        {
-            foreach (var expander in visible)
-            {
-                expander.IsExpanded = targetExpanded;
-                if (expander.Tag is not string key || string.IsNullOrWhiteSpace(key))
-                    continue;
+        foreach (var expander in expanders)
+            expander.IsExpanded = shouldExpand;
 
-                if (targetExpanded)
-                    _expandedSectionKeys.Add(key);
-                else
-                    _expandedSectionKeys.Remove(key);
-            }
-        }
-        finally
-        {
-            _suspendExpansionStateSave = false;
-        }
-
-        _hasSavedExpansionState = true;
-        SaveCurrentSectionLayoutPreference();
-        UpdateExpandCollapseToggleButton();
-        StatusText.Text = BuildStatusText(targetExpanded ? "Expanded all visible sections." : "Collapsed all visible sections.");
+        BtnToggleExpandCollapse.Content = shouldExpand ? "COLLAPSE ALL" : "EXPAND ALL";
+        StatusText.Text = BuildStatusText(shouldExpand ? "Expanded all visible sections." : "Collapsed all visible sections.");
     }
 
     private void BtnPrintSummary_Click(object sender, RoutedEventArgs e)
@@ -717,13 +988,12 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
                 return;
             }
 
-            var printOptions = new PrintLayoutOptions(
-                BuildDefaultPrintLayoutEntries(sectionTitles),
-                GetPreferredPrintTheme(_selectedCharacter),
-                GetKeepSpellsGroupedByLevelPreference(_selectedCharacter));
+            var printOptions = ShowPrintSetupDialog(_selectedCharacter, sectionTitles);
+            if (printOptions is null)
+                return;
 
             var (previewWidth, previewHeight) = GetDefaultLetterPreviewArea();
-            var previewDocument = BuildPrintableVisualDocument(LaneSurface, previewWidth, previewHeight, printOptions);
+            var previewDocument = BuildPrintableDocument(previewWidth, previewHeight, printOptions);
             if (previewDocument is null)
             {
                 MessageBox.Show("Could not generate print preview from the current sheet layout.", "Character Sheets", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -740,19 +1010,40 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             if (dlg.ShowDialog() != true)
                 return;
 
-            var printable = BuildPrintableVisualDocument(LaneSurface, dlg.PrintableAreaWidth, dlg.PrintableAreaHeight, printOptions);
+            var printable = BuildPrintableDocument(dlg.PrintableAreaWidth, dlg.PrintableAreaHeight, printOptions);
             if (printable is null)
             {
                 MessageBox.Show("Could not generate a printable document from the current sheet layout.", "Character Sheets", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-
-            dlg.PrintDocument(((IDocumentPaginatorSource)printable).DocumentPaginator, $"Character Sheet - {_selectedCharacter.Name}");
+            dlg.PrintDocument(printable.DocumentPaginator, $"Character Sheet - {_selectedCharacter.Name}");
         }
         catch (Exception ex)
         {
             MessageBox.Show($"Could not print character sheet.\n\n{ex.Message}", "Character Sheets", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
+    }
+
+    private IDocumentPaginatorSource? BuildPrintableDocument(double printableWidth, double printableHeight, PrintLayoutOptions options)
+    {
+        if (_selectedCharacter is null)
+            return null;
+
+        var visualDocument = BuildPrintableVisualDocument(LaneSurface, printableWidth, printableHeight, options);
+        if (visualDocument is not null)
+            return visualDocument;
+
+        if (options.Theme == PrintDocumentTheme.BlackAndWhite)
+        {
+            return BuildPrintableTextDocument(
+                _selectedCharacter,
+                _selectedCharacterSheetText,
+                options,
+                printableWidth,
+                printableHeight);
+        }
+
+        return null;
     }
 
     private List<string> GetPrintableSectionTitlesInLayoutOrder()
@@ -769,10 +1060,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
     private PrintLayoutOptions? ShowPrintSetupDialog(CharacterSheet character, List<string> sectionTitles, PrintLayoutOptions? initialOptions = null)
     {
         if (sectionTitles.Count == 0)
-            return new PrintLayoutOptions(
-                new List<PrintLayoutEntry>(),
-                PrintDocumentTheme.Color,
-                GetKeepSpellsGroupedByLevelPreference(character));
+            return new PrintLayoutOptions(new List<PrintLayoutEntry>(), PrintDocumentTheme.Color);
 
         string profileKey = BuildPrintProfileKey(character);
         var selectedEntries = initialOptions is not null
@@ -782,8 +1070,6 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
                 : BuildDefaultPrintLayoutEntries(sectionTitles);
         var selectedTheme = initialOptions?.Theme
             ?? (PrintLayoutPresetsByProfile.TryGetValue(profileKey, out var presetTheme) ? presetTheme.Theme : PrintDocumentTheme.Color);
-        bool keepSpellsGroupedByLevel = initialOptions?.KeepSpellsGroupedByLevel
-            ?? (PrintLayoutPresetsByProfile.TryGetValue(profileKey, out var presetGrouping) ? presetGrouping.KeepSpellsGroupedByLevel : GetKeepSpellsGroupedByLevelPreference(character));
         var availableTitles = BuildAvailablePrintSectionTitles(sectionTitles, selectedEntries);
 
         var window = new Window
@@ -1062,10 +1348,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
 
         savePresetButton.Click += (_, _) =>
         {
-            PrintLayoutPresetsByProfile[profileKey] = new PrintLayoutOptions(
-                ClonePrintLayoutEntries(selectedEntries),
-                GetSelectedPrintTheme(),
-                keepSpellsGroupedByLevel);
+            PrintLayoutPresetsByProfile[profileKey] = new PrintLayoutOptions(ClonePrintLayoutEntries(selectedEntries), GetSelectedPrintTheme());
             MessageBox.Show("Preset saved for this character/class profile.", "Print Setup", MessageBoxButton.OK, MessageBoxImage.Information);
         };
 
@@ -1079,7 +1362,6 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
 
             selectedEntries = preset.CloneEntriesFor(sectionTitles);
             styleCombo.SelectedIndex = preset.Theme == PrintDocumentTheme.Color ? 0 : 1;
-            keepSpellsGroupedByLevel = preset.KeepSpellsGroupedByLevel;
             RefreshLists();
         };
 
@@ -1125,10 +1407,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             return null;
         }
 
-        return new PrintLayoutOptions(
-            ClonePrintLayoutEntries(selectedEntries),
-            GetSelectedPrintTheme(),
-            keepSpellsGroupedByLevel);
+        return new PrintLayoutOptions(ClonePrintLayoutEntries(selectedEntries), GetSelectedPrintTheme());
 
         PrintDocumentTheme GetSelectedPrintTheme()
         {
@@ -1143,53 +1422,6 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             : character.ClassId ?? string.Empty;
 
         return $"{character.Name}|{classKey}|{character.CharacterMode}";
-    }
-
-    private static bool GetKeepSpellsGroupedByLevelPreference(CharacterSheet character)
-    {
-        string profileKey = BuildPrintProfileKey(character);
-        return SpellPrintGroupingByProfile.TryGetValue(profileKey, out bool keepGrouped)
-            ? keepGrouped
-            : true;
-    }
-
-    private static PrintDocumentTheme GetPreferredPrintTheme(CharacterSheet character)
-    {
-        string profileKey = BuildPrintProfileKey(character);
-        if (PrintThemeByProfile.TryGetValue(profileKey, out var explicitTheme))
-            return explicitTheme;
-
-        return PrintLayoutPresetsByProfile.TryGetValue(profileKey, out var preset)
-            ? preset.Theme
-            : PrintDocumentTheme.BlackAndWhite;
-    }
-
-    private void SetPreferredPrintTheme(CharacterSheet character, PrintDocumentTheme theme)
-    {
-        string profileKey = BuildPrintProfileKey(character);
-        PrintThemeByProfile[profileKey] = theme;
-
-        if (PrintLayoutPresetsByProfile.TryGetValue(profileKey, out var existingPreset))
-        {
-            PrintLayoutPresetsByProfile[profileKey] = new PrintLayoutOptions(
-                existingPreset.CloneEntries(),
-                theme,
-                existingPreset.KeepSpellsGroupedByLevel);
-        }
-    }
-
-    private void SetKeepSpellsGroupedByLevelPreference(CharacterSheet character, bool keepGrouped)
-    {
-        string profileKey = BuildPrintProfileKey(character);
-        SpellPrintGroupingByProfile[profileKey] = keepGrouped;
-
-        if (PrintLayoutPresetsByProfile.TryGetValue(profileKey, out var existingPreset))
-        {
-            PrintLayoutPresetsByProfile[profileKey] = new PrintLayoutOptions(
-                existingPreset.CloneEntries(),
-                existingPreset.Theme,
-                keepGrouped);
-        }
     }
 
     private static List<PrintLayoutEntry> BuildDefaultPrintLayoutEntries(IEnumerable<string> titles)
@@ -1306,13 +1538,11 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         private List<PrintLayoutEntry> SelectedEntries { get; }
         private HashSet<string> IncludedSectionTitles { get; }
         public PrintDocumentTheme Theme { get; }
-        public bool KeepSpellsGroupedByLevel { get; }
 
-        public PrintLayoutOptions(List<PrintLayoutEntry> selectedEntries, PrintDocumentTheme theme, bool keepSpellsGroupedByLevel = true)
+        public PrintLayoutOptions(List<PrintLayoutEntry> selectedEntries, PrintDocumentTheme theme)
         {
             SelectedEntries = selectedEntries;
             Theme = theme;
-            KeepSpellsGroupedByLevel = keepSpellsGroupedByLevel;
             IncludedSectionTitles = selectedEntries
                 .Where(entry => entry.Kind == PrintLayoutEntryKind.Section)
                 .Select(entry => entry.Title)
@@ -1421,7 +1651,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         var toolbar = new DockPanel { Margin = new Thickness(0, 0, 0, 8) };
         var hint = new TextBlock
         {
-            Text = "Preview mirrors the current sheet layout. Use Print to open printer dialog.",
+            Text = "Preview reflects the current Character Sheet layout. Use Print to open printer dialog.",
             VerticalAlignment = VerticalAlignment.Center,
             FontSize = 12,
             Margin = new Thickness(0, 0, 12, 0),
@@ -1479,15 +1709,31 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         Grid.SetColumnSpan(toolbar, 2);
         root.Children.Add(toolbar);
 
-        var viewer = new DocumentViewer
+        FrameworkElement previewHost;
+        if (document is FlowDocument flowDocument)
         {
-            Document = document,
-            Background = Brushes.White,
-            Foreground = Brushes.Black,
-        };
-        Grid.SetRow(viewer, 1);
-        Grid.SetColumn(viewer, 0);
-        root.Children.Add(viewer);
+            previewHost = new FlowDocumentScrollViewer
+            {
+                Document = flowDocument,
+                Background = Brushes.White,
+                Foreground = Brushes.Black,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                IsToolBarVisible = true,
+            };
+        }
+        else
+        {
+            previewHost = new DocumentViewer
+            {
+                Document = document,
+                Background = Brushes.White,
+                Foreground = Brushes.Black,
+            };
+        }
+
+        Grid.SetRow(previewHost, 1);
+        Grid.SetColumn(previewHost, 0);
+        root.Children.Add(previewHost);
 
         var pageMapHost = new Border
         {
@@ -1556,6 +1802,606 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         }
     }
 
+    private void BtnExportBlankPdf_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var dlg = new SaveFileDialog
+            {
+                Title = "Export Mapped Fillable Character Sheet",
+                FileName = "blank-mapped-character-sheet",
+                Filter = "PDF files (*.pdf)|*.pdf|All files (*.*)|*.*",
+                DefaultExt = ".pdf",
+                AddExtension = true,
+                OverwritePrompt = true,
+            };
+
+            if (dlg.ShowDialog() != true)
+                return;
+
+            BlankCharacterSheetPdfService.Create(dlg.FileName);
+            StatusText.Text = BuildStatusText($"Exported blank fillable PDF to {System.IO.Path.GetFileName(dlg.FileName)}.");
+            MessageBox.Show(
+                "Blank fillable character sheet exported as PDF.",
+                "Character Sheets",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"Could not export blank fillable PDF.\n\n{ex.Message}",
+                "Character Sheets",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+    }
+
+    private void BtnExportHtml_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedCharacter is null)
+            return;
+
+        try
+        {
+            var sectionLayout = GetVisibleSectionLayoutForHtmlExport();
+            if (sectionLayout.Count == 0)
+            {
+                MessageBox.Show("No visible sections are available to export.", "Character Sheets", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            string defaultFileName = string.IsNullOrWhiteSpace(_selectedCharacter.Name)
+                ? "character-sheet"
+                : _selectedCharacter.Name;
+
+            var dlg = new SaveFileDialog
+            {
+                Title = "Export Character Sheet (HTML)",
+                FileName = defaultFileName,
+                Filter = "HTML files (*.html)|*.html|All files (*.*)|*.*",
+                DefaultExt = ".html",
+                AddExtension = true,
+                OverwritePrompt = true,
+            };
+
+            if (dlg.ShowDialog() != true)
+                return;
+
+            string html = BuildColorSheetHtml(_selectedCharacter, sectionLayout, _selectedCharacterSheetText);
+            File.WriteAllText(dlg.FileName, html, Encoding.UTF8);
+            StatusText.Text = BuildStatusText($"Exported HTML sheet to {System.IO.Path.GetFileName(dlg.FileName)}.");
+            MessageBox.Show("Character sheet exported as HTML.", "Character Sheets", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Could not export character sheet HTML.\n\n{ex.Message}", "Character Sheets", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private List<HtmlSectionLayout> GetVisibleSectionLayoutForHtmlExport()
+    {
+        return _sectionCards
+            .Where(card => card.Expander.Visibility == Visibility.Visible)
+            .Where(card => !string.IsNullOrWhiteSpace(card.Title))
+            .Select(card =>
+            {
+                _sectionLayoutByKey.TryGetValue(card.Key, out var placement);
+                int span = placement is null ? DefaultSectionSpan : Math.Clamp(placement.Span, 1, LayoutLaneCount);
+                int lane = placement is null ? 0 : Math.Clamp(placement.Lane, 0, LayoutLaneCount - span);
+
+                return new HtmlSectionLayout
+                {
+                    Key = card.Key,
+                    Title = card.Title,
+                    SourceHeading = ResolveTextSectionHeading(card.Key, card.Title),
+                    Row = placement?.Order ?? int.MaxValue,
+                    Lane = lane,
+                    Span = span,
+                };
+            })
+            .OrderBy(item => item.Row)
+            .ThenBy(item => item.Lane)
+            .ToList();
+    }
+
+    private static string ResolveTextSectionHeading(string sectionKey, string sectionTitle)
+    {
+        if (TextSectionBySectionKey.TryGetValue(sectionKey, out string? heading)
+            && !string.IsNullOrWhiteSpace(heading))
+        {
+            return heading;
+        }
+
+        if (TextSectionByVisualTitle.TryGetValue(sectionTitle, out string? fallback)
+            && !string.IsNullOrWhiteSpace(fallback))
+        {
+            return fallback;
+        }
+
+        return sectionTitle;
+    }
+
+    private string BuildColorSheetHtml(CharacterSheet character, IReadOnlyList<HtmlSectionLayout> sectionLayout, string fullSheetText)
+    {
+        var blocks = ParseTextSections(fullSheetText)
+            .Where(block => !string.IsNullOrWhiteSpace(block.heading))
+            .GroupBy(block => block.heading, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+
+        var sections = new List<(string key, string title, string sourceHeading, int row, int lane, int span, List<string> lines)>();
+        foreach (HtmlSectionLayout layout in sectionLayout)
+        {
+            string sourceHeading = layout.SourceHeading;
+
+            if (!blocks.TryGetValue(sourceHeading, out var block))
+                continue;
+
+            var lines = block.lines
+                .Where(line => !line.StartsWith("=== ", StringComparison.Ordinal))
+                .Where(line => !string.IsNullOrWhiteSpace(line))
+                .ToList();
+
+            sections.Add((layout.Key, layout.Title, sourceHeading, layout.Row, layout.Lane, layout.Span, lines));
+        }
+
+        var html = new StringBuilder(32_768);
+        html.AppendLine("<!doctype html>");
+        html.AppendLine("<html lang=\"en\">");
+        html.AppendLine("<head>");
+        html.AppendLine("  <meta charset=\"utf-8\"> ");
+        html.AppendLine("  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"> ");
+        html.AppendLine($"  <title>Character Sheet - {EscapeHtml(character.Name)}</title>");
+        html.AppendLine("  <style>");
+        html.AppendLine("    :root { --parchment:#fffaf1; --panel:#fcf8f0; --ink:#1f1811; --title:#4c3112; --accent:#825e25; --accent-soft:#b69158; --border:#d8c49c; }");
+        html.AppendLine("    * { box-sizing: border-box; }");
+        html.AppendLine("    body { margin: 0; font-family: Segoe UI, Tahoma, sans-serif; color: var(--ink); background: linear-gradient(180deg, #f0e5d2 0%, #e7d7be 100%); }");
+        html.AppendLine("    .wrap { max-width: 1080px; margin: 24px auto; padding: 18px; }");
+        html.AppendLine("    .header { background: linear-gradient(145deg, #f8f0e1 0%, #f2e4cb 100%); border: 1px solid var(--border); border-radius: 8px; padding: 16px; box-shadow: 0 8px 22px rgba(76, 49, 18, .14); }");
+        html.AppendLine("    .title { margin: 0; font-size: 30px; color: var(--title); letter-spacing: .02em; }");
+        html.AppendLine("    .subtitle { margin: 6px 0 0; color: #5f4730; font-size: 14px; }");
+        html.AppendLine("    .grid { margin-top: 16px; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; grid-auto-flow: row; align-items: stretch; }");
+        html.AppendLine("    .section { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; box-shadow: 0 4px 12px rgba(76, 49, 18, .08); display: flex; flex-direction: column; min-height: 100%; }");
+        html.AppendLine("    .section h2 { margin: 0; padding: 10px 12px; font-size: 15px; font-weight: 700; color: var(--title); border-bottom: 1px solid var(--accent-soft); background: linear-gradient(180deg, #fdf7eb 0%, #f6ecd8 100%); }");
+        html.AppendLine("    .section ul { list-style: none; margin: 0; padding: 10px 12px 12px; }");
+        html.AppendLine("    .section li { font-size: 13px; line-height: 1.45; margin: 0 0 5px; white-space: pre-wrap; } ");
+        html.AppendLine("    .section li:last-child { margin-bottom: 0; }");
+        html.AppendLine("    .identity-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 18px; padding: 10px 12px 12px; }");
+        html.AppendLine("    .identity-col { display: flex; flex-direction: column; gap: 6px; }");
+        html.AppendLine("    .identity-row { font-size: 13px; line-height: 1.35; } ");
+        html.AppendLine("    .identity-key { color: #5f4730; font-weight: 700; margin-right: 6px; } ");
+        html.AppendLine("    .identity-val { color: var(--ink); } ");
+        html.AppendLine("    .weapon-table-wrap { padding: 8px 10px 12px; overflow-x: auto; }");
+        html.AppendLine("    .weapon-table { width: 100%; border-collapse: collapse; min-width: 760px; font-size: 12px; } ");
+        html.AppendLine("    .weapon-table thead th { text-align: left; font-size: 10px; letter-spacing: .03em; color: #5f4730; border-bottom: 1px solid var(--accent-soft); padding: 0 4px 6px; white-space: nowrap; }");
+        html.AppendLine("    .weapon-table tbody td { padding: 4px 4px; border-bottom: 1px solid rgba(130,94,37,.12); white-space: nowrap; vertical-align: middle; }");
+        html.AppendLine("    .weapon-table tbody tr:nth-child(even) { background: rgba(255,255,255,.38); }");
+        html.AppendLine("    .weapon-name { font-weight: 600; }");
+        html.AppendLine("    .prof-badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 700; color: #fff; } ");
+        html.AppendLine("    .prof-badge.prof { background: #2d7a4b; } .prof-badge.spec { background: var(--title); } .prof-badge.np { background: #b13a2a; }");
+        html.AppendLine("    .thac0-np { color: #b13a2a; font-weight: 600; }");
+        html.AppendLine("    .empty { color: #6e5740; font-style: italic; }");
+        html.AppendLine("    @media (max-width: 980px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .section { grid-column: auto !important; grid-row: auto !important; } }");
+        html.AppendLine("    @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }");
+        html.AppendLine("    @media print { body { background: #fff; } .wrap { margin: 0; max-width: none; } .header, .section { box-shadow: none; } }");
+        html.AppendLine("  </style>");
+        html.AppendLine("</head>");
+        html.AppendLine("<body>");
+        html.AppendLine("  <div class=\"wrap\">");
+        html.AppendLine("    <header class=\"header\">");
+        html.AppendLine($"      <h1 class=\"title\">{EscapeHtml(character.Name)}</h1>");
+        html.AppendLine($"      <p class=\"subtitle\">Player: {EscapeHtml(string.IsNullOrWhiteSpace(character.PlayerName) ? "-" : character.PlayerName)} | Last Updated: {EscapeHtml(character.LastModifiedDisplay)}</p>");
+        html.AppendLine("    </header>");
+        html.AppendLine("    <main class=\"grid\">");
+
+        foreach (var section in sections)
+        {
+            int gridColumn = Math.Clamp(section.lane + 1, 1, LayoutLaneCount);
+            int gridSpan = Math.Clamp(section.span, 1, LayoutLaneCount - section.lane);
+            int gridRow = Math.Max(1, section.row + 1);
+
+            html.AppendLine($"      <section class=\"section\" style=\"grid-column: {gridColumn} / span {gridSpan}; grid-row: {gridRow};\">");
+            html.AppendLine($"        <h2>{EscapeHtml(section.title)}</h2>");
+            if (string.Equals(section.key, "character_identity", StringComparison.OrdinalIgnoreCase))
+            {
+                string race = string.IsNullOrWhiteSpace(character.RaceName) ? character.RaceId : character.RaceName;
+                string cls = string.IsNullOrWhiteSpace(character.ClassName) ? character.ClassId : character.ClassName;
+                string ruleset = string.Equals(character.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase)
+                    ? "Player's Option"
+                    : "Core Rules";
+                string cpsAvailable = string.Equals(character.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase)
+                    ? character.UnspentCharacterPoints.ToString("N0", CultureInfo.InvariantCulture)
+                    : "-";
+
+                var left = new List<(string label, string value)>
+                {
+                    ("Name", string.IsNullOrWhiteSpace(character.Name) ? "-" : character.Name),
+                    ("Player", string.IsNullOrWhiteSpace(character.PlayerName) ? "-" : character.PlayerName),
+                    ("Gender", string.IsNullOrWhiteSpace(character.Gender) ? "-" : character.Gender),
+                    ("Party", string.IsNullOrWhiteSpace(character.Party) ? "-" : character.Party),
+                    ("Ruleset", ruleset),
+                    ("CPs Available", cpsAvailable),
+                };
+
+                var right = new List<(string label, string value)>
+                {
+                    ("Race", string.IsNullOrWhiteSpace(race) ? "-" : race),
+                    ("Class", string.IsNullOrWhiteSpace(cls) ? "-" : cls),
+                    ("Level", FormatLevelDisplay(character)),
+                    ("Experience", FormatExperienceDisplay(character)),
+                    ("Experience Needed", FormatExperienceNeededDisplay(character)),
+                };
+
+                bool hasIdentityData = left.Any(pair => !string.IsNullOrWhiteSpace(pair.value) && pair.value != "-")
+                    || right.Any(pair => !string.IsNullOrWhiteSpace(pair.value) && pair.value != "-");
+
+                if (!hasIdentityData)
+                {
+                    html.AppendLine("        <ul>");
+                    html.AppendLine("          <li class=\"empty\">(no entries)</li>");
+                    html.AppendLine("        </ul>");
+                }
+                else
+                {
+                    html.AppendLine("        <div class=\"identity-grid\">");
+                    html.AppendLine("          <div class=\"identity-col\">");
+                    foreach (var pair in left)
+                    {
+                        string value = string.IsNullOrWhiteSpace(pair.value) ? "-" : pair.value;
+                        html.AppendLine($"            <div class=\"identity-row\"><span class=\"identity-key\">{EscapeHtml(pair.label)}:</span><span class=\"identity-val\">{EscapeHtml(value)}</span></div>");
+                    }
+                    html.AppendLine("          </div>");
+                    html.AppendLine("          <div class=\"identity-col\">");
+                    foreach (var pair in right)
+                    {
+                        string value = string.IsNullOrWhiteSpace(pair.value) ? "-" : pair.value;
+                        html.AppendLine($"            <div class=\"identity-row\"><span class=\"identity-key\">{EscapeHtml(pair.label)}:</span><span class=\"identity-val\">{EscapeHtml(value)}</span></div>");
+                    }
+                    html.AppendLine("          </div>");
+                    html.AppendLine("        </div>");
+                }
+            }
+            else if (string.Equals(section.key, "weapons", StringComparison.OrdinalIgnoreCase))
+            {
+                var weaponRows = BuildHtmlWeaponRows(character);
+                if (weaponRows.Count == 0)
+                {
+                    html.AppendLine("        <ul>");
+                    html.AppendLine("          <li class=\"empty\">(no weapons carried)</li>");
+                    html.AppendLine("        </ul>");
+                }
+                else
+                {
+                    html.AppendLine("        <div class=\"weapon-table-wrap\">");
+                    html.AppendLine("          <table class=\"weapon-table\">");
+                    html.AppendLine("            <thead><tr><th>ROLE</th><th>WEAPON</th><th>THAC0</th><th>SF</th><th>APR</th><th>DMG S/M</th><th>DMG L</th><th>TYPE</th><th>SZ</th><th>PROF</th></tr></thead>");
+                    html.AppendLine("            <tbody>");
+                    foreach (var row in weaponRows)
+                    {
+                        string badgeClass = row.Prof.Equals("SPEC", StringComparison.OrdinalIgnoreCase)
+                            ? "spec"
+                            : row.Prof.Equals("PROF", StringComparison.OrdinalIgnoreCase)
+                                ? "prof"
+                                : "np";
+                        string thac0Class = row.IsProficient ? string.Empty : " class=\"thac0-np\"";
+                        html.AppendLine("              <tr>");
+                        html.AppendLine($"                <td>{EscapeHtml(row.Role)}</td>");
+                        html.AppendLine($"                <td class=\"weapon-name\">{EscapeHtml(row.Weapon)}</td>");
+                        html.AppendLine($"                <td{thac0Class}>{EscapeHtml(row.Thac0)}</td>");
+                        html.AppendLine($"                <td>{EscapeHtml(row.Sf)}</td>");
+                        html.AppendLine($"                <td>{EscapeHtml(row.Apr)}</td>");
+                        html.AppendLine($"                <td>{EscapeHtml(row.DmgSm)}</td>");
+                        html.AppendLine($"                <td>{EscapeHtml(row.DmgL)}</td>");
+                        html.AppendLine($"                <td>{EscapeHtml(row.Type)}</td>");
+                        html.AppendLine($"                <td>{EscapeHtml(row.Size)}</td>");
+                        html.AppendLine($"                <td><span class=\"prof-badge {badgeClass}\">{EscapeHtml(row.Prof)}</span></td>");
+                        html.AppendLine("              </tr>");
+                    }
+                    html.AppendLine("            </tbody>");
+                    html.AppendLine("          </table>");
+                    html.AppendLine("        </div>");
+                }
+            }
+            else
+            {
+                html.AppendLine("        <ul>");
+                if (section.lines.Count == 0)
+                {
+                    html.AppendLine("          <li class=\"empty\">(no entries)</li>");
+                }
+                else
+                {
+                    foreach (string line in section.lines)
+                        html.AppendLine($"          <li>{EscapeHtml(line)}</li>");
+                }
+                html.AppendLine("        </ul>");
+            }
+            html.AppendLine("      </section>");
+        }
+
+        html.AppendLine("    </main>");
+        html.AppendLine("  </div>");
+        html.AppendLine("</body>");
+        html.AppendLine("</html>");
+
+        return html.ToString();
+    }
+
+    private List<HtmlWeaponRow> BuildHtmlWeaponRows(CharacterSheet c)
+    {
+        var carriedWeapons = c.EquipmentSelections.Where(e => e.IsWeapon).ToList();
+        if (carriedWeapons.Count == 0)
+            return new List<HtmlWeaponRow>();
+
+        string equippedMainKey = EquipmentLibraryService.CanonicalizeId(c.EquippedMainWeaponId);
+        if (string.IsNullOrWhiteSpace(equippedMainKey))
+            equippedMainKey = EquipmentLibraryService.CanonicalizeId(c.EquippedWeaponId);
+        string equippedOffKey = EquipmentLibraryService.CanonicalizeId(c.EquippedOffHandWeaponId);
+        var orderedWeapons = new List<EquipmentSelection>();
+        var remainingWeapons = new List<EquipmentSelection>(carriedWeapons);
+
+        void PullFirstByKey(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+                return;
+
+            var match = remainingWeapons.FirstOrDefault(w =>
+                string.Equals(EquipmentLibraryService.CanonicalizeId(w.ItemId), key, StringComparison.OrdinalIgnoreCase));
+            if (match is null)
+                return;
+
+            orderedWeapons.Add(match);
+            remainingWeapons.Remove(match);
+        }
+
+        PullFirstByKey(equippedMainKey);
+        PullFirstByKey(equippedOffKey);
+        orderedWeapons.AddRange(remainingWeapons);
+
+        bool isPlayersOption = string.Equals(c.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase);
+        var combatOptions = c.WeaponProficiencies
+            .Where(x => string.Equals(x.ProficiencyType, "combat_option", StringComparison.OrdinalIgnoreCase))
+            .Select(x => x.ProficiencyId)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        int neutralWeaponIndex = 1;
+        var rows = new List<HtmlWeaponRow>();
+
+        foreach (var weapon in orderedWeapons)
+        {
+            string weaponKey = EquipmentLibraryService.CanonicalizeId(weapon.ItemId);
+            string role;
+            if (!string.IsNullOrWhiteSpace(equippedMainKey)
+                && string.Equals(weaponKey, equippedMainKey, StringComparison.OrdinalIgnoreCase))
+            {
+                role = "PRIMARY";
+            }
+            else if (!string.IsNullOrWhiteSpace(equippedOffKey)
+                && string.Equals(weaponKey, equippedOffKey, StringComparison.OrdinalIgnoreCase))
+            {
+                role = "OFF-HAND";
+            }
+            else
+            {
+                role = $"WEAPON {neutralWeaponIndex++}";
+            }
+
+            static HashSet<string> WordSet(string s) =>
+                new(s.ToLowerInvariant().Split(new[] { ' ', ',', '-', '\'', '/' }, StringSplitOptions.RemoveEmptyEntries),
+                    StringComparer.OrdinalIgnoreCase);
+            static bool TokenNameMatch(string a, string b)
+            {
+                if (string.Equals(a, b, StringComparison.OrdinalIgnoreCase))
+                    return true;
+
+                if (AreWeaponsEquivalent(a, b))
+                    return true;
+
+                var aWords = WordSet(a);
+                var bWords = WordSet(b);
+                if (aWords.Count == 0 || bWords.Count == 0)
+                    return false;
+
+                return aWords.SetEquals(bWords) || aWords.IsSubsetOf(bWords) || bWords.IsSubsetOf(aWords);
+            }
+
+            var itemWords = WordSet(weapon.ItemName);
+            var weaponDef = _app.Rules.Weapons.FirstOrDefault(wd =>
+                wd.Name.Equals(weapon.ItemName, StringComparison.OrdinalIgnoreCase)
+                || WordSet(wd.Name).SetEquals(itemWords)
+                || AreWeaponsEquivalent(wd.Id, weapon.ItemId)
+                || AreWeaponsEquivalent(wd.Name, weapon.ItemName));
+
+            bool proficient = false;
+            bool specialized = false;
+            string profNote = "NP";
+            WeaponProficiencySelection? matchedSelection = null;
+
+            foreach (var wp in c.WeaponProficiencies)
+            {
+                if (string.Equals(wp.ProficiencyType, "combat_option", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                bool match = false;
+                if (wp.ProficiencyType == "individual")
+                {
+                    match = wp.DisplayName.Equals(weapon.ItemName, StringComparison.OrdinalIgnoreCase)
+                        || (weaponDef != null && wp.ProficiencyId.Equals(weaponDef.Id, StringComparison.OrdinalIgnoreCase))
+                        || AreWeaponsEquivalent(wp.ProficiencyId, weapon.ItemId)
+                        || AreWeaponsEquivalent(wp.DisplayName, weapon.ItemName)
+                        || (weaponDef != null && AreWeaponsEquivalent(wp.ProficiencyId, weaponDef.Id));
+                }
+                else if (wp.ProficiencyType == "tight_group" && weaponDef != null)
+                {
+                    match = wp.ProficiencyId.Equals(weaponDef.TightGroupId, StringComparison.OrdinalIgnoreCase);
+                    if (!match && _app.Rules.TightGroups.TryGetValue(wp.ProficiencyId, out var tg))
+                        match = tg.WeaponIds.Contains(weaponDef.Id, StringComparer.OrdinalIgnoreCase);
+                }
+                else if (wp.ProficiencyType == "broad_group" && weaponDef != null)
+                {
+                    match = wp.ProficiencyId.Equals(weaponDef.GroupId, StringComparison.OrdinalIgnoreCase);
+                    if (!match)
+                    {
+                        var bg = _app.Rules.WeaponGroups.FirstOrDefault(g =>
+                            g.Id.Equals(wp.ProficiencyId, StringComparison.OrdinalIgnoreCase));
+                        if (bg != null)
+                            match = bg.TightGroups.Any(tg => tg.WeaponIds.Contains(weaponDef.Id, StringComparer.OrdinalIgnoreCase));
+                    }
+                }
+
+                if (!match)
+                {
+                    match = wp.DisplayName.Equals(weapon.ItemName, StringComparison.OrdinalIgnoreCase)
+                        || weapon.ItemName.Contains(wp.DisplayName, StringComparison.OrdinalIgnoreCase)
+                        || wp.DisplayName.Contains(weapon.ItemName, StringComparison.OrdinalIgnoreCase)
+                        || TokenNameMatch(wp.DisplayName, weapon.ItemName);
+                }
+
+                if (match)
+                {
+                    proficient = true;
+                    specialized = wp.Specialized;
+                    profNote = specialized ? "SPEC" : "PROF";
+                    matchedSelection = wp;
+                    break;
+                }
+            }
+
+            int trainingAtkBonus = 0;
+            int trainingDmgBonus = 0;
+            if (isPlayersOption && matchedSelection?.WeaponOfChoice == true) trainingAtkBonus += 1;
+            if (isPlayersOption && matchedSelection?.WeaponExpertise == true) { trainingAtkBonus += 1; trainingDmgBonus += 1; }
+            if (isPlayersOption && combatOptions.Contains("fighting_style_single") && role.Equals("PRIMARY", StringComparison.OrdinalIgnoreCase)) trainingAtkBonus += 1;
+            if (isPlayersOption && combatOptions.Contains("fighting_style_two_weapon") && role.Equals("OFF-HAND", StringComparison.OrdinalIgnoreCase)) trainingAtkBonus += 1;
+            if (isPlayersOption && combatOptions.Contains("fighting_style_two_handed") && string.Equals(weapon.WeaponSize, "L", StringComparison.OrdinalIgnoreCase)) trainingDmgBonus += 1;
+            if (isPlayersOption && combatOptions.Contains("fighting_style_missile")
+                && weaponDef is not null
+                && (weaponDef.GroupId.Equals("bows", StringComparison.OrdinalIgnoreCase)
+                    || weaponDef.GroupId.Equals("crossbows", StringComparison.OrdinalIgnoreCase)
+                    || weaponDef.GroupId.Equals("slings", StringComparison.OrdinalIgnoreCase)
+                    || weaponDef.Type.Contains("P", StringComparison.OrdinalIgnoreCase)))
+            {
+                trainingAtkBonus += 1;
+            }
+
+            trainingAtkBonus += GetWeaponSpecificBonus(c.Bonuses?.WeaponAttackBonuses, weaponDef, matchedSelection);
+            trainingDmgBonus += GetWeaponSpecificBonus(c.Bonuses?.WeaponDamageBonuses, weaponDef, matchedSelection);
+
+            int enemyAttackBonus = CombatModifierService.GetEnemyAttackBonus(c.Bonuses, string.Empty);
+            int enemyDamageBonus = CombatModifierService.GetEnemyDamageBonus(c.Bonuses, string.Empty);
+
+            int meleeAtkBonus = 0;
+            int dmgBonus = 0;
+            if (c.Abilities.TryGetValue("str", out int strScore))
+            {
+                int muscle = isPlayersOption && c.SubAbilities.TryGetValue("str_muscle", out int m) ? m : strScore;
+                (meleeAtkBonus, dmgBonus) = GetStrMeleeBonuses(muscle, c.ExceptionalStrength);
+            }
+
+            bool isMissileWeapon;
+            if (weaponDef is not null)
+            {
+                bool isBow = string.Equals(weaponDef.GroupId, "bows", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(weaponDef.TightGroupId, "bows", StringComparison.OrdinalIgnoreCase);
+                bool isCrossbow = string.Equals(weaponDef.GroupId, "crossbows", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(weaponDef.TightGroupId, "crossbows", StringComparison.OrdinalIgnoreCase);
+                bool isSling = string.Equals(weaponDef.GroupId, "slings", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(weaponDef.TightGroupId, "slings", StringComparison.OrdinalIgnoreCase);
+                bool isThrown = string.Equals(weaponDef.GroupId, "thrown", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(weaponDef.TightGroupId, "thrown", StringComparison.OrdinalIgnoreCase)
+                    || weaponDef.GroupId.Contains("thrown", StringComparison.OrdinalIgnoreCase)
+                    || weaponDef.TightGroupId.Contains("thrown", StringComparison.OrdinalIgnoreCase);
+                isMissileWeapon = isBow || isCrossbow || isSling || isThrown;
+            }
+            else
+            {
+                isMissileWeapon = weapon.Category.Contains("missile", StringComparison.OrdinalIgnoreCase)
+                    || weapon.Category.Contains("ranged", StringComparison.OrdinalIgnoreCase);
+            }
+
+            int globalAttackBonus = c.Bonuses?.AttackBonus ?? 0;
+            int miscAttackBonus = globalAttackBonus - meleeAtkBonus;
+            int statAttackBonus = isMissileWeapon ? 0 : meleeAtkBonus;
+            int intrinsicAttackBonus = weapon.WeaponAttackBonus - weapon.WeaponThac0Modifier;
+            int intrinsicDamageBonus = weapon.WeaponDamageBonus;
+            int nonProfPenalty = proficient ? 0 : RulesEngine.GetNonProficiencyPenalty(c.ClassId ?? string.Empty);
+            int offHandPenalty = role.Equals("OFF-HAND", StringComparison.OrdinalIgnoreCase) ? 2 : 0;
+            bool removesOffHandPenalty = (isPlayersOption && (combatOptions.Contains("fighting_style_two_weapon") || combatOptions.Contains("talent_ambidexterity") || combatOptions.Contains("ambidexterity")))
+                || HasClassAbility(c, "ranger_two_weapon_style");
+            if (offHandPenalty > 0 && removesOffHandPenalty)
+                offHandPenalty = 0;
+
+            bool isGrandMaster = matchedSelection?.GrandMastery == true;
+            bool isHighMaster = isGrandMaster || matchedSelection?.HighMastery == true;
+            bool hasMastery = isHighMaster || matchedSelection?.WeaponMastery == true || combatOptions.Contains("weapon_mastery");
+            int specializationAttackBonus = hasMastery ? (isMissileWeapon ? 2 : 3) : specialized ? 1 : 0;
+            int specializationDamageBonus = hasMastery ? (isMissileWeapon ? 0 : 3) : specialized ? 2 : 0;
+            int totalAttackBonus = statAttackBonus + miscAttackBonus + intrinsicAttackBonus + trainingAtkBonus + specializationAttackBonus + enemyAttackBonus;
+            int effectiveAtk = c.Thac0 - totalAttackBonus + nonProfPenalty + offHandPenalty;
+            int totalDamageBonus = dmgBonus + intrinsicDamageBonus + trainingDmgBonus + specializationDamageBonus + enemyDamageBonus;
+
+            if (isGrandMaster)
+                profNote = "G-MSTR";
+            else if (isHighMaster)
+                profNote = "H-MSTR";
+            else if (hasMastery)
+                profNote = "MSTR";
+
+            var thac0Notes = new List<string>();
+            if (!proficient)
+                thac0Notes.Add($"NP {FormatSigned(nonProfPenalty)}");
+            if (offHandPenalty > 0)
+                thac0Notes.Add($"off-hand {FormatSigned(offHandPenalty)}");
+            if (intrinsicAttackBonus != 0)
+                thac0Notes.Add($"weapon {FormatSigned(-intrinsicAttackBonus)}");
+            if (enemyAttackBonus != 0)
+                thac0Notes.Add($"enemy {FormatSigned(enemyAttackBonus)}");
+
+            string thac0Display = thac0Notes.Count > 0
+                ? $"{effectiveAtk} ({string.Join(", ", thac0Notes)})"
+                : effectiveAtk.ToString(CultureInfo.InvariantCulture);
+
+            string rawDmgSm = isGrandMaster ? UpgradeDamageDie(weapon.WeaponDamageSmallMedium) : weapon.WeaponDamageSmallMedium;
+            string rawDmgL = isGrandMaster ? UpgradeDamageDie(weapon.WeaponDamageLarge) : weapon.WeaponDamageLarge;
+
+            string dmgSuffix = totalDamageBonus > 0 ? $"+{totalDamageBonus}" : totalDamageBonus < 0 ? $"{totalDamageBonus}" : string.Empty;
+            string dmgSm = string.IsNullOrWhiteSpace(rawDmgSm) ? "-"
+                : totalDamageBonus != 0 ? $"{rawDmgSm}{dmgSuffix}" : rawDmgSm;
+            string dmgL = string.IsNullOrWhiteSpace(rawDmgL) ? "-"
+                : totalDamageBonus != 0 ? $"{rawDmgL}{dmgSuffix}" : rawDmgL;
+
+            int effectiveSf = isHighMaster && weapon.WeaponSpeed > 0 ? Math.Max(1, weapon.WeaponSpeed - 3) : weapon.WeaponSpeed;
+            string sfDisplay = effectiveSf > 0 ? effectiveSf.ToString(CultureInfo.InvariantCulture) : "-";
+
+            rows.Add(new HtmlWeaponRow
+            {
+                Role = role,
+                Weapon = weapon.ItemName,
+                Thac0 = thac0Display,
+                Sf = sfDisplay,
+                Apr = CalculateWeaponApr(c, weaponDef, specialized, isGrandMaster),
+                DmgSm = dmgSm,
+                DmgL = dmgL,
+                Type = string.IsNullOrWhiteSpace(weapon.WeaponType) ? "-" : weapon.WeaponType.ToUpperInvariant(),
+                Size = string.IsNullOrWhiteSpace(weapon.WeaponSize) ? "-" : weapon.WeaponSize.ToUpperInvariant(),
+                Prof = profNote,
+                IsProficient = proficient,
+            });
+        }
+
+        return rows;
+    }
+
+    private static string EscapeHtml(string value)
+    {
+        return (value ?? string.Empty)
+            .Replace("&", "&amp;", StringComparison.Ordinal)
+            .Replace("<", "&lt;", StringComparison.Ordinal)
+            .Replace(">", "&gt;", StringComparison.Ordinal)
+            .Replace("\"", "&quot;", StringComparison.Ordinal)
+            .Replace("'", "&#39;", StringComparison.Ordinal);
+    }
+
     private static IEnumerable<Expander> GetDescendantExpanders(DependencyObject root)
     {
         var result = new List<Expander>();
@@ -1578,50 +2424,9 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         return result;
     }
 
-    private static ScrollViewer? GetAncestorScrollViewer(DependencyObject element)
-    {
-        DependencyObject? current = element;
-        while (current is not null)
-        {
-            if (current is ScrollViewer scrollViewer)
-                return scrollViewer;
-
-            current = VisualTreeHelper.GetParent(current);
-        }
-
-        return null;
-    }
-
-    private static FrameworkElement? CreateDetachedPrintSurface(FrameworkElement source)
-    {
-        try
-        {
-            string xaml = XamlWriter.Save(source);
-            return XamlReader.Parse(xaml) as FrameworkElement;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    private sealed class VisualPrintSection
-    {
-        public string Title { get; init; } = string.Empty;
-        public double Top { get; init; }
-        public double Height { get; init; }
-        public bool ForceNewPageBefore { get; init; }
-        public bool ForceNewPageAfter { get; init; }
-    }
-
     private static IDocumentPaginatorSource? BuildPrintableVisualDocument(FrameworkElement source, double printableWidth, double printableHeight, PrintLayoutOptions options)
     {
-        FrameworkElement printSource = CreateDetachedPrintSurface(source) ?? source;
-
-        if (options.Theme == PrintDocumentTheme.BlackAndWhite)
-            ApplyMonochromePrintTheme(printSource);
-
-        printSource.UpdateLayout();
+        source.UpdateLayout();
 
         if (printableWidth <= 0 || printableHeight <= 0)
             return null;
@@ -1630,23 +2435,25 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         double contentWidth = Math.Max(1, printableWidth - (pageInset * 2));
         double contentHeight = Math.Max(1, printableHeight - (pageInset * 2));
 
-        var panel = printSource as Panel;
-        var sections = GetDescendantExpanders(printSource).ToList();
+        var panel = source as Panel;
+        var sections = GetDescendantExpanders(source).ToList();
         bool canReorderInPanel = panel is not null
             && sections.Count > 0
             && panel.Children.OfType<Expander>().Count() == sections.Count;
-
-        var originalExpansion = sections.Select(section => section.IsExpanded).ToList();
-        var originalVisibility = sections.Select(section => section.Visibility).ToList();
+        var originalExpansion = new List<bool>();
+        var originalVisibility = new List<Visibility>();
         List<UIElement>? originalChildOrder = null;
-        var spellWrapSwaps = new List<(StackPanel Parent, int Index, WrapPanel Original, StackPanel Replacement)>();
 
-        try
+        if (sections.Count > 0)
         {
+            originalExpansion = sections.Select(section => section.IsExpanded).ToList();
+            originalVisibility = sections.Select(section => section.Visibility).ToList();
+
             foreach (var section in sections)
             {
                 string title = (section.Header as TextBlock)?.Text?.Trim() ?? string.Empty;
                 var sectionOptions = options.GetOptionsFor(title);
+
                 section.Visibility = sectionOptions.Include ? Visibility.Visible : Visibility.Collapsed;
                 section.IsExpanded = true;
             }
@@ -1654,24 +2461,39 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             if (canReorderInPanel && panel is not null)
                 originalChildOrder = ApplySectionOrder(panel, sections, options);
 
-            printSource.UpdateLayout();
+            source.UpdateLayout();
+        }
 
-            // Print spells in a single vertical column so rows don't get squeezed by WrapPanel.
-            spellWrapSwaps = SwapSpellWrapPanelsToStackPanels(sections);
-            if (spellWrapSwaps.Count > 0)
-                printSource.UpdateLayout();
+        VisualThemeRestoreState? bwThemeState = null;
 
-            double sourceWidth = printSource.ActualWidth;
-            double sourceHeight = printSource.ActualHeight;
+        try
+        {
+            double sourceWidth = source.ActualWidth;
+            double sourceHeight = source.ActualHeight;
             if (sourceWidth <= 0 || sourceHeight <= 0)
                 return null;
+            RenderTargetBitmap? monochromeSnapshot = null;
+            if (options.Theme == PrintDocumentTheme.BlackAndWhite)
+            {
+                bwThemeState = CaptureAndApplyBlackAndWhiteVisualTheme(source);
+                source.UpdateLayout();
+
+                int pixelWidth = Math.Max(1, (int)Math.Ceiling(sourceWidth));
+                int pixelHeight = Math.Max(1, (int)Math.Ceiling(sourceHeight));
+                monochromeSnapshot = new RenderTargetBitmap(pixelWidth, pixelHeight, 96, 96, PixelFormats.Pbgra32);
+                monochromeSnapshot.Render(source);
+            }
 
             double scale = contentWidth / sourceWidth;
             if (scale <= 0)
                 return null;
 
-            double sourceHeightPerPage = Math.Max(1, Math.Floor(contentHeight / scale));
-            var printSections = BuildPrintSections(printSource, sections, sourceHeight, options);
+            double sourceHeightPerPage = contentHeight / scale;
+            if (sourceHeightPerPage <= 0)
+                return null;
+            sourceHeightPerPage = Math.Max(1, Math.Floor(sourceHeightPerPage));
+
+            var printSections = BuildPrintSections(source, sections, sourceHeight, options);
             var pageSlices = BuildLogicalPageSlices(printSections, sourceHeightPerPage);
             if (pageSlices.Count == 0)
                 return null;
@@ -1681,38 +2503,50 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             {
                 double snappedStart = Math.Max(0, Math.Round(sliceStart));
                 double snappedHeight = Math.Max(1, Math.Ceiling(sliceHeight));
-                double drawHeight = Math.Min(contentHeight, Math.Max(1, snappedHeight * scale));
 
                 var page = new FixedPage
                 {
                     Width = printableWidth,
                     Height = printableHeight,
                     Background = Brushes.White,
-                    ClipToBounds = true,
                 };
 
-                var brush = new VisualBrush(printSource)
-                {
-                    Viewbox = new Rect(0, snappedStart, sourceWidth, snappedHeight),
-                    ViewboxUnits = BrushMappingMode.Absolute,
-                    Viewport = new Rect(0, 0, contentWidth, drawHeight),
-                    ViewportUnits = BrushMappingMode.Absolute,
-                    Stretch = Stretch.Fill,
-                    AlignmentX = AlignmentX.Left,
-                    AlignmentY = AlignmentY.Top,
-                };
+                Brush brush = options.Theme == PrintDocumentTheme.BlackAndWhite && monochromeSnapshot is not null
+                    ? new ImageBrush(monochromeSnapshot)
+                    {
+                        Viewbox = new Rect(0, snappedStart, sourceWidth, snappedHeight),
+                        ViewboxUnits = BrushMappingMode.Absolute,
+                        Viewport = new Rect(0, 0, contentWidth, Math.Min(contentHeight, snappedHeight * scale)),
+                        ViewportUnits = BrushMappingMode.Absolute,
+                        Stretch = Stretch.Fill,
+                        AlignmentX = AlignmentX.Left,
+                        AlignmentY = AlignmentY.Top,
+                    }
+                    : new VisualBrush(source)
+                    {
+                        Viewbox = new Rect(0, snappedStart, sourceWidth, snappedHeight),
+                        ViewboxUnits = BrushMappingMode.Absolute,
+                        Viewport = new Rect(0, 0, contentWidth, Math.Min(contentHeight, snappedHeight * scale)),
+                        ViewportUnits = BrushMappingMode.Absolute,
+                        Stretch = Stretch.Fill,
+                        AlignmentX = AlignmentX.Left,
+                        AlignmentY = AlignmentY.Top,
+                    };
 
                 var content = new Rectangle
                 {
                     Width = contentWidth,
-                    Height = drawHeight,
+                    Height = Math.Min(contentHeight, Math.Max(1, snappedHeight * scale)),
                     Fill = brush,
                     SnapsToDevicePixels = true,
-                    Clip = new RectangleGeometry(new Rect(0, 0, contentWidth, drawHeight)),
                 };
+
+                content.Clip = new RectangleGeometry(new Rect(0, 0, content.Width, content.Height));
 
                 FixedPage.SetLeft(content, pageInset);
                 FixedPage.SetTop(content, pageInset);
+
+                page.ClipToBounds = true;
                 page.Children.Add(content);
 
                 var pageContent = new PageContent();
@@ -1724,30 +2558,144 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         }
         finally
         {
-            if (canReorderInPanel && panel is not null && originalChildOrder is not null)
-                RestorePanelChildren(panel, originalChildOrder);
-
-            RestoreSpellWrapPanels(spellWrapSwaps);
-
-            for (int i = 0; i < sections.Count && i < originalExpansion.Count && i < originalVisibility.Count; i++)
+            if (bwThemeState is not null)
             {
-                sections[i].IsExpanded = originalExpansion[i];
-                sections[i].Visibility = originalVisibility[i];
+                RestoreVisualTheme(bwThemeState);
+                source.UpdateLayout();
             }
 
-            printSource.UpdateLayout();
+            if (sections.Count > 0
+                && originalExpansion.Count == sections.Count
+                && originalVisibility.Count == sections.Count)
+            {
+                if (canReorderInPanel && panel is not null && originalChildOrder is not null)
+                    RestorePanelChildren(panel, originalChildOrder);
+
+                for (int i = 0; i < sections.Count; i++)
+                {
+                    sections[i].IsExpanded = originalExpansion[i];
+                    sections[i].Visibility = originalVisibility[i];
+                }
+
+                source.UpdateLayout();
+            }
         }
+    }
+
+    private static VisualThemeRestoreState CaptureAndApplyBlackAndWhiteVisualTheme(DependencyObject root)
+    {
+        var state = new VisualThemeRestoreState();
+        var queue = new Queue<DependencyObject>();
+        queue.Enqueue(root);
+
+        while (queue.Count > 0)
+        {
+            var current = queue.Dequeue();
+
+            if (current is TextBlock textBlock)
+            {
+                state.TextBlocks.Add((textBlock, textBlock.Foreground, textBlock.Background));
+                textBlock.Foreground = Brushes.Black;
+                if (textBlock.Background is Brush textBackground)
+                    textBlock.Background = ConvertBrushToMonochrome(textBackground, preserveContrast: true);
+            }
+            else if (current is Border border)
+            {
+                state.Borders.Add((border, border.BorderBrush, border.Background));
+                if (border.BorderBrush is Brush borderBrush)
+                    border.BorderBrush = ConvertBrushToMonochrome(borderBrush, preserveContrast: true);
+                if (border.Background is Brush borderBackground)
+                    border.Background = ConvertBrushToMonochrome(borderBackground, preserveContrast: false);
+            }
+            else if (current is Control control)
+            {
+                state.Controls.Add((control, control.Foreground, control.Background, control.BorderBrush));
+                control.Foreground = Brushes.Black;
+                if (control.Background is Brush controlBackground)
+                    control.Background = ConvertBrushToMonochrome(controlBackground, preserveContrast: false);
+                if (control.BorderBrush is Brush controlBorder)
+                    control.BorderBrush = ConvertBrushToMonochrome(controlBorder, preserveContrast: true);
+            }
+            else if (current is Panel panel)
+            {
+                state.Panels.Add((panel, panel.Background));
+                if (panel.Background is Brush panelBackground)
+                    panel.Background = ConvertBrushToMonochrome(panelBackground, preserveContrast: false);
+            }
+            else if (current is Shape shape)
+            {
+                state.Shapes.Add((shape, shape.Fill, shape.Stroke));
+                if (shape.Fill is Brush fillBrush)
+                    shape.Fill = ConvertBrushToMonochrome(fillBrush, preserveContrast: false);
+                if (shape.Stroke is Brush strokeBrush)
+                    shape.Stroke = ConvertBrushToMonochrome(strokeBrush, preserveContrast: true);
+            }
+
+            int childCount = VisualTreeHelper.GetChildrenCount(current);
+            for (int i = 0; i < childCount; i++)
+                queue.Enqueue(VisualTreeHelper.GetChild(current, i));
+        }
+
+        return state;
+    }
+
+    private static void RestoreVisualTheme(VisualThemeRestoreState state)
+    {
+        foreach (var (element, foreground, background) in state.TextBlocks)
+        {
+            element.Foreground = foreground;
+            element.Background = background;
+        }
+
+        foreach (var (element, borderBrush, background) in state.Borders)
+        {
+            element.BorderBrush = borderBrush;
+            element.Background = background;
+        }
+
+        foreach (var (element, foreground, background, borderBrush) in state.Controls)
+        {
+            element.Foreground = foreground;
+            element.Background = background;
+            element.BorderBrush = borderBrush;
+        }
+
+        foreach (var (element, background) in state.Panels)
+            element.Background = background;
+
+        foreach (var (element, fill, stroke) in state.Shapes)
+        {
+            element.Fill = fill;
+            element.Stroke = stroke;
+        }
+    }
+
+    private static Brush ConvertBrushToMonochrome(Brush brush, bool preserveContrast)
+    {
+        if (brush is not SolidColorBrush solid)
+            return preserveContrast ? Brushes.Black : Brushes.White;
+
+        if (solid.Color.A == 0)
+            return brush;
+
+        byte luminance = (byte)Math.Clamp(
+            (int)Math.Round((solid.Color.R * 0.299) + (solid.Color.G * 0.587) + (solid.Color.B * 0.114)),
+            0,
+            255);
+
+        if (preserveContrast)
+        {
+            byte contrast = luminance < 160 ? (byte)0 : (byte)96;
+            return new SolidColorBrush(Color.FromArgb(solid.Color.A, contrast, contrast, contrast));
+        }
+
+        byte background = (byte)Math.Clamp(235 + ((luminance - 128) / 6), 225, 248);
+        return new SolidColorBrush(Color.FromArgb(solid.Color.A, background, background, background));
     }
 
     private static List<string> BuildLivePageMap(FrameworkElement source, double printableWidth, double printableHeight, PrintLayoutOptions options)
     {
-        FrameworkElement printSource = CreateDetachedPrintSurface(source) ?? source;
-
-        if (options.Theme == PrintDocumentTheme.BlackAndWhite)
-            ApplyMonochromePrintTheme(printSource);
-
-        printSource.UpdateLayout();
-
+        source.UpdateLayout();
         if (printableWidth <= 0 || printableHeight <= 0)
             return new List<string> { "Unable to compute page map." };
 
@@ -1755,15 +2703,14 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         double contentWidth = Math.Max(1, printableWidth - (pageInset * 2));
         double contentHeight = Math.Max(1, printableHeight - (pageInset * 2));
 
-        var panel = printSource as Panel;
-        var sections = GetDescendantExpanders(printSource).ToList();
+        var panel = source as Panel;
+        var sections = GetDescendantExpanders(source).ToList();
         bool canReorderInPanel = panel is not null
             && sections.Count > 0
             && panel.Children.OfType<Expander>().Count() == sections.Count;
         var originalExpansion = sections.Select(section => section.IsExpanded).ToList();
         var originalVisibility = sections.Select(section => section.Visibility).ToList();
         List<UIElement>? originalChildOrder = null;
-        var spellWrapSwaps = new List<(StackPanel Parent, int Index, WrapPanel Original, StackPanel Replacement)>();
 
         try
         {
@@ -1778,14 +2725,10 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             if (canReorderInPanel && panel is not null)
                 originalChildOrder = ApplySectionOrder(panel, sections, options);
 
-            printSource.UpdateLayout();
+            source.UpdateLayout();
 
-            spellWrapSwaps = SwapSpellWrapPanelsToStackPanels(sections);
-            if (spellWrapSwaps.Count > 0)
-                printSource.UpdateLayout();
-
-            double sourceWidth = printSource.ActualWidth;
-            double sourceHeight = printSource.ActualHeight;
+            double sourceWidth = source.ActualWidth;
+            double sourceHeight = source.ActualHeight;
             if (sourceWidth <= 0 || sourceHeight <= 0)
                 return new List<string> { "Unable to compute page map." };
 
@@ -1794,7 +2737,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
                 return new List<string> { "Unable to compute page map." };
 
             double sourceHeightPerPage = Math.Max(1, Math.Floor(contentHeight / scale));
-            var printSections = BuildPrintSections(printSource, sections, sourceHeight, options);
+            var printSections = BuildPrintSections(source, sections, sourceHeight, options);
             var pageSlices = BuildLogicalPageSlices(printSections, sourceHeightPerPage);
             if (pageSlices.Count == 0)
                 return new List<string> { "No printable sections selected." };
@@ -1805,8 +2748,8 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
                 var (start, height) = pageSlices[i];
                 double end = start + height;
                 var titles = printSections
-                    .Where(section => section.Top < end && section.Top + section.Height > start)
-                    .Select(section => section.Title)
+                    .Where(section => section.top < end && section.top + section.height > start)
+                    .Select(section => section.title)
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList();
 
@@ -1827,15 +2770,13 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             if (canReorderInPanel && panel is not null && originalChildOrder is not null)
                 RestorePanelChildren(panel, originalChildOrder);
 
-            RestoreSpellWrapPanels(spellWrapSwaps);
-
             for (int i = 0; i < sections.Count && i < originalExpansion.Count && i < originalVisibility.Count; i++)
             {
                 sections[i].IsExpanded = originalExpansion[i];
                 sections[i].Visibility = originalVisibility[i];
             }
 
-            printSource.UpdateLayout();
+            source.UpdateLayout();
         }
     }
 
@@ -1881,57 +2822,14 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             panel.Children.Add(child);
     }
 
-    private static List<(StackPanel Parent, int Index, WrapPanel Original, StackPanel Replacement)> SwapSpellWrapPanelsToStackPanels(List<Expander> sections)
+    private static List<(string title, double top, double height, bool forceNewPageBefore, bool forceNewPageAfter)> BuildPrintSections(
+        FrameworkElement source,
+        List<Expander> sections,
+        double sourceHeight,
+        PrintLayoutOptions options)
     {
-        var swaps = new List<(StackPanel Parent, int Index, WrapPanel Original, StackPanel Replacement)>();
-        foreach (var section in sections)
-        {
-            if (!string.Equals((section.Header as TextBlock)?.Text?.Trim(), "SPELLS", StringComparison.OrdinalIgnoreCase))
-                continue;
-            if (section.Content is not StackPanel spellContent)
-                continue;
+        var result = new List<(string title, double top, double height, bool forceNewPageBefore, bool forceNewPageAfter)>();
 
-            for (int i = spellContent.Children.Count - 1; i >= 0; i--)
-            {
-                if (spellContent.Children[i] is not WrapPanel wrapPanel)
-                    continue;
-
-                var singleColumn = new StackPanel { Margin = wrapPanel.Margin };
-                var wrappedChildren = wrapPanel.Children.Cast<UIElement>().ToList();
-                wrapPanel.Children.Clear();
-                foreach (var child in wrappedChildren)
-                    singleColumn.Children.Add(child);
-
-                spellContent.Children.RemoveAt(i);
-                spellContent.Children.Insert(i, singleColumn);
-                swaps.Add((spellContent, i, wrapPanel, singleColumn));
-            }
-        }
-
-        return swaps;
-    }
-
-    private static void RestoreSpellWrapPanels(List<(StackPanel Parent, int Index, WrapPanel Original, StackPanel Replacement)> swaps)
-    {
-        for (int i = swaps.Count - 1; i >= 0; i--)
-        {
-            var (parent, index, original, replacement) = swaps[i];
-            var children = replacement.Children.Cast<UIElement>().ToList();
-            replacement.Children.Clear();
-            foreach (var child in children)
-                original.Children.Add(child);
-
-            int replacementIndex = parent.Children.IndexOf(replacement);
-            if (replacementIndex >= 0)
-                parent.Children.RemoveAt(replacementIndex);
-
-            int insertIndex = Math.Clamp(index, 0, parent.Children.Count);
-            parent.Children.Insert(insertIndex, original);
-        }
-    }
-
-    private static List<VisualPrintSection> BuildPrintSections(FrameworkElement source, List<Expander> sections, double sourceHeight, PrintLayoutOptions options)
-    {
         var sectionByTitle = sections
             .Select(section => new
             {
@@ -1941,305 +2839,168 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             .Where(item => !string.IsNullOrWhiteSpace(item.Title))
             .ToDictionary(item => item.Title, item => item.Section, StringComparer.OrdinalIgnoreCase);
 
-        var regions = new List<VisualPrintSection>();
-
         foreach (var planItem in options.GetSectionPlan())
         {
-            if (!sectionByTitle.TryGetValue(planItem.Title, out var expander))
-                continue;
-            if (expander.Visibility != Visibility.Visible)
+            if (!sectionByTitle.TryGetValue(planItem.Title, out var section))
                 continue;
 
-            if (string.Equals(planItem.Title, "SPELLS", StringComparison.OrdinalIgnoreCase)
-                && options.KeepSpellsGroupedByLevel
-                && expander.Content is StackPanel spellContent)
+            if (!section.IsVisible || section.ActualHeight <= 0)
+                continue;
+
+            string title = planItem.Title;
+
+            bool forceBreakBefore = planItem.BreakBefore
+                || (result.Count > 0 && string.Equals(title, "SPELLS", StringComparison.OrdinalIgnoreCase));
+            bool forceBreakAfter = false;
+
+            if (string.Equals(title, "SPELLS", StringComparison.OrdinalIgnoreCase)
+                && section.Content is StackPanel spellPanel)
             {
-                var spellCards = new List<Border>();
+                var spellGroups = spellPanel.Children
+                    .OfType<WrapPanel>()
+                    .SelectMany(panel => panel.Children.OfType<FrameworkElement>())
+                    .Where(child => child.IsVisible && child.ActualHeight > 0)
+                    .ToList();
 
-                foreach (var child in spellContent.Children)
+                if (spellGroups.Count > 0)
                 {
-                    if (child is WrapPanel wrap)
+                    double sectionTop = Math.Max(0, section.TransformToAncestor(source).Transform(new Point(0, 0)).Y);
+                    bool firstCard = true;
+                    foreach (var group in spellGroups)
                     {
-                        spellCards.AddRange(wrap.Children.OfType<Border>());
-                        continue;
-                    }
-
-                    if (child is StackPanel stack)
-                    {
-                        spellCards.AddRange(stack.Children.OfType<Border>());
-                        continue;
-                    }
-
-                    if (child is Border border)
-                        spellCards.Add(border);
-                }
-
-                if (spellCards.Count > 0)
-                {
-                    int targetBreakCardIndex = 0;
-                    if (planItem.BreakBefore)
-                    {
-                        int firstNonBonus = spellCards.FindIndex(card => !IsClassBonusSpellCard(card));
-                        targetBreakCardIndex = firstNonBonus >= 0 ? firstNonBonus : 0;
-                    }
-
-                    bool addedAnyCardRegions = false;
-                    double? pendingBonusTop = null;
-                    double pendingBonusBottom = 0;
-                    bool pendingBonusBreak = false;
-
-                    for (int cardIndex = 0; cardIndex < spellCards.Count; cardIndex++)
-                    {
-                        var spellCard = spellCards[cardIndex];
-                        if (spellCard.Visibility != Visibility.Visible)
+                        var groupOrigin = group.TransformToAncestor(source).Transform(new Point(0, 0));
+                        double groupTop = Math.Max(0, groupOrigin.Y);
+                        double groupHeight = Math.Min(group.ActualHeight, Math.Max(0, sourceHeight - groupTop));
+                        if (groupHeight <= 0)
                             continue;
 
-                        bool forceBreakBeforeCard = planItem.BreakBefore && cardIndex == targetBreakCardIndex;
+                        double cardTop = firstCard ? Math.Min(sectionTop, groupTop) : groupTop;
+                        double cardBottom = Math.Min(sourceHeight, groupTop + groupHeight);
 
-                        if (IsClassBonusSpellCard(spellCard))
+                        // For spell cards, break on row boundaries when possible so rows are
+                        // not split across pages. Keep card headers attached to the first row.
+                        if (group is Border { Child: StackPanel cardStack })
                         {
-                            if (TryGetElementBounds(source, spellCard, sourceHeight, out double bonusTop, out double bonusHeight))
+                            var cardParts = cardStack.Children
+                                .OfType<FrameworkElement>()
+                                .Where(child => child.IsVisible && child.ActualHeight > 0)
+                                .ToList();
+
+                            if (cardParts.Count > 0)
                             {
-                                if (!pendingBonusTop.HasValue)
-                                    pendingBonusTop = bonusTop;
+                                int firstDataIndex = Math.Min(3, cardParts.Count);
+                                var firstDataPart = cardParts.Skip(firstDataIndex).FirstOrDefault();
 
-                                pendingBonusBottom = Math.Max(pendingBonusBottom, bonusTop + bonusHeight);
-                                pendingBonusBreak = pendingBonusBreak || forceBreakBeforeCard;
+                                if (firstDataPart is not null)
+                                {
+                                    var firstDataOrigin = firstDataPart.TransformToAncestor(source).Transform(new Point(0, 0));
+                                    double firstDataTop = Math.Max(cardTop, firstDataOrigin.Y);
+                                    double firstDataBottom = Math.Min(sourceHeight, firstDataTop + firstDataPart.ActualHeight);
+
+                                    double headerWithFirstRowHeight = Math.Max(1, firstDataBottom - cardTop);
+                                    result.Add((title, cardTop, headerWithFirstRowHeight, firstCard && forceBreakBefore, false));
+
+                                    foreach (var part in cardParts.Skip(firstDataIndex + 1))
+                                    {
+                                        var partOrigin = part.TransformToAncestor(source).Transform(new Point(0, 0));
+                                        double partTop = Math.Max(0, partOrigin.Y);
+                                        double partHeight = Math.Min(part.ActualHeight, Math.Max(0, sourceHeight - partTop));
+                                        if (partHeight <= 0)
+                                            continue;
+
+                                        result.Add((title, partTop, Math.Max(1, partHeight), false, false));
+                                    }
+                                }
+                                else
+                                {
+                                    result.Add((title, cardTop, Math.Max(1, cardBottom - cardTop), firstCard && forceBreakBefore, false));
+                                }
                             }
-
-                            continue;
+                            else
+                            {
+                                result.Add((title, cardTop, Math.Max(1, cardBottom - cardTop), firstCard && forceBreakBefore, false));
+                            }
                         }
-
-                        bool appended = AddSpellCardRegions(
-                            regions,
-                            source,
-                            sourceHeight,
-                            spellCard,
-                            planItem.Title,
-                            forceBreakBeforeCard || pendingBonusBreak,
-                            pendingBonusTop,
-                            pendingBonusBottom);
-                        addedAnyCardRegions = addedAnyCardRegions || appended;
-
-                        if (appended)
+                        else
                         {
-                            pendingBonusTop = null;
-                            pendingBonusBottom = 0;
-                            pendingBonusBreak = false;
+                            result.Add((title, cardTop, Math.Max(1, cardBottom - cardTop), firstCard && forceBreakBefore, false));
                         }
+
+                        firstCard = false;
                     }
 
-                    if (pendingBonusTop.HasValue)
+                    if (result.Count > 0)
                     {
-                        regions.Add(new VisualPrintSection
-                        {
-                            Title = planItem.Title,
-                            Top = pendingBonusTop.Value,
-                            Height = Math.Max(1, pendingBonusBottom - pendingBonusTop.Value),
-                            ForceNewPageBefore = pendingBonusBreak,
-                            ForceNewPageAfter = false,
-                        });
-                        addedAnyCardRegions = true;
+                        var last = result[^1];
+                        result[^1] = (last.title, last.top, last.height, last.forceNewPageBefore, forceBreakAfter);
                     }
 
-                    if (addedAnyCardRegions)
-                        continue;
+                    continue;
                 }
             }
 
-            if (TryGetElementBounds(source, expander, sourceHeight, out double top, out double height))
-            {
-                regions.Add(new VisualPrintSection
-                {
-                    Title = planItem.Title,
-                    Top = top,
-                    Height = height,
-                    ForceNewPageBefore = planItem.BreakBefore,
-                    ForceNewPageAfter = false,
-                });
-            }
-        }
-
-        return regions;
-    }
-
-    private static bool AddSpellCardRegions(
-        List<VisualPrintSection> regions,
-        FrameworkElement source,
-        double sourceHeight,
-        Border spellCard,
-        string title,
-        bool forceNewPageBeforeCard,
-        double? mergeTop,
-        double mergeBottom)
-    {
-        if (!TryGetElementBounds(source, spellCard, sourceHeight, out double cardTop, out double cardHeight))
-            return false;
-
-        double regionTop = mergeTop.HasValue ? Math.Min(mergeTop.Value, cardTop) : cardTop;
-        double regionBottom = mergeTop.HasValue ? Math.Max(mergeBottom, cardTop + cardHeight) : cardTop + cardHeight;
-
-        if (spellCard.Child is not StackPanel cardStack)
-        {
-            regions.Add(new VisualPrintSection
-            {
-                Title = title,
-                Top = regionTop,
-                Height = Math.Max(1, regionBottom - regionTop),
-                ForceNewPageBefore = forceNewPageBeforeCard,
-                ForceNewPageAfter = false,
-            });
-            return true;
-        }
-
-        var rowBorders = cardStack.Children.OfType<Border>()
-            .Where(border => border.Visibility == Visibility.Visible)
-            .ToList();
-
-        if (rowBorders.Count == 0)
-        {
-            regions.Add(new VisualPrintSection
-            {
-                Title = title,
-                Top = regionTop,
-                Height = Math.Max(1, regionBottom - regionTop),
-                ForceNewPageBefore = forceNewPageBeforeCard,
-                ForceNewPageAfter = false,
-            });
-            return true;
-        }
-
-        if (!TryGetElementBounds(source, rowBorders[0], sourceHeight, out double firstRowTop, out double firstRowHeight))
-        {
-            regions.Add(new VisualPrintSection
-            {
-                Title = title,
-                Top = regionTop,
-                Height = Math.Max(1, regionBottom - regionTop),
-                ForceNewPageBefore = forceNewPageBeforeCard,
-                ForceNewPageAfter = false,
-            });
-            return true;
-        }
-
-        double firstSegmentBottom = Math.Max(firstRowTop + firstRowHeight, mergeTop.HasValue ? mergeBottom : firstRowTop + firstRowHeight);
-        regions.Add(new VisualPrintSection
-        {
-            Title = title,
-            Top = regionTop,
-            Height = Math.Max(1, firstSegmentBottom - regionTop),
-            ForceNewPageBefore = forceNewPageBeforeCard,
-            ForceNewPageAfter = false,
-        });
-
-        for (int i = 1; i < rowBorders.Count; i++)
-        {
-            if (!TryGetElementBounds(source, rowBorders[i], sourceHeight, out double rowTop, out double rowHeight))
+            var origin = section.TransformToAncestor(source).Transform(new Point(0, 0));
+            double top = Math.Max(0, origin.Y);
+            double height = Math.Min(section.ActualHeight, Math.Max(0, sourceHeight - top));
+            if (height <= 0)
                 continue;
 
-            regions.Add(new VisualPrintSection
-            {
-                Title = title,
-                Top = rowTop,
-                Height = Math.Max(1, rowHeight),
-                ForceNewPageBefore = false,
-                ForceNewPageAfter = false,
-            });
+            result.Add((title, top, height, forceBreakBefore, forceBreakAfter));
         }
 
-        return true;
+        return result;
     }
 
-    private static bool IsClassBonusSpellCard(Border card)
-    {
-        if (card.Child is not StackPanel stack)
-            return false;
-
-        var heading = stack.Children.OfType<TextBlock>().FirstOrDefault()?.Text?.Trim();
-        return string.Equals(heading, "CLASS BONUS SPELLS / POWERS", StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static void ApplyMonochromePrintTheme(FrameworkElement root)
-    {
-        var queue = new Queue<DependencyObject>();
-        queue.Enqueue(root);
-
-        while (queue.Count > 0)
-        {
-            DependencyObject current = queue.Dequeue();
-
-            if (current is TextBlock textBlock)
-            {
-                textBlock.Foreground = Brushes.Black;
-                textBlock.Background = Brushes.Transparent;
-            }
-
-            if (current is Border border)
-            {
-                border.BorderBrush = Brushes.Black;
-                border.Background = Brushes.White;
-            }
-
-            if (current is Panel panel)
-            {
-                panel.Background = Brushes.White;
-            }
-
-            if (current is Control control)
-            {
-                control.Foreground = Brushes.Black;
-                control.Background = Brushes.White;
-                control.BorderBrush = Brushes.Black;
-            }
-
-            int childCount = VisualTreeHelper.GetChildrenCount(current);
-            for (int i = 0; i < childCount; i++)
-                queue.Enqueue(VisualTreeHelper.GetChild(current, i));
-        }
-    }
-
-    private static bool TryGetElementBounds(FrameworkElement source, FrameworkElement element, double sourceHeight, out double top, out double height)
-    {
-        top = 0;
-        height = 0;
-
-        double elementHeight = element.ActualHeight;
-        if (elementHeight <= 0)
-            elementHeight = element.RenderSize.Height;
-        if (elementHeight <= 0)
-            return false;
-
-        try
-        {
-            Point offset = element.TransformToAncestor(source).Transform(new Point(0, 0));
-            top = Math.Max(0, offset.Y);
-            height = Math.Max(1, Math.Min(elementHeight, Math.Max(1, sourceHeight - top)));
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    private static List<(double start, double height)> BuildLogicalPageSlices(IReadOnlyList<VisualPrintSection> orderedSections, double pageHeight)
+    private static List<(double start, double height)> BuildLogicalPageSlices(
+        List<(string title, double top, double height, bool forceNewPageBefore, bool forceNewPageAfter)> sections,
+        double pageHeight)
     {
         var slices = new List<(double start, double height)>();
-        if (orderedSections.Count == 0)
+        if (sections.Count == 0 || pageHeight <= 0)
             return slices;
 
-        pageHeight = Math.Max(1, pageHeight);
-        bool hasContent = false;
+        // Split any oversized section into page-sized chunks first.
+        // This keeps text at normal size and lets content flow across pages
+        // instead of shrinking an entire large section to fit one page.
+        var normalizedSections = new List<(string title, double top, double height, bool forceNewPageBefore, bool forceNewPageAfter)>();
+        foreach (var section in sections)
+        {
+            double sectionTop = Math.Max(0, section.top);
+            double remaining = Math.Max(1, section.height);
+            bool firstChunk = true;
+
+            while (remaining > 0)
+            {
+                double chunkHeight = Math.Min(pageHeight, remaining);
+                bool forceBefore = firstChunk && section.forceNewPageBefore;
+                bool isLastChunk = remaining <= pageHeight;
+                bool forceAfter = isLastChunk && section.forceNewPageAfter;
+
+                normalizedSections.Add((section.title, sectionTop, chunkHeight, forceBefore, forceAfter));
+
+                sectionTop += chunkHeight;
+                remaining -= chunkHeight;
+                firstChunk = false;
+            }
+        }
+
+        // Build pages from true Y extents so each slice maps to a single, non-overlapping
+        // visual region of the live panel.
+        var orderedSections = normalizedSections
+            .OrderBy(section => section.top)
+            .ToList();
+
         double currentStart = 0;
         double currentEnd = 0;
+        bool hasContent = false;
 
         void Flush()
         {
             if (!hasContent)
                 return;
 
-            double sliceHeight = Math.Max(1, currentEnd - currentStart);
-            slices.Add((currentStart, sliceHeight));
+            double height = Math.Max(1, currentEnd - currentStart);
+            slices.Add((currentStart, height));
             hasContent = false;
             currentStart = 0;
             currentEnd = 0;
@@ -2247,34 +3008,11 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
 
         foreach (var section in orderedSections)
         {
-            double sectionTop = Math.Max(0, section.Top);
-            double sectionEnd = Math.Max(sectionTop + 1, sectionTop + Math.Max(1, section.Height));
-            double sectionHeight = Math.Max(1, sectionEnd - sectionTop);
+            double sectionTop = Math.Max(0, section.top);
+            double sectionEnd = Math.Max(sectionTop + 1, section.top + Math.Max(1, section.height));
 
-            if (section.ForceNewPageBefore && hasContent)
+            if (section.forceNewPageBefore && hasContent)
                 Flush();
-
-            // Never allow a single oversized section region to be squeezed into one printed page.
-            // If the region exceeds one page in source-space height, split it into page-sized chunks.
-            if (sectionHeight > pageHeight)
-            {
-                if (hasContent)
-                    Flush();
-
-                double chunkStart = sectionTop;
-                while (chunkStart < sectionEnd)
-                {
-                    double chunkEnd = Math.Min(sectionEnd, chunkStart + pageHeight);
-                    double chunkHeight = Math.Max(1, chunkEnd - chunkStart);
-                    slices.Add((chunkStart, chunkHeight));
-                    chunkStart = chunkEnd;
-                }
-
-                if (section.ForceNewPageAfter && hasContent)
-                    Flush();
-
-                continue;
-            }
 
             if (!hasContent)
             {
@@ -2284,11 +3022,8 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             }
             else
             {
-                // Section bounds can occasionally arrive slightly out-of-order; expand both sides.
-                double proposedStart = Math.Min(currentStart, sectionTop);
                 double proposedEnd = Math.Max(currentEnd, sectionEnd);
-
-                if (proposedEnd - proposedStart > pageHeight)
+                if (proposedEnd - currentStart > pageHeight)
                 {
                     Flush();
                     currentStart = sectionTop;
@@ -2297,12 +3032,11 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
                 }
                 else
                 {
-                    currentStart = proposedStart;
                     currentEnd = proposedEnd;
                 }
             }
 
-            if (section.ForceNewPageAfter && hasContent)
+            if (section.forceNewPageAfter && hasContent)
                 Flush();
         }
 
@@ -2337,113 +3071,13 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
 
         foreach (var section in ParseTextSections(filteredSheetText))
         {
-            if (string.Equals(section.heading, "SPELLS", StringComparison.OrdinalIgnoreCase))
-            {
-                AddSpellTextBlocks(doc, section.lines, titleBrush, bodyBrush, borderBrush, panelBrush, headerBrush, options.KeepSpellsGroupedByLevel);
-                continue;
-            }
-
-            AddSimpleTextSection(doc, section.heading, section.lines, titleBrush, bodyBrush, borderBrush, panelBrush, headerBrush);
-        }
-
-        return doc;
-    }
-
-    private static void AddSimpleTextSection(FlowDocument doc, string heading, IReadOnlyList<string> lines, Brush titleBrush, Brush bodyBrush, Brush borderBrush, Brush panelBrush, Brush headerBrush)
-    {
-        var sectionContainer = new BlockUIContainer
-        {
-            Margin = new Thickness(0, 0, 0, 8),
-        };
-
-        var box = new Border
-        {
-            BorderThickness = new Thickness(1),
-            BorderBrush = borderBrush,
-            Background = panelBrush,
-            Padding = new Thickness(8, 6, 8, 6),
-            CornerRadius = new CornerRadius(2),
-        };
-
-        var sectionStack = new StackPanel();
-
-        if (!string.IsNullOrWhiteSpace(heading))
-        {
-            sectionStack.Children.Add(new Border
-            {
-                BorderThickness = new Thickness(0, 0, 0, 1),
-                BorderBrush = headerBrush,
-                Padding = new Thickness(0, 0, 0, 3),
-                Margin = new Thickness(0, 0, 0, 5),
-                Child = new TextBlock
-                {
-                    Text = heading,
-                    FontFamily = new System.Windows.Media.FontFamily("Segoe UI"),
-                    FontSize = 12,
-                    FontWeight = FontWeights.Bold,
-                    Foreground = titleBrush,
-                    TextWrapping = TextWrapping.Wrap,
-                },
-            });
-        }
-
-        foreach (string line in lines)
-        {
-            sectionStack.Children.Add(new TextBlock
-            {
-                Text = line,
-                FontFamily = new System.Windows.Media.FontFamily("Segoe UI"),
-                FontSize = 10,
-                Foreground = bodyBrush,
-                TextWrapping = TextWrapping.Wrap,
-                Margin = new Thickness(0, 0, 0, 1),
-            });
-        }
-
-        box.Child = sectionStack;
-        sectionContainer.Child = box;
-        doc.Blocks.Add(sectionContainer);
-    }
-
-    private static void AddSpellTextBlocks(FlowDocument doc, IReadOnlyList<string> lines, Brush titleBrush, Brush bodyBrush, Brush borderBrush, Brush panelBrush, Brush headerBrush, bool keepGroupedByLevel)
-    {
-        doc.Blocks.Add(new Paragraph(new Run("SPELLS"))
-        {
-            FontFamily = new System.Windows.Media.FontFamily("Segoe UI"),
-            FontSize = 12,
-            FontWeight = FontWeights.Bold,
-            Foreground = titleBrush,
-            Margin = new Thickness(0, 0, 0, 6),
-        });
-
-        BlockUIContainer? currentLevelContainer = null;
-        StackPanel? currentLevelPanel = null;
-        bool firstLevelSection = true;
-
-        void FlushLevelSection()
-        {
-            if (currentLevelContainer is null)
-                return;
-
-            doc.Blocks.Add(currentLevelContainer);
-            currentLevelContainer = null;
-            currentLevelPanel = null;
-        }
-
-        void StartLevelSection(string heading)
-        {
-            FlushLevelSection();
-
-            currentLevelContainer = new BlockUIContainer
+            var sectionContainer = new BlockUIContainer
             {
                 Margin = new Thickness(0, 0, 0, 8),
-                BreakPageBefore = keepGroupedByLevel && !firstLevelSection,
             };
-            firstLevelSection = false;
 
-            var levelBox = new Border
+            var box = new Border
             {
-                Margin = new Thickness(0, 0, 0, 2),
                 BorderThickness = new Thickness(1),
                 BorderBrush = borderBrush,
                 Background = panelBrush,
@@ -2451,85 +3085,47 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
                 CornerRadius = new CornerRadius(2),
             };
 
-            currentLevelPanel = new StackPanel();
-            currentLevelPanel.Children.Add(new Border
+            var sectionStack = new StackPanel();
+
+            if (!string.IsNullOrWhiteSpace(section.heading))
             {
-                BorderThickness = new Thickness(0, 0, 0, 1),
-                BorderBrush = headerBrush,
-                Padding = new Thickness(0, 0, 0, 3),
-                Margin = new Thickness(0, 0, 0, 5),
-                Child = new TextBlock
+                sectionStack.Children.Add(new Border
                 {
-                    Text = heading,
-                    FontFamily = new System.Windows.Media.FontFamily("Segoe UI"),
-                    FontSize = 11,
-                    FontWeight = FontWeights.Bold,
-                    Foreground = titleBrush,
-                    TextWrapping = TextWrapping.Wrap,
-                },
-            });
-
-            levelBox.Child = currentLevelPanel;
-            currentLevelContainer.Child = levelBox;
-        }
-
-        foreach (string line in lines)
-        {
-            string trimmed = line.Trim();
-            if (string.IsNullOrWhiteSpace(trimmed))
-                continue;
-
-            if (trimmed.Equals("Class bonus spells/powers:", StringComparison.OrdinalIgnoreCase)
-                || trimmed.Equals("Priest slots at current level:", StringComparison.OrdinalIgnoreCase)
-                || trimmed.Equals("Wizard spellbook:", StringComparison.OrdinalIgnoreCase))
-            {
-                FlushLevelSection();
-                doc.Blocks.Add(new Paragraph(new Run(trimmed))
-                {
-                    FontFamily = new System.Windows.Media.FontFamily("Segoe UI"),
-                    FontSize = 10,
-                    FontWeight = FontWeights.Bold,
-                    Foreground = titleBrush,
-                    Margin = new Thickness(0, 2, 0, 2),
+                    BorderThickness = new Thickness(0, 0, 0, 1),
+                    BorderBrush = headerBrush,
+                    Padding = new Thickness(0, 0, 0, 3),
+                    Margin = new Thickness(0, 0, 0, 5),
+                    Child = new TextBlock
+                    {
+                        Text = section.heading,
+                        FontFamily = new System.Windows.Media.FontFamily("Segoe UI"),
+                        FontSize = 12,
+                        FontWeight = FontWeights.Bold,
+                        Foreground = titleBrush,
+                        TextWrapping = TextWrapping.Wrap,
+                    },
                 });
-                continue;
             }
 
-            bool isLevelHeading = trimmed.StartsWith("Level ", StringComparison.OrdinalIgnoreCase)
-                && (trimmed.EndsWith(" priest spells:", StringComparison.OrdinalIgnoreCase)
-                    || trimmed.EndsWith(" wizard spells:", StringComparison.OrdinalIgnoreCase));
-
-            if (isLevelHeading)
+            foreach (string line in section.lines)
             {
-                StartLevelSection(trimmed);
-                continue;
-            }
-
-            if (currentLevelPanel is not null)
-            {
-                currentLevelPanel.Children.Add(new TextBlock
+                sectionStack.Children.Add(new TextBlock
                 {
-                    Text = trimmed,
+                    Text = line,
                     FontFamily = new System.Windows.Media.FontFamily("Segoe UI"),
                     FontSize = 10,
                     Foreground = bodyBrush,
-                    Margin = new Thickness(0, 0, 0, 1),
                     TextWrapping = TextWrapping.Wrap,
-                });
-            }
-            else
-            {
-                doc.Blocks.Add(new Paragraph(new Run(trimmed))
-                {
-                    FontFamily = new System.Windows.Media.FontFamily("Segoe UI"),
-                    FontSize = 10,
-                    Foreground = bodyBrush,
                     Margin = new Thickness(0, 0, 0, 1),
                 });
             }
+
+            box.Child = sectionStack;
+            sectionContainer.Child = box;
+            doc.Blocks.Add(sectionContainer);
         }
 
-        FlushLevelSection();
+        return doc;
     }
 
     private static (Brush titleBrush, Brush bodyBrush, Brush accentBrush, Brush borderBrush, Brush panelBrush, Brush headerBrush) GetPrintPalette(PrintDocumentTheme theme)
@@ -2551,24 +3147,6 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
     private static string FilterSheetTextForPrint(string fullSheetText, PrintLayoutOptions options)
     {
         var selectedTitles = options.GetOrderedSectionTitles().ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var textSectionByVisualTitle = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["CHARACTER IDENTITY"] = "CHARACTER SHEET",
-            ["ABILITY SCORES"] = "ABILITIES",
-            ["COMBAT STATISTICS"] = "CORE COMBAT",
-            ["WEAPONS"] = "WEAPONS",
-            ["SAVING THROWS"] = "SAVING THROWS",
-            ["WEAPON PROFICIENCIES"] = "WEAPON PROFICIENCIES",
-            ["TURNING UNDEAD"] = "TURNING UNDEAD",
-            ["UNARMED COMBAT"] = "UNARMED COMBAT",
-            ["NONWEAPON PROFICIENCIES"] = "NONWEAPON PROFICIENCIES",
-            ["LANGUAGES"] = "LANGUAGES",
-            ["EQUIPMENT"] = "EQUIPMENT",
-            ["WEALTH"] = "EQUIPMENT",
-            ["TRAITS & DISADVANTAGES"] = "TRAITS / DISADVANTAGES",
-            ["NOTES"] = "NOTES",
-            ["SPELLS"] = "SPELLS",
-        };
 
         var blocks = ParseTextSections(fullSheetText);
         var output = new List<string>();
@@ -2587,7 +3165,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
                 continue;
             }
 
-            string? matchingVisualTitle = textSectionByVisualTitle
+            string? matchingVisualTitle = TextSectionByVisualTitle
                 .FirstOrDefault(pair => string.Equals(pair.Value, block.heading, StringComparison.OrdinalIgnoreCase))
                 .Key;
 
@@ -2663,7 +3241,8 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         {
             if (_sectionLayoutByKey.ContainsKey(card.Key))
             {
-                _sectionLayoutByKey[card.Key].Span = Math.Clamp(_sectionLayoutByKey[card.Key].Span, 1, 3);
+                _sectionLayoutByKey[card.Key].Lane = Math.Clamp(_sectionLayoutByKey[card.Key].Lane, 0, LayoutLaneCount - 1);
+                _sectionLayoutByKey[card.Key].Span = Math.Clamp(_sectionLayoutByKey[card.Key].Span, 1, LayoutLaneCount);
                 continue;
             }
 
@@ -2671,7 +3250,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             {
                 Order = nextRow++,
                 Lane = 0,
-                Span = 1,
+                Span = DefaultSectionSpan,
             };
         }
 
@@ -2683,11 +3262,11 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         var rowSlots = new SortedDictionary<int, string?[]>();
         foreach (var kv in _sectionLayoutByKey
             .OrderBy(kv => Math.Max(0, kv.Value.Order))
-            .ThenBy(kv => Math.Clamp(kv.Value.Lane, 0, 2)))
+            .ThenBy(kv => Math.Clamp(kv.Value.Lane, 0, LayoutLaneCount - 1)))
         {
             int targetRow = Math.Max(0, kv.Value.Order);
-            int span = Math.Clamp(kv.Value.Span, 1, 3);
-            int targetLane = Math.Clamp(kv.Value.Lane, 0, 3 - span);
+            int span = Math.Clamp(kv.Value.Span, 1, LayoutLaneCount);
+            int targetLane = Math.Clamp(kv.Value.Lane, 0, LayoutLaneCount - span);
             PlaceWithSpill(rowSlots, targetRow, targetLane, span, kv.Key);
         }
 
@@ -2695,7 +3274,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         foreach (var slots in rowSlots.Values.Where(values => values.Any(value => !string.IsNullOrWhiteSpace(value))))
         {
             var handledKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            for (int lane = 0; lane < 3; lane++)
+            for (int lane = 0; lane < LayoutLaneCount; lane++)
             {
                 string? key = slots[lane];
                 if (string.IsNullOrWhiteSpace(key))
@@ -2704,7 +3283,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
                     continue;
 
                 int span = 1;
-                for (int cursor = lane + 1; cursor < 3; cursor++)
+                for (int cursor = lane + 1; cursor < LayoutLaneCount; cursor++)
                 {
                     if (!string.Equals(slots[cursor], key, StringComparison.OrdinalIgnoreCase))
                         break;
@@ -2713,7 +3292,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
 
                 _sectionLayoutByKey[key].Order = normalizedRow;
                 _sectionLayoutByKey[key].Lane = lane;
-                _sectionLayoutByKey[key].Span = Math.Clamp(span, 1, 3);
+                _sectionLayoutByKey[key].Span = Math.Clamp(span, 1, LayoutLaneCount);
                 handledKeys.Add(key);
             }
             normalizedRow++;
@@ -2760,13 +3339,14 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             rowGrid.DragOver += RowGrid_DragOver;
             rowGrid.Drop += RowGrid_Drop;
 
-            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(12) });
-            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(12) });
-            rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            for (int lane = 0; lane < LayoutLaneCount; lane++)
+            {
+                rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                if (lane < LayoutLaneCount - 1)
+                    rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(12) });
+            }
 
-            for (int lane = 0; lane < 3; lane++)
+            for (int lane = 0; lane < LayoutLaneCount; lane++)
             {
                 var laneTarget = new Border
                 {
@@ -2785,10 +3365,10 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             for (int i = 0; i < rowCards.Count; i++)
             {
                 DetachFromParent(rowCards[i].Expander);
-                int lane = Math.Clamp(_sectionLayoutByKey[rowCards[i].Key].Lane, 0, 2);
-                int span = Math.Clamp(_sectionLayoutByKey[rowCards[i].Key].Span, 1, 3);
+                int lane = Math.Clamp(_sectionLayoutByKey[rowCards[i].Key].Lane, 0, LayoutLaneCount - 1);
+                int span = Math.Clamp(_sectionLayoutByKey[rowCards[i].Key].Span, 1, LayoutLaneCount);
                 Grid.SetColumn(rowCards[i].Expander, lane * 2);
-                Grid.SetColumnSpan(rowCards[i].Expander, Math.Min(5 - (lane * 2), (span * 2) - 1));
+                Grid.SetColumnSpan(rowCards[i].Expander, Math.Min((LayoutLaneCount * 2) - 1 - (lane * 2), (span * 2) - 1));
                 Panel.SetZIndex(rowCards[i].Expander, 1);
                 rowGrid.Children.Add(rowCards[i].Expander);
             }
@@ -2796,8 +3376,6 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             LaneSurface.Children.Add(rowGrid);
             LaneSurface.Children.Add(BuildInsertionTarget(rowIndex + 1));
         }
-
-        UpdateExpandCollapseToggleButton();
     }
 
     private Border BuildInsertionTarget(int insertionRow)
@@ -3244,15 +3822,15 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
     {
         int span = GetSectionSpan(movingKey);
         double width = Math.Max(1, LaneSurface.ActualWidth);
-        int lane = (int)(dropXInLaneSurface / (width / 3.0));
-        return Math.Clamp(lane, 0, 3 - span);
+        int lane = (int)(dropXInLaneSurface / (width / LayoutLaneCount));
+        return Math.Clamp(lane, 0, LayoutLaneCount - span);
     }
 
     private bool CanFitSectionAtRowLane(string sectionKey, int row, int lane)
     {
         var slots = BuildRowSlotsExcluding(sectionKey);
         int span = GetSectionSpan(sectionKey);
-        int clampedLane = Math.Clamp(lane, 0, 3 - span);
+        int clampedLane = Math.Clamp(lane, 0, LayoutLaneCount - span);
 
         if (!slots.TryGetValue(Math.Max(0, row), out var rowSlots))
             return true;
@@ -3271,8 +3849,8 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         if (_sectionLayoutByKey.TryGetValue(sectionKey, out var movingPlacement))
         {
             // Keep the section's configured width while dragging.
-            movingPlacement.Span = Math.Clamp(movingPlacement.Span, 1, 3);
-            movingPlacement.Lane = Math.Clamp(movingPlacement.Lane, 0, 2);
+            movingPlacement.Span = Math.Clamp(movingPlacement.Span, 1, LayoutLaneCount);
+            movingPlacement.Lane = Math.Clamp(movingPlacement.Lane, 0, LayoutLaneCount - 1);
             movingPlacement.Order = Math.Max(0, movingPlacement.Order);
         }
 
@@ -3282,10 +3860,10 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
     private int ResolveDropLane(Grid rowGrid, int targetRow, string movingKey, Point dropPointInRow)
     {
         _ = targetRow;
-        _ = movingKey;
+        int span = GetSectionSpan(movingKey);
         double width = Math.Max(1, rowGrid.ActualWidth);
-        int lane = (int)(dropPointInRow.X / (width / 3.0));
-        return Math.Clamp(lane, 0, 2);
+        int lane = (int)(dropPointInRow.X / (width / LayoutLaneCount));
+        return Math.Clamp(lane, 0, LayoutLaneCount - span);
     }
 
     private static Grid? FindOwningRowGrid(DependencyObject? source)
@@ -3453,7 +4031,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
 
         int span = GetSectionSpan(sectionKey);
         int clampedRow = Math.Max(0, targetRow);
-        int clampedLane = Math.Clamp(targetLane, 0, 3 - span);
+        int clampedLane = Math.Clamp(targetLane, 0, LayoutLaneCount - span);
 
         // Check if any target slot is occupied by a different section.
         bool slotOccupied = _sectionLayoutByKey.Any(kv =>
@@ -3492,7 +4070,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
 
         int span = GetSectionSpan(sectionKey);
         int clampedRow = Math.Max(0, insertionRow);
-        int clampedLane = Math.Clamp(targetLane, 0, 3 - span);
+        int clampedLane = Math.Clamp(targetLane, 0, LayoutLaneCount - span);
 
         // Always insert a new row by shifting all other sections at or after
         // the insertion point down by one — no cascade displacement.
@@ -3520,14 +4098,14 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         foreach (var kv in _sectionLayoutByKey
             .Where(kv => !string.Equals(kv.Key, excludedSectionKey, StringComparison.OrdinalIgnoreCase))
             .OrderBy(kv => Math.Max(0, kv.Value.Order))
-            .ThenBy(kv => Math.Clamp(kv.Value.Lane, 0, 2)))
+            .ThenBy(kv => Math.Clamp(kv.Value.Lane, 0, LayoutLaneCount - 1)))
         {
             int row = Math.Max(0, kv.Value.Order);
-            int lane = Math.Clamp(kv.Value.Lane, 0, 2);
+            int lane = Math.Clamp(kv.Value.Lane, 0, LayoutLaneCount - 1);
 
             if (!rows.TryGetValue(row, out var slots))
             {
-                slots = new string?[3];
+                slots = new string?[LayoutLaneCount];
                 rows[row] = slots;
             }
 
@@ -3544,11 +4122,11 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             {
                 if (!rows.TryGetValue(probeRow, out var probeSlots))
                 {
-                    probeSlots = new string?[3];
+                    probeSlots = new string?[LayoutLaneCount];
                     rows[probeRow] = probeSlots;
                 }
 
-                for (int probeLane = 0; probeLane < 3; probeLane++)
+                for (int probeLane = 0; probeLane < LayoutLaneCount; probeLane++)
                 {
                     if (!string.IsNullOrWhiteSpace(probeSlots[probeLane]))
                         continue;
@@ -3569,11 +4147,11 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
     private static bool TryPlaceSimpleInRow(SortedDictionary<int, string?[]> rows, int row, int lane, string sectionKey)
     {
         int clampedRow = Math.Max(0, row);
-        int clampedLane = Math.Clamp(lane, 0, 2);
+        int clampedLane = Math.Clamp(lane, 0, LayoutLaneCount - 1);
 
         if (!rows.TryGetValue(clampedRow, out var slots))
         {
-            slots = new string?[3];
+            slots = new string?[LayoutLaneCount];
             rows[clampedRow] = slots;
         }
 
@@ -3586,17 +4164,17 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
 
     private static bool TryFindOpenLaneInRow(SortedDictionary<int, string?[]> rows, int row, int preferredLane, out int openLane)
     {
-        openLane = Math.Clamp(preferredLane, 0, 2);
+        openLane = Math.Clamp(preferredLane, 0, LayoutLaneCount - 1);
         if (!rows.TryGetValue(Math.Max(0, row), out var slots))
             return true;
 
         if (string.IsNullOrWhiteSpace(slots[openLane]))
             return true;
 
-        for (int offset = 1; offset < 3; offset++)
+        for (int offset = 1; offset < LayoutLaneCount; offset++)
         {
             int right = openLane + offset;
-            if (right <= 2 && string.IsNullOrWhiteSpace(slots[right]))
+            if (right <= LayoutLaneCount - 1 && string.IsNullOrWhiteSpace(slots[right]))
             {
                 openLane = right;
                 return true;
@@ -3632,7 +4210,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         int normalizedRow = 0;
         foreach (var slots in rows.Values.Where(s => s.Any(v => !string.IsNullOrWhiteSpace(v))))
         {
-            for (int lane = 0; lane < 3; lane++)
+            for (int lane = 0; lane < LayoutLaneCount; lane++)
             {
                 string? key = slots[lane];
                 if (string.IsNullOrWhiteSpace(key) || !_sectionLayoutByKey.ContainsKey(key))
@@ -3640,7 +4218,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
 
                 _sectionLayoutByKey[key].Order = normalizedRow;
                 _sectionLayoutByKey[key].Lane = lane;
-                _sectionLayoutByKey[key].Span = Math.Clamp(_sectionLayoutByKey[key].Span, 1, 3);
+                _sectionLayoutByKey[key].Span = Math.Clamp(_sectionLayoutByKey[key].Span, 1, LayoutLaneCount);
             }
 
             normalizedRow++;
@@ -3658,8 +4236,8 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
 
         for (int i = 0; i < rowKeys.Count; i++)
         {
-            _sectionLayoutByKey[rowKeys[i]].Lane = Math.Clamp(i, 0, 2);
-            _sectionLayoutByKey[rowKeys[i]].Span = 1;
+            _sectionLayoutByKey[rowKeys[i]].Lane = Math.Clamp(i * DefaultSectionSpan, 0, LayoutLaneCount - 1);
+            _sectionLayoutByKey[rowKeys[i]].Span = DefaultSectionSpan;
         }
 
         NormalizeLayoutRows();
@@ -3672,10 +4250,10 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         if (!_sectionLayoutByKey.TryGetValue(targetSectionKey, out var targetPlacement))
             return;
 
-        movingPlacement.Span = Math.Clamp(movingPlacement.Span, 1, 3);
+        movingPlacement.Span = Math.Clamp(movingPlacement.Span, 1, LayoutLaneCount);
 
         int insertionRow = Math.Max(0, targetPlacement.Order);
-        int targetLane = Math.Clamp(targetPlacement.Lane, 0, 2);
+        int targetLane = Math.Clamp(targetPlacement.Lane, 0, LayoutLaneCount - 1);
 
         var rowSlots = BuildRowSlotsExcluding(movingSectionKey);
         var shifted = new SortedDictionary<int, string?[]>();
@@ -3685,8 +4263,8 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             shifted[row] = kv.Value;
         }
 
-        int movingSpan = Math.Clamp(movingPlacement.Span, 1, 3);
-        int lane = Math.Clamp(targetLane, 0, 3 - movingSpan);
+        int movingSpan = Math.Clamp(movingPlacement.Span, 1, LayoutLaneCount);
+        int lane = Math.Clamp(targetLane, 0, LayoutLaneCount - movingSpan);
         PlaceWithSpill(shifted, insertionRow, lane, movingSpan, movingSectionKey);
 
         ApplyRowSlotsLayout(shifted);
@@ -3702,11 +4280,11 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             .Where(kv => string.IsNullOrWhiteSpace(excludedSectionKey)
                 || !string.Equals(kv.Key, excludedSectionKey, StringComparison.OrdinalIgnoreCase))
             .OrderBy(kv => Math.Max(0, kv.Value.Order))
-            .ThenBy(kv => Math.Clamp(kv.Value.Lane, 0, 2)))
+            .ThenBy(kv => Math.Clamp(kv.Value.Lane, 0, LayoutLaneCount - 1)))
         {
             int row = Math.Max(0, kv.Value.Order);
-            int span = Math.Clamp(kv.Value.Span, 1, 3);
-            int lane = Math.Clamp(kv.Value.Lane, 0, 3 - span);
+            int span = Math.Clamp(kv.Value.Span, 1, LayoutLaneCount);
+            int lane = Math.Clamp(kv.Value.Lane, 0, LayoutLaneCount - span);
             PlaceWithSpill(rowSlots, row, lane, span, kv.Key);
         }
 
@@ -3719,7 +4297,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         foreach (var slots in rowSlots.Values.Where(values => values.Any(value => !string.IsNullOrWhiteSpace(value))))
         {
             var handledKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            for (int lane = 0; lane < 3; lane++)
+            for (int lane = 0; lane < LayoutLaneCount; lane++)
             {
                 string? key = slots[lane];
                 if (string.IsNullOrWhiteSpace(key))
@@ -3728,7 +4306,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
                     continue;
 
                 int span = 1;
-                for (int cursor = lane + 1; cursor < 3; cursor++)
+                for (int cursor = lane + 1; cursor < LayoutLaneCount; cursor++)
                 {
                     if (!string.Equals(slots[cursor], key, StringComparison.OrdinalIgnoreCase))
                         break;
@@ -3737,7 +4315,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
 
                 _sectionLayoutByKey[key].Order = normalizedRow;
                 _sectionLayoutByKey[key].Lane = lane;
-                _sectionLayoutByKey[key].Span = Math.Clamp(span, 1, 3);
+                _sectionLayoutByKey[key].Span = Math.Clamp(span, 1, LayoutLaneCount);
                 handledKeys.Add(key);
             }
             normalizedRow++;
@@ -3747,19 +4325,19 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
     private int GetSectionSpan(string sectionKey)
     {
         if (_sectionLayoutByKey.TryGetValue(sectionKey, out var placement))
-            return Math.Clamp(placement.Span, 1, 3);
-        return 1;
+            return Math.Clamp(placement.Span, 1, LayoutLaneCount);
+        return DefaultSectionSpan;
     }
 
     private void PlaceWithSpill(SortedDictionary<int, string?[]> rowSlots, int startRow, int startLane, int span, string sectionKey)
     {
         int row = Math.Max(0, startRow);
-        int clampedSpan = Math.Clamp(span, 1, 3);
-        int lane = Math.Clamp(startLane, 0, 3 - clampedSpan);
+        int clampedSpan = Math.Clamp(span, 1, LayoutLaneCount);
+        int lane = Math.Clamp(startLane, 0, LayoutLaneCount - clampedSpan);
 
         if (!rowSlots.TryGetValue(row, out var slots))
         {
-            slots = new string?[3];
+            slots = new string?[LayoutLaneCount];
             rowSlots[row] = slots;
         }
 
@@ -3775,7 +4353,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             }
         }
 
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < LayoutLaneCount; i++)
         {
             string candidate = slots[i] ?? string.Empty;
             if (string.Equals(candidate, sectionKey, StringComparison.OrdinalIgnoreCase)
@@ -3790,7 +4368,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
 
         int nextRow = row;
         int nextLane = lane + clampedSpan;
-        if (nextLane > 2)
+        if (nextLane >= LayoutLaneCount)
         {
             nextRow++;
             nextLane = 0;
@@ -3804,18 +4382,18 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
 
             // If the displaced section cannot fit in the remaining slots of this row,
             // start it on the next row so it never overwrites the section just placed.
-            if (displacedLane + displacedSpan - 1 > 2)
+            if (displacedLane + displacedSpan - 1 >= LayoutLaneCount)
             {
                 displacedRow++;
                 displacedLane = 0;
             }
 
-            displacedLane = Math.Clamp(displacedLane, 0, 3 - displacedSpan);
+            displacedLane = Math.Clamp(displacedLane, 0, LayoutLaneCount - displacedSpan);
             PlaceWithSpill(rowSlots, displacedRow, displacedLane, displacedSpan, displacedKey);
 
             nextRow = displacedRow;
             nextLane = displacedLane + displacedSpan;
-            if (nextLane > 2)
+            if (nextLane >= LayoutLaneCount)
             {
                 nextRow++;
                 nextLane = 0;
@@ -3834,8 +4412,6 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
     private void LoadSavedSectionLayoutPreference(CharacterSheet character)
     {
         _sectionLayoutByKey.Clear();
-        _expandedSectionKeys.Clear();
-        _hasSavedExpansionState = false;
 
         string profileKey = BuildSheetLayoutProfileKey(character);
         if (!character.SheetLayoutByProfile.TryGetValue(profileKey, out var saved)
@@ -3844,12 +4420,8 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             return;
         }
 
-        if (saved.HasExpansionState)
-        {
-            _hasSavedExpansionState = true;
-            foreach (string key in saved.ExpandedSectionKeys.Where(k => !string.IsNullOrWhiteSpace(k)))
-                _expandedSectionKeys.Add(key);
-        }
+        bool looksLegacyThreeLane = saved.Placements.Count > 0
+            && saved.Placements.All(p => (p.Span <= 0 ? 1 : p.Span) <= 3 && Math.Max(p.Column, p.Lane) <= 2);
 
         foreach (var placement in saved.Placements)
         {
@@ -3864,11 +4436,19 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
                 lane = placement.Lane;
             }
 
+            int span = Math.Clamp(placement.Span <= 0 ? 1 : placement.Span, 1, LayoutLaneCount);
+
+            if (looksLegacyThreeLane)
+            {
+                lane *= 2;
+                span *= 2;
+            }
+
             _sectionLayoutByKey[placement.SectionKey] = new SectionPlacement
             {
-                Lane = Math.Clamp(lane, 0, 2),
+                Lane = Math.Clamp(lane, 0, LayoutLaneCount - 1),
                 Order = Math.Max(0, row),
-                Span = Math.Clamp(placement.Span <= 0 ? 1 : placement.Span, 1, 3),
+                Span = Math.Clamp(span, 1, LayoutLaneCount),
             };
         }
     }
@@ -3881,14 +4461,6 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         string profileKey = BuildSheetLayoutProfileKey(_selectedCharacter);
         var preference = new CharacterSheetLayoutPreference
         {
-            HasExpansionState = true,
-            ExpandedSectionKeys = _sectionCards
-                .Where(card => card.Expander.IsExpanded)
-                .Select(card => card.Key)
-                .Where(key => !string.IsNullOrWhiteSpace(key))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .OrderBy(key => key, StringComparer.OrdinalIgnoreCase)
-                .ToList(),
             Placements = _sectionLayoutByKey
                 .OrderBy(kv => kv.Value.Order)
                 .ThenBy(kv => kv.Value.Lane)
@@ -3899,21 +4471,13 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
                     Order = kv.Value.Order,
                     Row = kv.Value.Order,
                     Column = kv.Value.Lane,
-                    Span = Math.Clamp(kv.Value.Span, 1, 3),
+                    Span = Math.Clamp(kv.Value.Span, 1, LayoutLaneCount),
                 })
                 .ToList(),
         };
 
         _selectedCharacter.SheetLayoutByProfile[profileKey] = preference;
         _app.SaveCharacters();
-    }
-
-    private bool ResolveSectionExpandedState(string key, bool defaultExpanded)
-    {
-        if (!_hasSavedExpansionState)
-            return defaultExpanded;
-
-        return _expandedSectionKeys.Contains(key);
     }
 
     private void LoadHiddenSectionPreference(CharacterSheet character)
@@ -3931,6 +4495,21 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             _hiddenSectionKeys.Add(key);
     }
 
+    private void LoadExpandedSectionPreference(CharacterSheet character)
+    {
+        _expandedSectionKeys.Clear();
+
+        string profileKey = BuildSheetLayoutProfileKey(character);
+        if (!character.ExpandedSectionKeysByProfile.TryGetValue(profileKey, out var expandedKeys)
+            || expandedKeys is null)
+        {
+            return;
+        }
+
+        foreach (string key in expandedKeys.Where(k => !string.IsNullOrWhiteSpace(k)))
+            _expandedSectionKeys.Add(key);
+    }
+
     private void SaveCurrentHiddenSectionPreference()
     {
         if (_selectedCharacter is null)
@@ -3938,6 +4517,18 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
 
         string profileKey = BuildSheetLayoutProfileKey(_selectedCharacter);
         _selectedCharacter.HiddenSectionKeysByProfile[profileKey] = _hiddenSectionKeys
+            .OrderBy(key => key, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        _app.SaveCharacters();
+    }
+
+    private void SaveCurrentExpandedSectionPreference()
+    {
+        if (_selectedCharacter is null)
+            return;
+
+        string profileKey = BuildSheetLayoutProfileKey(_selectedCharacter);
+        _selectedCharacter.ExpandedSectionKeysByProfile[profileKey] = _expandedSectionKeys
             .OrderBy(key => key, StringComparer.OrdinalIgnoreCase)
             .ToList();
         _app.SaveCharacters();
@@ -4001,14 +4592,19 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         _sectionCards.Clear();
         LoadSavedSectionLayoutPreference(c);
         LoadHiddenSectionPreference(c);
+        LoadExpandedSectionPreference(c);
 
         void AddSection(string key, string title, bool expanded, Action<StackPanel> populate)
         {
+            bool isExpanded = _expandedSectionKeys.Count > 0
+                ? _expandedSectionKeys.Contains(key)
+                : expanded;
+
             _sectionCards.Add(new SectionCard
             {
                 Key = key,
                 Title = title,
-                Expander = BuildSection(key, title, ResolveSectionExpandedState(key, expanded), populate),
+                Expander = BuildSection(key, title, isExpanded, populate),
             });
         }
 
@@ -4022,13 +4618,16 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             var (identityColumns, identityLeft, identityRight) = CreateTwoColumnPanels();
             AddKV(identityLeft, "Name",       c.Name);
             AddKV(identityLeft, "Player",     string.IsNullOrWhiteSpace(c.PlayerName) ? "—" : c.PlayerName);
+            AddKV(identityLeft, "Gender",     string.IsNullOrWhiteSpace(c.Gender) ? "—" : c.Gender);
             AddKV(identityLeft, "Party",      string.IsNullOrWhiteSpace(c.Party)      ? "—" : c.Party);
             AddKV(identityLeft, "Ruleset",    ruleset);
+            if (string.Equals(c.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase))
+                AddKV(identityLeft, "CPs Available", c.UnspentCharacterPoints.ToString("N0", CultureInfo.InvariantCulture));
 
             AddKV(identityRight, "Race",       race);
             AddKV(identityRight, "Class",      cls);
             AddKV(identityRight, "Level",      FormatLevelDisplay(c));
-            AddKV(identityRight, "Experience", $"{c.ExperiencePoints:n0} XP");
+            AddKV(identityRight, "Experience", FormatExperienceDisplay(c));
             AddKV(identityRight, "Experience Needed", FormatExperienceNeededDisplay(c));
 
             p.Children.Add(identityColumns);
@@ -4050,10 +4649,15 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         // 3. COMBAT STATISTICS
         AddSection("combat_statistics", "COMBAT STATISTICS", true, p =>
         {
-            AddKV(p, "Hit Points",    $"{c.HitPoints}  (base {c.BaseHitPoints})");
-            AddKV(p, "Armor Class",   $"{c.ArmorClass}  (base {c.BaseArmorClass})");
+            AddKV(p, "Hit Points",    c.HitPoints.ToString(CultureInfo.InvariantCulture));
+            string acDisplay = c.MissileArmorClass != c.ArmorClass
+                ? $"{c.ArmorClass}  (Missile AC: {c.MissileArmorClass})"
+                : c.ArmorClass.ToString(CultureInfo.InvariantCulture);
+            AddKV(p, "Armor Class",   acDisplay);
+            AddKV(p, "AC Breakdown",  BuildArmorClassBreakdown(c));
             AddKV(p, "Armor Profile", c.ArmorProfile.Replace("_", " "));
             AddKV(p, "THAC0",         c.Thac0.ToString());
+            AddKV(p, "THAC0 Breakdown", BuildThac0Breakdown(c));
             AddKV(p, "Attack Rate",   c.AttackRate);
             AddKV(p, "Movement",      $"{c.Movement}  (base {c.BaseMovement})");
             if (!string.IsNullOrWhiteSpace(c.RogueSkillArmorProfile) && c.RogueSkillArmorProfile != "no_armor")
@@ -4067,6 +4671,33 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         AddSection("weapons", "WEAPONS", carriedWeapons.Count > 0, p =>
         {
             if (carriedWeapons.Count == 0) { AddItem(p, "(no weapons carried)"); return; }
+
+            // Preserve equipped intent: render main-hand first, off-hand second,
+            // then any remaining carried weapons.
+            string equippedMainKey = EquipmentLibraryService.CanonicalizeId(c.EquippedMainWeaponId);
+            if (string.IsNullOrWhiteSpace(equippedMainKey))
+                equippedMainKey = EquipmentLibraryService.CanonicalizeId(c.EquippedWeaponId);
+            string equippedOffKey = EquipmentLibraryService.CanonicalizeId(c.EquippedOffHandWeaponId);
+            var orderedWeapons = new List<EquipmentSelection>();
+            var remainingWeapons = new List<EquipmentSelection>(carriedWeapons);
+
+            void PullFirstByKey(string key)
+            {
+                if (string.IsNullOrWhiteSpace(key))
+                    return;
+
+                var match = remainingWeapons.FirstOrDefault(w =>
+                    string.Equals(EquipmentLibraryService.CanonicalizeId(w.ItemId), key, StringComparison.OrdinalIgnoreCase));
+                if (match is null)
+                    return;
+
+                orderedWeapons.Add(match);
+                remainingWeapons.Remove(match);
+            }
+
+            PullFirstByKey(equippedMainKey);
+            PullFirstByKey(equippedOffKey);
+            orderedWeapons.AddRange(remainingWeapons);
 
             // Columns: Role | Name | THAC0 | SF | APR | Dmg S/M | Dmg L | Type | Sz | Prof
             var tbl = new Grid { Margin = new Thickness(0, 2, 0, 0) };
@@ -4115,11 +4746,28 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             tbl.Children.Add(hdrSep);
 
             // Weapon rows
-            for (int wi = 0; wi < carriedWeapons.Count; wi++)
+            int neutralWeaponIndex = 1;
+            for (int wi = 0; wi < orderedWeapons.Count; wi++)
             {
-                string role = wi == 0 ? "PRIMARY" : wi == 1 ? "OFF-HAND" : $"WEAPON {wi + 1}";
+                string weaponKey = EquipmentLibraryService.CanonicalizeId(orderedWeapons[wi].ItemId);
+                string role;
+                if (!string.IsNullOrWhiteSpace(equippedMainKey)
+                    && string.Equals(weaponKey, equippedMainKey, StringComparison.OrdinalIgnoreCase))
+                {
+                    role = "PRIMARY";
+                }
+                else if (!string.IsNullOrWhiteSpace(equippedOffKey)
+                    && string.Equals(weaponKey, equippedOffKey, StringComparison.OrdinalIgnoreCase))
+                {
+                    role = "OFF-HAND";
+                }
+                else
+                {
+                    role = $"WEAPON {neutralWeaponIndex++}";
+                }
+
                 tbl.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-                AddWeaponTableRow(tbl, wi + 2, c, carriedWeapons[wi], role, string.Empty, ColCount);
+                AddWeaponTableRow(tbl, wi + 2, c, orderedWeapons[wi], role, string.Empty, ColCount);
             }
 
             p.Children.Add(tbl);
@@ -4149,10 +4797,15 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             foreach (var wp in c.WeaponProficiencies.OrderBy(x => x.DisplayName, StringComparer.OrdinalIgnoreCase))
             {
                 string spec = wp.Specialized ? "  [Specialized]" : string.Empty;
-                string type = wp.ProficiencyType == "individual"
-                    ? string.Empty
-                    : $"  ({wp.ProficiencyType.Replace("_", " ")})";
-                profLines.Add($"{wp.DisplayName}{type}{spec}");
+                string mastery = wp.GrandMastery
+                    ? "  [Grand Mastery: +1 apr; +3 attack/+3 damage; upgraded damage dice; speed -3; crit on 16+]"
+                    : wp.HighMastery
+                    ? "  [High Mastery: +3 attack/+3 damage; speed factor -3; crit on 16+; extreme missile range]"
+                    : wp.WeaponMastery
+                    ? "  [Mastery: melee +3 attack/+3 damage; missile +2 attack beyond point blank, +3 attack/+3 damage at point blank]"
+                    : string.Empty;
+                string type = FormatProficiencyTypeBadge(wp);
+                profLines.Add($"{wp.DisplayName}{type}{spec}{mastery}");
             }
             foreach (string entry in c.SelectedClassAbilityIds.Where(e =>
                 string.Equals(RulesEngine.ExtractClassAbilityBaseId(e), "cleric_weapon_allowance", StringComparison.OrdinalIgnoreCase)))
@@ -4167,8 +4820,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
                 profLines.Add($"  ★ Specialization: {(string.IsNullOrWhiteSpace(w) ? "(not configured)" : w)}");
             }
 
-            foreach (string line in profLines)
-                AddItem(p, line);
+            AddTwoColumnItems(p, profLines);
         });
 
         // 6b. TURNING UNDEAD (cleric + mastery, or paladin turn undead at level 3+)
@@ -4197,11 +4849,15 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
                 nwp.Add("Tunneling");
             }
 
-            if (HasClassAbility(c, "ranger_tracking_proficiency")
-                && !nwp.Any(x => string.Equals(x, "Tracking", StringComparison.OrdinalIgnoreCase)))
+            if (HasClassAbility(c, "ranger_tracking_proficiency"))
             {
-                int trackingBonus = GetRangerTrackingBonus(Math.Max(1, c.Level));
-                nwp.Add($"Tracking (+{trackingBonus})");
+                int trackingBonus = RangerTrackingRules.GetBonus(c);
+                int plainTrackingIndex = nwp.FindIndex(x =>
+                    string.Equals(x, "Tracking", StringComparison.OrdinalIgnoreCase));
+                if (plainTrackingIndex >= 0)
+                    nwp[plainTrackingIndex] = $"Tracking (+{trackingBonus})";
+                else if (!nwp.Any(x => x.StartsWith("Tracking ", StringComparison.OrdinalIgnoreCase)))
+                    nwp.Add($"Tracking (+{trackingBonus})");
             }
 
             if (nwp.Count == 0) { AddItem(p, "(none)"); return; }
@@ -4209,8 +4865,25 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
                 .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
                 .ToList();
             foreach (string line in profLines)
+                AddItem(p, AppendTrackingConditionalModifiers(c, line));
+        });
+
+        // 7b. ROGUE ABILITIES
+        var rogueAbilityLines = BuildRogueAbilityLines(c);
+        bool showRogueSection = rogueAbilityLines.Count > 0 || IsRogueClassCharacter(c);
+        AddSection("rogue_abilities", "ROGUE ABILITIES", false, p =>
+        {
+            if (rogueAbilityLines.Count == 0)
+            {
+                AddItem(p, "(none)");
+                return;
+            }
+
+            foreach (string line in rogueAbilityLines)
                 AddItem(p, line);
         });
+        if (!showRogueSection)
+            _hiddenSectionKeys.Add("rogue_abilities");
 
         // 8. LANGUAGES
         AddSection("languages", "LANGUAGES", false, p =>
@@ -4295,9 +4968,14 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         // 10. WEALTH
         AddSection("wealth", "WEALTH", false, p =>
         {
+            int totalGemValue = GetTotalGemValueGoldPieces(c);
+            int totalGemCount = GetTotalGemCount(c);
+            AddKV(p, "Platinum Pieces", c.PlatinumPieces.ToString());
             AddKV(p, "Gold Pieces",   c.GoldPieces.ToString());
             AddKV(p, "Silver Pieces", c.SilverPieces.ToString());
             AddKV(p, "Copper Pieces", c.CopperPieces.ToString());
+            AddKV(p, "Gem Count", totalGemCount.ToString());
+            AddKV(p, "Gem Value", $"{totalGemValue:n0} gp");
         });
 
         // 11. TRAITS & DISADVANTAGES
@@ -4323,16 +5001,22 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         });
 
         // 12. RACIAL & CLASS ABILITIES
-        var displayedAbilityLines = GetDisplayedAbilityLines(c);
-        bool hasAbilities = displayedAbilityLines.Count > 0 || c.RacialAbilities.Count > 0;
+        var unlockedStructuredAbilities = c.StructuredAbilities
+            .Where(ab => RulesEngine.AbilityUnlockLevel(ab) <= Math.Max(1, c.Level))
+            .ToList();
+        bool hasAbilities = unlockedStructuredAbilities.Count > 0 || c.RacialAbilities.Count > 0;
         if (hasAbilities)
         {
             AddSection("abilities_special_powers", "ABILITIES & SPECIAL POWERS", false, p =>
             {
-                if (displayedAbilityLines.Count > 0)
+                if (unlockedStructuredAbilities.Count > 0)
                 {
-                    foreach (string line in displayedAbilityLines)
-                        AddItem(p, line);
+                    foreach (var ab in unlockedStructuredAbilities)
+                    {
+                        string name = ab.Id.Replace("_", " ");
+                        string desc = string.IsNullOrWhiteSpace(ab.Description) ? string.Empty : $": {ab.Description}";
+                        AddItem(p, $"{name}{desc}");
+                    }
                 }
                 else
                 {
@@ -4361,12 +5045,59 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         RenderSectionCards();
     }
 
+    private static string BuildArmorClassBreakdown(CharacterSheet character)
+    {
+        int baseAc = character.BaseArmorClass;
+        int finalAc = character.ArmorClass;
+
+        int totalBonusAdjustment = character.Bonuses?.AcBonus ?? 0;
+        var subTotals = SubAbilityTables.CalculateTotals(character.SubAbilities, character.ExceptionalStrength, character.ClassId);
+        int dexAndSubAdjustment = subTotals.ArmorClassAdjustment;
+        int abilityAdjustment = totalBonusAdjustment - dexAndSubAdjustment;
+        int equipmentAndOtherAdjustment = finalAc - baseAc - totalBonusAdjustment;
+
+        string dexPart = $"DEX/sub {FormatSigned(dexAndSubAdjustment)}";
+        string abilityPart = $"abilities {FormatSigned(abilityAdjustment)}";
+        string equipmentPart = $"equipment {FormatSigned(equipmentAndOtherAdjustment)}";
+
+        string missilePart = character.MissileArmorClass != character.ArmorClass
+            ? $" (Missile AC: {character.MissileArmorClass})"
+            : string.Empty;
+
+        return $"{baseAc} + ({dexPart}) + ({abilityPart}) + ({equipmentPart}) = {finalAc}{missilePart}";
+    }
+
+    private static string BuildThac0Breakdown(CharacterSheet character)
+    {
+        int baseThac0 = character.Thac0;
+        bool isPlayersOption = string.Equals(character.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase);
+
+        int meleeAttackBonus = 0;
+        if (character.Abilities.TryGetValue("str", out int strength))
+        {
+            int muscle = isPlayersOption && character.SubAbilities.TryGetValue("str_muscle", out int muscleScore)
+                ? muscleScore
+                : strength;
+            (meleeAttackBonus, _) = GetStrMeleeBonuses(muscle, character.ExceptionalStrength);
+        }
+
+        int globalAttackBonus = character.Bonuses?.AttackBonus ?? 0;
+        int effectiveMeleeBeforeWeapon = baseThac0 - meleeAttackBonus - globalAttackBonus;
+
+        string strPart = $"STR {FormatSigned(-meleeAttackBonus)}";
+        string abilityPart = $"abilities {FormatSigned(-globalAttackBonus)}";
+
+        return $"{baseThac0} + ({strPart}) + ({abilityPart}) = {effectiveMeleeBeforeWeapon} melee; weapon rows add training/spec and NP/off-hand/enemy mods.";
+    }
+
     // ── Weapon card ───────────────────────────────────────────────────────────
 
     // ── Weapon card ───────────────────────────────────────────────────────────
 
     private void AddWeaponTableRow(Grid tbl, int rowIndex, CharacterSheet c, EquipmentSelection w, string role, string enemyContext, int colCount)
     {
+        bool isPlayersOption = string.Equals(c.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase);
+
         // Proficiency status — resolve via weapon catalog for group coverage
         bool proficient  = false;
         bool specialized = false;
@@ -4377,12 +5108,33 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         // Equipment names may differ in word order (e.g. "Short sword" vs "Sword, Short"),
         // so also compare by word-set (sorted lowercased tokens).
         static HashSet<string> WordSet(string s) =>
-            new(s.ToLowerInvariant().Split(new[] { ' ', ',', '-', '\'' }, StringSplitOptions.RemoveEmptyEntries),
+            new(s.ToLowerInvariant().Split(new[] { ' ', ',', '-', '\'', '/' }, StringSplitOptions.RemoveEmptyEntries),
                 StringComparer.OrdinalIgnoreCase);
+        static bool TokenNameMatch(string a, string b)
+        {
+            if (string.Equals(a, b, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            var aWords = WordSet(a);
+            var bWords = WordSet(b);
+            if (aWords.Count == 0 || bWords.Count == 0)
+                return false;
+
+            if (aWords.SetEquals(bWords))
+                return true;
+
+            if (AreWeaponsEquivalent(a, b))
+                return true;
+
+            // Allow aliases with extra qualifiers, e.g. "Axe, Hand/Throwing" vs "Axe, Throwing".
+            return aWords.IsSubsetOf(bWords) || bWords.IsSubsetOf(aWords);
+        }
         var itemWords = WordSet(w.ItemName);
         var weaponDef = _app.Rules.Weapons.FirstOrDefault(wd =>
             wd.Name.Equals(w.ItemName, StringComparison.OrdinalIgnoreCase)
-            || WordSet(wd.Name).SetEquals(itemWords));
+            || WordSet(wd.Name).SetEquals(itemWords)
+            || AreWeaponsEquivalent(wd.Id, w.ItemId)
+            || AreWeaponsEquivalent(wd.Name, w.ItemName));
 
         foreach (var wp in c.WeaponProficiencies)
         {
@@ -4393,8 +5145,11 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             if (wp.ProficiencyType == "individual")
             {
                 // Match by display name (covers direct name pick)
-                match = wp.DisplayName.Equals(w.ItemName, StringComparison.OrdinalIgnoreCase)
-                     || (weaponDef != null && wp.ProficiencyId.Equals(weaponDef.Id, StringComparison.OrdinalIgnoreCase));
+                 match = wp.DisplayName.Equals(w.ItemName, StringComparison.OrdinalIgnoreCase)
+                     || (weaponDef != null && wp.ProficiencyId.Equals(weaponDef.Id, StringComparison.OrdinalIgnoreCase))
+                     || AreWeaponsEquivalent(wp.ProficiencyId, w.ItemId)
+                     || AreWeaponsEquivalent(wp.DisplayName, w.ItemName)
+                     || (weaponDef != null && AreWeaponsEquivalent(wp.ProficiencyId, weaponDef.Id));
             }
             else if (wp.ProficiencyType == "tight_group" && weaponDef != null)
             {
@@ -4417,9 +5172,10 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             }
             // Fallback: loose name substring match (handles hand-typed entries)
             if (!match)
-                match = wp.DisplayName.Equals(w.ItemName, StringComparison.OrdinalIgnoreCase)
+                 match = wp.DisplayName.Equals(w.ItemName, StringComparison.OrdinalIgnoreCase)
                      || w.ItemName.Contains(wp.DisplayName, StringComparison.OrdinalIgnoreCase)
-                     || wp.DisplayName.Contains(w.ItemName, StringComparison.OrdinalIgnoreCase);
+                     || wp.DisplayName.Contains(w.ItemName, StringComparison.OrdinalIgnoreCase)
+                     || TokenNameMatch(wp.DisplayName, w.ItemName);
             if (match)
             {
                 proficient  = true;
@@ -4438,17 +5194,16 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         int trainingAtkBonus = 0;
         int trainingDmgBonus = 0;
 
-        if (matchedSelection?.WeaponOfChoice == true) trainingAtkBonus += 1;
-        if (matchedSelection?.WeaponExpertise == true) { trainingAtkBonus += 1; trainingDmgBonus += 1; }
-        if (combatOptions.Contains("weapon_mastery")) { trainingAtkBonus += 3; trainingDmgBonus += 3; }
+        if (isPlayersOption && matchedSelection?.WeaponOfChoice == true) trainingAtkBonus += 1;
+        if (isPlayersOption && matchedSelection?.WeaponExpertise == true) { trainingAtkBonus += 1; trainingDmgBonus += 1; }
 
-        if (combatOptions.Contains("fighting_style_single") && role.Equals("PRIMARY", StringComparison.OrdinalIgnoreCase))
+        if (isPlayersOption && combatOptions.Contains("fighting_style_single") && role.Equals("PRIMARY", StringComparison.OrdinalIgnoreCase))
             trainingAtkBonus += 1;
-        if (combatOptions.Contains("fighting_style_two_weapon") && role.Equals("OFF-HAND", StringComparison.OrdinalIgnoreCase))
+        if (isPlayersOption && combatOptions.Contains("fighting_style_two_weapon") && role.Equals("OFF-HAND", StringComparison.OrdinalIgnoreCase))
             trainingAtkBonus += 1;
-        if (combatOptions.Contains("fighting_style_two_handed") && string.Equals(w.WeaponSize, "L", StringComparison.OrdinalIgnoreCase))
+        if (isPlayersOption && combatOptions.Contains("fighting_style_two_handed") && string.Equals(w.WeaponSize, "L", StringComparison.OrdinalIgnoreCase))
             trainingDmgBonus += 1;
-        if (combatOptions.Contains("fighting_style_missile")
+        if (isPlayersOption && combatOptions.Contains("fighting_style_missile")
             && weaponDef is not null
             && (weaponDef.GroupId.Equals("bows", StringComparison.OrdinalIgnoreCase)
                 || weaponDef.GroupId.Equals("crossbows", StringComparison.OrdinalIgnoreCase)
@@ -4463,23 +5218,62 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         int enemyAttackBonus = CombatModifierService.GetEnemyAttackBonus(c.Bonuses, enemyContext);
         int enemyDamageBonus = CombatModifierService.GetEnemyDamageBonus(c.Bonuses, enemyContext);
 
-        // STR bonuses
-        int atkBonus = 0, dmgBonus = 0;
+        // STR bonuses (melee-only baseline used to separate misc/global attack modifiers)
+        int meleeAtkBonus = 0, dmgBonus = 0;
         if (c.Abilities.TryGetValue("str", out int strScore))
         {
-            int muscle = c.SubAbilities.TryGetValue("str_muscle", out int m) ? m : strScore;
-            (atkBonus, dmgBonus) = GetStrMeleeBonuses(muscle, c.ExceptionalStrength);
+            int muscle = isPlayersOption && c.SubAbilities.TryGetValue("str_muscle", out int m) ? m : strScore;
+            (meleeAtkBonus, dmgBonus) = GetStrMeleeBonuses(muscle, c.ExceptionalStrength);
         }
+
+        bool isMissileWeapon = false;
+        if (weaponDef is not null)
+        {
+            bool isBow = string.Equals(weaponDef.GroupId, "bows", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(weaponDef.TightGroupId, "bows", StringComparison.OrdinalIgnoreCase);
+            bool isCrossbow = string.Equals(weaponDef.GroupId, "crossbows", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(weaponDef.TightGroupId, "crossbows", StringComparison.OrdinalIgnoreCase);
+            bool isSling = string.Equals(weaponDef.GroupId, "slings", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(weaponDef.TightGroupId, "slings", StringComparison.OrdinalIgnoreCase);
+            bool isThrown = string.Equals(weaponDef.GroupId, "thrown", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(weaponDef.TightGroupId, "thrown", StringComparison.OrdinalIgnoreCase)
+                || weaponDef.GroupId.Contains("thrown", StringComparison.OrdinalIgnoreCase)
+                || weaponDef.TightGroupId.Contains("thrown", StringComparison.OrdinalIgnoreCase);
+            isMissileWeapon = isBow || isCrossbow || isSling || isThrown;
+        }
+        else
+        {
+            isMissileWeapon = w.Category.Contains("missile", StringComparison.OrdinalIgnoreCase)
+                || w.Category.Contains("ranged", StringComparison.OrdinalIgnoreCase);
+        }
+
+        int globalAttackBonus = c.Bonuses?.AttackBonus ?? 0;
+        int miscAttackBonus = globalAttackBonus - meleeAtkBonus;
+        int statAttackBonus = isMissileWeapon ? 0 : meleeAtkBonus;
+        int intrinsicAttackBonus = w.WeaponAttackBonus - w.WeaponThac0Modifier;
+        int intrinsicDamageBonus = w.WeaponDamageBonus;
         // Class-appropriate non-proficiency penalty (PHB p.52)
         int nonProfPenalty = proficient ? 0 : RulesEngine.GetNonProficiencyPenalty(c.ClassId ?? string.Empty);
         int offHandPenalty = role.Equals("OFF-HAND", StringComparison.OrdinalIgnoreCase) ? 2 : 0;
-        bool removesOffHandPenalty = combatOptions.Contains("fighting_style_two_weapon")
+        bool removesOffHandPenalty = (isPlayersOption && (combatOptions.Contains("fighting_style_two_weapon") || combatOptions.Contains("talent_ambidexterity") || combatOptions.Contains("ambidexterity")))
             || HasClassAbility(c, "ranger_two_weapon_style");
         if (offHandPenalty > 0 && removesOffHandPenalty)
             offHandPenalty = 0;
-        int totalAttackBonus = atkBonus + trainingAtkBonus + (specialized ? 1 : 0) + enemyAttackBonus;
+        bool isGrandMaster = matchedSelection?.GrandMastery == true;
+        bool isHighMaster = isGrandMaster || matchedSelection?.HighMastery == true;
+        bool hasMastery = isHighMaster || matchedSelection?.WeaponMastery == true || combatOptions.Contains("weapon_mastery");
+        int specializationAttackBonus = hasMastery ? (isMissileWeapon ? 2 : 3) : specialized ? 1 : 0;
+        int specializationDamageBonus = hasMastery ? (isMissileWeapon ? 0 : 3) : specialized ? 2 : 0;
+        int totalAttackBonus = statAttackBonus + miscAttackBonus + intrinsicAttackBonus + trainingAtkBonus + specializationAttackBonus + enemyAttackBonus;
         int effectiveAtk   = c.Thac0 - totalAttackBonus + nonProfPenalty + offHandPenalty;
-        int totalDamageBonus = dmgBonus + trainingDmgBonus + (specialized ? 2 : 0) + enemyDamageBonus;
+        int totalDamageBonus = dmgBonus + intrinsicDamageBonus + trainingDmgBonus + specializationDamageBonus + enemyDamageBonus;
+
+        if (isGrandMaster)
+            profNote = "G-MSTR";
+        else if (isHighMaster)
+            profNote = "H-MSTR";
+        else if (hasMastery)
+            profNote = "MSTR";
 
         // Build THAC0 display: show base + modifiers breakdown when non-proficient
         var thac0Notes = new List<string>();
@@ -4487,20 +5281,26 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             thac0Notes.Add($"NP {FormatSigned(nonProfPenalty)}");
         if (offHandPenalty > 0)
             thac0Notes.Add($"off-hand {FormatSigned(offHandPenalty)}");
+        if (intrinsicAttackBonus != 0)
+            thac0Notes.Add($"weapon {FormatSigned(-intrinsicAttackBonus)}");
         if (enemyAttackBonus != 0)
             thac0Notes.Add($"enemy {FormatSigned(enemyAttackBonus)}");
         string thac0Display = thac0Notes.Count > 0
             ? $"{effectiveAtk} ({string.Join(", ", thac0Notes)})"
             : effectiveAtk.ToString();
 
-        string dmgSuffix = totalDamageBonus > 0 ? $"+{totalDamageBonus}" : totalDamageBonus < 0 ? $"{totalDamageBonus}" : string.Empty;
-        string dmgSM = string.IsNullOrWhiteSpace(w.WeaponDamageSmallMedium) ? "—"
-                 : totalDamageBonus != 0 ? $"{w.WeaponDamageSmallMedium}{dmgSuffix}" : w.WeaponDamageSmallMedium;
-        string dmgL  = string.IsNullOrWhiteSpace(w.WeaponDamageLarge) ? "—"
-                 : totalDamageBonus != 0 ? $"{w.WeaponDamageLarge}{dmgSuffix}" : w.WeaponDamageLarge;
+        string rawDmgSm = isGrandMaster ? UpgradeDamageDie(w.WeaponDamageSmallMedium) : w.WeaponDamageSmallMedium;
+        string rawDmgL = isGrandMaster ? UpgradeDamageDie(w.WeaponDamageLarge) : w.WeaponDamageLarge;
 
-        string sf   = w.WeaponSpeed > 0 ? w.WeaponSpeed.ToString() : "—";
-        string apr  = CalculateWeaponApr(c, weaponDef, specialized);
+        string dmgSuffix = totalDamageBonus > 0 ? $"+{totalDamageBonus}" : totalDamageBonus < 0 ? $"{totalDamageBonus}" : string.Empty;
+        string dmgSM = string.IsNullOrWhiteSpace(rawDmgSm) ? "—"
+                 : totalDamageBonus != 0 ? $"{rawDmgSm}{dmgSuffix}" : rawDmgSm;
+        string dmgL  = string.IsNullOrWhiteSpace(rawDmgL) ? "—"
+                 : totalDamageBonus != 0 ? $"{rawDmgL}{dmgSuffix}" : rawDmgL;
+
+        int effectiveSf = isHighMaster && w.WeaponSpeed > 0 ? Math.Max(1, w.WeaponSpeed - 3) : w.WeaponSpeed;
+        string sf   = effectiveSf > 0 ? effectiveSf.ToString() : "—";
+        string apr  = CalculateWeaponApr(c, weaponDef, specialized, isGrandMaster);
         string type = string.IsNullOrWhiteSpace(w.WeaponType) ? "—" : w.WeaponType.ToUpperInvariant();
         string size = string.IsNullOrWhiteSpace(w.WeaponSize)  ? "—" : w.WeaponSize.ToUpperInvariant();
 
@@ -4610,7 +5410,13 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
                 || string.Equals(weaponDef.TightGroupId, "crossbows", StringComparison.OrdinalIgnoreCase);
             bool isSling = string.Equals(weaponDef.GroupId, "slings", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(weaponDef.TightGroupId, "slings", StringComparison.OrdinalIgnoreCase);
-            bool isThrown = weaponDef.Type?.Contains("P", StringComparison.OrdinalIgnoreCase) == true;
+            // Weapon type "P" means piercing damage, not "projectile/thrown".
+            // Using Type here incorrectly applied thrown/missile bonuses to melee weapons
+            // like daggers and short swords, producing overly low THAC0 values.
+            bool isThrown = string.Equals(weaponDef.GroupId, "thrown", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(weaponDef.TightGroupId, "thrown", StringComparison.OrdinalIgnoreCase)
+                || weaponDef.GroupId.Contains("thrown", StringComparison.OrdinalIgnoreCase)
+                || weaponDef.TightGroupId.Contains("thrown", StringComparison.OrdinalIgnoreCase);
             bool isMissile = isBow || isCrossbow || isSling || isThrown;
 
             if ((normalized == "bow" || normalized == "bows") && isBow)
@@ -4635,11 +5441,12 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         /// - Warrior class level progression (stored in c.AttackRate)
         /// - The weapon's own base APR from the catalog (for non-warriors or slow weapons)
         /// - Weapon specialization (+½ attack per round for warriors only)
-        /// Returns a display string like "1", "3/2", "2", "5/2".
+        /// - Grand Mastery (+1 attack per round above specialist rate for warriors)
+        /// Returns a display string like "1", "3/2", "2", "5/2", "3", "7/2".
         /// </summary>
-        private static string CalculateWeaponApr(CharacterSheet c, WeaponDefinition? weaponDef, bool specialized)
+        private static string CalculateWeaponApr(CharacterSheet c, WeaponDefinition? weaponDef, bool specialized, bool isGrandMaster = false)
         {
-            bool isWarrior = c.ClassId is "fighter" or "paladin" or "ranger";
+            bool isWarrior = c.ClassId is "fighter" or "paladin" or "ranger" || c.ClassIds.Any(id => id is "fighter" or "paladin" or "ranger");
 
             // Base APR in half-attacks (×2 denominator)
             int baseHalves;
@@ -4672,6 +5479,10 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             if (specialized && isWarrior)
                 baseHalves += 1;
 
+            // Grand Mastery grants +1 additional attack per round above specialist rate (warriors only)
+            if (isGrandMaster && isWarrior)
+                baseHalves += 2;
+
             return baseHalves switch
             {
                 1 => "1/2",
@@ -4680,8 +5491,39 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
                 4 => "2",
                 5 => "5/2",
                 6 => "3",
+                7 => "7/2",
+                8 => "4",
                 _ => $"{baseHalves}/2",
             };
+        }
+
+        private static string UpgradeDamageDie(string damageExpr)
+        {
+            if (string.IsNullOrWhiteSpace(damageExpr) || damageExpr == "-" || damageExpr == "—")
+                return damageExpr;
+
+            // Upgrades each die expression according to C&T Grand Mastery rules (p. 75):
+            // 1d2 -> 1d3, 1d3 -> 1d4, 1d4 -> 1d6, 1d6 -> 1d8, 1d8 -> 1d10, 1d10 -> 1d12, 1d12 -> 1d20, 2d4 -> 2d6, 3d6 -> 3d8
+            return Regex.Replace(damageExpr, @"(?<count>\d*)d(?<sides>\d+)", m =>
+            {
+                string count = m.Groups["count"].Value;
+                if (!int.TryParse(m.Groups["sides"].Value, out int sides))
+                    return m.Value;
+
+                int newSides = sides switch
+                {
+                    2 => 3,
+                    3 => 4,
+                    4 => 6,
+                    6 => 8,
+                    8 => 10,
+                    10 => 12,
+                    12 => string.IsNullOrEmpty(count) || count == "1" ? 20 : 16,
+                    _ => sides + 2,
+                };
+
+                return $"{count}d{newSides}";
+            });
         }
 
         private static (int atk, int dmg) GetStrMeleeBonuses(int muscle, int exStr)
@@ -4812,6 +5654,20 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         return baseScore;
     }
 
+    private static string FormatSubAbilityScore(CharacterSheet character, string abilityKey, string subKey, int subScore)
+    {
+        if (string.Equals(abilityKey, "str", StringComparison.OrdinalIgnoreCase)
+            && (string.Equals(subKey, "str_muscle", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(subKey, "str_stamina", StringComparison.OrdinalIgnoreCase))
+            && subScore == 18
+            && character.ExceptionalStrength > 0)
+        {
+            return $"{subScore} ({character.ExceptionalStrength})";
+        }
+
+        return subScore.ToString(CultureInfo.InvariantCulture);
+    }
+
     private static string ResolveSubAbilityEffect(CharacterSheet character, string subKey, int subScore)
     {
         string baseEffect;
@@ -4840,6 +5696,21 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         }
 
         return baseEffect;
+    }
+
+    private static string BuildCoreAbilityEffectSummary(CharacterSheet character, string abilityKey, int abilityScore)
+    {
+        var effects = new List<string>();
+
+        foreach (string subKey in GetSubAbilityKeys(abilityKey))
+        {
+            int subScore = ResolveSubAbilityScore(character, abilityKey, subKey, abilityScore);
+            string effect = ResolveSubAbilityEffect(character, subKey, subScore);
+            if (!string.IsNullOrWhiteSpace(effect))
+                effects.Add(effect);
+        }
+
+        return effects.Count == 0 ? "No derived effects" : string.Join(" | ", effects);
     }
 
     private void AddAbilityBlock(StackPanel parent, CharacterSheet c, string abilityKey, int score)
@@ -4898,13 +5769,40 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             TextWrapping = TextWrapping.Wrap,
         });
 
+        if (!IsPlayersOptionMode(c))
+        {
+            bodyPanel.Children.Add(new TextBlock
+            {
+                Text = BuildCoreAbilityEffectSummary(c, abilityKey, score),
+                FontFamily = (FontFamily)FindResource("FontBody"),
+                FontSize = 12,
+                Foreground = (Brush)FindResource("BrushText"),
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(0, 2, 0, 0),
+            });
+
+            var coreOuter = new StackPanel();
+            coreOuter.Children.Add(headerBorder);
+            coreOuter.Children.Add(bodyPanel);
+
+            parent.Children.Add(new Border
+            {
+                BorderBrush     = (Brush)FindResource("BrushBorder2"),
+                BorderThickness = new Thickness(1),
+                CornerRadius    = new CornerRadius(3),
+                Child           = coreOuter,
+            });
+            return;
+        }
+
         foreach (string subKey in GetSubAbilityKeys(abilityKey))
         {
             int subScore = ResolveSubAbilityScore(c, abilityKey, subKey, score);
             string effect = ResolveSubAbilityEffect(c, subKey, subScore);
+            string subScoreDisplay = FormatSubAbilityScore(c, abilityKey, subKey, subScore);
             bodyPanel.Children.Add(new TextBlock
             {
-                Text = $"{GetSubAbilityDisplayLabel(c, subKey)}: {subScore} - {effect}",
+                Text = $"{GetSubAbilityDisplayLabel(c, subKey)}: {subScoreDisplay} - {effect}",
                 FontFamily = (FontFamily)FindResource("FontBody"),
                 FontSize = 12,
                 Foreground = (Brush)FindResource("BrushText"),
@@ -5045,12 +5943,12 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
 
         contextMenu.Items.Add(new Separator());
 
-        for (int width = 1; width <= 3; width++)
+        foreach (var preset in WidthPresets)
         {
-            int targetSpan = width;
+            int targetSpan = preset.Span;
             var widthItem = new MenuItem
             {
-                Header = width == 1 ? "Set Width: 1 Column" : $"Set Width: {width} Columns",
+                Header = $"Set Width: {preset.Label}",
             };
             widthItem.Click += (_, _) => SetSectionWidth(key, targetSpan);
             contextMenu.Items.Add(widthItem);
@@ -5072,85 +5970,43 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         moveToNewRowBottom.Click += (_, _) => MoveSectionToNewBottomRow(key);
         contextMenu.Items.Add(moveToNewRowBottom);
 
-        if (string.Equals(key, "spells", StringComparison.OrdinalIgnoreCase))
-        {
-            contextMenu.Items.Add(new Separator());
-
-            var spellGroupingItem = new MenuItem
-            {
-                Header = "Print: Keep Spells Grouped by Level",
-                IsCheckable = true,
-                IsChecked = _selectedCharacter is not null && GetKeepSpellsGroupedByLevelPreference(_selectedCharacter),
-            };
-
-            var blackWhiteThemeItem = new MenuItem
-            {
-                Header = "Print: Black & White Default",
-                IsCheckable = true,
-                IsChecked = _selectedCharacter is not null && GetPreferredPrintTheme(_selectedCharacter) == PrintDocumentTheme.BlackAndWhite,
-            };
-
-            spellGroupingItem.Click += (_, _) =>
-            {
-                if (_selectedCharacter is null)
-                    return;
-
-                bool keepGrouped = spellGroupingItem.IsChecked;
-                SetKeepSpellsGroupedByLevelPreference(_selectedCharacter, keepGrouped);
-                StatusText.Text = BuildStatusText(keepGrouped
-                    ? "Spell print grouping: keep levels together."
-                    : "Spell print grouping: allow freer page breaks.");
-            };
-
-            blackWhiteThemeItem.Click += (_, _) =>
-            {
-                if (_selectedCharacter is null)
-                    return;
-
-                var theme = blackWhiteThemeItem.IsChecked ? PrintDocumentTheme.BlackAndWhite : PrintDocumentTheme.Color;
-                SetPreferredPrintTheme(_selectedCharacter, theme);
-                StatusText.Text = BuildStatusText(blackWhiteThemeItem.IsChecked
-                    ? "Print theme default: black & white."
-                    : "Print theme default: color.");
-            };
-
-            contextMenu.Opened += (_, _) =>
-            {
-                if (_selectedCharacter is null)
-                    return;
-                spellGroupingItem.IsChecked = GetKeepSpellsGroupedByLevelPreference(_selectedCharacter);
-                blackWhiteThemeItem.IsChecked = GetPreferredPrintTheme(_selectedCharacter) == PrintDocumentTheme.BlackAndWhite;
-            };
-
-            contextMenu.Items.Add(spellGroupingItem);
-            contextMenu.Items.Add(blackWhiteThemeItem);
-        }
-
         expander.ContextMenu = contextMenu;
+        expander.Expanded += (_, _) =>
+        {
+            _expandedSectionKeys.Add(key);
+            SaveCurrentExpandedSectionPreference();
+        };
+        expander.Collapsed += (_, _) =>
+        {
+            _expandedSectionKeys.Remove(key);
+            SaveCurrentExpandedSectionPreference();
+        };
         expander.PreviewMouseLeftButtonDown += SectionCard_PreviewMouseLeftButtonDown;
         expander.PreviewMouseMove += SectionCard_PreviewMouseMove;
-        expander.Expanded += SectionExpander_ExpandedChanged;
-        expander.Collapsed += SectionExpander_ExpandedChanged;
         return expander;
     }
 
-    private void SectionExpander_ExpandedChanged(object sender, RoutedEventArgs e)
+    private static int GetTotalGemCount(CharacterSheet character)
     {
-        if (sender is not Expander expander)
-            return;
-        if (expander.Tag is not string key || string.IsNullOrWhiteSpace(key))
-            return;
+        if (character.Gems is { Count: > 0 })
+            return character.Gems.Sum(gem => Math.Max(1, gem.Quantity));
 
-        if (expander.IsExpanded)
-            _expandedSectionKeys.Add(key);
-        else
-            _expandedSectionKeys.Remove(key);
+        return Math.Max(0, character.GemCount);
+    }
 
-        _hasSavedExpansionState = true;
-        if (!_suspendExpansionStateSave)
-            SaveCurrentSectionLayoutPreference();
+    private static int GetTotalGemValueGoldPieces(CharacterSheet character)
+    {
+        if (character.Gems is { Count: > 0 })
+        {
+            return character.Gems.Sum(gem =>
+            {
+                int quantity = Math.Max(1, gem.Quantity);
+                int valueEach = Math.Max(0, gem.ValueGoldPieces);
+                return quantity * valueEach;
+            });
+        }
 
-        UpdateExpandCollapseToggleButton();
+        return Math.Max(0, character.GemValueGoldPieces);
     }
 
     private void MoveSectionToColumn(string sectionKey, int targetLane)
@@ -5207,9 +6063,9 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         if (!_sectionLayoutByKey.TryGetValue(sectionKey, out var placement))
             return;
 
-        int newSpan = Math.Clamp(span, 1, 3);
+        int newSpan = Math.Clamp(span, 1, LayoutLaneCount);
         int row = Math.Max(0, placement.Order);
-        int lane = Math.Clamp(placement.Lane, 0, 3 - newSpan);
+        int lane = Math.Clamp(placement.Lane, 0, LayoutLaneCount - newSpan);
 
         // Before committing the wider span, try to push any displaced occupants
         // rightward within the same row rather than letting PlaceWithSpill bump
@@ -5228,7 +6084,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
 
             // Find the first free lane to the right of the expanding section.
             int rightStart = lane + newSpan;
-            for (int candidate = rightStart; candidate < 3; candidate++)
+            for (int candidate = rightStart; candidate < LayoutLaneCount; candidate++)
             {
                 bool candidateFree = !_sectionLayoutByKey.Any(kv =>
                     !string.Equals(kv.Key, sectionKey, StringComparison.OrdinalIgnoreCase)
@@ -5254,31 +6110,14 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         NormalizeLayoutRows();
         RenderSectionCards();
         SaveCurrentSectionLayoutPreference();
-        StatusText.Text = BuildStatusText($"Set section width to {placement.Span} column{(placement.Span == 1 ? string.Empty : "s")}.");
+        string widthLabel = WidthPresets.FirstOrDefault(p => p.Span == placement.Span).Label;
+        if (string.IsNullOrWhiteSpace(widthLabel))
+            widthLabel = $"{placement.Span}/{LayoutLaneCount} Row";
+        StatusText.Text = BuildStatusText($"Set section width to {widthLabel}.");
     }
 
     private void BuildSpellsAtEndColumns(StackPanel panel, CharacterSheet character)
     {
-        var slotSummaryLines = BuildSpellSlotSummaryLines(character);
-        if (slotSummaryLines.Count > 0)
-        {
-            foreach (string summaryLine in slotSummaryLines)
-            {
-                panel.Children.Add(new TextBlock
-                {
-                    Text = summaryLine,
-                    FontFamily = (FontFamily)FindResource("FontBody"),
-                    FontSize = 12,
-                    FontWeight = FontWeights.Bold,
-                    Foreground = (Brush)FindResource("BrushTitle"),
-                    TextWrapping = TextWrapping.Wrap,
-                    Margin = new Thickness(0, 0, 0, 4),
-                });
-            }
-
-            panel.Children.Add(new Border { Height = 4 });
-        }
-
         var columnHost = new WrapPanel
         {
             Margin = new Thickness(0, 2, 0, 0),
@@ -5310,25 +6149,21 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
                 ? $"Slots: {slotInfo.Total} ({slotInfo.Base} base + {slotInfo.WisdomBonus} Wis)"
                 : "Slots: 0";
 
-            columnHost.Children.Add(BuildSpellLevelColumnCard($"Priest Level {level}", slotText, spells, character));
+            columnHost.Children.Add(BuildSpellLevelColumnCard($"Priest L{level}", slotText, spells, character));
             hasAnyColumns = true;
         }
 
         if (IsWizardCaster(character))
         {
-            int maxArcaneLevel = GetHighestSpellLevel(character.ArcaneSpellSlots);
             var wizardSpellsByLevel = GetAccessibleWizardSpellDefinitions(character)
-                .Where(s => TryParseSpellLevel(s.Level, out int level) && level <= maxArcaneLevel)
                 .GroupBy(s => TryParseSpellLevel(s.Level, out int level) ? level : int.MaxValue)
                 .Where(g => g.Key != int.MaxValue)
                 .ToDictionary(g => g.Key, g => g.OrderBy(s => s.Name, StringComparer.OrdinalIgnoreCase).ToList());
 
-            foreach (int level in wizardSpellsByLevel.Keys.Union(character.ArcaneSpellSlots.Where(kv => kv.Value > 0).Select(kv => kv.Key)).OrderBy(x => x))
+            foreach (int level in wizardSpellsByLevel.Keys.OrderBy(x => x))
             {
                 int slots = character.ArcaneSpellSlots.TryGetValue(level, out int value) ? value : 0;
-                wizardSpellsByLevel.TryGetValue(level, out var spells);
-                spells ??= new List<SpellDefinition>();
-                columnHost.Children.Add(BuildSpellLevelColumnCard($"Wizard Level {level}", $"Slots: {slots}", spells, character));
+                columnHost.Children.Add(BuildSpellLevelColumnCard($"Wizard L{level}", $"Slots: {slots}", wizardSpellsByLevel[level], character));
                 hasAnyColumns = true;
             }
         }
@@ -5340,37 +6175,6 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         }
 
         panel.Children.Add(columnHost);
-    }
-
-    private List<string> BuildSpellSlotSummaryLines(CharacterSheet character)
-    {
-        var lines = new List<string>();
-
-        var priestSlots = BuildPriestSlotTotalsByLevel(character);
-        if (priestSlots.Count > 0)
-        {
-            string priestSummary = string.Join(", ",
-                priestSlots.OrderBy(kv => kv.Key)
-                    .Select(kv => $"Level {kv.Key}-{kv.Value.Total}"));
-            lines.Add($"Priest spell slots to cast: {priestSummary}");
-        }
-
-        if (IsWizardCaster(character))
-        {
-            var wizardSlots = character.ArcaneSpellSlots
-                .Where(kv => kv.Value > 0)
-                .OrderBy(kv => kv.Key)
-                .ToList();
-
-            if (wizardSlots.Count > 0)
-            {
-                string wizardSummary = string.Join(", ",
-                    wizardSlots.Select(kv => $"Level {kv.Key}-{kv.Value}"));
-                lines.Add($"Wizard spell slots to cast: {wizardSummary}");
-            }
-        }
-
-        return lines;
     }
 
     private Border BuildSpellLevelColumnCard(string title, string subtitle, List<SpellDefinition> spells, CharacterSheet character)
@@ -5394,7 +6198,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         {
             Text = title,
             FontFamily = (FontFamily)FindResource("FontBody"),
-            FontSize = 12,
+            FontSize = 14,
             FontWeight = FontWeights.Bold,
             Foreground = (Brush)FindResource("BrushTitle"),
         });
@@ -5402,7 +6206,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         {
             Text = subtitle,
             FontFamily = (FontFamily)FindResource("FontBody"),
-            FontSize = 11,
+            FontSize = 13,
             Foreground = (Brush)FindResource("BrushDim"),
             Margin = new Thickness(0, 2, 0, 6),
         });
@@ -5422,7 +6226,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             {
                 Text = headers[i],
                 FontFamily = (FontFamily)FindResource("FontBody"),
-                FontSize = 10,
+                FontSize = 12,
                 FontWeight = FontWeights.Bold,
                 Foreground = (Brush)FindResource("BrushDim"),
                 Margin = new Thickness(0),
@@ -5449,7 +6253,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             {
                 Text = "(no available spells)",
                 FontFamily = (FontFamily)FindResource("FontBody"),
-                FontSize = 12,
+                FontSize = 13,
                 Foreground = (Brush)FindResource("BrushDim"),
             });
         }
@@ -5493,7 +6297,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             {
                 Text = values[i],
                 FontFamily = (FontFamily)FindResource("FontBody"),
-                FontSize = 12,
+                FontSize = 14,
                 Foreground = (Brush)FindResource("BrushText"),
                 TextWrapping = TextWrapping.Wrap,
                 Margin = new Thickness(0),
@@ -5517,7 +6321,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         {
             Text = string.IsNullOrWhiteSpace(spell.BriefDescription) ? "Brief: (no brief description)" : $"Brief: {spell.BriefDescription.Trim()}",
             FontFamily = (FontFamily)FindResource("FontBody"),
-            FontSize = 11,
+            FontSize = 13,
             Foreground = (Brush)FindResource("BrushDim"),
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(0, 2, 0, 0),
@@ -5542,67 +6346,6 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
     {
         var entries = new List<ClassBonusSpellLikeEntry>();
         int level = Math.Max(1, character.Level);
-
-        if (HasClassAbility(character, "fighter_1d12_hit_points", "fighter_1d12-for-hit-points"))
-        {
-            entries.Add(new ClassBonusSpellLikeEntry("1d12 for Hit Points", "Passive", "Fighter hit die becomes d12 instead of d10"));
-        }
-
-        if (HasClassAbility(character, "fighter_defense_bonus"))
-        {
-            entries.Add(new ClassBonusSpellLikeEntry("Defense Bonus", "Passive", "+2 AC while unarmored and unencumbered"));
-        }
-
-        if (HasClassAbility(character, "fighter_poison_resistance"))
-        {
-            entries.Add(new ClassBonusSpellLikeEntry("Poison Resistance", "Passive", "+1 to saving throws vs poison"));
-        }
-
-        if (HasClassAbility(character, "fighter_spell_resistance"))
-        {
-            entries.Add(new ClassBonusSpellLikeEntry("Spell Resistance", "Passive", "+1 to saving throws vs spells"));
-        }
-
-        if (HasClassAbility(character, "fighter_weapon_specialization"))
-        {
-            entries.Add(new ClassBonusSpellLikeEntry("Weapon Specialization", "Passive", "May specialize in a selected weapon (specialization CP still applies)"));
-        }
-
-        if (HasClassAbility(character, "fighter_multiple_specialization"))
-        {
-            entries.Add(new ClassBonusSpellLikeEntry("Multiple Specialization", "Passive", "May specialize in multiple weapons"));
-        }
-
-        if (HasClassAbility(character, "fighter_restriction_limited_armor_chain"))
-        {
-            entries.Add(new ClassBonusSpellLikeEntry("Restriction: Limited Armor", "Restriction", "Chain mail or lighter only"));
-        }
-
-        if (HasClassAbility(character, "fighter_restriction_limited_armor_studded"))
-        {
-            entries.Add(new ClassBonusSpellLikeEntry("Restriction: Limited Armor", "Restriction", "Studded leather or lighter only"));
-        }
-
-        if (HasClassAbility(character, "fighter_restriction_limited_armor_none"))
-        {
-            entries.Add(new ClassBonusSpellLikeEntry("Restriction: No Armor", "Restriction", "No armor may be worn"));
-        }
-
-        if (HasClassAbility(character, "fighter_restriction_limited_weapon_selection"))
-        {
-            entries.Add(new ClassBonusSpellLikeEntry("Restriction: Limited Weapon Selection", "Restriction", "Weapon choices are restricted by selected package"));
-        }
-
-        foreach (string selection in GetClassAbilitySelections(character, "fighter_restriction_limited_magical_item_use"))
-        {
-            entries.Add(new ClassBonusSpellLikeEntry("Restriction: Limited Magical Item Use", "Restriction", $"Barred category: {selection}"));
-        }
-
-        if (HasClassAbility(character, "fighter_restriction_limited_magical_item_use")
-            && !GetClassAbilitySelections(character, "fighter_restriction_limited_magical_item_use").Any())
-        {
-            entries.Add(new ClassBonusSpellLikeEntry("Restriction: Limited Magical Item Use", "Restriction", "One magical item category is barred"));
-        }
 
         if (HasClassAbility(character, "cleric_detect_evil"))
             entries.Add(new ClassBonusSpellLikeEntry("Detect Evil", "1/day", "Bonus spell"));
@@ -5677,8 +6420,12 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
 
         if (HasClassAbility(character, "ranger_tracking_proficiency"))
         {
-            int trackingBonus = GetRangerTrackingBonus(level);
-            entries.Add(new ClassBonusSpellLikeEntry("Tracking", "Passive", $"NWP granted; +{trackingBonus} tracking bonus"));
+            int trackingBonus = RangerTrackingRules.GetBonus(character);
+            string conditionalModifiers = RangerTrackingRules.GetConditionalModifierSummary(character);
+            entries.Add(new ClassBonusSpellLikeEntry(
+                "Tracking",
+                "Passive",
+                $"NWP granted; +{trackingBonus} total Ranger bonus (+5 class, +1 per 3 levels){conditionalModifiers}"));
         }
 
         if (HasClassAbility(character, "ranger_two_weapon_style"))
@@ -6093,9 +6840,17 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         return 6;
     }
 
-    private static int GetRangerTrackingBonus(int level)
+    private static string AppendTrackingConditionalModifiers(CharacterSheet character, string proficiencyText)
     {
-        return Math.Max(1, level);
+        if (!proficiencyText.StartsWith("Tracking", StringComparison.OrdinalIgnoreCase)
+            || proficiencyText.Contains("animal target", StringComparison.OrdinalIgnoreCase)
+            || proficiencyText.Contains("Animal Lore", StringComparison.OrdinalIgnoreCase)
+            || proficiencyText.Contains("Animal Empathy", StringComparison.OrdinalIgnoreCase))
+        {
+            return proficiencyText;
+        }
+
+        return proficiencyText + RangerTrackingRules.GetConditionalModifierSummary(character);
     }
 
     private static int GetPsionicPowerPointModifierPerLevel(CharacterSheet character)
@@ -6119,142 +6874,35 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         if (abilityIds is null || abilityIds.Length == 0)
             return false;
 
-        var idSet = new HashSet<string>(abilityIds
-            .Where(id => !string.IsNullOrWhiteSpace(id))
-            .Select(NormalizeClassAbilityId), StringComparer.OrdinalIgnoreCase);
+        var idSet = new HashSet<string>(abilityIds.Where(id => !string.IsNullOrWhiteSpace(id)), StringComparer.OrdinalIgnoreCase);
         if (idSet.Count == 0)
             return false;
 
-        var selectedIds = EnumerateSelectedClassAbilityEntries(character)
+        var selectedIds = character.SelectedClassAbilityIds
             .Select(RulesEngine.ExtractClassAbilityBaseId)
-            .Select(NormalizeClassAbilityId)
             .Where(id => !string.IsNullOrWhiteSpace(id));
 
         if (selectedIds.Any(idSet.Contains))
             return true;
-
-        int level = Math.Max(1, character.Level);
-        return character.StructuredAbilities
-            .Where(ab => RulesEngine.AbilityUnlockLevel(ab) <= level)
-            .Any(ab => idSet.Contains(NormalizeClassAbilityId(ab.Id)));
-    }
-
-    private List<string> GetDisplayedAbilityLines(CharacterSheet character)
-    {
-        int level = Math.Max(1, character.Level);
-        var lines = character.StructuredAbilities
-            .Where(ab => RulesEngine.AbilityUnlockLevel(ab) <= level)
-            .Select(FormatAbilityLine)
-            .ToList();
-
-        var seenBaseIds = new HashSet<string>(character.StructuredAbilities
-            .Where(ab => RulesEngine.AbilityUnlockLevel(ab) <= level)
-            .Select(ab => NormalizeClassAbilityId(ab.Id)), StringComparer.OrdinalIgnoreCase);
-        var seenSelectionEntries = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (string selectionEntry in EnumerateSelectedClassAbilityEntries(character))
-        {
-            if (!seenSelectionEntries.Add(selectionEntry))
-                continue;
-
-            string baseId = NormalizeClassAbilityId(RulesEngine.ExtractClassAbilityBaseId(selectionEntry));
-            if (string.IsNullOrWhiteSpace(baseId) || seenBaseIds.Contains(baseId))
-                continue;
-
-            string playerText = RulesEngine.ExtractClassAbilityPlayerText(selectionEntry);
-            string? description = null;
-
-            if (_app.Rules.ClassAbilityLibrary.TryGetValue(baseId, out var abilityDef)
-                && !string.IsNullOrWhiteSpace(abilityDef.Description))
-            {
-                description = abilityDef.Description;
-            }
-
-            if (string.IsNullOrWhiteSpace(description))
-            {
-                string displayName = HumanizeAbilityId(baseId);
-                description = string.IsNullOrWhiteSpace(playerText)
-                    ? displayName
-                    : $"{displayName}: {playerText}";
-            }
-            else if (!string.IsNullOrWhiteSpace(playerText))
-            {
-                description = $"{description} Selection: {playerText}";
-            }
-
-            lines.Add(description);
-            seenBaseIds.Add(baseId);
-        }
-
-        return lines;
-    }
-
-    private static IEnumerable<string> EnumerateSelectedClassAbilityEntries(CharacterSheet character)
-    {
-        foreach (string selectionEntry in character.SelectedClassAbilityIds)
-        {
-            if (!string.IsNullOrWhiteSpace(selectionEntry))
-                yield return selectionEntry;
-        }
 
         foreach (var (_, entries) in character.SelectedAbilitiesByClass)
         {
             if (entries is null)
                 continue;
 
-            foreach (string selectionEntry in entries)
+            if (entries
+                .Select(RulesEngine.ExtractClassAbilityBaseId)
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Any(idSet.Contains))
             {
-                if (!string.IsNullOrWhiteSpace(selectionEntry))
-                    yield return selectionEntry;
+                return true;
             }
         }
-    }
 
-    private static string FormatAbilityLine(AbilityDefinition ability)
-    {
-        string name = ability.Id.Replace("_", " ");
-        string desc = string.IsNullOrWhiteSpace(ability.Description) ? string.Empty : $": {ability.Description}";
-        return $"{name}{desc}";
-    }
-
-    private static string HumanizeAbilityId(string abilityId)
-    {
-        if (string.IsNullOrWhiteSpace(abilityId))
-            return string.Empty;
-
-        var parts = abilityId
-            .Split(new[] { '_', '-' }, StringSplitOptions.RemoveEmptyEntries)
-            .ToList();
-
-        if (parts.Count > 1 && IsKnownClassToken(parts[0]))
-            parts.RemoveAt(0);
-
-        if (parts.Count == 0)
-            return abilityId;
-
-        return string.Join(" ", parts);
-    }
-
-    private static string NormalizeClassAbilityId(string abilityId)
-    {
-        string normalized = (abilityId ?? string.Empty).Trim().ToLowerInvariant().Replace('-', '_');
-        if (normalized == "fighter_1d12_for_hit_points")
-            return "fighter_1d12_hit_points";
-        return normalized;
-    }
-
-    private static bool IsKnownClassToken(string token)
-    {
-        return token.Equals("fighter", StringComparison.OrdinalIgnoreCase)
-            || token.Equals("paladin", StringComparison.OrdinalIgnoreCase)
-            || token.Equals("ranger", StringComparison.OrdinalIgnoreCase)
-            || token.Equals("cleric", StringComparison.OrdinalIgnoreCase)
-            || token.Equals("druid", StringComparison.OrdinalIgnoreCase)
-            || token.Equals("wizard", StringComparison.OrdinalIgnoreCase)
-            || token.Equals("mage", StringComparison.OrdinalIgnoreCase)
-            || token.Equals("illusionist", StringComparison.OrdinalIgnoreCase)
-            || token.Equals("thief", StringComparison.OrdinalIgnoreCase)
-            || token.Equals("bard", StringComparison.OrdinalIgnoreCase);
+        int level = Math.Max(1, character.Level);
+        return character.StructuredAbilities
+            .Where(ab => RulesEngine.AbilityUnlockLevel(ab) <= level)
+            .Any(ab => idSet.Contains(ab.Id));
     }
 
     private Border BuildClassBonusCard(List<ClassBonusSpellLikeEntry> entries)
@@ -6410,15 +7058,13 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         if (abilityIds is null || abilityIds.Length == 0)
             yield break;
 
-        var wanted = new HashSet<string>(abilityIds
-            .Where(id => !string.IsNullOrWhiteSpace(id))
-            .Select(NormalizeClassAbilityId), StringComparer.OrdinalIgnoreCase);
+        var wanted = new HashSet<string>(abilityIds.Where(id => !string.IsNullOrWhiteSpace(id)), StringComparer.OrdinalIgnoreCase);
         if (wanted.Count == 0)
             yield break;
 
-        foreach (var selectionEntry in EnumerateSelectedClassAbilityEntries(character))
+        foreach (var selectionEntry in character.SelectedClassAbilityIds)
         {
-            string baseId = NormalizeClassAbilityId(RulesEngine.ExtractClassAbilityBaseId(selectionEntry));
+            string baseId = RulesEngine.ExtractClassAbilityBaseId(selectionEntry);
             if (!wanted.Contains(baseId))
                 continue;
 
@@ -6706,98 +7352,14 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
 
     private List<SaveRow> BuildSavingThrowRows(CharacterSheet character)
     {
-        var result = new List<SaveRow>();
-
-        int level = Math.Max(1, character.Level);
-        var classIds = (character.ClassIds is { Count: > 0 }
-                ? character.ClassIds
-                : string.IsNullOrWhiteSpace(character.ClassId)
-                    ? new List<string>()
-                    : new List<string> { character.ClassId })
-            .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
+        return CharacterSavingThrowService.Calculate(character)
+            .Select(result => new SaveRow(
+                result.Label,
+                result.CategoryKey,
+                result.BaseTarget,
+                result.Bonus,
+                result.FinalTarget))
             .ToList();
-        if (classIds.Count == 0)
-            classIds.Add("fighter");
-
-        foreach (var category in StandardSavingThrowCategories)
-        {
-            int baseTarget = classIds
-                .Select(classId => GetBaseSavingThrowTarget(classId, level, category.Key))
-                .Min();
-
-            int bonus = GetBestApplicableSaveBonus(character.Bonuses, category.BonusKeys);
-            int finalTarget = Math.Clamp(baseTarget - bonus, 1, 30);
-            result.Add(new SaveRow(category.Label, category.Key, baseTarget, bonus, finalTarget));
-        }
-
-        return result;
-    }
-
-    private static int GetBaseSavingThrowTarget(string classId, int level, string categoryKey)
-    {
-        string token = ResolveClassSaveGroup(classId);
-        int band = SaveLevelBand(level, token);
-
-        return token switch
-        {
-            "warrior" => categoryKey switch
-            {
-                "death_poison" => new[] { 14, 13, 11, 10, 8, 7, 5, 4, 3, 2 }[band],
-                "rod_staff_wand" => new[] { 16, 15, 13, 12, 10, 9, 7, 6, 5, 4 }[band],
-                "petrification_polymorph" => new[] { 15, 14, 12, 11, 9, 8, 6, 5, 4, 3 }[band],
-                "breath_weapon" => new[] { 17, 16, 14, 13, 11, 10, 8, 7, 6, 5 }[band],
-                _ => new[] { 17, 16, 14, 13, 11, 10, 8, 7, 6, 5 }[band],
-            },
-            "priest" => categoryKey switch
-            {
-                "death_poison" => new[] { 10, 9, 7, 6, 5, 4, 3 }[band],
-                "rod_staff_wand" => new[] { 14, 13, 11, 10, 9, 8, 7 }[band],
-                "petrification_polymorph" => new[] { 13, 12, 10, 9, 8, 7, 6 }[band],
-                "breath_weapon" => new[] { 16, 15, 13, 12, 11, 10, 9 }[band],
-                _ => new[] { 15, 14, 12, 11, 10, 9, 8 }[band],
-            },
-            "rogue" => categoryKey switch
-            {
-                "death_poison" => new[] { 13, 12, 11, 10, 9 }[band],
-                "rod_staff_wand" => new[] { 14, 12, 10, 8, 6 }[band],
-                "petrification_polymorph" => new[] { 12, 11, 10, 9, 8 }[band],
-                "breath_weapon" => new[] { 16, 15, 14, 13, 12 }[band],
-                _ => new[] { 15, 13, 11, 9, 7 }[band],
-            },
-            _ => categoryKey switch
-            {
-                "death_poison" => new[] { 14, 13, 11, 10 }[band],
-                "rod_staff_wand" => new[] { 11, 9, 7, 5 }[band],
-                "petrification_polymorph" => new[] { 13, 11, 9, 7 }[band],
-                "breath_weapon" => new[] { 15, 13, 11, 9 }[band],
-                _ => new[] { 12, 10, 8, 6 }[band],
-            },
-        };
-    }
-
-    private static int SaveLevelBand(int level, string group)
-    {
-        int clamped = Math.Clamp(level, 1, 20);
-        return group switch
-        {
-            "warrior" => (clamped - 1) / 2,
-            "priest" => (clamped - 1) / 3,
-            "rogue" => (clamped - 1) / 4,
-            _ => (clamped - 1) / 5,
-        };
-    }
-
-    private static string ResolveClassSaveGroup(string classId)
-    {
-        string token = (classId ?? string.Empty).Trim().ToLowerInvariant();
-        return token switch
-        {
-            "fighter" or "paladin" or "ranger" => "warrior",
-            "cleric" or "druid" => "priest",
-            "thief" or "bard" or "rogue" => "rogue",
-            _ => "wizard",
-        };
     }
 
     private static int GetBestApplicableSaveBonus(AbilityBonuses bonuses, IEnumerable<string> bonusKeys)
@@ -6822,9 +7384,70 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
     private static string FormatSigned(int value)
         => value > 0 ? $"+{value}" : value.ToString();
 
-    private int GetDisplayedWizardSpellLevelForReview(CharacterSheet character, SpellDefinition spell, int maxArcaneLevel)
+    private static string FormatProficiencyTypePlain(WeaponProficiencySelection wp)
     {
-        if (!TryParseSpellLevel(spell.Level, out int baseLevel) || baseLevel > maxArcaneLevel)
+        if (wp.ProficiencyType == "individual") return "Individual";
+        if (wp.ProficiencyType == "tight_group") return "Tight Group";
+        if (wp.ProficiencyType == "broad_group") return "Broad Group";
+        if (string.Equals(wp.ProficiencyType, "combat_option", StringComparison.OrdinalIgnoreCase))
+        {
+            string id = (wp.ProficiencyId ?? string.Empty).ToLowerInvariant();
+            if (id.StartsWith("armor_proficiency_")) return "Armor Proficiency";
+            if (id == "shield_proficiency") return "Shield Proficiency";
+            if (id.StartsWith("fighting_style_")) return "Fighting Style";
+            if (id.StartsWith("talent_") || IsSpecialTalentId(id)) return "Special Talent";
+            return "Combat Option";
+        }
+        return wp.ProficiencyType.Replace("_", " ");
+    }
+
+    private static string FormatProficiencyTypeBadge(WeaponProficiencySelection wp)
+    {
+        if (wp.ProficiencyType == "individual") return string.Empty;
+        return $"  ({FormatProficiencyTypePlain(wp)})";
+    }
+
+    private static bool IsSpecialTalentId(string id)
+    {
+        string key = (id ?? string.Empty).Trim().ToLowerInvariant();
+        if (key.StartsWith("talent_", StringComparison.OrdinalIgnoreCase))
+            key = key["talent_".Length..];
+
+        return key switch
+        {
+            "alertness" or "ambidexterity" or "ambush" or "camouflage" or "dirty_fighting"
+            or "endurance" or "fine_balance" or "iron_will" or "leadership" or "quickness"
+            or "steady_hand" or "trouble_sense" => true,
+            _ => false,
+        };
+    }
+
+    private static bool AreWeaponsEquivalent(string? a, string? b)
+    {
+        if (string.IsNullOrWhiteSpace(a) || string.IsNullOrWhiteSpace(b))
+            return false;
+        if (string.Equals(a, b, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        static string Norm(string s) => Regex.Replace(s.ToLowerInvariant(), "[^a-z0-9]", "");
+        string na = Norm(a);
+        string nb = Norm(b);
+        if (na == nb) return true;
+
+        if ((na.Contains("footmanspick") || na.Contains("pickfootman"))
+            && (nb.Contains("footmanspick") || nb.Contains("pickfootman")))
+            return true;
+
+        if ((na.Contains("horsemanspick") || na.Contains("pickhorseman"))
+            && (nb.Contains("horsemanspick") || nb.Contains("pickhorseman")))
+            return true;
+
+        return false;
+    }
+
+    private int GetDisplayedWizardSpellLevelForReview(CharacterSheet character, SpellDefinition spell)
+    {
+        if (!TryParseSpellLevel(spell.Level, out int baseLevel))
             return int.MaxValue;
 
         string focusSchool = GetWizardSpellFocusSchool(character);
@@ -7045,9 +7668,6 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
 
     private bool IsWizardCaster(CharacterSheet character)
     {
-        if (!character.ArcaneSpellSlots.Any(kv => kv.Value > 0))
-            return false;
-
         return GetCharacterClassIds(character).Any(IsWizardClassId);
     }
 
@@ -7370,7 +7990,8 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             || token.Equals("druid", StringComparison.OrdinalIgnoreCase)
             || token.Equals("ranger", StringComparison.OrdinalIgnoreCase)
             || token.Equals("paladin", StringComparison.OrdinalIgnoreCase)
-            || token.Equals("priest", StringComparison.OrdinalIgnoreCase);
+            || token.Equals("priest", StringComparison.OrdinalIgnoreCase)
+            || RulesEngine.IsPriestClassId(token);
     }
 
     private static bool IsPriestSpellAllowedForCharacter(SpellDefinition spell, Dictionary<string, string> selectedSpheres)
@@ -7422,6 +8043,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         if (character.SchoolsByClass is null) { character.SchoolsByClass = new(); changed = true; }
         if (character.ClassIds is null) { character.ClassIds = new(); changed = true; }
         if (character.HiddenSectionKeysByProfile is null) { character.HiddenSectionKeysByProfile = new(); changed = true; }
+        if (character.ExpandedSectionKeysByProfile is null) { character.ExpandedSectionKeysByProfile = new(); changed = true; }
 
         if (changed)
             _app.SaveCharacters();

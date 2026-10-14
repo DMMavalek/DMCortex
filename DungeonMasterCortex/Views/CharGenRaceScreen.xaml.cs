@@ -24,11 +24,12 @@ public partial class CharGenRaceScreen : UserControl, IScreen
 
     public void OnEnter()
     {
+        _app.CharGen.CharacterMode = CharGenState.NormalizeCharacterModeToken(_app.CharGen.CharacterMode);
         bool isLevelUp = _app.CharGen.IsLevelUpMode;
         _app.SetBanner(isLevelUp
             ? "Character Section  ›  Level Up  ›  Race"
             : "Character Blueprint  ›  Race");
-        bool isPO  = _app.CharGen.CharacterMode == "players_option";
+        bool isPO  = string.Equals(_app.CharGen.CharacterMode, "players_option", System.StringComparison.OrdinalIgnoreCase);
         int  total = isPO ? 8 : 7;
         _app.SetNavBar(3, total, "Race",
             backAction: () => _app.GoTo(isLevelUp ? "characters" : "chargen_abilities", -1),

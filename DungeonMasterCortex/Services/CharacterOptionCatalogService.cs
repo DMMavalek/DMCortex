@@ -369,7 +369,8 @@ public class CharacterOptionCatalogService
                 mergedImported[$"{custom.Category}|{custom.Name}"] = def;
             }
 
-            return mergedImported.Values
+            var correctedImported = ApplyKnownNwpClassCorrections(mergedImported.Values);
+            return correctedImported
                 .OrderBy(x => x.Category)
                 .ThenBy(x => x.Name)
                 .ToList();
@@ -519,10 +520,56 @@ public class CharacterOptionCatalogService
             merged[$"{custom.Category}|{custom.Name}"] = def;
         }
 
-        return merged.Values
+        var corrected = ApplyKnownNwpClassCorrections(merged.Values);
+        return corrected
             .OrderBy(x => x.Category)
             .ThenBy(x => x.Name)
             .ToList();
+    }
+
+    private static List<NonweaponProficiencyDefinition> ApplyKnownNwpClassCorrections(IEnumerable<NonweaponProficiencyDefinition> source)
+    {
+        var list = source.ToList();
+        int quicknessIdx = list.FindIndex(x => string.Equals(x.Id, "nwp_quickness", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(x.Name, "Quickness", StringComparison.OrdinalIgnoreCase));
+
+        var warriorRogueClasses = new[] { "fighter", "paladin", "ranger", "thief", "bard" };
+        var quicknessDef = new NonweaponProficiencyDefinition(
+            "nwp_quickness",
+            "Quickness",
+            "Warrior / Rogue",
+            2,
+            "Dexterity",
+            0,
+            "A character with this talent is unusually fast. Her hand-eye coordination is excellent, and she can often get past her opponent's defenses before they realize how quick she really is. In combat, she gains a special -2 bonus to her initiative roll if she makes a proficiency check. She can use this bonus if she moves or makes an attack with a weapon of average speed or quicker, but her special bonus does not apply to attacks with slow weapons or stationary actions such as guarding or parrying.",
+            "Player's Option: Combat & Tactics",
+            CpCost: 6,
+            PlayersOptionBaseRating: 3,
+            PlayersOptionCheckAbility: "Dexterity/Aim",
+            AllowedClasses: warriorRogueClasses,
+            GroupFamily: "Warrior, Rogue",
+            ProficiencyGroup: "Warrior, Rogue",
+            SourceBook: "Player's Option: Combat & Tactics",
+            SourceTag: "Combat & Tactics");
+
+        if (quicknessIdx >= 0)
+        {
+            var existing = list[quicknessIdx];
+            list[quicknessIdx] = existing with
+            {
+                Slots = 2,
+                CpCost = 6,
+                PlayersOptionBaseRating = 3,
+                PlayersOptionCheckAbility = "Dexterity/Aim",
+                AllowedClasses = existing.AllowedClasses ?? warriorRogueClasses,
+            };
+        }
+        else
+        {
+            list.Add(quicknessDef);
+        }
+
+        return list;
     }
 
     private static IReadOnlyList<string>? UnionAllowedClasses(IReadOnlyList<string>? left, IReadOnlyList<string>? right)

@@ -30,6 +30,7 @@ public partial class RogueSkillsDialog : Window
         public int DexterityAdjustment { get; set; }
         public int ArmorAdjustment { get; set; }
         public int FinalScore { get; set; }
+        public bool CanAllocate { get; set; } = true;
 
         public string BaseLabel => PercentValue(BaseScore, alwaysSign: false);
         public string RacialLabel => PercentValue(RacialAdjustment, alwaysSign: true);
@@ -84,10 +85,12 @@ public partial class RogueSkillsDialog : Window
     };
 
     private readonly string _raceId;
+    private readonly string _classId;
     private readonly int _dexterity;
     private readonly int _level;
     private readonly int _totalPool;
     private readonly int _perSkillCap;
+    private readonly bool _useAverageProgression;
 
     private string _armorProfile;
     private Dictionary<string, int> _allocations;
@@ -98,19 +101,36 @@ public partial class RogueSkillsDialog : Window
         string? armorProfile,
         string? raceId,
         int dexterity,
-        int level)
+        int level,
+        string? classId)
     {
         InitializeComponent();
 
         _armorProfile = string.IsNullOrWhiteSpace(armorProfile) ? "no_armor" : armorProfile.Trim().ToLowerInvariant();
         _allocations = new Dictionary<string, int>(existingAllocations ?? new(), StringComparer.OrdinalIgnoreCase);
         _raceId = raceId ?? string.Empty;
+        _classId = classId ?? string.Empty;
         _dexterity = dexterity;
         _level = Math.Max(1, level);
-        _totalPool = RulesEngine.GetRogueSkillPointPoolForLevel(_level);
+        _useAverageProgression = !string.Equals(_classId, "thief", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(_classId, "rogue", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(_classId, "bard", StringComparison.OrdinalIgnoreCase);
+        _totalPool = RulesEngine.GetRogueSkillPointPoolForLevel(_level, _classId);
         _perSkillCap = RulesEngine.GetRogueSkillPerSkillAllocationCap(_level);
 
-        IntroLabel.Text = $"Pool: {_totalPool} points (60 at 1st level, +30 per additional level). Per-skill allocation cap: {_perSkillCap}.";
+        if (_useAverageProgression)
+        {
+            Title = "Automatic Rogue Skill Progression";
+            IntroLabel.Text = "Purchased thief abilities advance automatically using DMG Table 19. Race, Dexterity, and armor modifiers still apply.";
+            AllocationHeader.Text = "Progress";
+        }
+        else
+        {
+            string poolHint = string.Equals(_classId, "bard", StringComparison.OrdinalIgnoreCase)
+                ? "20 at 1st level, +15 per additional level"
+                : "60 at 1st level, +30 per additional level";
+            IntroLabel.Text = $"Pool: {_totalPool} points ({poolHint}). Per-skill allocation cap: {_perSkillCap}.";
+        }
 
         ArmorProfileCombo.ItemsSource = _armorOptions;
         var selectedArmor = _armorOptions.FirstOrDefault(a => a.Id == _armorProfile) ?? _armorOptions[0];
@@ -138,7 +158,8 @@ public partial class RogueSkillsDialog : Window
             {
                 SkillId = skillId,
                 SkillName = RulesEngine.GetRogueSkillName(skillId),
-                AllocatedPointsText = points.ToString(),
+                AllocatedPointsText = _useAverageProgression ? "Auto" : points.ToString(),
+                CanAllocate = !_useAverageProgression,
                 OnAllocationChanged = Recalculate,
             };
             _rows.Add(row);
@@ -159,7 +180,7 @@ public partial class RogueSkillsDialog : Window
         var normalizedAllocations = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         foreach (var row in _rows)
         {
-            int parsed = row.AllocatedPoints;
+            int parsed = _useAverageProgression ? 0 : row.AllocatedPoints;
             int clamped = Math.Clamp(parsed, 0, _perSkillCap);
             if (clamped != parsed)
                 row.AllocatedPointsText = clamped.ToString();
@@ -172,7 +193,8 @@ public partial class RogueSkillsDialog : Window
             _dexterity,
             _armorProfile,
             normalizedAllocations,
-            _level);
+            _level,
+            _useAverageProgression);
 
         var byId = breakdown.ToDictionary(b => b.SkillId, b => b, StringComparer.OrdinalIgnoreCase);
         foreach (var row in _rows)
@@ -186,21 +208,23 @@ public partial class RogueSkillsDialog : Window
             row.NotifyComputedChanged();
         }
 
-        int spent = normalizedAllocations.Values.Sum();
+        int spent = _useAverageProgression ? 0 : normalizedAllocations.Values.Sum();
         int remaining = _totalPool - spent;
 
-        PoolSummaryLabel.Text = $"Allocated {spent} / {_totalPool} points. Remaining: {remaining}.";
-        ValidationLabel.Text = remaining < 0
+        PoolSummaryLabel.Text = _useAverageProgression
+            ? $"Automatic progression at level {_level}; no discretionary point pool."
+            : $"Allocated {spent} / {_totalPool} points. Remaining: {remaining}.";
+        ValidationLabel.Text = !_useAverageProgression && remaining < 0
             ? $"You are over budget by {-remaining} points."
             : string.Empty;
-        BtnOK.IsEnabled = remaining >= 0;
+        BtnOK.IsEnabled = _useAverageProgression || remaining >= 0;
 
         _allocations = normalizedAllocations;
     }
 
     private void BtnOK_Click(object sender, RoutedEventArgs e)
     {
-        if (_allocations.Values.Sum() > _totalPool)
+        if (!_useAverageProgression && _allocations.Values.Sum() > _totalPool)
         {
             MessageBox.Show("Rogue skill points exceed the available pool.", "Validation", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
@@ -214,7 +238,10 @@ public partial class RogueSkillsDialog : Window
         DialogResult = false;
     }
 
-    public Dictionary<string, int> GetAllocations() => new(_allocations, StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, int> GetAllocations()
+        => _useAverageProgression
+            ? new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+            : new(_allocations, StringComparer.OrdinalIgnoreCase);
 
     public string GetArmorProfile() => _armorProfile;
 }

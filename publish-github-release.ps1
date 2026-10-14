@@ -6,7 +6,8 @@ param(
 	[string]$Token = '',
 	[switch]$Draft,
 	[switch]$Prerelease,
-	[switch]$RemoveOldInstallerVersions
+	[switch]$RemoveOldInstallerVersions,
+	[switch]$ForceInstallerBuild
 )
 
 $ErrorActionPreference = 'Stop'
@@ -38,6 +39,36 @@ function Get-ReleaseVersionFromProject {
 		throw 'Could not determine version from DungeonMasterCortex.csproj.'
 	}
 	return $versionNode.Trim()
+}
+
+function Get-VersionFromTag {
+	param([string]$ReleaseTag)
+
+	if ([string]::IsNullOrWhiteSpace($ReleaseTag)) {
+		return ''
+	}
+
+	if ($ReleaseTag.StartsWith('v', [System.StringComparison]::OrdinalIgnoreCase)) {
+		return $ReleaseTag.Substring(1)
+	}
+
+	return $ReleaseTag
+}
+
+function Get-ExistingInstallerAssets {
+	param([string]$Version)
+
+	$dmPath = Join-Path $root ("artifacts\releases\dm\DMCodex-Setup-$Version.exe")
+	$playerPath = Join-Path $root ("artifacts\releases\player\PlayerCodex-Setup-$Version.exe")
+
+	if ((Test-Path $dmPath) -and (Test-Path $playerPath)) {
+		return @(
+			(Get-Item $dmPath),
+			(Get-Item $playerPath)
+		)
+	}
+
+	return @()
 }
 
 function Get-GitHubHeaders([string]$githubToken) {
@@ -148,9 +179,27 @@ function Upload-ReleaseAsset {
 	$file = Get-Item $FilePath
 	Remove-ExistingAsset -Release $Release -Headers $Headers -AssetName $file.Name -RepoSlug $RepoSlug
 
-	$uploadBase = ($Release.upload_url -replace '\{\?name,label\}$', '')
-	$uploadUrl = "$uploadBase?name=$([uri]::EscapeDataString($file.Name))"
-	Invoke-RestMethod -Method Post -Headers $Headers -Uri $uploadUrl -InFile $file.FullName -ContentType 'application/octet-stream' | Out-Null
+	$uploadBase = "https://uploads.github.com/repos/$RepoSlug/releases/$($Release.id)/assets"
+	$uploadUrl = ('{0}?name={1}' -f $uploadBase, [uri]::EscapeDataString($file.Name))
+	try {
+		Invoke-RestMethod -Method Post -Headers $Headers -Uri $uploadUrl -InFile $file.FullName -ContentType 'application/octet-stream' | Out-Null
+	}
+	catch {
+		$statusCode = $null
+		$responseBody = $null
+		if ($_.Exception.Response) {
+			try { $statusCode = [int]$_.Exception.Response.StatusCode } catch { }
+			try {
+				$stream = $_.Exception.Response.GetResponseStream()
+				if ($null -ne $stream) {
+					$reader = New-Object System.IO.StreamReader($stream)
+					$responseBody = $reader.ReadToEnd()
+					$reader.Close()
+				}
+			} catch { }
+		}
+		throw "Failed to upload $($file.Name) to GitHub release. Status: $statusCode. Url: $uploadUrl. Response: $responseBody"
+	}
 	Write-Host "Uploaded $($file.Name)"
 }
 
@@ -187,6 +236,11 @@ if ([string]::IsNullOrWhiteSpace($Tag)) {
 	$Tag = "v$version"
 }
 
+$releaseVersion = Get-VersionFromTag -ReleaseTag $Tag
+if ([string]::IsNullOrWhiteSpace($releaseVersion)) {
+	$releaseVersion = Get-ReleaseVersionFromProject
+}
+
 if ([string]::IsNullOrWhiteSpace($Title)) {
 	$Title = $Tag
 }
@@ -205,20 +259,31 @@ New-Item -ItemType Directory -Path $releaseRoot -Force | Out-Null
 New-Item -ItemType Directory -Path $dmOut -Force | Out-Null
 New-Item -ItemType Directory -Path $playerOut -Force | Out-Null
 
-Write-Host 'Building installers into local GitHub release staging...'
-$buildArgs = @(
-	'-ExecutionPolicy', 'Bypass',
-	'-File', $buildScript,
-	'-DmInstallerOutputDir', $dmOut,
-	'-PlayerInstallerOutputDir', $playerOut
-)
-if ($RemoveOldInstallerVersions) {
-	$buildArgs += '-RemoveOldInstallerVersions'
+if (-not $ForceInstallerBuild) {
+	$existingInstallers = Get-ExistingInstallerAssets -Version $releaseVersion
+	if ($existingInstallers.Count -eq 2) {
+		Write-Host "Using existing installers for version $releaseVersion from artifacts/releases."
+		$dmInstaller = $existingInstallers | Where-Object { $_.Name -like 'DMCodex-Setup-*.exe' } | Select-Object -First 1
+		$playerInstaller = $existingInstallers | Where-Object { $_.Name -like 'PlayerCodex-Setup-*.exe' } | Select-Object -First 1
+	}
 }
-& powershell @buildArgs
 
-$dmInstaller = Get-ChildItem $dmOut -Filter 'DMCodex-Setup-*.exe' | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-$playerInstaller = Get-ChildItem $playerOut -Filter 'PlayerCodex-Setup-*.exe' | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+if ($null -eq $dmInstaller -or $null -eq $playerInstaller) {
+	Write-Host 'Building installers into local GitHub release staging...'
+	$buildArgs = @(
+		'-ExecutionPolicy', 'Bypass',
+		'-File', $buildScript,
+		'-DmInstallerOutputDir', $dmOut,
+		'-PlayerInstallerOutputDir', $playerOut
+	)
+	if ($RemoveOldInstallerVersions) {
+		$buildArgs += '-RemoveOldInstallerVersions'
+	}
+	& powershell @buildArgs
+
+	$dmInstaller = Get-ChildItem $dmOut -Filter 'DMCodex-Setup-*.exe' | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+	$playerInstaller = Get-ChildItem $playerOut -Filter 'PlayerCodex-Setup-*.exe' | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+}
 
 if ($null -eq $dmInstaller -or $null -eq $playerInstaller) {
 	throw 'Could not locate both DM and Player installer EXEs in local release staging.'

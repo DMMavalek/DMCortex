@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Globalization;
 using System.Text.RegularExpressions;
@@ -6,6 +8,7 @@ using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using System.Windows.Media;
 using DungeonMasterCortex.Models;
 using DungeonMasterCortex.Services;
@@ -22,6 +25,15 @@ public partial class EditInfoScreen : UserControl, IScreen
 
     private static readonly string[] AbilityOrder  = { "str", "dex", "con", "int", "wis", "cha" };
     private static readonly string[] AbilityAbbrev = { "STR", "DEX", "CON", "INT", "WIS", "CHA" };
+    private static readonly Dictionary<string, string[]> SubAbilitiesByAbility = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["str"] = new[] { "str_stamina", "str_muscle" },
+        ["dex"] = new[] { "dex_aim", "dex_balance" },
+        ["con"] = new[] { "con_health", "con_fitness" },
+        ["int"] = new[] { "int_reason", "int_knowledge" },
+        ["wis"] = new[] { "wis_intuition", "wis_willpower", "wis_perception" },
+        ["cha"] = new[] { "cha_leadership", "cha_appearance" },
+    };
 
     private static readonly Dictionary<string, string> CoreAbilityDisplayToKey = new(System.StringComparer.OrdinalIgnoreCase)
     {
@@ -69,6 +81,7 @@ public partial class EditInfoScreen : UserControl, IScreen
     private string _selectedDisadvantageId = "";
     private string _selectedKitId = "";
     private string _selectedClassId = "";
+    private string _selectedDeityId = "";
     private string _selectedRaceAbilityId = "";
     private string _selectedMonsterId = "";
     private string _selectedSpellId = "";
@@ -77,6 +90,7 @@ public partial class EditInfoScreen : UserControl, IScreen
     private List<SpellDefinition> _spellItems = new();
     private readonly System.Collections.ObjectModel.ObservableCollection<DragonAgeStageVm> _ageStageRows = new();
     private bool _updatingNwpUi;
+    private bool _updatingCharacterFaithUi;
     private bool _creatingNewNwp;
     private List<AbilityDefinition> _workingRacialAbilities = new();
     private int _selectedRacialAbilityIndex = -1;
@@ -109,11 +123,60 @@ public partial class EditInfoScreen : UserControl, IScreen
         @"(?<low>\d[\d,]*)(?:\s*[-–]\s*(?<high>\d[\d,]*))?",
         RegexOptions.Compiled);
     private bool _showMagicalEquipment = false;
+    private bool _attemptedAutoMagicalImport;
     private bool _demoViewOnlyNoticeShown;
     private string _activeCharacterEditorSubTab = "update";
     private string _editorRulesModeFilter = "core_rules";
     private readonly List<int> _visibleRacialAbilityIndices = new();
     private readonly List<int> _visibleClassAbilityIndices = new();
+    private List<SnippetTargetOption> _raceSnippetTargets = new();
+    private static readonly (string Key, string Default)[] GroupedMetadataFields =
+    {
+        ("ChargedItem", "No"),
+        ("MaxCharges", "0"),
+        ("ChargeCost", "0"),
+        ("ChargeType", string.Empty),
+        ("RechargeMethod", string.Empty),
+        ("ActivationType", string.Empty),
+        ("Duration", string.Empty),
+        ("DurationType", string.Empty),
+        ("DurationValue", string.Empty),
+        ("Save_ParalyzationMod", "0"),
+        ("Save_RSWMod", "0"),
+        ("Save_PetrificationMod", "0"),
+        ("Save_BreathMod", "0"),
+        ("Save_SpellMod", "0"),
+        ("Save_AllMod", "0"),
+        ("PickPocketsMod", "0"),
+        ("OpenLocksMod", "0"),
+        ("FindRemoveTrapsMod", "0"),
+        ("MoveSilentlyMod", "0"),
+        ("HideInShadowsMod", "0"),
+        ("DetectNoiseMod", "0"),
+        ("ClimbWallsMod", "0"),
+        ("ReadLanguagesMod", "0"),
+        ("STR_Mod", "0"),
+        ("DEX_Mod", "0"),
+        ("CON_Mod", "0"),
+        ("INT_Mod", "0"),
+        ("WIS_Mod", "0"),
+        ("CHA_Mod", "0"),
+        ("STR_Set", string.Empty),
+        ("STR_Exceptional_Set", string.Empty),
+        ("DEX_Set", string.Empty),
+        ("CON_Set", string.Empty),
+        ("INT_Set", string.Empty),
+        ("WIS_Set", string.Empty),
+        ("CHA_Set", string.Empty),
+    };
+    private static readonly HashSet<string> GroupedNumericMetadataKeys = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "MaxCharges", "ChargeCost",
+        "Save_ParalyzationMod", "Save_RSWMod", "Save_PetrificationMod", "Save_BreathMod", "Save_SpellMod", "Save_AllMod",
+        "PickPocketsMod", "OpenLocksMod", "FindRemoveTrapsMod", "MoveSilentlyMod", "HideInShadowsMod", "DetectNoiseMod", "ClimbWallsMod", "ReadLanguagesMod",
+        "STR_Mod", "DEX_Mod", "CON_Mod", "INT_Mod", "WIS_Mod", "CHA_Mod",
+        "EnhancementBonus", "AttackBonus", "DamageBonus", "THAC0Mod", "ACMod",
+    };
 
     private sealed class HealingSpellOption
     {
@@ -153,6 +216,11 @@ public partial class EditInfoScreen : UserControl, IScreen
     private sealed record RaceCopyTargetOption(string Id, string Name)
     {
         public override string ToString() => $"{Name} [{Id}]";
+    }
+
+    private sealed record SnippetTargetOption(string Key, string Label)
+    {
+        public override string ToString() => $"{Label} [{Key}]";
     }
 
     public EditInfoScreen(MainWindow app)
@@ -199,7 +267,7 @@ public partial class EditInfoScreen : UserControl, IScreen
             return;
         }
 
-        if (requestedTab is "chars" or "nwps" or "traits" or "disadvantages" or "equipment" or "equipmnet" or "races" or "racial_abilities" or "classes" or "class_abilities" or "spells" or "spells_arcane" or "spells_divine" or "spells_psionic")
+        if (requestedTab is "chars" or "nwps" or "traits" or "disadvantages" or "equipment" or "equipmnet" or "races" or "racial_abilities" or "classes" or "class_abilities" or "deities" or "spells" or "spells_arcane" or "spells_divine" or "spells_psionic")
             ShowTab(requestedTab);
         else
             ShowTab("chars");
@@ -215,6 +283,7 @@ public partial class EditInfoScreen : UserControl, IScreen
 
         var name = button.Name ?? string.Empty;
         if (name.StartsWith("Tab", System.StringComparison.OrdinalIgnoreCase)
+            || string.Equals(name, "BtnOpenRacialAbilityEditor", System.StringComparison.OrdinalIgnoreCase)
             || string.Equals(name, "BtnHub", System.StringComparison.OrdinalIgnoreCase))
         {
             return;
@@ -240,6 +309,7 @@ public partial class EditInfoScreen : UserControl, IScreen
     private void TabEquipmnet_Click(object sender, RoutedEventArgs e)  => ShowTab("equipmnet");
     private void TabBtnMultiClass_Click(object sender, RoutedEventArgs e) => ShowTab("multiclass");
     private void TabClasses_Click(object sender, RoutedEventArgs e)   => ShowTab("classes");
+    private void TabDeities_Click(object sender, RoutedEventArgs e)  => ShowTab("deities");
     private void TabClassAbilities_Click(object sender, RoutedEventArgs e) => ShowTab("class_abilities");
     private void TabRacialAbilities_Click(object sender, RoutedEventArgs e) => ShowTab("racial_abilities");
     private void TabBtnSpells_Click(object sender, RoutedEventArgs e) => ShowTab("spells_arcane");
@@ -248,6 +318,353 @@ public partial class EditInfoScreen : UserControl, IScreen
     private void TabSpellsPsionic_Click(object sender, RoutedEventArgs e) => ShowTab("spells_psionic");
     private void TabBtnCharHealing_Click(object sender, RoutedEventArgs e) => ShowCharacterEditorSubTab("healing");
     private void TabBtnCharUpdate_Click(object sender, RoutedEventArgs e) => ShowCharacterEditorSubTab("update");
+
+    private void RefreshDeityEditor()
+    {
+        DeityRulesEnabledCheck.IsChecked = _app.Rules.DeityRulesEnabled;
+        var deities = _app.Rules.Deities.Values.OrderBy(deity => deity.Name).ToList();
+        DeityEditorList.ItemsSource = deities;
+        if (!string.IsNullOrWhiteSpace(_selectedDeityId))
+        {
+            int index = deities.FindIndex(deity => string.Equals(deity.Id, _selectedDeityId, StringComparison.OrdinalIgnoreCase));
+            if (index >= 0)
+                DeityEditorList.SelectedIndex = index;
+        }
+        if (DeityEditorList.SelectedIndex < 0 && deities.Count > 0)
+            DeityEditorList.SelectedIndex = 0;
+    }
+
+    private void DeityEditorList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (DeityEditorList.SelectedItem is not DeityDefinition deity)
+            return;
+
+        _selectedDeityId = deity.Id;
+        DeityEditId.Text = deity.Id;
+        DeityEditId.IsReadOnly = true;
+        DeityEditName.Text = deity.Name;
+        DeityEditAlignment.Text = deity.Alignment;
+        DeityEditPortfolio.Text = deity.Portfolio;
+        DeityEditFollowerAlignments.Text = string.Join(", ", deity.FollowerAlignments);
+        DeityEditFollowerBenefit.Text = deity.FollowerAbility?.Description ?? string.Empty;
+        DeityEditorInfo.Text = string.Empty;
+    }
+
+    private void BtnNewDeity_Click(object sender, RoutedEventArgs e)
+    {
+        _selectedDeityId = string.Empty;
+        DeityEditorList.SelectedIndex = -1;
+        DeityEditId.IsReadOnly = false;
+        DeityEditId.Text = string.Empty;
+        DeityEditName.Text = string.Empty;
+        DeityEditAlignment.Text = string.Empty;
+        DeityEditPortfolio.Text = string.Empty;
+        DeityEditFollowerAlignments.Text = string.Empty;
+        DeityEditFollowerBenefit.Text = string.Empty;
+        DeityEditorInfo.Text = "Enter a stable lowercase ID, such as my_deity.";
+        DeityEditId.Focus();
+    }
+
+    private void BtnSaveDeitySetting_Click(object sender, RoutedEventArgs e)
+    {
+        bool enabled = DeityRulesEnabledCheck.IsChecked == true;
+        _app.Rules.SetDeityRulesEnabled(enabled);
+        DeityEditorInfo.Text = enabled
+            ? "Custom deity rules and specialty-priest classes are enabled."
+            : "Custom deity rules and specialty-priest classes are disabled for character creation.";
+    }
+
+    private void BtnSaveDeity_Click(object sender, RoutedEventArgs e)
+    {
+        string id = DeityEditId.Text.Trim().ToLowerInvariant();
+        string name = DeityEditName.Text.Trim();
+        string alignment = DeityEditAlignment.Text.Trim().ToUpperInvariant();
+        string[] validAlignments = { "LG", "NG", "CG", "LN", "N", "CN", "LE", "NE", "CE" };
+        if (!Regex.IsMatch(id, "^[a-z0-9]+(?:_[a-z0-9]+)*$") || string.IsNullOrWhiteSpace(name))
+        {
+            DeityEditorInfo.Text = "A name and lowercase ID containing letters, numbers, or underscores are required.";
+            return;
+        }
+        if (!validAlignments.Contains(alignment, StringComparer.OrdinalIgnoreCase))
+        {
+            DeityEditorInfo.Text = "Deity alignment must be one of: LG, NG, CG, LN, N, CN, LE, NE, CE.";
+            return;
+        }
+
+        var followerAlignments = DeityEditFollowerAlignments.Text
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(value => value.ToUpperInvariant())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (followerAlignments.Count == 0 || followerAlignments.Any(value => !validAlignments.Contains(value, StringComparer.OrdinalIgnoreCase)))
+        {
+            DeityEditorInfo.Text = "Enter one or more valid follower alignments separated by commas.";
+            return;
+        }
+
+        string benefit = DeityEditFollowerBenefit.Text.Trim();
+        AbilityDefinition? followerAbility = string.IsNullOrWhiteSpace(benefit)
+            ? null
+            : new AbilityDefinition
+            {
+                Id = $"deity_{id}_follower",
+                Description = benefit,
+                AutoGranted = true,
+            };
+        _app.Rules.SaveDeity(new DeityDefinition(
+            id,
+            name,
+            alignment,
+            DeityEditPortfolio.Text.Trim(),
+            followerAlignments,
+            followerAbility));
+        _selectedDeityId = id;
+        RefreshDeityEditor();
+        DeityEditorInfo.Text = $"Saved {name} as a local deity override.";
+    }
+
+    private void BtnOpenRacialAbilityEditor_Click(object sender, RoutedEventArgs e)
+    {
+        string raceId = RaceId.Text.Trim().ToLowerInvariant();
+        if (!string.IsNullOrWhiteSpace(raceId))
+            _selectedRaceAbilityId = raceId;
+        ShowTab("racial_abilities");
+    }
+
+    private void BtnInsertRaceAbilitySnippet_Click(object sender, RoutedEventArgs e)
+    {
+        if (RaceAbilityDefsSnippet.SelectedItem is not ComboBoxItem selected)
+            return;
+
+        string snippet = (selected.Tag?.ToString() ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(snippet))
+            return;
+
+        InsertRaceAbilitySnippetAtCursor(snippet);
+    }
+
+    private void RaceSnippetType_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        RefreshRaceSnippetBuilderTargets();
+    }
+
+    private void RaceSnippetTargetSearch_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        ApplyRaceSnippetTargetFilter();
+    }
+
+    private void BtnClearRaceSnippetTargetSearch_Click(object sender, RoutedEventArgs e)
+    {
+        if (RaceSnippetTargetSearch is null)
+            return;
+
+        RaceSnippetTargetSearch.Text = string.Empty;
+        RaceSnippetTargetSearch.Focus();
+    }
+
+    private void RaceSnippetTargetSearch_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter)
+            return;
+
+        e.Handled = true;
+        BtnBuildRaceAbilitySnippet_Click(sender, new RoutedEventArgs());
+    }
+
+    private void RaceSnippetValue_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter)
+            return;
+
+        e.Handled = true;
+        BtnBuildRaceAbilitySnippet_Click(sender, new RoutedEventArgs());
+    }
+
+    private void BtnBuildRaceAbilitySnippet_Click(object sender, RoutedEventArgs e)
+    {
+        if (RaceSnippetTarget.SelectedItem is not SnippetTargetOption target)
+        {
+            MessageBox.Show("Select a target first.", "Guided Snippet", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        if (!int.TryParse((RaceSnippetValue.Text ?? string.Empty).Trim(), out int value))
+        {
+            MessageBox.Show("Value must be a whole number.", "Guided Snippet", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        string type = GetSelectedRaceSnippetType();
+        string snippet = type switch
+        {
+            "weapon_attack" => $"weapon_attack.{target.Key}={value}",
+            "attack_scaling" => $"attack_per_levels={value}",
+            "weapon_damage" => $"weapon_damage.{target.Key}={value}",
+            "nwp_check_targeted" => $"nwp_check.{target.Key}={value}",
+            "save_bonus" => $"save.{target.Key}={value}",
+            "enemy_attack" => $"enemy_attack.{target.Key}={value}",
+            "enemy_damage" => $"enemy_damage.{target.Key}={value}",
+            _ => string.Empty,
+        };
+
+        if (string.IsNullOrWhiteSpace(snippet))
+            return;
+
+        InsertRaceAbilitySnippetAtCursor(snippet);
+    }
+
+    private string GetSelectedRaceSnippetType()
+    {
+        return (RaceSnippetType.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "weapon_attack";
+    }
+
+    private void RefreshRaceSnippetBuilderTargets()
+    {
+        if (RaceSnippetTarget is null || RaceSnippetType is null)
+            return;
+
+        string snippetType = GetSelectedRaceSnippetType();
+        _raceSnippetTargets = BuildRaceSnippetTargets(snippetType);
+        ApplyRaceSnippetTargetFilter();
+    }
+
+    private void ApplyRaceSnippetTargetFilter()
+    {
+        if (RaceSnippetTarget is null)
+            return;
+
+        string? selectedKey = (RaceSnippetTarget.SelectedItem as SnippetTargetOption)?.Key;
+        string filter = (RaceSnippetTargetSearch?.Text ?? string.Empty).Trim();
+
+        var filtered = string.IsNullOrWhiteSpace(filter)
+            ? _raceSnippetTargets
+            : _raceSnippetTargets
+                .Where(x => x.Key.Contains(filter, StringComparison.OrdinalIgnoreCase)
+                    || x.Label.Contains(filter, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+        RaceSnippetTarget.ItemsSource = filtered;
+
+        if (!string.IsNullOrWhiteSpace(selectedKey))
+        {
+            int priorIdx = filtered.FindIndex(x => string.Equals(x.Key, selectedKey, StringComparison.OrdinalIgnoreCase));
+            if (priorIdx >= 0)
+            {
+                RaceSnippetTarget.SelectedIndex = priorIdx;
+                return;
+            }
+        }
+
+        RaceSnippetTarget.SelectedIndex = filtered.Count > 0 ? 0 : -1;
+    }
+
+    private List<SnippetTargetOption> BuildRaceSnippetTargets(string snippetType)
+    {
+        switch ((snippetType ?? string.Empty).Trim().ToLowerInvariant())
+        {
+            case "weapon_attack":
+            case "weapon_damage":
+            {
+                var byId = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var g in _app.Rules.WeaponGroups.OrderBy(x => x.Name))
+                {
+                    if (!string.IsNullOrWhiteSpace(g.Id) && !byId.ContainsKey(g.Id))
+                        byId[g.Id] = $"Group: {g.Name}";
+
+                    foreach (var tg in g.TightGroups.OrderBy(x => x.Name))
+                    {
+                        if (!string.IsNullOrWhiteSpace(tg.Id) && !byId.ContainsKey(tg.Id))
+                            byId[tg.Id] = $"Tight Group: {tg.Name}";
+                    }
+                }
+
+                foreach (var w in _app.Rules.Weapons.OrderBy(x => x.Name))
+                {
+                    if (!string.IsNullOrWhiteSpace(w.Id) && !byId.ContainsKey(w.Id))
+                        byId[w.Id] = $"Weapon: {w.Name}";
+                }
+
+                return byId
+                    .OrderBy(kv => kv.Value, StringComparer.OrdinalIgnoreCase)
+                    .Select(kv => new SnippetTargetOption(kv.Key, kv.Value))
+                    .ToList();
+            }
+            case "attack_scaling":
+                return new List<SnippetTargetOption> { new("attack_per_levels", "Attack bonus every X levels") };
+            case "nwp_check_targeted":
+            {
+                var nwps = _app.CharacterOptions.GetCatalog().NonweaponProficiencies
+                    .OrderBy(n => n.Name)
+                    .Select(n => new SnippetTargetOption(n.Id, $"NWP: {n.Name}"))
+                    .ToList();
+                return nwps;
+            }
+            case "save_bonus":
+                return new List<SnippetTargetOption>
+                {
+                    new("all", "Save: All"),
+                    new("magic", "Save: Magic"),
+                    new("poison", "Save: Poison"),
+                    new("spell", "Save: Spell"),
+                    new("death", "Save: Death"),
+                    new("breath", "Save: Breath"),
+                    new("polymorph", "Save: Polymorph"),
+                    new("petrification", "Save: Petrification"),
+                };
+            case "enemy_attack":
+            case "enemy_damage":
+                return new List<SnippetTargetOption>
+                {
+                    new("goblinoids", "Enemy: Goblinoids"),
+                    new("undead", "Enemy: Undead"),
+                    new("giants", "Enemy: Giants"),
+                    new("orcs", "Enemy: Orcs"),
+                    new("drow", "Enemy: Drow"),
+                    new("troglodytes", "Enemy: Troglodytes"),
+                    new("dragons", "Enemy: Dragons"),
+                    new("humanoids", "Enemy: Humanoids"),
+                };
+            default:
+                return new List<SnippetTargetOption>();
+        }
+    }
+
+    private void InsertRaceAbilitySnippetAtCursor(string snippet)
+    {
+        string text = RaceAbilityDefs.Text ?? string.Empty;
+        int caret = Math.Clamp(RaceAbilityDefs.CaretIndex, 0, text.Length);
+        bool isFullLine = snippet.Contains('|');
+
+        string insertion = snippet;
+        if (isFullLine)
+        {
+            bool needsLeadingNewline = caret > 0
+                && text[caret - 1] != '\n'
+                && text[caret - 1] != '\r';
+            bool needsTrailingNewline = caret < text.Length
+                && text[caret] != '\n'
+                && text[caret] != '\r';
+
+            insertion = (needsLeadingNewline ? "\n" : string.Empty)
+                + snippet
+                + (needsTrailingNewline ? "\n" : string.Empty);
+        }
+        else
+        {
+            bool addSeparator = caret > 0
+                && !char.IsWhiteSpace(text[caret - 1])
+                && text[caret - 1] != ';'
+                && text[caret - 1] != ','
+                && text[caret - 1] != '|';
+
+            insertion = (addSeparator ? ";" : string.Empty) + snippet;
+        }
+
+        RaceAbilityDefs.Text = text.Insert(caret, insertion);
+        RaceAbilityDefs.CaretIndex = caret + insertion.Length;
+        RaceAbilityDefs.Focus();
+    }
 
     private void ShowTab(string tab)
     {
@@ -293,6 +710,7 @@ public partial class EditInfoScreen : UserControl, IScreen
         TabEquipment.Visibility = tab == "equipmnet" ? Visibility.Visible : Visibility.Collapsed;
         TabMultiClass.Visibility    = tab == "multiclass"     ? Visibility.Visible : Visibility.Collapsed;
         TabClasses.Visibility = tab == "classes" ? Visibility.Visible : Visibility.Collapsed;
+        TabDeities.Visibility = tab == "deities" ? Visibility.Visible : Visibility.Collapsed;
         TabClassAbilities.Visibility = tab == "class_abilities" ? Visibility.Visible : Visibility.Collapsed;
         TabRacialAbilities.Visibility = tab == "racial_abilities" ? Visibility.Visible : Visibility.Collapsed;
         TabMonsters.Visibility = tab == "monsters" ? Visibility.Visible : Visibility.Collapsed;
@@ -316,6 +734,7 @@ public partial class EditInfoScreen : UserControl, IScreen
         TabBtnEquipmnet.Background = tab == "equipmnet" ? active : inactive;
         TabBtnRaces.Background     = inRaces ? active : inactive;
         TabBtnClasses.Background   = inClasses ? active : inactive;
+        TabBtnDeities.Background   = tab == "deities" ? active : inactive;
         TabBtnMonsters.Background  = tab == "monsters" ? active : inactive;
         TabBtnSpells.Background    = inSpells ? active : inactive;
         TabBtnNwps.Background      = tab == "nwps" ? active : inactive;
@@ -334,6 +753,7 @@ public partial class EditInfoScreen : UserControl, IScreen
         if (tab == "chars")     RefreshCharList();
         if (tab == "chars")     ShowCharacterEditorSubTab(_activeCharacterEditorSubTab);
         if (tab == "races")     RefreshRaceList();
+        if (tab == "races")     RefreshRaceSnippetBuilderTargets();
         if (tab == "nwps")      RefreshNwpList();
         if (tab == "traits")    RefreshTraitEditorList();
         if (tab == "disadvantages") RefreshDisadvantageEditorList();
@@ -341,6 +761,7 @@ public partial class EditInfoScreen : UserControl, IScreen
         if (tab == "equipmnet") RefreshEquipmentEditor();
         if (tab == "multiclass")    RefreshMultiClassEditor();
         if (tab == "classes") RefreshClassEditorList();
+        if (tab == "deities") RefreshDeityEditor();
         if (tab == "class_abilities") RefreshClassAbilityEditorList();
         if (tab == "racial_abilities") RefreshRacialAbilityEditorList();
         if (tab == "monsters")
@@ -533,6 +954,17 @@ public partial class EditInfoScreen : UserControl, IScreen
     private void BtnBack_Click(object sender, RoutedEventArgs e) =>
         _app.GoTo("dm_tools", -1);
 
+    private void BtnReportBug_Click(object sender, RoutedEventArgs e)
+    {
+        var owner = Window.GetWindow(this);
+        var dialog = new BugReportDialog(_app, _app.License)
+        {
+            Owner = owner,
+        };
+
+        dialog.ShowDialog();
+    }
+
     // ── Equipment tab ────────────────────────────────────────────────────────
 
     private sealed record EquipmentListItem(CustomEquipmentData Item)
@@ -557,8 +989,10 @@ public partial class EditInfoScreen : UserControl, IScreen
 
     private void RefreshEquipmentEditor()
     {
-        _equipmentItems = new EquipmentLibraryService().GetEquipmentLibrary().ToList();
-        EquipmentEditorInfo.Text = "Edit equipment definitions here. Categories and tags are separate from item names.";
+        _equipmentItems = LoadEquipmentItemsWithMagicalFallback(out string? magicalImportNote);
+        EquipmentEditorInfo.Text = string.IsNullOrWhiteSpace(magicalImportNote)
+            ? "Edit equipment definitions here. Categories and tags are separate from item names."
+            : $"Edit equipment definitions here. Categories and tags are separate from item names. {magicalImportNote}";
         ApplyEquipmentTypeTabStyles();
         PopulateEquipmentCategoryFilter();
         RefreshEquipmentList();
@@ -566,6 +1000,56 @@ public partial class EditInfoScreen : UserControl, IScreen
             EquipmentListEditor.SelectedIndex = 0;
         if (_equipmentItems.Count == 0)
             NewEquipmentEditorEntry();
+    }
+
+    private List<CustomEquipmentData> LoadEquipmentItemsWithMagicalFallback(out string? magicalImportNote)
+    {
+        magicalImportNote = null;
+        var libraryService = new EquipmentLibraryService();
+        var library = libraryService.GetEquipmentLibrary().ToList();
+
+        if (library.Any(x => x.IsMagical) || _attemptedAutoMagicalImport)
+            return library;
+
+        _attemptedAutoMagicalImport = true;
+        string? workbookPath = FindMagicItemsWorkbookPath();
+        if (string.IsNullOrWhiteSpace(workbookPath))
+        {
+            magicalImportNote = "Magical workbook not found for auto-import.";
+            return library;
+        }
+
+        try
+        {
+            var result = new MagicalItemImportService().ImportFromWorkbook(workbookPath);
+            magicalImportNote = $"Auto-imported magical items from {Path.GetFileName(workbookPath)} (imported {result.ImportedRows}, created {result.CreatedRows}, updated {result.UpdatedRows}).";
+            return libraryService.GetEquipmentLibrary().ToList();
+        }
+        catch (Exception ex)
+        {
+            magicalImportNote = $"Magical auto-import failed: {ex.Message}";
+            return library;
+        }
+    }
+
+    private static string? FindMagicItemsWorkbookPath()
+    {
+        foreach (var startPath in new[] { AppContext.BaseDirectory, Directory.GetCurrentDirectory() }
+                     .Where(p => !string.IsNullOrWhiteSpace(p))
+                     .Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            var dir = new DirectoryInfo(startPath);
+            while (dir is not null)
+            {
+                string candidate = Path.Combine(dir.FullName, "Assets", "Magical Items", "Magic Items.xlsx");
+                if (File.Exists(candidate))
+                    return candidate;
+
+                dir = dir.Parent;
+            }
+        }
+
+        return null;
     }
 
     private void PopulateEquipmentCategoryFilter()
@@ -646,6 +1130,14 @@ public partial class EditInfoScreen : UserControl, IScreen
         EquipmentWeaponDamageLarge.Text = item.WeaponDamageLarge;
         SelectComboBoxItemByTag(EquipmentWeaponType, item.WeaponType);
         SelectComboBoxItemByTag(EquipmentWeaponSize, item.WeaponSize);
+        EquipmentMagicEnhancementBonus.Text = item.EnchantmentBonus.ToString(CultureInfo.InvariantCulture);
+        EquipmentMagicAttackBonus.Text = item.WeaponAttackBonus.ToString(CultureInfo.InvariantCulture);
+        EquipmentMagicDamageBonus.Text = item.WeaponDamageBonus.ToString(CultureInfo.InvariantCulture);
+        EquipmentMagicThac0Modifier.Text = item.WeaponThac0Modifier.ToString(CultureInfo.InvariantCulture);
+        EquipmentMagicArmorClassModifier.Text = item.ArmorClassModifier.ToString(CultureInfo.InvariantCulture);
+        var editableMetadata = BuildEditableMetadata(item);
+        PopulateGroupedMetadataEditors(editableMetadata);
+        EquipmentMagicMetadataText.Text = FormatMetadataLines(editableMetadata);
 
         SelectComboBoxItemByText(EquipmentEditSize, item.SizeClass);
 
@@ -687,6 +1179,13 @@ public partial class EditInfoScreen : UserControl, IScreen
         EquipmentContainerMaxItems.Text = "0";
         EquipmentContainerMaxWeight.Text = "0";
         EquipmentAllowedTags.Text = "";
+        EquipmentMagicEnhancementBonus.Text = "0";
+        EquipmentMagicAttackBonus.Text = "0";
+        EquipmentMagicDamageBonus.Text = "0";
+        EquipmentMagicThac0Modifier.Text = "0";
+        EquipmentMagicArmorClassModifier.Text = "0";
+        ResetGroupedMetadataEditors();
+        EquipmentMagicMetadataText.Text = string.Empty;
         UpdateArmorEditorEnabledState();
         UpdateWeaponEditorEnabledState();
         UpdateContainerEditorEnabledState();
@@ -1031,6 +1530,41 @@ public partial class EditInfoScreen : UserControl, IScreen
         EquipmentEditorInfo.Text = "Equipment library reloaded.";
     }
 
+    private void BtnImportMagicalItems_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Import Magical Items from Excel",
+            Filter = "Excel Workbook (*.xlsx)|*.xlsx",
+            CheckFileExists = true,
+            Multiselect = false,
+            FileName = "Magic Items.xlsx",
+        };
+
+        if (dlg.ShowDialog() != true)
+            return;
+
+        try
+        {
+            var result = new MagicalItemImportService().ImportFromWorkbook(dlg.FileName);
+            RefreshEquipmentEditor();
+            EquipmentEditorInfo.Text = $"Imported magical items. Imported: {result.ImportedRows}, Updated: {result.UpdatedRows}, Created: {result.CreatedRows}, Skipped: {result.SkippedRows}.";
+
+            if (result.Warnings.Count > 0)
+            {
+                MessageBox.Show(
+                    $"Import complete with warnings.\n\n{string.Join("\n", result.Warnings.Take(15))}",
+                    "Magical Items Import",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            MessageBox.Show($"Import failed: {ex.Message}", "Import Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     private void EquipmentIsContainer_Changed(object sender, RoutedEventArgs e)
         => UpdateContainerEditorEnabledState();
 
@@ -1088,10 +1622,26 @@ public partial class EditInfoScreen : UserControl, IScreen
             .ToList();
 
         string existingId = string.IsNullOrWhiteSpace(_selectedEquipmentId) ? "" : _selectedEquipmentId;
+        var metadata = ParseMetadataLines(EquipmentMagicMetadataText.Text);
         string candidateId = string.IsNullOrWhiteSpace(existingId)
             ? EquipmentLibraryService.BuildId(name)
             : existingId;
         string finalId = EnsureUniqueEquipmentId(candidateId, existingId);
+
+        int enhancementBonus = ParseIntAllowNegative(EquipmentMagicEnhancementBonus.Text);
+        int weaponAttackBonus = ParseIntAllowNegative(EquipmentMagicAttackBonus.Text);
+        int weaponDamageBonus = ParseIntAllowNegative(EquipmentMagicDamageBonus.Text);
+        int weaponThac0Modifier = ParseIntAllowNegative(EquipmentMagicThac0Modifier.Text);
+        int armorClassModifier = ParseIntAllowNegative(EquipmentMagicArmorClassModifier.Text);
+
+        metadata["ItemID"] = finalId;
+        metadata["ItemName"] = name;
+        metadata["EnhancementBonus"] = enhancementBonus.ToString(CultureInfo.InvariantCulture);
+        metadata["AttackBonus"] = weaponAttackBonus.ToString(CultureInfo.InvariantCulture);
+        metadata["DamageBonus"] = weaponDamageBonus.ToString(CultureInfo.InvariantCulture);
+        metadata["THAC0Mod"] = weaponThac0Modifier.ToString(CultureInfo.InvariantCulture);
+        metadata["ACMod"] = armorClassModifier.ToString(CultureInfo.InvariantCulture);
+        ApplyGroupedEditorsToMetadata(metadata);
 
         var updated = new CustomEquipmentData
         {
@@ -1126,6 +1676,11 @@ public partial class EditInfoScreen : UserControl, IScreen
             WeaponSize = EquipmentIsWeapon.IsChecked == true
                 ? GetComboBoxTag(EquipmentWeaponSize, string.Empty)
                 : string.Empty,
+            EnchantmentBonus = enhancementBonus,
+            WeaponAttackBonus = weaponAttackBonus,
+            WeaponDamageBonus = weaponDamageBonus,
+            WeaponThac0Modifier = weaponThac0Modifier,
+            ArmorClassModifier = armorClassModifier,
             CostGold = ParseNonNegativeInt(EquipmentEditCostGold.Text),
             CostSilver = ParseNonNegativeInt(EquipmentEditCostSilver.Text),
             CostCopper = ParseNonNegativeInt(EquipmentEditCostCopper.Text),
@@ -1133,6 +1688,7 @@ public partial class EditInfoScreen : UserControl, IScreen
             ContainerMaxItems = isContainer ? ParseNonNegativeInt(EquipmentContainerMaxItems.Text) : 0,
             ContainerMaxWeight = isContainer ? ParseNonNegativeDouble(EquipmentContainerMaxWeight.Text) : 0,
             AllowedContentTags = isContainer ? allowedTags : new List<string>(),
+            MagicalItemMetadata = metadata,
         };
 
         int existingIndex = _equipmentItems.FindIndex(x => string.Equals(x.Id, existingId, System.StringComparison.OrdinalIgnoreCase));
@@ -1180,6 +1736,343 @@ public partial class EditInfoScreen : UserControl, IScreen
             .Where(x => x.Length > 0)
             .Distinct(System.StringComparer.OrdinalIgnoreCase)
             .ToList();
+    }
+
+    private static Dictionary<string, string> BuildEditableMetadata(CustomEquipmentData item)
+    {
+        var metadata = new Dictionary<string, string>(item.MagicalItemMetadata ?? new Dictionary<string, string>(), StringComparer.OrdinalIgnoreCase);
+
+        if (!metadata.ContainsKey("ItemID"))
+            metadata["ItemID"] = item.Id;
+        if (!metadata.ContainsKey("ItemName"))
+            metadata["ItemName"] = item.Name;
+        if (!metadata.ContainsKey("EnhancementBonus"))
+            metadata["EnhancementBonus"] = item.EnchantmentBonus.ToString(CultureInfo.InvariantCulture);
+        if (!metadata.ContainsKey("AttackBonus"))
+            metadata["AttackBonus"] = item.WeaponAttackBonus.ToString(CultureInfo.InvariantCulture);
+        if (!metadata.ContainsKey("DamageBonus"))
+            metadata["DamageBonus"] = item.WeaponDamageBonus.ToString(CultureInfo.InvariantCulture);
+        if (!metadata.ContainsKey("THAC0Mod"))
+            metadata["THAC0Mod"] = item.WeaponThac0Modifier.ToString(CultureInfo.InvariantCulture);
+        if (!metadata.ContainsKey("ACMod"))
+            metadata["ACMod"] = item.ArmorClassModifier.ToString(CultureInfo.InvariantCulture);
+
+        return metadata;
+    }
+
+    private static string FormatMetadataLines(Dictionary<string, string> metadata)
+    {
+        return string.Join(
+            Environment.NewLine,
+            metadata
+                .OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
+                .Select(kv => $"{kv.Key}={kv.Value}"));
+    }
+
+    private static Dictionary<string, string> ParseMetadataLines(string? text)
+    {
+        var metadata = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var rawLine in (text ?? string.Empty).Split(new[] { "\r\n", "\n" }, StringSplitOptions.None))
+        {
+            string line = rawLine.Trim();
+            if (line.Length == 0)
+                continue;
+
+            int equalsIndex = line.IndexOf('=');
+            if (equalsIndex <= 0)
+                continue;
+
+            string key = line.Substring(0, equalsIndex).Trim();
+            string value = line.Substring(equalsIndex + 1).Trim();
+            if (key.Length == 0)
+                continue;
+
+            metadata[key] = value;
+        }
+
+        return metadata;
+    }
+
+    private void BtnApplyGroupedMetadataToRaw_Click(object sender, RoutedEventArgs e)
+    {
+        var metadata = ParseMetadataLines(EquipmentMagicMetadataText.Text);
+
+        metadata["ItemID"] = string.IsNullOrWhiteSpace(_selectedEquipmentId)
+            ? (EquipmentEditId.Text == "(new)" ? string.Empty : EquipmentEditId.Text)
+            : _selectedEquipmentId;
+        metadata["ItemName"] = EquipmentEditName.Text?.Trim() ?? string.Empty;
+        metadata["EnhancementBonus"] = ParseIntAllowNegative(EquipmentMagicEnhancementBonus.Text).ToString(CultureInfo.InvariantCulture);
+        metadata["AttackBonus"] = ParseIntAllowNegative(EquipmentMagicAttackBonus.Text).ToString(CultureInfo.InvariantCulture);
+        metadata["DamageBonus"] = ParseIntAllowNegative(EquipmentMagicDamageBonus.Text).ToString(CultureInfo.InvariantCulture);
+        metadata["THAC0Mod"] = ParseIntAllowNegative(EquipmentMagicThac0Modifier.Text).ToString(CultureInfo.InvariantCulture);
+        metadata["ACMod"] = ParseIntAllowNegative(EquipmentMagicArmorClassModifier.Text).ToString(CultureInfo.InvariantCulture);
+        ApplyGroupedEditorsToMetadata(metadata);
+
+        EquipmentMagicMetadataText.Text = FormatMetadataLines(metadata);
+        EquipmentEditorInfo.Text = "Grouped metadata applied to raw metadata text.";
+    }
+
+    private void BtnApplyRawMetadataToGrouped_Click(object sender, RoutedEventArgs e)
+    {
+        var metadata = ParseMetadataLines(EquipmentMagicMetadataText.Text);
+
+        EquipmentMagicEnhancementBonus.Text = GetMetadataInt(metadata, "EnhancementBonus", 0).ToString(CultureInfo.InvariantCulture);
+        EquipmentMagicAttackBonus.Text = GetMetadataInt(metadata, "AttackBonus", 0).ToString(CultureInfo.InvariantCulture);
+        EquipmentMagicDamageBonus.Text = GetMetadataInt(metadata, "DamageBonus", 0).ToString(CultureInfo.InvariantCulture);
+        EquipmentMagicThac0Modifier.Text = GetMetadataInt(metadata, "THAC0Mod", 0).ToString(CultureInfo.InvariantCulture);
+        EquipmentMagicArmorClassModifier.Text = GetMetadataInt(metadata, "ACMod", 0).ToString(CultureInfo.InvariantCulture);
+
+        PopulateGroupedMetadataEditors(metadata);
+        EquipmentEditorInfo.Text = "Raw metadata applied to grouped editors.";
+    }
+
+    private void BtnValidateEquipmentMetadata_Click(object sender, RoutedEventArgs e)
+    {
+        var (metadata, invalidLines, duplicateKeys) = ParseMetadataLinesDetailed(EquipmentMagicMetadataText.Text);
+
+        var numericErrors = new List<string>();
+        foreach (string key in GroupedNumericMetadataKeys)
+        {
+            if (!metadata.TryGetValue(key, out string? value))
+                continue;
+            if (string.IsNullOrWhiteSpace(value))
+                continue;
+            if (!int.TryParse(value, out _))
+                numericErrors.Add($"{key}={value}");
+        }
+
+        if (invalidLines.Count == 0 && duplicateKeys.Count == 0 && numericErrors.Count == 0)
+        {
+            EquipmentEditorInfo.Text = $"Metadata validation passed ({metadata.Count} key(s)).";
+            MessageBox.Show(
+                $"Metadata validation passed.\n\nKey count: {metadata.Count}",
+                "Metadata Validation",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        var problems = new List<string>();
+        if (invalidLines.Count > 0)
+            problems.Add($"Invalid line(s): {string.Join(", ", invalidLines)}");
+        if (duplicateKeys.Count > 0)
+            problems.Add($"Duplicate key(s): {string.Join(", ", duplicateKeys)}");
+        if (numericErrors.Count > 0)
+            problems.Add($"Numeric value issue(s): {string.Join("; ", numericErrors.Take(12))}");
+
+        EquipmentEditorInfo.Text = "Metadata validation found issues.";
+        MessageBox.Show(
+            string.Join("\n\n", problems),
+            "Metadata Validation",
+            MessageBoxButton.OK,
+            MessageBoxImage.Warning);
+    }
+
+    private void PopulateGroupedMetadataEditors(Dictionary<string, string> metadata)
+    {
+        EquipmentMetaChargedItem.IsChecked = GetMetadataBool(metadata, "ChargedItem", false);
+        EquipmentMetaMaxCharges.Text = GetMetadataInt(metadata, "MaxCharges", 0).ToString(CultureInfo.InvariantCulture);
+        EquipmentMetaChargeCost.Text = GetMetadataInt(metadata, "ChargeCost", 0).ToString(CultureInfo.InvariantCulture);
+        EquipmentMetaChargeType.Text = GetMetadataString(metadata, "ChargeType");
+        EquipmentMetaRechargeMethod.Text = GetMetadataString(metadata, "RechargeMethod");
+        EquipmentMetaActivationType.Text = GetMetadataString(metadata, "ActivationType");
+        EquipmentMetaDuration.Text = GetMetadataString(metadata, "Duration");
+        EquipmentMetaDurationType.Text = GetMetadataString(metadata, "DurationType");
+        EquipmentMetaDurationValue.Text = GetMetadataString(metadata, "DurationValue");
+
+        EquipmentMetaSaveParalyzationMod.Text = GetMetadataInt(metadata, "Save_ParalyzationMod", 0).ToString(CultureInfo.InvariantCulture);
+        EquipmentMetaSaveRswMod.Text = GetMetadataInt(metadata, "Save_RSWMod", 0).ToString(CultureInfo.InvariantCulture);
+        EquipmentMetaSavePetrificationMod.Text = GetMetadataInt(metadata, "Save_PetrificationMod", 0).ToString(CultureInfo.InvariantCulture);
+        EquipmentMetaSaveBreathMod.Text = GetMetadataInt(metadata, "Save_BreathMod", 0).ToString(CultureInfo.InvariantCulture);
+        EquipmentMetaSaveSpellMod.Text = GetMetadataInt(metadata, "Save_SpellMod", 0).ToString(CultureInfo.InvariantCulture);
+        EquipmentMetaSaveAllMod.Text = GetMetadataInt(metadata, "Save_AllMod", 0).ToString(CultureInfo.InvariantCulture);
+
+        EquipmentMetaPickPocketsMod.Text = GetMetadataInt(metadata, "PickPocketsMod", 0).ToString(CultureInfo.InvariantCulture);
+        EquipmentMetaOpenLocksMod.Text = GetMetadataInt(metadata, "OpenLocksMod", 0).ToString(CultureInfo.InvariantCulture);
+        EquipmentMetaFindRemoveTrapsMod.Text = GetMetadataInt(metadata, "FindRemoveTrapsMod", 0).ToString(CultureInfo.InvariantCulture);
+        EquipmentMetaMoveSilentlyMod.Text = GetMetadataInt(metadata, "MoveSilentlyMod", 0).ToString(CultureInfo.InvariantCulture);
+        EquipmentMetaHideInShadowsMod.Text = GetMetadataInt(metadata, "HideInShadowsMod", 0).ToString(CultureInfo.InvariantCulture);
+        EquipmentMetaDetectNoiseMod.Text = GetMetadataInt(metadata, "DetectNoiseMod", 0).ToString(CultureInfo.InvariantCulture);
+        EquipmentMetaClimbWallsMod.Text = GetMetadataInt(metadata, "ClimbWallsMod", 0).ToString(CultureInfo.InvariantCulture);
+        EquipmentMetaReadLanguagesMod.Text = GetMetadataInt(metadata, "ReadLanguagesMod", 0).ToString(CultureInfo.InvariantCulture);
+
+        EquipmentMetaStrMod.Text = GetMetadataInt(metadata, "STR_Mod", 0).ToString(CultureInfo.InvariantCulture);
+        EquipmentMetaDexMod.Text = GetMetadataInt(metadata, "DEX_Mod", 0).ToString(CultureInfo.InvariantCulture);
+        EquipmentMetaConMod.Text = GetMetadataInt(metadata, "CON_Mod", 0).ToString(CultureInfo.InvariantCulture);
+        EquipmentMetaIntMod.Text = GetMetadataInt(metadata, "INT_Mod", 0).ToString(CultureInfo.InvariantCulture);
+        EquipmentMetaWisMod.Text = GetMetadataInt(metadata, "WIS_Mod", 0).ToString(CultureInfo.InvariantCulture);
+        EquipmentMetaChaMod.Text = GetMetadataInt(metadata, "CHA_Mod", 0).ToString(CultureInfo.InvariantCulture);
+
+        EquipmentMetaStrSet.Text = GetMetadataString(metadata, "STR_Set");
+        EquipmentMetaStrExceptionalSet.Text = GetMetadataString(metadata, "STR_Exceptional_Set");
+        EquipmentMetaDexSet.Text = GetMetadataString(metadata, "DEX_Set");
+        EquipmentMetaConSet.Text = GetMetadataString(metadata, "CON_Set");
+        EquipmentMetaIntSet.Text = GetMetadataString(metadata, "INT_Set");
+        EquipmentMetaWisSet.Text = GetMetadataString(metadata, "WIS_Set");
+        EquipmentMetaChaSet.Text = GetMetadataString(metadata, "CHA_Set");
+    }
+
+    private void ResetGroupedMetadataEditors()
+    {
+        EquipmentMetaChargedItem.IsChecked = false;
+        EquipmentMetaMaxCharges.Text = "0";
+        EquipmentMetaChargeCost.Text = "0";
+        EquipmentMetaChargeType.Text = string.Empty;
+        EquipmentMetaRechargeMethod.Text = string.Empty;
+        EquipmentMetaActivationType.Text = string.Empty;
+        EquipmentMetaDuration.Text = string.Empty;
+        EquipmentMetaDurationType.Text = string.Empty;
+        EquipmentMetaDurationValue.Text = string.Empty;
+
+        EquipmentMetaSaveParalyzationMod.Text = "0";
+        EquipmentMetaSaveRswMod.Text = "0";
+        EquipmentMetaSavePetrificationMod.Text = "0";
+        EquipmentMetaSaveBreathMod.Text = "0";
+        EquipmentMetaSaveSpellMod.Text = "0";
+        EquipmentMetaSaveAllMod.Text = "0";
+
+        EquipmentMetaPickPocketsMod.Text = "0";
+        EquipmentMetaOpenLocksMod.Text = "0";
+        EquipmentMetaFindRemoveTrapsMod.Text = "0";
+        EquipmentMetaMoveSilentlyMod.Text = "0";
+        EquipmentMetaHideInShadowsMod.Text = "0";
+        EquipmentMetaDetectNoiseMod.Text = "0";
+        EquipmentMetaClimbWallsMod.Text = "0";
+        EquipmentMetaReadLanguagesMod.Text = "0";
+
+        EquipmentMetaStrMod.Text = "0";
+        EquipmentMetaDexMod.Text = "0";
+        EquipmentMetaConMod.Text = "0";
+        EquipmentMetaIntMod.Text = "0";
+        EquipmentMetaWisMod.Text = "0";
+        EquipmentMetaChaMod.Text = "0";
+
+        EquipmentMetaStrSet.Text = string.Empty;
+        EquipmentMetaStrExceptionalSet.Text = string.Empty;
+        EquipmentMetaDexSet.Text = string.Empty;
+        EquipmentMetaConSet.Text = string.Empty;
+        EquipmentMetaIntSet.Text = string.Empty;
+        EquipmentMetaWisSet.Text = string.Empty;
+        EquipmentMetaChaSet.Text = string.Empty;
+    }
+
+    private void ApplyGroupedEditorsToMetadata(Dictionary<string, string> metadata)
+    {
+        metadata["ChargedItem"] = EquipmentMetaChargedItem.IsChecked == true ? "Yes" : "No";
+        metadata["MaxCharges"] = ParseIntAllowNegative(EquipmentMetaMaxCharges.Text).ToString(CultureInfo.InvariantCulture);
+        metadata["ChargeCost"] = ParseIntAllowNegative(EquipmentMetaChargeCost.Text).ToString(CultureInfo.InvariantCulture);
+        metadata["ChargeType"] = (EquipmentMetaChargeType.Text ?? string.Empty).Trim();
+        metadata["RechargeMethod"] = (EquipmentMetaRechargeMethod.Text ?? string.Empty).Trim();
+        metadata["ActivationType"] = (EquipmentMetaActivationType.Text ?? string.Empty).Trim();
+        metadata["Duration"] = (EquipmentMetaDuration.Text ?? string.Empty).Trim();
+        metadata["DurationType"] = (EquipmentMetaDurationType.Text ?? string.Empty).Trim();
+        metadata["DurationValue"] = (EquipmentMetaDurationValue.Text ?? string.Empty).Trim();
+
+        metadata["Save_ParalyzationMod"] = ParseIntAllowNegative(EquipmentMetaSaveParalyzationMod.Text).ToString(CultureInfo.InvariantCulture);
+        metadata["Save_RSWMod"] = ParseIntAllowNegative(EquipmentMetaSaveRswMod.Text).ToString(CultureInfo.InvariantCulture);
+        metadata["Save_PetrificationMod"] = ParseIntAllowNegative(EquipmentMetaSavePetrificationMod.Text).ToString(CultureInfo.InvariantCulture);
+        metadata["Save_BreathMod"] = ParseIntAllowNegative(EquipmentMetaSaveBreathMod.Text).ToString(CultureInfo.InvariantCulture);
+        metadata["Save_SpellMod"] = ParseIntAllowNegative(EquipmentMetaSaveSpellMod.Text).ToString(CultureInfo.InvariantCulture);
+        metadata["Save_AllMod"] = ParseIntAllowNegative(EquipmentMetaSaveAllMod.Text).ToString(CultureInfo.InvariantCulture);
+
+        metadata["PickPocketsMod"] = ParseIntAllowNegative(EquipmentMetaPickPocketsMod.Text).ToString(CultureInfo.InvariantCulture);
+        metadata["OpenLocksMod"] = ParseIntAllowNegative(EquipmentMetaOpenLocksMod.Text).ToString(CultureInfo.InvariantCulture);
+        metadata["FindRemoveTrapsMod"] = ParseIntAllowNegative(EquipmentMetaFindRemoveTrapsMod.Text).ToString(CultureInfo.InvariantCulture);
+        metadata["MoveSilentlyMod"] = ParseIntAllowNegative(EquipmentMetaMoveSilentlyMod.Text).ToString(CultureInfo.InvariantCulture);
+        metadata["HideInShadowsMod"] = ParseIntAllowNegative(EquipmentMetaHideInShadowsMod.Text).ToString(CultureInfo.InvariantCulture);
+        metadata["DetectNoiseMod"] = ParseIntAllowNegative(EquipmentMetaDetectNoiseMod.Text).ToString(CultureInfo.InvariantCulture);
+        metadata["ClimbWallsMod"] = ParseIntAllowNegative(EquipmentMetaClimbWallsMod.Text).ToString(CultureInfo.InvariantCulture);
+        metadata["ReadLanguagesMod"] = ParseIntAllowNegative(EquipmentMetaReadLanguagesMod.Text).ToString(CultureInfo.InvariantCulture);
+
+        metadata["STR_Mod"] = ParseIntAllowNegative(EquipmentMetaStrMod.Text).ToString(CultureInfo.InvariantCulture);
+        metadata["DEX_Mod"] = ParseIntAllowNegative(EquipmentMetaDexMod.Text).ToString(CultureInfo.InvariantCulture);
+        metadata["CON_Mod"] = ParseIntAllowNegative(EquipmentMetaConMod.Text).ToString(CultureInfo.InvariantCulture);
+        metadata["INT_Mod"] = ParseIntAllowNegative(EquipmentMetaIntMod.Text).ToString(CultureInfo.InvariantCulture);
+        metadata["WIS_Mod"] = ParseIntAllowNegative(EquipmentMetaWisMod.Text).ToString(CultureInfo.InvariantCulture);
+        metadata["CHA_Mod"] = ParseIntAllowNegative(EquipmentMetaChaMod.Text).ToString(CultureInfo.InvariantCulture);
+
+        metadata["STR_Set"] = (EquipmentMetaStrSet.Text ?? string.Empty).Trim();
+        metadata["STR_Exceptional_Set"] = (EquipmentMetaStrExceptionalSet.Text ?? string.Empty).Trim();
+        metadata["DEX_Set"] = (EquipmentMetaDexSet.Text ?? string.Empty).Trim();
+        metadata["CON_Set"] = (EquipmentMetaConSet.Text ?? string.Empty).Trim();
+        metadata["INT_Set"] = (EquipmentMetaIntSet.Text ?? string.Empty).Trim();
+        metadata["WIS_Set"] = (EquipmentMetaWisSet.Text ?? string.Empty).Trim();
+        metadata["CHA_Set"] = (EquipmentMetaChaSet.Text ?? string.Empty).Trim();
+
+        foreach (var (key, defaultValue) in GroupedMetadataFields)
+        {
+            if (!metadata.TryGetValue(key, out string? value))
+                continue;
+
+            if (string.IsNullOrWhiteSpace(value) || string.Equals(value, defaultValue, StringComparison.OrdinalIgnoreCase))
+                metadata.Remove(key);
+        }
+    }
+
+    private static int GetMetadataInt(Dictionary<string, string> metadata, string key, int fallback)
+    {
+        if (!metadata.TryGetValue(key, out string? value))
+            return fallback;
+        return int.TryParse((value ?? string.Empty).Trim(), out int parsed) ? parsed : fallback;
+    }
+
+    private static bool GetMetadataBool(Dictionary<string, string> metadata, string key, bool fallback)
+    {
+        if (!metadata.TryGetValue(key, out string? value))
+            return fallback;
+
+        string normalized = (value ?? string.Empty).Trim();
+        if (bool.TryParse(normalized, out bool parsed))
+            return parsed;
+
+        return string.Equals(normalized, "1", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(normalized, "yes", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(normalized, "y", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(normalized, "true", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string GetMetadataString(Dictionary<string, string> metadata, string key)
+    {
+        return metadata.TryGetValue(key, out string? value)
+            ? (value ?? string.Empty)
+            : string.Empty;
+    }
+
+    private static (Dictionary<string, string> Metadata, List<int> InvalidLines, List<string> DuplicateKeys) ParseMetadataLinesDetailed(string? text)
+    {
+        var metadata = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var invalidLines = new List<int>();
+        var duplicateKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        int lineNumber = 0;
+        foreach (var rawLine in (text ?? string.Empty).Split(new[] { "\r\n", "\n" }, StringSplitOptions.None))
+        {
+            lineNumber++;
+            string line = rawLine.Trim();
+            if (line.Length == 0)
+                continue;
+
+            int equalsIndex = line.IndexOf('=');
+            if (equalsIndex <= 0)
+            {
+                invalidLines.Add(lineNumber);
+                continue;
+            }
+
+            string key = line.Substring(0, equalsIndex).Trim();
+            string value = line.Substring(equalsIndex + 1).Trim();
+            if (key.Length == 0)
+            {
+                invalidLines.Add(lineNumber);
+                continue;
+            }
+
+            if (metadata.ContainsKey(key))
+                duplicateKeys.Add(key);
+            metadata[key] = value;
+        }
+
+        return (metadata, invalidLines, duplicateKeys.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList());
     }
 
     private static double ParseNonNegativeDouble(string? text)
@@ -1285,6 +2178,8 @@ public partial class EditInfoScreen : UserControl, IScreen
         // Display current HP and max HP
         CharCurrentHp.Text = $"{c.CurrentHitPoints}";
         CharMaxHp.Text = $"{c.HitPoints}";
+        CharSetCurrentHpInput.Text = $"{c.CurrentHitPoints}";
+        CharSetMaxHpInput.Text = $"{c.HitPoints}";
         CharHealInput.Text = "0";
         CharSpellHealAmount.Text = "0";
         CharItemHealAmount.Text = "0";
@@ -1293,8 +2188,11 @@ public partial class EditInfoScreen : UserControl, IScreen
         CharXpGainInput.Text = "0";
         CharHpGainInput.Text = "0";
         CharCpGainInput.Text = "0";
+        CharLevelsDrainedInput.Text = "0";
+        CharDrainHpInput.Text = "0";
         CharSpendNwpCpInput.Text = "0";
         CharSpendWeaponCpInput.Text = "0";
+        PopulateCharacterFaithEditor(c);
 
         bool showCpControls = IsPlayersOptionCharacter(c);
         CharUpdateHeader.Text = showCpControls ? "Level-Up & CP Spending" : "Level-Up Progress";
@@ -1320,6 +2218,687 @@ public partial class EditInfoScreen : UserControl, IScreen
             });
         }
         CharAbilityDisplay.ItemsSource = items;
+        PopulateCharacterBaseAbilityInputs(c);
+        PopulateCharacterSubAbilityInputs(c);
+    }
+
+    private static List<string> GetCharacterClassIdsForFaith(CharacterSheet character)
+    {
+        var classIds = character.ClassIds
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (classIds.Count == 0)
+        {
+            classIds = (character.ClassId ?? string.Empty)
+                .Split(new[] { '/', '+', ',', ';', '|' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+        return classIds;
+    }
+
+    private void PopulateCharacterFaithEditor(CharacterSheet character)
+    {
+        _updatingCharacterFaithUi = true;
+        try
+        {
+            CharAlignmentCombo.SelectedItem = CharAlignmentCombo.Items
+                .OfType<ComboBoxItem>()
+                .FirstOrDefault(item => string.Equals(item.Tag?.ToString(), character.Alignment, StringComparison.OrdinalIgnoreCase));
+            PopulateCharacterDeityChoices(character, character.Alignment, character.DeityId);
+        }
+        finally
+        {
+            _updatingCharacterFaithUi = false;
+        }
+    }
+
+    private void PopulateCharacterDeityChoices(CharacterSheet character, string alignment, string selectedDeityId)
+    {
+        if (!_app.Rules.DeityRulesEnabled)
+        {
+            CharDeityCombo.ItemsSource = Array.Empty<DeityDefinition>();
+            CharDeityCombo.IsEnabled = false;
+            CharFaithRequirementText.Text = "Custom deity rules are disabled in DM Toolkit > Deities. Alignment can still be updated.";
+            return;
+        }
+
+        var classIds = GetCharacterClassIdsForFaith(character);
+        var specialtyClass = classIds
+            .Select(id => _app.Rules.Classes.GetValueOrDefault(id))
+            .FirstOrDefault(definition => definition?.IsSpecialtyPriest == true);
+        bool isDruid = classIds.Any(id => string.Equals(id, "druid", StringComparison.OrdinalIgnoreCase));
+        bool isPaladin = classIds.Any(id => string.Equals(id, "paladin", StringComparison.OrdinalIgnoreCase));
+        bool deityRequired = classIds.Any(id =>
+            string.Equals(id, "cleric", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(id, "ranger", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(id, "paladin", StringComparison.OrdinalIgnoreCase));
+        string lockedDeityId = specialtyClass?.DeityId ?? (isDruid ? "una" : string.Empty);
+        deityRequired |= !string.IsNullOrWhiteSpace(lockedDeityId);
+
+        IEnumerable<DeityDefinition> choices = _app.Rules.Deities.Values;
+        if (!string.IsNullOrWhiteSpace(lockedDeityId))
+        {
+            choices = choices.Where(deity => string.Equals(deity.Id, lockedDeityId, StringComparison.OrdinalIgnoreCase));
+            selectedDeityId = lockedDeityId;
+            CharDeityCombo.IsEnabled = false;
+            CharFaithRequirementText.Text = specialtyClass is not null
+                ? "This specialty priest's deity is fixed by class."
+                : "All Druids follow Una.";
+        }
+        else
+        {
+            CharDeityCombo.IsEnabled = true;
+            choices = isPaladin
+                ? choices.Where(deity => string.Equals(deity.Alignment, "LG", StringComparison.OrdinalIgnoreCase))
+                : choices.Where(deity => deity.FollowerAlignments.Contains(alignment, StringComparer.OrdinalIgnoreCase));
+            CharFaithRequirementText.Text = deityRequired
+                ? "A deity compatible with this character's alignment is required."
+                : "Deity selection is optional; choices shown accept this alignment.";
+        }
+
+        var items = choices.OrderBy(deity => deity.Name).ToList();
+        if (!deityRequired)
+            items.Insert(0, new DeityDefinition("", "No deity", "", "", new List<string>(), null));
+        CharDeityCombo.ItemsSource = items;
+        CharDeityCombo.SelectedItem = items.FirstOrDefault(deity =>
+            string.Equals(deity.Id, selectedDeityId, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private void CharAlignmentCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_updatingCharacterFaithUi)
+            return;
+        int index = CharList.SelectedIndex;
+        if (index < 0 || index >= _app.Characters.Count)
+            return;
+
+        string alignment = CharAlignmentCombo.SelectedItem is ComboBoxItem item
+            ? item.Tag?.ToString() ?? string.Empty
+            : string.Empty;
+        _updatingCharacterFaithUi = true;
+        try
+        {
+            PopulateCharacterDeityChoices(_app.Characters[index], alignment, _app.Characters[index].DeityId);
+        }
+        finally
+        {
+            _updatingCharacterFaithUi = false;
+        }
+    }
+
+    private void BtnSaveCharacterFaith_Click(object sender, RoutedEventArgs e)
+    {
+        int index = CharList.SelectedIndex;
+        if (index < 0 || index >= _app.Characters.Count)
+            return;
+        if (CharAlignmentCombo.SelectedItem is not ComboBoxItem alignmentItem)
+        {
+            MessageBox.Show("Select an alignment.", "Alignment Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var character = _app.Characters[index];
+        string alignment = alignmentItem.Tag?.ToString() ?? string.Empty;
+        var characterClassIds = GetCharacterClassIdsForFaith(character);
+        if (!_app.Rules.IsClassCombinationAlignmentAllowed(characterClassIds, alignment))
+        {
+            MessageBox.Show(
+                "The selected alignment is not allowed by this class combination.",
+                "Alignment Not Allowed", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        string deityId = character.DeityId;
+        if (_app.Rules.DeityRulesEnabled)
+        {
+            deityId = CharDeityCombo.SelectedItem is DeityDefinition deity ? deity.Id : string.Empty;
+            bool deityRequired = !CharDeityCombo.IsEnabled
+                || GetCharacterClassIdsForFaith(character).Any(id =>
+                    string.Equals(id, "cleric", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(id, "ranger", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(id, "paladin", StringComparison.OrdinalIgnoreCase));
+            if (deityRequired && string.IsNullOrWhiteSpace(deityId))
+            {
+                MessageBox.Show("Select a deity compatible with this character.", "Deity Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+        }
+
+        character.StructuredAbilities.RemoveAll(ability =>
+            ability.Id.StartsWith("deity_", StringComparison.OrdinalIgnoreCase)
+            && ability.Id.EndsWith("_follower", StringComparison.OrdinalIgnoreCase));
+        if (_app.Rules.DeityRulesEnabled
+            && _app.Rules.Deities.TryGetValue(deityId, out var selectedDeity)
+            && selectedDeity.FollowerAbility is not null)
+        {
+            character.StructuredAbilities.Add(CloneAbilityDefinition(selectedDeity.FollowerAbility));
+        }
+
+        character.Alignment = alignment;
+        character.DeityId = deityId;
+        character.Notes.Add($"Alignment and faith updated by DM: {alignment}, {(_app.Rules.Deities.TryGetValue(deityId, out var savedDeity) ? savedDeity.Name : "no deity")}.");
+        RecalculateCharacterDerivedStateFromCurrentAbilities(character, new EquipmentLibraryService().GetEquipmentLibrary());
+        _app.SaveCharacters();
+        CharNotes.Text = string.Join("\n", character.Notes);
+        CharFaithRequirementText.Text = "Alignment and faith saved.";
+    }
+
+    private void PopulateCharacterBaseAbilityInputs(CharacterSheet c)
+    {
+        var baseAbilities = DeriveBaseAbilitiesForDmAdjustment(c);
+        CharBaseStrInput.Text = baseAbilities.GetValueOrDefault("str", 10).ToString(CultureInfo.InvariantCulture);
+        CharBaseDexInput.Text = baseAbilities.GetValueOrDefault("dex", 10).ToString(CultureInfo.InvariantCulture);
+        CharBaseConInput.Text = baseAbilities.GetValueOrDefault("con", 10).ToString(CultureInfo.InvariantCulture);
+        CharBaseIntInput.Text = baseAbilities.GetValueOrDefault("int", 10).ToString(CultureInfo.InvariantCulture);
+        CharBaseWisInput.Text = baseAbilities.GetValueOrDefault("wis", 10).ToString(CultureInfo.InvariantCulture);
+        CharBaseChaInput.Text = baseAbilities.GetValueOrDefault("cha", 10).ToString(CultureInfo.InvariantCulture);
+    }
+
+    private void PopulateCharacterSubAbilityInputs(CharacterSheet c)
+    {
+        var currentSubAbilities = BuildCurrentSubAbilityStateForAdjustment(c.Abilities, c.SubAbilities);
+
+        CharSubStrStaminaInput.Text = currentSubAbilities.GetValueOrDefault("str_stamina", 10).ToString(CultureInfo.InvariantCulture);
+        CharSubStrMuscleInput.Text = currentSubAbilities.GetValueOrDefault("str_muscle", 10).ToString(CultureInfo.InvariantCulture);
+        CharSubDexAimInput.Text = currentSubAbilities.GetValueOrDefault("dex_aim", 10).ToString(CultureInfo.InvariantCulture);
+        CharSubDexBalanceInput.Text = currentSubAbilities.GetValueOrDefault("dex_balance", 10).ToString(CultureInfo.InvariantCulture);
+        CharSubConHealthInput.Text = currentSubAbilities.GetValueOrDefault("con_health", 10).ToString(CultureInfo.InvariantCulture);
+        CharSubConFitnessInput.Text = currentSubAbilities.GetValueOrDefault("con_fitness", 10).ToString(CultureInfo.InvariantCulture);
+        CharSubIntReasonInput.Text = currentSubAbilities.GetValueOrDefault("int_reason", 10).ToString(CultureInfo.InvariantCulture);
+        CharSubIntKnowledgeInput.Text = currentSubAbilities.GetValueOrDefault("int_knowledge", 10).ToString(CultureInfo.InvariantCulture);
+        CharSubWisIntuitionInput.Text = currentSubAbilities.GetValueOrDefault("wis_intuition", 10).ToString(CultureInfo.InvariantCulture);
+        CharSubWisWillpowerInput.Text = currentSubAbilities.GetValueOrDefault("wis_willpower", 10).ToString(CultureInfo.InvariantCulture);
+        CharSubWisPerceptionInput.Text = currentSubAbilities.GetValueOrDefault("wis_perception", 10).ToString(CultureInfo.InvariantCulture);
+        CharSubChaLeadershipInput.Text = currentSubAbilities.GetValueOrDefault("cha_leadership", 10).ToString(CultureInfo.InvariantCulture);
+        CharSubChaAppearanceInput.Text = currentSubAbilities.GetValueOrDefault("cha_appearance", 10).ToString(CultureInfo.InvariantCulture);
+        CharExceptionalStrengthInput.Text = c.ExceptionalStrength == 100
+            ? "00"
+            : c.ExceptionalStrength.ToString(CultureInfo.InvariantCulture);
+    }
+
+    private void BtnApplyBaseAbilityAdjustments_Click(object sender, RoutedEventArgs e)
+    {
+        int idx = CharList.SelectedIndex;
+        if (idx < 0 || idx >= _app.Characters.Count)
+            return;
+
+        var c = _app.Characters[idx];
+        if (!TryReadBaseAbilityInputs(out var requestedBaseAbilities, out string parseError))
+        {
+            MessageBox.Show(parseError, "Base Stat Adjustment", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var currentAbilities = new Dictionary<string, int>(c.Abilities, StringComparer.OrdinalIgnoreCase);
+        var currentBaseAbilities = DeriveBaseAbilitiesForDmAdjustment(c);
+        var racialModifiers = GetCharacterRacialAbilityModifiers(c);
+        var requestedEffectiveAbilities = ApplyAbilityModifiers(requestedBaseAbilities, racialModifiers);
+
+        var changedKeys = AbilityOrder
+            .Where(key => currentAbilities.GetValueOrDefault(key, 10) != requestedEffectiveAbilities.GetValueOrDefault(key, 10))
+            .ToList();
+
+        if (changedKeys.Count == 0)
+        {
+            CharLevelupInfo.Text = "No base stat changes were entered.";
+            return;
+        }
+
+        string changeSummary = string.Join(", ",
+            changedKeys.Select(key =>
+            {
+                string label = key.ToUpperInvariant();
+                int oldBaseValue = currentBaseAbilities.GetValueOrDefault(key, currentAbilities.GetValueOrDefault(key, 10));
+                int newBaseValue = requestedBaseAbilities.GetValueOrDefault(key, oldBaseValue);
+                int oldValue = currentAbilities.GetValueOrDefault(key, 10);
+                int newValue = requestedEffectiveAbilities.GetValueOrDefault(key, oldValue);
+                return $"{label} base {oldBaseValue}->{newBaseValue} (effective {oldValue}->{newValue})";
+            }));
+
+        var confirm = MessageBox.Show(
+            "DM Warning: This will permanently change base ability scores, then automatically shift linked sub-abilities by the same delta.\n\n"
+            + $"Apply these changes?\n{changeSummary}",
+            "Apply Base Stat Changes",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (confirm != MessageBoxResult.Yes)
+            return;
+
+        var updatedSubAbilities = BuildCurrentSubAbilityStateForAdjustment(currentAbilities, c.SubAbilities);
+        foreach (string abilityKey in changedKeys)
+        {
+            int oldAbilityScore = currentAbilities.GetValueOrDefault(abilityKey, 10);
+            int newAbilityScore = requestedEffectiveAbilities.GetValueOrDefault(abilityKey, oldAbilityScore);
+            int delta = newAbilityScore - oldAbilityScore;
+            if (delta == 0)
+                continue;
+
+            if (!SubAbilitiesByAbility.TryGetValue(abilityKey, out var subKeys))
+                continue;
+
+            foreach (string subKey in subKeys)
+            {
+                int prior = updatedSubAbilities.GetValueOrDefault(subKey, oldAbilityScore);
+                updatedSubAbilities[subKey] = Math.Clamp(prior + delta, 1, 20);
+            }
+        }
+
+        int oldCon = currentAbilities.GetValueOrDefault("con", 10);
+        int newCon = requestedEffectiveAbilities.GetValueOrDefault("con", oldCon);
+        int hpDeltaPerLevel = CharacterProgressionService.GetConHitPointBonus(newCon, c.ClassId)
+            - CharacterProgressionService.GetConHitPointBonus(oldCon, c.ClassId);
+
+        c.Abilities = requestedEffectiveAbilities;
+        c.SubAbilities = updatedSubAbilities;
+        RecalculateCharacterDerivedStateFromCurrentAbilities(c, new EquipmentLibraryService().GetEquipmentLibrary());
+
+        if (hpDeltaPerLevel != 0)
+        {
+            int levelCount = Math.Max(1, c.Level);
+            int totalHpDelta = hpDeltaPerLevel * levelCount;
+            c.BaseHitPoints = Math.Max(1, c.BaseHitPoints + hpDeltaPerLevel);
+            c.HitPoints = Math.Max(1, c.HitPoints + totalHpDelta);
+            c.CurrentHitPoints = Math.Clamp(c.CurrentHitPoints + totalHpDelta, 0, c.HitPoints);
+
+            foreach (var level in c.HitPointGainByLevel.Keys.ToList())
+                c.HitPointGainByLevel[level] = Math.Max(1, c.HitPointGainByLevel[level] + hpDeltaPerLevel);
+        }
+
+        c.Notes.Add($"DM adjusted base stats on {DateTime.Now:yyyy-MM-dd HH:mm}: {changeSummary}.");
+        _app.SaveCharacters();
+
+        RefreshCharList();
+        CharList.SelectedIndex = idx;
+        CharLevelupInfo.Text = $"Applied base stat changes: {changeSummary}.";
+    }
+
+    private void BtnApplySubAbilityAdjustments_Click(object sender, RoutedEventArgs e)
+    {
+        int idx = CharList.SelectedIndex;
+        if (idx < 0 || idx >= _app.Characters.Count)
+            return;
+
+        var c = _app.Characters[idx];
+        if (!TryReadSubAbilityInputs(out var requestedSubAbilities, out int exceptionalStrength, out string parseError))
+        {
+            MessageBox.Show(parseError, "Sub-Ability Adjustment", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        c.SubAbilities = requestedSubAbilities;
+        c.ExceptionalStrength = exceptionalStrength;
+
+        RecalculateCharacterDerivedStateFromCurrentAbilities(c, new EquipmentLibraryService().GetEquipmentLibrary());
+        c.Notes.Add($"DM adjusted sub-abilities on {DateTime.Now:yyyy-MM-dd HH:mm}.");
+        _app.SaveCharacters();
+
+        RefreshCharList();
+        CharList.SelectedIndex = idx;
+        CharLevelupInfo.Text = "Applied sub-ability and exceptional strength changes.";
+    }
+
+    private Dictionary<string, int> DeriveBaseAbilitiesForDmAdjustment(CharacterSheet character)
+    {
+        var baseAbilities = new Dictionary<string, int>(character.Abilities, StringComparer.OrdinalIgnoreCase);
+        var modifiers = GetCharacterRacialAbilityModifiers(character);
+        if (modifiers.Count == 0)
+            return baseAbilities;
+
+        foreach (var (abilityKey, modifier) in modifiers)
+        {
+            if (modifier == 0)
+                continue;
+
+            if (!baseAbilities.TryGetValue(abilityKey, out int currentValue))
+                continue;
+
+            baseAbilities[abilityKey] = currentValue - modifier;
+        }
+
+        return baseAbilities;
+    }
+
+    private Dictionary<string, int> GetCharacterRacialAbilityModifiers(CharacterSheet character)
+    {
+        var modifiers = _app.Rules.GetEffectiveAbilityModifiers(character.RaceId);
+        if (modifiers.Count > 0)
+            return modifiers;
+
+        string raceToken = (character.RaceName ?? string.Empty).Trim().ToLowerInvariant().Replace("_", "-");
+        if (string.IsNullOrWhiteSpace(raceToken))
+            return modifiers;
+
+        if (raceToken.Contains("halfling"))
+        {
+            return new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["dex"] = 1,
+                ["str"] = -1,
+            };
+        }
+
+        if (raceToken.Contains("dwarf"))
+        {
+            return new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["con"] = 1,
+                ["cha"] = -1,
+            };
+        }
+
+        if (raceToken.Contains("elf"))
+        {
+            return new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["dex"] = 1,
+                ["con"] = -1,
+            };
+        }
+
+        return modifiers;
+    }
+
+    private static Dictionary<string, int> ApplyAbilityModifiers(
+        IReadOnlyDictionary<string, int> baseAbilities,
+        IReadOnlyDictionary<string, int> modifiers)
+    {
+        var result = new Dictionary<string, int>(baseAbilities, StringComparer.OrdinalIgnoreCase);
+        foreach (var (abilityKey, modifier) in modifiers)
+        {
+            if (modifier == 0)
+                continue;
+
+            if (!result.TryGetValue(abilityKey, out int currentValue))
+                continue;
+
+            result[abilityKey] = currentValue + modifier;
+        }
+
+        return result;
+    }
+
+    private static Dictionary<string, int> BuildCurrentSubAbilityStateForAdjustment(
+        IReadOnlyDictionary<string, int> currentAbilities,
+        IReadOnlyDictionary<string, int> storedSubAbilities)
+    {
+        var result = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["str_stamina"] = currentAbilities.GetValueOrDefault("str", 10),
+            ["str_muscle"] = currentAbilities.GetValueOrDefault("str", 10),
+            ["dex_aim"] = currentAbilities.GetValueOrDefault("dex", 10),
+            ["dex_balance"] = currentAbilities.GetValueOrDefault("dex", 10),
+            ["con_health"] = currentAbilities.GetValueOrDefault("con", 10),
+            ["con_fitness"] = currentAbilities.GetValueOrDefault("con", 10),
+            ["int_reason"] = currentAbilities.GetValueOrDefault("int", 10),
+            ["int_knowledge"] = currentAbilities.GetValueOrDefault("int", 10),
+            ["wis_intuition"] = currentAbilities.GetValueOrDefault("wis", 10),
+            ["wis_willpower"] = currentAbilities.GetValueOrDefault("wis", 10),
+            ["wis_perception"] = currentAbilities.GetValueOrDefault("wis", 10),
+            ["cha_leadership"] = currentAbilities.GetValueOrDefault("cha", 10),
+            ["cha_appearance"] = currentAbilities.GetValueOrDefault("cha", 10),
+        };
+
+        foreach (var (key, value) in storedSubAbilities)
+        {
+            if (string.IsNullOrWhiteSpace(key) || !result.ContainsKey(key))
+                continue;
+
+            result[key] = value;
+        }
+
+        return result;
+    }
+
+    private void RecalculateCharacterDerivedStateFromCurrentAbilities(CharacterSheet character, IReadOnlyList<CustomEquipmentData> equipmentLibrary)
+    {
+        var unlockedStructuredAbilities = character.StructuredAbilities
+            .Where(a => RulesEngine.AbilityUnlockLevel(a) <= Math.Max(1, character.Level))
+            .ToList();
+
+        bool isUnarmored = string.Equals(
+            string.IsNullOrWhiteSpace(character.RogueSkillArmorProfile) ? "no_armor" : character.RogueSkillArmorProfile,
+            "no_armor",
+            StringComparison.OrdinalIgnoreCase);
+
+        var bonuses = unlockedStructuredAbilities.Count > 0
+            ? RulesEngine.AggregateEffects(unlockedStructuredAbilities, isUnarmored, Math.Max(1, character.Level))
+            : new AbilityBonuses();
+
+        var subTotals = SubAbilityTables.CalculateTotals(character.SubAbilities, character.ExceptionalStrength, character.ClassId);
+        bonuses.AttackBonus += subTotals.MeleeAttackBonus;
+        bonuses.DamageBonus += subTotals.MeleeDamageBonus;
+        bonuses.AcBonus += subTotals.ArmorClassAdjustment;
+        bonuses.SurpriseBonus += subTotals.SurpriseAdjustment;
+        bonuses.ReactionBonus += subTotals.ReactionAdjustment;
+        bonuses.HpPerLevel += subTotals.HpPerLevel;
+        bonuses.NwpSlotBonus += subTotals.BonusNwpSlots;
+        bonuses.NwpCheckBonus += subTotals.PickPocketsAdjustment;
+        bonuses.NwpCheckBonus += subTotals.OpenLocksAdjustment;
+        bonuses.NwpCheckBonus += subTotals.MoveSilentlyAdjustment;
+        bonuses.NwpCheckBonus += subTotals.ClimbWallsAdjustment;
+
+        if (subTotals.PoisonSaveAdjustment != 0)
+            bonuses.SaveBonuses["poison"] = bonuses.SaveBonuses.GetValueOrDefault("poison") + subTotals.PoisonSaveAdjustment;
+
+        if (subTotals.MissileAttackBonus != 0)
+        {
+            bonuses.WeaponAttackBonuses["missile"] = bonuses.WeaponAttackBonuses.GetValueOrDefault("missile") + subTotals.MissileAttackBonus;
+            bonuses.WeaponAttackBonuses["thrown"] = bonuses.WeaponAttackBonuses.GetValueOrDefault("thrown") + subTotals.MissileAttackBonus;
+            bonuses.WeaponAttackBonuses["slings"] = bonuses.WeaponAttackBonuses.GetValueOrDefault("slings") + subTotals.MissileAttackBonus;
+        }
+
+        if (subTotals.MagicDefenseAdjustment != 0)
+            bonuses.SaveBonuses["magic"] = bonuses.SaveBonuses.GetValueOrDefault("magic") + subTotals.MagicDefenseAdjustment;
+
+        bonuses.SubAbilityBonuses["pick_pockets"] = bonuses.SubAbilityBonuses.GetValueOrDefault("pick_pockets") + subTotals.PickPocketsAdjustment;
+        bonuses.SubAbilityBonuses["open_locks"] = bonuses.SubAbilityBonuses.GetValueOrDefault("open_locks") + subTotals.OpenLocksAdjustment;
+        bonuses.SubAbilityBonuses["move_silently"] = bonuses.SubAbilityBonuses.GetValueOrDefault("move_silently") + subTotals.MoveSilentlyAdjustment;
+        bonuses.SubAbilityBonuses["climb_walls"] = bonuses.SubAbilityBonuses.GetValueOrDefault("climb_walls") + subTotals.ClimbWallsAdjustment;
+
+        bool isPlayersOption = string.Equals(character.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase);
+        if (!isPlayersOption)
+        {
+            bonuses.HpPerLevel = 0;
+            bonuses.HpFlatBonus = 0;
+        }
+
+        character.Bonuses = bonuses;
+        character.DerivedStats = subTotals.ToDerivedStats();
+        character.SubAbilityEffects = character.SubAbilities.ToDictionary(
+            kv => kv.Key,
+            kv => SubAbilityTables.GetEffect(kv.Key, kv.Value, character.ExceptionalStrength),
+            StringComparer.OrdinalIgnoreCase);
+        character.Movement = Math.Max(1, character.BaseMovement + bonuses.MovementBonus);
+
+        CharacterProgressionService.InitializeCharacterProgression(character, seedLevelRewards: false);
+        CharacterArmorService.RecalculateArmorForCharacter(character, equipmentLibrary);
+        character.LastModified = DateTime.Now;
+        character.Revision += 1;
+    }
+
+    private bool TryReadBaseAbilityInputs(out Dictionary<string, int> abilities, out string error)
+    {
+        abilities = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["str"] = 10,
+            ["dex"] = 10,
+            ["con"] = 10,
+            ["int"] = 10,
+            ["wis"] = 10,
+            ["cha"] = 10,
+        };
+        error = string.Empty;
+
+        if (!TryParseAbilityScore(CharBaseStrInput.Text, out int str))
+        {
+            error = "Enter STR as a whole number from 1 to 25.";
+            return false;
+        }
+        if (!TryParseAbilityScore(CharBaseDexInput.Text, out int dex))
+        {
+            error = "Enter DEX as a whole number from 1 to 25.";
+            return false;
+        }
+        if (!TryParseAbilityScore(CharBaseConInput.Text, out int con))
+        {
+            error = "Enter CON as a whole number from 1 to 25.";
+            return false;
+        }
+        if (!TryParseAbilityScore(CharBaseIntInput.Text, out int intel))
+        {
+            error = "Enter INT as a whole number from 1 to 25.";
+            return false;
+        }
+        if (!TryParseAbilityScore(CharBaseWisInput.Text, out int wis))
+        {
+            error = "Enter WIS as a whole number from 1 to 25.";
+            return false;
+        }
+        if (!TryParseAbilityScore(CharBaseChaInput.Text, out int cha))
+        {
+            error = "Enter CHA as a whole number from 1 to 25.";
+            return false;
+        }
+
+        abilities["str"] = str;
+        abilities["dex"] = dex;
+        abilities["con"] = con;
+        abilities["int"] = intel;
+        abilities["wis"] = wis;
+        abilities["cha"] = cha;
+        return true;
+    }
+
+    private bool TryReadSubAbilityInputs(out Dictionary<string, int> subAbilities, out int exceptionalStrength, out string error)
+    {
+        subAbilities = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        exceptionalStrength = 0;
+        error = string.Empty;
+
+        if (!TryParseSubAbilityScore(CharSubStrStaminaInput.Text, 1, 20, out int strStamina))
+        {
+            error = "Enter STR Stamina as a whole number from 1 to 20.";
+            return false;
+        }
+        if (!TryParseSubAbilityScore(CharSubStrMuscleInput.Text, 1, 20, out int strMuscle))
+        {
+            error = "Enter STR Muscle as a whole number from 1 to 20.";
+            return false;
+        }
+        if (!TryParseSubAbilityScore(CharSubDexAimInput.Text, 1, 18, out int dexAim))
+        {
+            error = "Enter DEX Aim as a whole number from 1 to 18.";
+            return false;
+        }
+        if (!TryParseSubAbilityScore(CharSubDexBalanceInput.Text, 1, 18, out int dexBalance))
+        {
+            error = "Enter DEX Balance as a whole number from 1 to 18.";
+            return false;
+        }
+        if (!TryParseSubAbilityScore(CharSubConHealthInput.Text, 1, 18, out int conHealth))
+        {
+            error = "Enter CON Health as a whole number from 1 to 18.";
+            return false;
+        }
+        if (!TryParseSubAbilityScore(CharSubConFitnessInput.Text, 1, 18, out int conFitness))
+        {
+            error = "Enter CON Fitness as a whole number from 1 to 18.";
+            return false;
+        }
+        if (!TryParseSubAbilityScore(CharSubIntReasonInput.Text, 1, 18, out int intReason))
+        {
+            error = "Enter INT Reason as a whole number from 1 to 18.";
+            return false;
+        }
+        if (!TryParseSubAbilityScore(CharSubIntKnowledgeInput.Text, 1, 18, out int intKnowledge))
+        {
+            error = "Enter INT Knowledge as a whole number from 1 to 18.";
+            return false;
+        }
+        if (!TryParseSubAbilityScore(CharSubWisIntuitionInput.Text, 1, 18, out int wisIntuition))
+        {
+            error = "Enter WIS Intuition as a whole number from 1 to 18.";
+            return false;
+        }
+        if (!TryParseSubAbilityScore(CharSubWisWillpowerInput.Text, 1, 18, out int wisWillpower))
+        {
+            error = "Enter WIS Willpower as a whole number from 1 to 18.";
+            return false;
+        }
+        if (!TryParseSubAbilityScore(CharSubWisPerceptionInput.Text, 1, 18, out int wisPerception))
+        {
+            error = "Enter WIS Perception as a whole number from 1 to 18.";
+            return false;
+        }
+        if (!TryParseSubAbilityScore(CharSubChaLeadershipInput.Text, 1, 18, out int chaLeadership))
+        {
+            error = "Enter CHA Leadership as a whole number from 1 to 18.";
+            return false;
+        }
+        if (!TryParseSubAbilityScore(CharSubChaAppearanceInput.Text, 1, 18, out int chaAppearance))
+        {
+            error = "Enter CHA Appearance as a whole number from 1 to 18.";
+            return false;
+        }
+
+        if (!TryParseExceptionalStrengthForEditor(CharExceptionalStrengthInput.Text, out exceptionalStrength))
+        {
+            error = "Enter Exceptional Strength as 0, 1-100, or 00 for 100.";
+            return false;
+        }
+
+        subAbilities["str_stamina"] = strStamina;
+        subAbilities["str_muscle"] = strMuscle;
+        subAbilities["dex_aim"] = dexAim;
+        subAbilities["dex_balance"] = dexBalance;
+        subAbilities["con_health"] = conHealth;
+        subAbilities["con_fitness"] = conFitness;
+        subAbilities["int_reason"] = intReason;
+        subAbilities["int_knowledge"] = intKnowledge;
+        subAbilities["wis_intuition"] = wisIntuition;
+        subAbilities["wis_willpower"] = wisWillpower;
+        subAbilities["wis_perception"] = wisPerception;
+        subAbilities["cha_leadership"] = chaLeadership;
+        subAbilities["cha_appearance"] = chaAppearance;
+        return true;
+    }
+
+    private static bool TryParseSubAbilityScore(string? text, int min, int max, out int value)
+    {
+        value = 0;
+        return int.TryParse((text ?? string.Empty).Trim(), out value) && value >= min && value <= max;
+    }
+
+    private static bool TryParseExceptionalStrengthForEditor(string? text, out int value)
+    {
+        value = 0;
+        string raw = (text ?? string.Empty).Trim();
+        if (string.IsNullOrEmpty(raw))
+            return true;
+
+        if (string.Equals(raw, "00", StringComparison.OrdinalIgnoreCase))
+        {
+            value = 100;
+            return true;
+        }
+
+        if (!int.TryParse(raw, out int parsed))
+            return false;
+
+        if (parsed < 0 || parsed > 100)
+            return false;
+
+        value = parsed;
+        return true;
+    }
+
+    private static bool TryParseAbilityScore(string? text, out int value)
+    {
+        value = 0;
+        return int.TryParse((text ?? string.Empty).Trim(), out value) && value >= 1 && value <= 25;
     }
 
     private void BtnHealCharacter_Click(object sender, RoutedEventArgs e)
@@ -1352,6 +2931,50 @@ public partial class EditInfoScreen : UserControl, IScreen
             "Healing",
             MessageBoxButton.OK,
             MessageBoxImage.Information);
+    }
+
+    private void BtnApplyHpOverride_Click(object sender, RoutedEventArgs e)
+    {
+        int idx = CharList.SelectedIndex;
+        if (idx < 0 || idx >= _app.Characters.Count)
+            return;
+
+        var c = _app.Characters[idx];
+        if (!int.TryParse(CharSetMaxHpInput.Text.Trim(), out int newMaxHp) || newMaxHp < 1)
+        {
+            MessageBox.Show("Enter a whole number of 1 or greater for max HP.", "HP Override", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        if (!int.TryParse(CharSetCurrentHpInput.Text.Trim(), out int newCurrentHp) || newCurrentHp < 0)
+        {
+            MessageBox.Show("Enter a whole number of 0 or greater for current HP.", "HP Override", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        if (newCurrentHp > newMaxHp)
+        {
+            MessageBox.Show("Current HP cannot be greater than max HP.", "HP Override", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        int oldMaxHp = c.HitPoints;
+        int oldCurrentHp = c.CurrentHitPoints;
+
+        c.HitPoints = newMaxHp;
+        c.CurrentHitPoints = newCurrentHp;
+        c.Notes.Add($"HP manually adjusted: current {oldCurrentHp} -> {newCurrentHp}, max {oldMaxHp} -> {newMaxHp}.");
+        c.Revision += 1;
+        c.LastModified = System.DateTime.Now;
+        _app.SaveCharacters();
+
+        CharCurrentHp.Text = $"{c.CurrentHitPoints}";
+        CharMaxHp.Text = $"{c.HitPoints}";
+        CharSetCurrentHpInput.Text = $"{c.CurrentHitPoints}";
+        CharSetMaxHpInput.Text = $"{c.HitPoints}";
+        CharNotes.Text = string.Join("\n", c.Notes);
+        RefreshCharacterProgressSummary(c);
+        CharLevelupInfo.Text = $"HP manually updated: current {oldCurrentHp} -> {c.CurrentHitPoints}, max {oldMaxHp} -> {c.HitPoints}.";
     }
 
     private void BtnHealFromSpell_Click(object sender, RoutedEventArgs e)
@@ -1601,8 +3224,16 @@ public partial class EditInfoScreen : UserControl, IScreen
             return;
 
         var c = _app.Characters[idx];
-        int xpGain = ParseNonNegativeInt(CharXpGainInput.Text);
-        int hpGain = ParseNonNegativeInt(CharHpGainInput.Text);
+        if (!int.TryParse(CharXpGainInput.Text.Trim(), out int xpGain))
+        {
+            CharLevelupInfo.Text = "Enter a whole number for XP adjustment.";
+            return;
+        }
+        if (!int.TryParse(CharHpGainInput.Text.Trim(), out int hpGain))
+        {
+            CharLevelupInfo.Text = "Enter a whole number for HP adjustment.";
+            return;
+        }
         int cpGain = IsPlayersOptionCharacter(c) ? ParseNonNegativeInt(CharCpGainInput.Text) : 0;
 
         int primeXpBonus = CharacterProgressionService.GetPrimeRequisiteBonusPercent(c);
@@ -1638,42 +3269,100 @@ public partial class EditInfoScreen : UserControl, IScreen
         int oldHp = c.HitPoints;
         int oldXp = c.ExperiencePoints;
 
-        c.ExperiencePoints += xpGain;
+        c.ExperiencePoints = (int)Math.Clamp((long)Math.Max(0, c.ExperiencePoints) + xpGain, 0L, int.MaxValue);
         c.UnspentCharacterPoints += cpGain;
 
-        var advancement = CharacterProgressionService.ApplyLevelAdvancementFromExperience(c, applyHitPointProgression: false);
-        bool hpIgnored = false;
-        if (advancement.LeveledUp)
+        var advancement = xpGain > 0
+            ? CharacterProgressionService.ApplyLevelAdvancementFromExperience(c, applyHitPointProgression: false)
+            : new LevelAdvancementResult { OldLevel = oldLevel, NewLevel = oldLevel };
+        if (xpGain <= 0)
+            CharacterProgressionService.ApplyExperienceAdjustment(c, 0);
+
+        if (hpGain != 0)
         {
-            if (hpGain > 0)
-            {
-                c.HitPoints = Math.Max(1, c.HitPoints + hpGain);
+            c.HitPoints = Math.Max(1, c.HitPoints + hpGain);
+            c.CurrentHitPoints = Math.Clamp(c.CurrentHitPoints + hpGain, 0, c.HitPoints);
+            if (advancement.LeveledUp && hpGain > 0)
                 CharacterProgressionService.RecordHitPointGainAcrossLevels(
                     c,
                     advancement.OldLevel,
                     advancement.NewLevel,
                     hpGain);
-            }
         }
-        else if (hpGain > 0)
-        {
-            hpIgnored = true;
-        }
+
+        CharacterProgressionService.ApplyExperienceAdjustment(c, 0);
 
         c.Revision += 1;
         c.LastModified = System.DateTime.Now;
         _app.SaveCharacters();
 
         RefreshCharacterProgressSummary(c);
-        CharLevelupInfo.Text = advancement.LeveledUp
-            ? $"Level advanced: {oldLevel} -> {c.Level}. XP {oldXp:n0} -> {c.ExperiencePoints:n0}, HP {oldHp} -> {c.HitPoints}."
-            : $"Updated. XP {oldXp:n0} -> {c.ExperiencePoints:n0}, HP {oldHp} -> {c.HitPoints}. No level change.";
-        if (hpIgnored)
-            CharLevelupInfo.Text += " HP input ignored because no level was gained.";
+        CharLevelupInfo.Text =
+            $"Updated. Level {oldLevel} -> {c.Level}, XP {oldXp:n0} -> {c.ExperiencePoints:n0}, " +
+            $"HP {oldHp} -> {c.HitPoints}.";
 
         CharXpGainInput.Text = "0";
         CharHpGainInput.Text = "0";
         CharCpGainInput.Text = "0";
+    }
+
+    private void BtnApplyLevelDrain_Click(object sender, RoutedEventArgs e)
+    {
+        int idx = CharList.SelectedIndex;
+        if (idx < 0 || idx >= _app.Characters.Count)
+            return;
+
+        var character = _app.Characters[idx];
+        int requestedLevels = ParseNonNegativeInt(CharLevelsDrainedInput.Text);
+        int manualHitPointLoss = ParseNonNegativeInt(CharDrainHpInput.Text);
+        if (requestedLevels <= 0)
+        {
+            CharLevelupInfo.Text = "Enter the number of levels drained.";
+            return;
+        }
+
+        int actualLevels = Math.Min(requestedLevels, Math.Max(0, character.Level - 1));
+        if (actualLevels <= 0)
+        {
+            CharLevelupInfo.Text = "A level 1 character cannot lose another level.";
+            return;
+        }
+
+        int targetLevel = character.Level - actualLevels;
+        bool hasRecordedHp = character.HitPointGainByLevel.Any(entry =>
+            entry.Key > targetLevel && entry.Key <= character.Level && entry.Value > 0);
+        if (manualHitPointLoss <= 0 && !hasRecordedHp)
+        {
+            CharLevelupInfo.Text = "No HP history exists for the drained level. Enter the HP lost before applying the drain.";
+            return;
+        }
+
+        var confirmation = MessageBox.Show(
+            $"Apply {actualLevels} level drain to {character.Name}?\n\n" +
+            $"Level: {character.Level} -> {targetLevel}\n" +
+            "XP will move to the midpoint of the new level's progression band. " +
+            (manualHitPointLoss > 0 ? $"HP lost: {manualHitPointLoss}." : "Recorded HP from the lost level(s) will be removed."),
+            "Confirm Level Drain",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+        if (confirmation != MessageBoxResult.Yes)
+            return;
+
+        var drain = CharacterProgressionService.ApplyLevelDrain(character, actualLevels, manualHitPointLoss);
+        character.Notes.Add(
+            $"Level drain: level {drain.OldLevel} to {drain.NewLevel}; " +
+            $"XP {drain.OldExperience:N0} to {drain.NewExperience:N0}; HP lost {drain.HitPointsLost}.");
+        character.Revision += 1;
+        character.LastModified = DateTime.Now;
+        _app.SaveCharacters();
+
+        RefreshCharacterProgressSummary(character);
+        CharNotes.Text = string.Join("\n", character.Notes);
+        CharLevelupInfo.Text =
+            $"Level drained: {drain.OldLevel} -> {drain.NewLevel}. " +
+            $"XP {drain.OldExperience:N0} -> {drain.NewExperience:N0}, HP lost {drain.HitPointsLost}.";
+        CharLevelsDrainedInput.Text = "0";
+        CharDrainHpInput.Text = "0";
     }
 
     private void BtnSpendCharacterCp_Click(object sender, RoutedEventArgs e)
@@ -1691,11 +3380,12 @@ public partial class EditInfoScreen : UserControl, IScreen
 
         int nwpSpend = ParseNonNegativeInt(CharSpendNwpCpInput.Text);
         int weaponSpend = ParseNonNegativeInt(CharSpendWeaponCpInput.Text);
-        int totalSpend = nwpSpend + weaponSpend;
+        int hpRerollSpend = ParseNonNegativeInt(CharSpendHpRerollCpInput.Text);
+        int totalSpend = nwpSpend + weaponSpend + hpRerollSpend;
 
         if (totalSpend == 0)
         {
-            CharLevelupInfo.Text = "Enter CP to spend on NWPs and/or weapon proficiencies.";
+            CharLevelupInfo.Text = "Enter CP to spend on NWPs, weapon proficiencies, or HP rerolls.";
             return;
         }
 
@@ -1708,15 +3398,22 @@ public partial class EditInfoScreen : UserControl, IScreen
         c.UnspentCharacterPoints -= totalSpend;
         c.SpentNwpCharacterPoints += nwpSpend;
         c.SpentWeaponCharacterPoints += weaponSpend;
+        c.SpentHpRerollCharacterPoints += hpRerollSpend;
+        if (hpRerollSpend > 0)
+        {
+            int currentLevel = Math.Max(1, c.Level);
+            c.HpRerollsByLevel[currentLevel] = c.HpRerollsByLevel.GetValueOrDefault(currentLevel, 0) + hpRerollSpend;
+        }
         c.Revision += 1;
         c.LastModified = System.DateTime.Now;
         _app.SaveCharacters();
 
         RefreshCharacterProgressSummary(c);
-        CharLevelupInfo.Text = $"Spent {nwpSpend} CP on NWPs and {weaponSpend} CP on weapon proficiencies.";
+        CharLevelupInfo.Text = $"Spent {nwpSpend} CP on NWPs, {weaponSpend} CP on weapons, and {hpRerollSpend} CP on HP rerolls.";
 
         CharSpendNwpCpInput.Text = "0";
         CharSpendWeaponCpInput.Text = "0";
+        CharSpendHpRerollCpInput.Text = "0";
     }
 
     private void BtnBuyItem_Click(object sender, RoutedEventArgs e)
@@ -1775,7 +3472,7 @@ public partial class EditInfoScreen : UserControl, IScreen
             c.EquipmentSelections.Add(new EquipmentSelection
             {
                 ItemId = item.Id,
-                Category = item.Categories.FirstOrDefault() ?? "Equipment",
+                Category = EquipmentLibraryService.NormalizeCategoryLabel(item.Categories.FirstOrDefault() ?? "Equipment"),
                 ItemName = item.Name,
                 CostText = useOverrideCost
                     ? BuildCostText(unitGp, unitSp, unitCp)
@@ -1790,6 +3487,9 @@ public partial class EditInfoScreen : UserControl, IScreen
                 WeaponDamageLarge = item.WeaponDamageLarge,
                 WeaponType = item.WeaponType,
                 WeaponSize = item.WeaponSize,
+                WeaponAttackBonus = item.WeaponAttackBonus,
+                WeaponDamageBonus = item.WeaponDamageBonus,
+                WeaponThac0Modifier = item.WeaponThac0Modifier,
                 CostGoldEach = Math.Max(0, unitGp),
                 CostSilverEach = Math.Max(0, unitSp),
                 CostCopperEach = Math.Max(0, unitCp),
@@ -1818,6 +3518,12 @@ public partial class EditInfoScreen : UserControl, IScreen
                 existing.WeaponType = item.WeaponType;
             if (string.IsNullOrWhiteSpace(existing.WeaponSize))
                 existing.WeaponSize = item.WeaponSize;
+            if (existing.WeaponAttackBonus == 0)
+                existing.WeaponAttackBonus = item.WeaponAttackBonus;
+            if (existing.WeaponDamageBonus == 0)
+                existing.WeaponDamageBonus = item.WeaponDamageBonus;
+            if (existing.WeaponThac0Modifier == 0)
+                existing.WeaponThac0Modifier = item.WeaponThac0Modifier;
             if (existing.CostGoldEach <= 0)
                 existing.CostGoldEach = Math.Max(0, unitGp);
             if (existing.CostSilverEach <= 0)
@@ -1953,6 +3659,17 @@ public partial class EditInfoScreen : UserControl, IScreen
 
     private void RefreshCharacterProgressSummary(CharacterSheet c)
     {
+        var classIds = c.ClassIds
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        string levelDisplay = classIds.Count > 1
+            ? string.Join("/", classIds.Select(id => CharacterProgressionService.GetLevelForExperience(id, c.ExperiencePoints)))
+            : Math.Max(1, c.Level).ToString();
+        string xpDisplay = classIds.Count > 1
+            ? string.Join("/", Enumerable.Repeat(Math.Max(0, c.ExperiencePoints).ToString("N0"), classIds.Count))
+            : Math.Max(0, c.ExperiencePoints).ToString("N0");
+
         string hpAudit = c.HitPointGainByLevel.Count > 0
             ? string.Join(", ", c.HitPointGainByLevel
                 .OrderBy(kv => kv.Key)
@@ -1967,11 +3684,11 @@ public partial class EditInfoScreen : UserControl, IScreen
 
         bool showCpSummary = IsPlayersOptionCharacter(c);
         string cpSummary = showCpSummary
-            ? $"CP Unspent: {c.UnspentCharacterPoints}    CP Spent (NWP): {c.SpentNwpCharacterPoints}    CP Spent (Weapon): {c.SpentWeaponCharacterPoints}\n"
+            ? $"CP Unspent: {c.UnspentCharacterPoints}    CP Spent (NWP): {c.SpentNwpCharacterPoints}    CP Spent (Weapon): {c.SpentWeaponCharacterPoints}    CP Spent (HP Rerolls): {c.SpentHpRerollCharacterPoints}\n"
             : string.Empty;
 
         CharProgressSummary.Text =
-            $"Level: {c.Level}    XP: {c.ExperiencePoints:n0}    HP: {c.HitPoints}\n"
+            $"Level: {levelDisplay}    XP: {xpDisplay}    HP: {c.HitPoints}\n"
             + $"Armor Class: {c.ArmorClass}    Rogue Armor Profile: {c.RogueSkillArmorProfile}\n"
             + cpSummary
             + $"Unspent proficiency choices: {c.UnspentProficiencyChoices}"
@@ -2027,7 +3744,9 @@ public partial class EditInfoScreen : UserControl, IScreen
 
         foreach (var item in (c.EquipmentSelections ?? new List<EquipmentSelection>()).Where(x => x.Quantity > 0))
         {
-            string category = string.IsNullOrWhiteSpace(item.Category) ? "Equipment" : item.Category.Trim();
+            string category = string.IsNullOrWhiteSpace(item.Category)
+                ? "Equipment"
+                : EquipmentLibraryService.NormalizeCategoryLabel(item.Category);
             int unitCopper = CharacterWealthService.ToCopper(item.CostGoldEach, item.CostSilverEach, item.CostCopperEach);
             string display = unitCopper > 0
                 ? $"{item.ItemName} x{item.Quantity} - {CharacterWealthService.FormatCoins(unitCopper)} each"
@@ -2131,7 +3850,9 @@ public partial class EditInfoScreen : UserControl, IScreen
         var categories = new List<string> { CharacterInventoryAllCategories };
         categories.AddRange((c.EquipmentSelections ?? new List<EquipmentSelection>())
             .Where(x => x.Quantity > 0)
-            .Select(x => string.IsNullOrWhiteSpace(x.Category) ? "Equipment" : x.Category.Trim())
+            .Select(x => string.IsNullOrWhiteSpace(x.Category)
+                ? "Equipment"
+                : EquipmentLibraryService.NormalizeCategoryLabel(x.Category))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(x => x, StringComparer.OrdinalIgnoreCase));
 
@@ -2849,7 +4570,10 @@ public partial class EditInfoScreen : UserControl, IScreen
         SetAbilityBox(RaceChaMax, race.AbilityMaximums, "cha");
 
         RacePointBudget.Text = race.RacialPointBudget.ToString();
-        RaceAbilities.Text = string.Join("\n", race.RacialAbilities);
+        var legacyLines = race.RacialAbilities.Count > 0
+            ? race.RacialAbilities
+            : race.StructuredAbilities.Select(a => a.Description).Where(d => !string.IsNullOrWhiteSpace(d)).ToList();
+        RaceAbilities.Text = string.Join("\n", legacyLines);
         RaceAbilityDefs.Text = string.Join("\n", race.StructuredAbilities.Select(FormatAbilityDefLine));
     }
 
@@ -2878,9 +4602,20 @@ public partial class EditInfoScreen : UserControl, IScreen
                 ? raceId
                 : RaceBaseId.Text.Trim().ToLowerInvariant();
 
-            var existingEffects = _app.Rules.Races.TryGetValue(raceId, out var existingRace)
+            _app.Rules.Races.TryGetValue(raceId, out var existingRace);
+
+            var existingEffects = existingRace is not null
                 ? existingRace.StructuredAbilities.ToDictionary(a => a.Id, a => a.Effect, System.StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, AbilityEffect>(System.StringComparer.OrdinalIgnoreCase);
+
+            var legacyAbilityLines = ReadRaceAbilityTextLines();
+            var structuredAbilities = ParseAbilityDefs(RaceAbilityDefs.Text, existingEffects);
+            if (structuredAbilities.Count == 0 && legacyAbilityLines.Count > 0)
+                structuredAbilities = BuildFallbackStructuredAbilitiesFromLegacyLines(legacyAbilityLines, existingEffects);
+
+            var displayAbilityLines = legacyAbilityLines.Count > 0
+                ? legacyAbilityLines
+                : structuredAbilities.Select(a => a.Description).Where(d => !string.IsNullOrWhiteSpace(d)).ToList();
 
             var race = new RaceDefinition(
                 raceId,
@@ -2890,12 +4625,8 @@ public partial class EditInfoScreen : UserControl, IScreen
                 ReadAbilityMap(isMinimum: true),
                 ReadAbilityMap(isMinimum: false),
                 new(),  // AbilityModifiers - empty for now, can be edited via UI later
-                RaceAbilities.Text
-                    .Split(new[] { '\r', '\n' }, System.StringSplitOptions.RemoveEmptyEntries)
-                    .Select(a => a.Trim())
-                    .Where(a => a.Length > 0)
-                    .ToList(),
-                ParseAbilityDefs(RaceAbilityDefs.Text, existingEffects),
+                displayAbilityLines,
+                structuredAbilities,
                 ParseIntOrDefault(RacePointBudget.Text, 0),
                 existingRace?.Source ?? "custom");
 
@@ -2988,6 +4719,53 @@ public partial class EditInfoScreen : UserControl, IScreen
         RaceAbilityDefs.Text = "";
     }
 
+    private List<string> ReadRaceAbilityTextLines()
+    {
+        return RaceAbilities.Text
+            .Split(new[] { '\r', '\n' }, System.StringSplitOptions.RemoveEmptyEntries)
+            .Select(a => a.Trim())
+            .Where(a => a.Length > 0)
+            .ToList();
+    }
+
+    private static List<AbilityDefinition> BuildFallbackStructuredAbilitiesFromLegacyLines(
+        IReadOnlyList<string> lines,
+        IReadOnlyDictionary<string, AbilityEffect> existingEffects)
+    {
+        var usedIds = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+        var result = new List<AbilityDefinition>();
+
+        foreach (var line in lines)
+        {
+            string baseId = SlugifySimple(line);
+            if (string.IsNullOrWhiteSpace(baseId))
+                baseId = "race_ability";
+
+            string id = baseId;
+            int suffix = 2;
+            while (!usedIds.Add(id))
+            {
+                id = $"{baseId}_{suffix}";
+                suffix += 1;
+            }
+
+            var effect = existingEffects.TryGetValue(id, out var existingFx)
+                ? existingFx
+                : new AbilityEffect();
+
+            result.Add(new AbilityDefinition
+            {
+                Id = id,
+                Description = line,
+                PointCost = 0,
+                AutoGranted = true,
+                Effect = effect,
+            });
+        }
+
+        return result;
+    }
+
     private static int ParseIntOrDefault(string text, int fallback)
     {
         return int.TryParse(text.Trim(), out var v) ? v : fallback;
@@ -3063,15 +4841,230 @@ public partial class EditInfoScreen : UserControl, IScreen
 
     private static AbilityEffect? ParseEffect(string rawJson)
     {
-        if (string.IsNullOrWhiteSpace(rawJson) || rawJson == "{}") return new AbilityEffect();
+        var text = (rawJson ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(text) || text == "{}") return new AbilityEffect();
+
+        // Accept easier key=value shorthand (semicolon/comma separated) for non-JSON users.
+        var shorthand = ParseEffectShorthand(text);
+        if (shorthand is not null)
+            return shorthand;
+
         try
         {
-            return JsonSerializer.Deserialize<AbilityEffect>(rawJson) ?? new AbilityEffect();
+            return JsonSerializer.Deserialize<AbilityEffect>(text) ?? new AbilityEffect();
         }
         catch
         {
             return null;
         }
+    }
+
+    private static AbilityEffect? ParseEffectShorthand(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return new AbilityEffect();
+
+        // If the entry looks like JSON, let JSON parsing handle it.
+        if (text.StartsWith("{", StringComparison.Ordinal) || text.StartsWith("[", StringComparison.Ordinal))
+            return null;
+
+        var effect = new AbilityEffect();
+        int applied = 0;
+
+        var tokens = text.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        foreach (var tokenRaw in tokens)
+        {
+            var token = tokenRaw.Trim();
+            if (token.Length == 0)
+                continue;
+
+            string key;
+            string value;
+            int equalsIdx = token.IndexOf('=');
+            if (equalsIdx >= 0)
+            {
+                key = token[..equalsIdx].Trim();
+                value = token[(equalsIdx + 1)..].Trim();
+            }
+            else
+            {
+                key = token;
+                value = "true";
+            }
+
+            if (TryApplyShorthandValue(effect, key, value))
+                applied += 1;
+        }
+
+        return applied > 0 ? effect : null;
+    }
+
+    private static bool TryApplyShorthandValue(AbilityEffect effect, string keyRaw, string valueRaw)
+    {
+        var key = (keyRaw ?? string.Empty).Trim().ToLowerInvariant();
+        var value = (valueRaw ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(key))
+            return false;
+
+        if (TryParsePrefixedMapInt(key, value, "save.", effect.SaveBonuses)) return true;
+        if (TryParsePrefixedMapInt(key, value, "sub.", effect.SubAbilityBonuses)) return true;
+        if (TryParsePrefixedMapInt(key, value, "enemy_attack.", effect.EnemyAttackBonuses)) return true;
+        if (TryParsePrefixedMapInt(key, value, "enemy_damage.", effect.EnemyDamageBonuses)) return true;
+        if (TryParsePrefixedMapInt(key, value, "weapon_attack.", effect.WeaponAttackBonuses)) return true;
+        if (TryParsePrefixedMapInt(key, value, "weapon_damage.", effect.WeaponDamageBonuses)) return true;
+        if (TryParsePrefixedMapInt(key, value, "nwp_check.", effect.NwpCheckBonusesById)) return true;
+
+        switch (key)
+        {
+            case "ac":
+            case "ac_bonus":
+                if (!TryParseIntInto(value, out int acBonus)) return false;
+                effect.AcBonus = acBonus;
+                return true;
+            case "attack":
+            case "attack_bonus":
+                if (!TryParseIntInto(value, out int attackBonus)) return false;
+                effect.AttackBonus = attackBonus;
+                return true;
+            case "attack_per_levels":
+            case "attack_bonus_per_levels":
+                if (!TryParseIntInto(value, out int attackPerLevels)) return false;
+                effect.AttackBonusPerLevels = Math.Max(0, attackPerLevels);
+                return true;
+            case "damage":
+            case "damage_bonus":
+                if (!TryParseIntInto(value, out int damageBonus)) return false;
+                effect.DamageBonus = damageBonus;
+                return true;
+            case "movement":
+            case "movement_bonus":
+                if (!TryParseIntInto(value, out int movementBonus)) return false;
+                effect.MovementBonus = movementBonus;
+                return true;
+            case "hp_per_level":
+                if (!TryParseIntInto(value, out int hpPerLevel)) return false;
+                effect.HpPerLevel = hpPerLevel;
+                return true;
+            case "hp_flat":
+            case "hp_flat_bonus":
+                if (!TryParseIntInto(value, out int hpFlatBonus)) return false;
+                effect.HpFlatBonus = hpFlatBonus;
+                return true;
+            case "xp_mod":
+            case "xp_modifier":
+            case "xp_modifier_percent":
+                if (!TryParseIntInto(value, out int xpModifierPercent)) return false;
+                effect.XpModifierPercent = xpModifierPercent;
+                return true;
+            case "nwp_slots":
+                if (!TryParseIntInto(value, out int nwpSlotBonus)) return false;
+                effect.NwpSlotBonus = nwpSlotBonus;
+                return true;
+            case "nwp_cost_reduction":
+            case "nwp_cost_red":
+                if (!TryParseIntInto(value, out int nwpCostReduction)) return false;
+                effect.NwpCostReduction = nwpCostReduction;
+                return true;
+            case "nwp_check":
+                if (!TryParseIntInto(value, out int nwpCheckBonus)) return false;
+                effect.NwpCheckBonus = nwpCheckBonus;
+                return true;
+            case "surprise":
+            case "surprise_bonus":
+                if (!TryParseIntInto(value, out int surpriseBonus)) return false;
+                effect.SurpriseBonus = surpriseBonus;
+                return true;
+            case "reaction":
+            case "reaction_bonus":
+                if (!TryParseIntInto(value, out int reactionBonus)) return false;
+                effect.ReactionBonus = reactionBonus;
+                return true;
+            case "infravision":
+            case "infravision_feet":
+                if (!TryParseIntInto(value, out int infravisionFeet)) return false;
+                effect.InfravisionFeet = infravisionFeet;
+                return true;
+            case "magic_resist":
+            case "magic_resist_percent":
+            case "magic_resistance":
+                if (!TryParseIntInto(value, out int magicResistPercent)) return false;
+                effect.MagicResistPercent = magicResistPercent;
+                return true;
+            case "hp_dice":
+            case "hp_dice_expr":
+            case "hp_dice_expression":
+                effect.HpDiceExpression = string.IsNullOrWhiteSpace(value) ? null : value;
+                return true;
+            case "no_armor_ac":
+            case "ac_requires_no_armor":
+                if (!TryParseBoolInto(value, out bool acRequiresNoArmor)) return false;
+                effect.AcBonusRequiresNoArmor = acRequiresNoArmor;
+                return true;
+            case "stealth":
+                if (!TryParseBoolInto(value, out bool grantsStealth)) return false;
+                effect.GrantsStealth = grantsStealth;
+                return true;
+            case "detect_secret_doors":
+                if (!TryParseBoolInto(value, out bool detectSecretDoors)) return false;
+                effect.DetectSecretDoors = detectSecretDoors;
+                return true;
+            case "detect_stonework":
+                if (!TryParseBoolInto(value, out bool detectStonework)) return false;
+                effect.DetectStonework = detectStonework;
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private static bool TryParsePrefixedMapInt(string key, string value, string prefix, Dictionary<string, int> target)
+    {
+        if (!key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        string mapKey = key[prefix.Length..].Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(mapKey) || !int.TryParse(value, out int mapValue))
+            return false;
+
+        target[mapKey] = mapValue;
+        return true;
+    }
+
+    private static bool TryParseIntInto(string raw, out int value)
+    {
+        if (int.TryParse(raw, out value))
+            return true;
+
+        value = 0;
+        return false;
+    }
+
+    private static bool TryParseBoolInto(string raw, out bool value)
+    {
+        var text = (raw ?? string.Empty).Trim().ToLowerInvariant();
+        if (text.Length == 0)
+        {
+            value = true;
+            return true;
+        }
+
+        if (bool.TryParse(text, out value))
+            return true;
+
+        if (text is "1" or "yes" or "y" or "on")
+        {
+            value = true;
+            return true;
+        }
+
+        if (text is "0" or "no" or "n" or "off")
+        {
+            value = false;
+            return true;
+        }
+
+        value = false;
+        return false;
     }
 
     private string SelectedMode()
@@ -3757,6 +5750,7 @@ public partial class EditInfoScreen : UserControl, IScreen
         SelectClassRulesMode(ResolveClassRulesModeForEditor(cls));
         ClassDefBudgetEditor.Text = cls.ClassPointBudget.ToString();
         ClassDefAllowedRacesEditor.Text = string.Join(", ", cls.AllowedRaces);
+        ClassDefAllowedAlignmentsEditor.Text = string.Join(", ", cls.AllowedAlignments ?? new List<string>());
         ClassDefMinsEditor.Text = JsonSerializer.Serialize(cls.AbilityMinimums);
         BtnDeleteClassDefinition.IsEnabled = true;
     }
@@ -3771,6 +5765,7 @@ public partial class EditInfoScreen : UserControl, IScreen
         SelectClassRulesMode(IsCoreFilter() ? "core_rules" : "players_option");
         ClassDefBudgetEditor.Text = "0";
         ClassDefAllowedRacesEditor.Text = string.Empty;
+        ClassDefAllowedAlignmentsEditor.Text = string.Empty;
         ClassDefMinsEditor.Text = "{}";
         BtnDeleteClassDefinition.IsEnabled = false;
         ClassDefEditorInfo.Text = "Fill in the fields and click SAVE CLASS.";
@@ -3800,6 +5795,17 @@ public partial class EditInfoScreen : UserControl, IScreen
                 .Select(x => x.Trim())
                 .Where(x => x.Length > 0)
                 .ToList();
+            string[] validAlignments = { "LG", "NG", "CG", "LN", "N", "CN", "LE", "NE", "CE" };
+            var allowedAlignments = ClassDefAllowedAlignmentsEditor.Text
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(value => value.ToUpperInvariant())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            if (allowedAlignments.Any(value => !validAlignments.Contains(value, StringComparer.OrdinalIgnoreCase)))
+            {
+                MessageBox.Show("Allowed Alignments contains an invalid alignment code.", "Validation", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
             int budget = ParseIntOrDefault(ClassDefBudgetEditor.Text, 0);
 
             _app.Rules.SaveClass(new ClassDefinition(
@@ -3811,7 +5817,11 @@ public partial class EditInfoScreen : UserControl, IScreen
                 budget,
                 existingClass?.Specializations,
                 existingClass?.Source ?? "custom",
-                SelectedClassRulesMode()));
+                SelectedClassRulesMode(),
+                existingClass?.StartingFundsRoll ?? "",
+                existingClass?.FixedSpheres,
+                existingClass?.DeityId ?? "",
+                allowedAlignments));
             _selectedClassId = id;
             ClassDefEditorInfo.Text = $"Saved class: {name}";
             RefreshClassEditorList();
@@ -3916,7 +5926,11 @@ public partial class EditInfoScreen : UserControl, IScreen
                 existingClass?.ClassPointBudget ?? 0,
                 existingClass?.Specializations,
                 existingClass?.Source ?? "custom",
-                existingClass?.RulesMode ?? (IsCoreFilter() ? "core_rules" : "players_option")));
+                existingClass?.RulesMode ?? (IsCoreFilter() ? "core_rules" : "players_option"),
+                existingClass?.StartingFundsRoll ?? "",
+                existingClass?.FixedSpheres,
+                existingClass?.DeityId ?? "",
+                existingClass?.AllowedAlignments));
 
             int updatedCharacters = ReapplyAbilityMechanicsToMatchingCharacters(classId: id, raceId: null);
             _selectedClassId = id;
@@ -4045,7 +6059,11 @@ public partial class EditInfoScreen : UserControl, IScreen
                 targetClass.ClassPointBudget,
                 targetClass.Specializations,
                 targetClass.Source,
-                targetClass.RulesMode));
+                targetClass.RulesMode,
+                targetClass.StartingFundsRoll,
+                targetClass.FixedSpheres,
+                targetClass.DeityId,
+                targetClass.AllowedAlignments));
 
             charactersUpdated += ReapplyAbilityMechanicsToMatchingCharacters(classId: targetClass.Id, raceId: null);
         }
@@ -4484,6 +6502,7 @@ public partial class EditInfoScreen : UserControl, IScreen
         CaAcBonus.Text      = fx.AcBonus != 0 ? fx.AcBonus.ToString() : "";
         CaNoArmorForAc.IsChecked = fx.AcBonusRequiresNoArmor;
         CaAttackBonus.Text  = fx.AttackBonus != 0 ? fx.AttackBonus.ToString() : "";
+        CaAttackPerLevels.Text = fx.AttackBonusPerLevels > 0 ? fx.AttackBonusPerLevels.ToString() : "";
         CaDamageBonus.Text  = fx.DamageBonus != 0 ? fx.DamageBonus.ToString() : "";
         CaMovementBonus.Text = fx.MovementBonus != 0 ? fx.MovementBonus.ToString() : "";
         CaHpDice.Text       = fx.HpDiceExpression ?? "";
@@ -4515,7 +6534,7 @@ public partial class EditInfoScreen : UserControl, IScreen
         CaAllowMultiple.IsChecked = false;
         CaRequiresText.IsChecked = false;
         CaAllowPostLevelOne.IsChecked = false;
-        CaAcBonus.Text = ""; CaAttackBonus.Text = ""; CaDamageBonus.Text = "";
+        CaAcBonus.Text = ""; CaAttackBonus.Text = ""; CaAttackPerLevels.Text = ""; CaDamageBonus.Text = "";
         CaNoArmorForAc.IsChecked = false;
         CaMovementBonus.Text = "";
         CaHpDice.Text = "";
@@ -4553,6 +6572,7 @@ public partial class EditInfoScreen : UserControl, IScreen
                 AcBonus            = ParseIntOrDefault(CaAcBonus.Text, 0),
                 AcBonusRequiresNoArmor = CaNoArmorForAc.IsChecked == true,
                 AttackBonus        = ParseIntOrDefault(CaAttackBonus.Text, 0),
+                AttackBonusPerLevels = ParseIntOrDefault(CaAttackPerLevels.Text, 0),
                 DamageBonus        = ParseIntOrDefault(CaDamageBonus.Text, 0),
                 MovementBonus      = ParseIntOrDefault(CaMovementBonus.Text, 0),
                 HpDiceExpression   = string.IsNullOrWhiteSpace(CaHpDice.Text) ? null : CaHpDice.Text.Trim(),
@@ -4602,6 +6622,7 @@ public partial class EditInfoScreen : UserControl, IScreen
             AcBonus = source.AcBonus,
             AcBonusRequiresNoArmor = source.AcBonusRequiresNoArmor,
             AttackBonus = source.AttackBonus,
+            AttackBonusPerLevels = source.AttackBonusPerLevels,
             DamageBonus = source.DamageBonus,
             MovementBonus = source.MovementBonus,
             SaveBonuses = new Dictionary<string, int>(source.SaveBonuses, System.StringComparer.OrdinalIgnoreCase),
@@ -4612,6 +6633,7 @@ public partial class EditInfoScreen : UserControl, IScreen
             NwpSlotBonus = source.NwpSlotBonus,
             NwpCostReduction = source.NwpCostReduction,
             NwpCheckBonus = source.NwpCheckBonus,
+            NwpCheckBonusesById = new Dictionary<string, int>(source.NwpCheckBonusesById, System.StringComparer.OrdinalIgnoreCase),
             SurpriseBonus = source.SurpriseBonus,
             SubAbilityBonuses = new Dictionary<string, int>(source.SubAbilityBonuses, System.StringComparer.OrdinalIgnoreCase),
             InfravisionFeet = source.InfravisionFeet,
@@ -4674,6 +6696,21 @@ public partial class EditInfoScreen : UserControl, IScreen
         LoadRacialAbilityDetailForm(_workingRacialAbilities[_selectedRacialAbilityIndex]);
     }
 
+    private void BtnInsertRacialTemplate_Click(object sender, RoutedEventArgs e)
+    {
+        string templateKey = (RaTemplatePreset.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "blank";
+        if (!TryBuildRacialAbilityFromTemplateWizard(templateKey, out var template, out var wizardNote))
+            return;
+
+        _workingRacialAbilities.Add(template);
+        _selectedRacialAbilityIndex = _workingRacialAbilities.Count - 1;
+        RefreshRacialAbilityItemsList();
+        LoadRacialAbilityDetailForm(_workingRacialAbilities[_selectedRacialAbilityIndex]);
+
+        string label = (RaTemplatePreset.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "template";
+        RaApplyInfo.Text = $"Inserted {label} template. {wizardNote}";
+    }
+
     private void BtnRemoveRacialAbility_Click(object sender, RoutedEventArgs e)
     {
         if (_selectedRacialAbilityIndex < 0 || _selectedRacialAbilityIndex >= _workingRacialAbilities.Count) return;
@@ -4707,6 +6744,7 @@ public partial class EditInfoScreen : UserControl, IScreen
         RaAcBonus.Text      = fx.AcBonus != 0 ? fx.AcBonus.ToString() : "";
         RaNoArmorForAc.IsChecked = fx.AcBonusRequiresNoArmor;
         RaAttackBonus.Text  = fx.AttackBonus != 0 ? fx.AttackBonus.ToString() : "";
+        RaAttackPerLevels.Text = fx.AttackBonusPerLevels > 0 ? fx.AttackBonusPerLevels.ToString() : "";
         RaDamageBonus.Text  = fx.DamageBonus != 0 ? fx.DamageBonus.ToString() : "";
         RaMovementBonus.Text = fx.MovementBonus != 0 ? fx.MovementBonus.ToString() : "";
         RaHpDice.Text       = fx.HpDiceExpression ?? "";
@@ -4735,7 +6773,7 @@ public partial class EditInfoScreen : UserControl, IScreen
     private void ClearRacialAbilityDetailForm()
     {
         RaDesc.Text = ""; RaCost.Text = ""; RaAuto.IsChecked = true;
-        RaAcBonus.Text = ""; RaAttackBonus.Text = ""; RaDamageBonus.Text = "";
+        RaAcBonus.Text = ""; RaAttackBonus.Text = ""; RaAttackPerLevels.Text = ""; RaDamageBonus.Text = "";
         RaNoArmorForAc.IsChecked = false;
         RaMovementBonus.Text = "";
         RaHpDice.Text = "";
@@ -4763,6 +6801,7 @@ public partial class EditInfoScreen : UserControl, IScreen
                 AcBonus            = ParseIntOrDefault(RaAcBonus.Text, 0),
                 AcBonusRequiresNoArmor = RaNoArmorForAc.IsChecked == true,
                 AttackBonus        = ParseIntOrDefault(RaAttackBonus.Text, 0),
+                AttackBonusPerLevels = ParseIntOrDefault(RaAttackPerLevels.Text, 0),
                 DamageBonus        = ParseIntOrDefault(RaDamageBonus.Text, 0),
                 MovementBonus      = ParseIntOrDefault(RaMovementBonus.Text, 0),
                 HpDiceExpression   = string.IsNullOrWhiteSpace(RaHpDice.Text) ? null : RaHpDice.Text.Trim(),
@@ -4787,6 +6826,453 @@ public partial class EditInfoScreen : UserControl, IScreen
                 WeaponDamageBonuses = ParseKeyValuePairs(RaWeaponDamage.Text),
             },
         };
+    }
+
+    private static AbilityDefinition BuildRacialAbilityTemplate(string templateKey)
+    {
+        var ability = new AbilityDefinition
+        {
+            Description = "New Ability",
+            PointCost = 0,
+            AutoGranted = true,
+            Effect = new AbilityEffect(),
+        };
+
+        switch ((templateKey ?? string.Empty).Trim().ToLowerInvariant())
+        {
+            case "darkvision":
+                ability.Description = "Darkvision (set range)";
+                ability.Effect.InfravisionFeet = 60;
+                break;
+            case "save_bonus":
+                ability.Description = "Save Bonus (set type/value)";
+                ability.AutoGranted = false;
+                ability.Effect.SaveBonuses ??= new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                ability.Effect.SaveBonuses["all"] = 1;
+                break;
+            case "weapon_attack":
+                ability.Description = "Weapon Attack Bonus (set group/value)";
+                ability.AutoGranted = false;
+                ability.Effect.WeaponAttackBonuses ??= new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                ability.Effect.WeaponAttackBonuses["bows"] = 1;
+                break;
+            case "scaling_attack":
+                ability.Description = "Scaling Attack Bonus (set interval)";
+                ability.AutoGranted = false;
+                ability.Effect.AttackBonusPerLevels = 3;
+                break;
+            case "weapon_damage":
+                ability.Description = "Weapon Damage Bonus (set group/value)";
+                ability.AutoGranted = false;
+                ability.Effect.WeaponDamageBonuses ??= new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                ability.Effect.WeaponDamageBonuses["swords"] = 1;
+                break;
+            case "enemy_attack":
+                ability.Description = "Enemy Attack Bonus (set enemy/value)";
+                ability.AutoGranted = false;
+                ability.Effect.EnemyAttackBonuses ??= new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                ability.Effect.EnemyAttackBonuses["goblinoids"] = 1;
+                break;
+            case "enemy_damage":
+                ability.Description = "Enemy Damage Bonus (set enemy/value)";
+                ability.AutoGranted = false;
+                ability.Effect.EnemyDamageBonuses ??= new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                ability.Effect.EnemyDamageBonuses["goblinoids"] = 1;
+                break;
+            case "stealth":
+                ability.Description = "Stealth";
+                ability.Effect.GrantsStealth = true;
+                break;
+            case "detect_secret_doors":
+                ability.Description = "Detect Secret Doors";
+                ability.Effect.DetectSecretDoors = true;
+                break;
+            case "detect_stonework":
+                ability.Description = "Detect Stonework";
+                ability.Effect.DetectStonework = true;
+                break;
+            case "nwp_aptitude":
+                ability.Description = "NWP Aptitude (set check/slot bonuses)";
+                ability.AutoGranted = false;
+                ability.Effect.NwpCheckBonus = 1;
+                break;
+            case "hp_bonus":
+                ability.Description = "HP Bonus (set per-level/flat)";
+                ability.AutoGranted = false;
+                ability.Effect.HpPerLevel = 1;
+                break;
+            case "magic_resistance":
+                ability.Description = "Magic Resistance";
+                ability.AutoGranted = false;
+                ability.Effect.MagicResistPercent = 5;
+                break;
+            default:
+                ability.Description = "New Ability";
+                break;
+        }
+
+        ability.Id = SlugifySimple(ability.Description);
+        return ability;
+    }
+
+    private bool TryBuildRacialAbilityFromTemplateWizard(string templateKey, out AbilityDefinition ability, out string note)
+    {
+        note = "Adjust fields, click APPLY CHANGES TO LIST, then SAVE RACIAL ABILITIES.";
+        ability = BuildRacialAbilityTemplate(templateKey);
+
+        var key = (templateKey ?? string.Empty).Trim().ToLowerInvariant();
+        if (key == "blank")
+            return true;
+
+        if (!TryShowRacialTemplateDialog(
+                title: "Racial Ability Template",
+                templateLabel: key,
+                defaultAutoGranted: ability.AutoGranted,
+                fields: GetTemplateFields(key),
+                out var values,
+                out bool autoGranted))
+        {
+            return false;
+        }
+
+        ability = BuildAbilityFromTemplateInput(key, values, autoGranted);
+        note = "Template values applied. You can fine-tune any field below, then apply and save.";
+        return true;
+    }
+
+    private static List<(string Key, string Label, string DefaultValue, string Hint)> GetTemplateFields(string templateKey)
+    {
+        return templateKey switch
+        {
+            "darkvision" => new List<(string, string, string, string)>
+            {
+                ("description", "Description", "Darkvision", "Short player-facing text shown in ability lists."),
+                ("infravision", "Infravision (ft)", "60", "Common values are 30, 60, 90, or 120 feet."),
+                ("cost", "Point Cost", "0", "Use 0 for free racial traits; increase for optional purchasable traits."),
+            },
+            "save_bonus" => new List<(string, string, string, string)>
+            {
+                ("description", "Description", "Save Bonus", "Example: Hardy Constitution."),
+                ("save_key", "Save Type", "all", "Common keys: all, magic, poison, spell, death, breath, polymorph, petrification."),
+                ("save_value", "Save Bonus", "1", "Positive numbers improve saves (for example 1 or 2)."),
+                ("cost", "Point Cost", "0", "Set cost for optional purchase; keep 0 for auto traits."),
+            },
+            "weapon_attack" => new List<(string, string, string, string)>
+            {
+                ("description", "Description", "Weapon Attack Bonus", "Example: Bow Accuracy."),
+                ("weapon_group", "Weapon Group", "bows", "Common groups: bows, swords, axes, hammers, slings, thrown, missile."),
+                ("attack_value", "Attack Bonus", "1", "Usually 1 for minor racial bonuses."),
+                ("cost", "Point Cost", "0", "Set >0 if this is an optional PO purchase."),
+            },
+            "scaling_attack" => new List<(string, string, string, string)>
+            {
+                ("description", "Description", "Scaling Attack Bonus", "Example: Veteran Edge."),
+                ("attack_per_levels", "Attack Every X Levels", "3", "Enter 3 for +1 attack at levels 3, 6, 9, and so on."),
+                ("cost", "Point Cost", "0", "Set >0 if this is an optional PO purchase."),
+            },
+            "weapon_damage" => new List<(string, string, string, string)>
+            {
+                ("description", "Description", "Weapon Damage Bonus", "Example: Axe Damage Focus."),
+                ("weapon_group", "Weapon Group", "swords", "Use the same group key naming style as weapon attack bonuses."),
+                ("damage_value", "Damage Bonus", "1", "Usually 1 for racial damage perks."),
+                ("cost", "Point Cost", "0", "Set >0 if optional; 0 if always granted."),
+            },
+            "enemy_attack" => new List<(string, string, string, string)>
+            {
+                ("description", "Description", "Enemy Attack Bonus", "Example: Hatred of Goblinoids."),
+                ("enemy_key", "Enemy Group", "goblinoids", "Free-text grouping key. Keep naming consistent between abilities."),
+                ("attack_value", "Attack Bonus", "1", "Common values are 1 or 2."),
+                ("cost", "Point Cost", "0", "Optional abilities should usually have a cost."),
+            },
+            "enemy_damage" => new List<(string, string, string, string)>
+            {
+                ("description", "Description", "Enemy Damage Bonus", "Example: Giant Slayer."),
+                ("enemy_key", "Enemy Group", "goblinoids", "Match this key to your enemy attack bonus key when relevant."),
+                ("damage_value", "Damage Bonus", "1", "Common values are 1 or 2."),
+                ("cost", "Point Cost", "0", "Optional abilities should usually have a cost."),
+            },
+            "nwp_aptitude" => new List<(string, string, string, string)>
+            {
+                ("description", "Description", "NWP Aptitude", "Example: Craftsman Training."),
+                ("nwp_check", "NWP Check Bonus", "1", "Applies to NWP checks. Typical values: 1 or 2."),
+                ("nwp_slots", "NWP Slot Bonus", "0", "Adds extra proficiency slots at character creation."),
+                ("nwp_cost_reduction", "NWP Cost Reduction", "0", "Reduces CP cost for NWPs in PO mode."),
+                ("cost", "Point Cost", "0", "Optional abilities should usually have a cost."),
+            },
+            "hp_bonus" => new List<(string, string, string, string)>
+            {
+                ("description", "Description", "HP Bonus", "Example: Hardy Folk."),
+                ("hp_per_level", "HP Per Level", "1", "Per-level bonus applies each level where ability is active."),
+                ("hp_flat", "HP Flat Bonus", "0", "One-time flat bonus applied on top of normal HP."),
+                ("cost", "Point Cost", "0", "Optional abilities should usually have a cost."),
+            },
+            "magic_resistance" => new List<(string, string, string, string)>
+            {
+                ("description", "Description", "Magic Resistance", "Example: Innate Resistance."),
+                ("mr_percent", "Magic Resist %", "5", "Percent chance to resist magical effects. Common values: 5-20."),
+                ("cost", "Point Cost", "0", "Optional abilities should usually have a cost."),
+            },
+            "stealth" => new List<(string, string, string, string)>
+            {
+                ("description", "Description", "Stealth", "Simple on/off trait that grants stealth bonuses."),
+                ("cost", "Point Cost", "0", "Optional abilities should usually have a cost."),
+            },
+            "detect_secret_doors" => new List<(string, string, string, string)>
+            {
+                ("description", "Description", "Detect Secret Doors", "Simple on/off trait used by races like elves."),
+                ("cost", "Point Cost", "0", "Optional abilities should usually have a cost."),
+            },
+            "detect_stonework" => new List<(string, string, string, string)>
+            {
+                ("description", "Description", "Detect Stonework", "Simple on/off trait common to dwarven style abilities."),
+                ("cost", "Point Cost", "0", "Optional abilities should usually have a cost."),
+            },
+            _ => new List<(string, string, string, string)>
+            {
+                ("description", "Description", "New Ability", "Give this ability a clear player-facing name."),
+                ("cost", "Point Cost", "0", "Use 0 for free traits; set >0 for optional traits."),
+            },
+        };
+    }
+
+    private bool TryShowRacialTemplateDialog(
+        string title,
+        string templateLabel,
+        bool defaultAutoGranted,
+        IReadOnlyList<(string Key, string Label, string DefaultValue, string Hint)> fields,
+        out Dictionary<string, string> values,
+        out bool autoGranted)
+    {
+        values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        autoGranted = defaultAutoGranted;
+
+        var root = new Grid { Margin = new Thickness(12) };
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+        var prompt = new TextBlock
+        {
+            Text = $"Template: {templateLabel.Replace('_', ' ')}. Fill key values, then click Insert.",
+            Margin = new Thickness(0, 0, 0, 10),
+            TextWrapping = TextWrapping.Wrap,
+        };
+        root.Children.Add(prompt);
+
+        var formGrid = new Grid { Margin = new Thickness(0, 0, 0, 0) };
+        formGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(190) });
+        formGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        var boxes = new Dictionary<string, TextBox>(StringComparer.OrdinalIgnoreCase);
+
+        int rowCursor = 0;
+        for (int i = 0; i < fields.Count; i++)
+        {
+            formGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var field = fields[i];
+
+            var label = new TextBlock
+            {
+                Text = field.Label,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(0, 4, 8, 4),
+            };
+            Grid.SetRow(label, rowCursor);
+            Grid.SetColumn(label, 0);
+            formGrid.Children.Add(label);
+
+            var box = new TextBox
+            {
+                Text = field.DefaultValue,
+                Margin = new Thickness(0, 2, 0, 2),
+                MinHeight = 26,
+                ToolTip = string.IsNullOrWhiteSpace(field.Hint) ? null : field.Hint,
+            };
+            Grid.SetRow(box, rowCursor);
+            Grid.SetColumn(box, 1);
+            formGrid.Children.Add(box);
+            boxes[field.Key] = box;
+            rowCursor += 1;
+
+            if (!string.IsNullOrWhiteSpace(field.Hint))
+            {
+                formGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                var hint = new TextBlock
+                {
+                    Text = field.Hint,
+                    Margin = new Thickness(0, 0, 0, 6),
+                    Opacity = 0.8,
+                    TextWrapping = TextWrapping.Wrap,
+                };
+                Grid.SetRow(hint, rowCursor);
+                Grid.SetColumn(hint, 1);
+                formGrid.Children.Add(hint);
+                rowCursor += 1;
+            }
+        }
+
+        var formScroll = new ScrollViewer
+        {
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            Content = formGrid,
+            Margin = new Thickness(0, 0, 0, 10),
+            MaxHeight = 360,
+        };
+
+        Grid.SetRow(formScroll, 1);
+        root.Children.Add(formScroll);
+
+        var autoCheck = new CheckBox
+        {
+            Content = "Auto Granted",
+            IsChecked = defaultAutoGranted,
+            Margin = new Thickness(0, 0, 0, 10),
+        };
+        Grid.SetRow(autoCheck, 2);
+        root.Children.Add(autoCheck);
+
+        var buttonPanel = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+        };
+        var cancel = new Button { Content = "Cancel", Width = 88, Margin = new Thickness(0, 0, 8, 0), IsCancel = true };
+        var ok = new Button { Content = "Insert", Width = 88, IsDefault = true };
+        ok.Click += (_, _) => Window.GetWindow(ok)!.DialogResult = true;
+        buttonPanel.Children.Add(cancel);
+        buttonPanel.Children.Add(ok);
+        Grid.SetRow(buttonPanel, 3);
+        root.Children.Add(buttonPanel);
+
+        var dialog = new Window
+        {
+            Title = title,
+            Width = 520,
+            Height = Math.Min(700, 280 + (fields.Count * 64)),
+            MinHeight = 360,
+            ResizeMode = ResizeMode.NoResize,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Owner = Window.GetWindow(this),
+            Content = root,
+        };
+
+        if (dialog.ShowDialog() != true)
+            return false;
+
+        foreach (var (key, box) in boxes)
+            values[key] = (box.Text ?? string.Empty).Trim();
+
+        autoGranted = autoCheck.IsChecked == true;
+        return true;
+    }
+
+    private static AbilityDefinition BuildAbilityFromTemplateInput(
+        string templateKey,
+        IReadOnlyDictionary<string, string> values,
+        bool autoGranted)
+    {
+        string description = GetTemplateText(values, "description", "New Ability");
+        int pointCost = ParseTemplateInt(values, "cost", 0);
+
+        var ability = new AbilityDefinition
+        {
+            Id = SlugifySimple(description),
+            Description = description,
+            PointCost = pointCost,
+            AutoGranted = autoGranted,
+            Effect = new AbilityEffect(),
+        };
+
+        string key = (templateKey ?? string.Empty).Trim().ToLowerInvariant();
+        switch (key)
+        {
+            case "darkvision":
+                ability.Effect.InfravisionFeet = ParseTemplateInt(values, "infravision", 60);
+                break;
+            case "save_bonus":
+            {
+                string saveKey = GetTemplateText(values, "save_key", "all").ToLowerInvariant();
+                int value = ParseTemplateInt(values, "save_value", 1);
+                ability.Effect.SaveBonuses ??= new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                ability.Effect.SaveBonuses[saveKey] = value;
+                break;
+            }
+            case "weapon_attack":
+            {
+                string weaponKey = GetTemplateText(values, "weapon_group", "bows").ToLowerInvariant();
+                int value = ParseTemplateInt(values, "attack_value", 1);
+                ability.Effect.WeaponAttackBonuses ??= new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                ability.Effect.WeaponAttackBonuses[weaponKey] = value;
+                break;
+            }
+            case "scaling_attack":
+                ability.Effect.AttackBonusPerLevels = ParseTemplateInt(values, "attack_per_levels", 3);
+                break;
+            case "weapon_damage":
+            {
+                string weaponKey = GetTemplateText(values, "weapon_group", "swords").ToLowerInvariant();
+                int value = ParseTemplateInt(values, "damage_value", 1);
+                ability.Effect.WeaponDamageBonuses ??= new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                ability.Effect.WeaponDamageBonuses[weaponKey] = value;
+                break;
+            }
+            case "enemy_attack":
+            {
+                string enemyKey = GetTemplateText(values, "enemy_key", "goblinoids").ToLowerInvariant();
+                int value = ParseTemplateInt(values, "attack_value", 1);
+                ability.Effect.EnemyAttackBonuses ??= new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                ability.Effect.EnemyAttackBonuses[enemyKey] = value;
+                break;
+            }
+            case "enemy_damage":
+            {
+                string enemyKey = GetTemplateText(values, "enemy_key", "goblinoids").ToLowerInvariant();
+                int value = ParseTemplateInt(values, "damage_value", 1);
+                ability.Effect.EnemyDamageBonuses ??= new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                ability.Effect.EnemyDamageBonuses[enemyKey] = value;
+                break;
+            }
+            case "stealth":
+                ability.Effect.GrantsStealth = true;
+                break;
+            case "detect_secret_doors":
+                ability.Effect.DetectSecretDoors = true;
+                break;
+            case "detect_stonework":
+                ability.Effect.DetectStonework = true;
+                break;
+            case "nwp_aptitude":
+                ability.Effect.NwpCheckBonus = ParseTemplateInt(values, "nwp_check", 1);
+                ability.Effect.NwpSlotBonus = ParseTemplateInt(values, "nwp_slots", 0);
+                ability.Effect.NwpCostReduction = ParseTemplateInt(values, "nwp_cost_reduction", 0);
+                break;
+            case "hp_bonus":
+                ability.Effect.HpPerLevel = ParseTemplateInt(values, "hp_per_level", 1);
+                ability.Effect.HpFlatBonus = ParseTemplateInt(values, "hp_flat", 0);
+                break;
+            case "magic_resistance":
+                ability.Effect.MagicResistPercent = ParseTemplateInt(values, "mr_percent", 5);
+                break;
+        }
+
+        return ability;
+    }
+
+    private static int ParseTemplateInt(IReadOnlyDictionary<string, string> values, string key, int fallback)
+    {
+        if (!values.TryGetValue(key, out var raw))
+            return fallback;
+
+        return int.TryParse((raw ?? string.Empty).Trim(), out int parsed) ? parsed : fallback;
+    }
+
+    private static string GetTemplateText(IReadOnlyDictionary<string, string> values, string key, string fallback)
+    {
+        if (!values.TryGetValue(key, out var raw))
+            return fallback;
+
+        var trimmed = (raw ?? string.Empty).Trim();
+        return string.IsNullOrWhiteSpace(trimmed) ? fallback : trimmed;
     }
 
     // ── Key:value dictionary helpers ─────────────────────────────────────────
@@ -5382,7 +7868,7 @@ public partial class EditInfoScreen : UserControl, IScreen
 
     private void ClearSpellEditor()
     {
-        SpellId.Text = string.Empty;
+        SpellId.Text = GetNextAvailableSpellId(_activeSpellCategory, _app.Rules.Spells);
         SpellLevel.Text = "1";
         SpellName.Text = string.Empty;
         SpellReversal.Text = string.Empty;
@@ -5452,7 +7938,7 @@ public partial class EditInfoScreen : UserControl, IScreen
 
         if (string.IsNullOrWhiteSpace(enteredId))
         {
-            finalId = EnsureUniqueSpellId(BuildGeneratedSpellId(name), originalId);
+            finalId = GetNextAvailableSpellId(_activeSpellCategory, _app.Rules.Spells);
         }
         else
         {
@@ -5942,30 +8428,26 @@ public partial class EditInfoScreen : UserControl, IScreen
         return isHealing ? $"Heals: {summary}" : summary;
     }
 
-    private string BuildGeneratedSpellId(string name)
+    internal static string GetNextAvailableSpellId(
+        string category,
+        IEnumerable<SpellDefinition> spells)
     {
-        string prefix = _activeSpellCategory switch
+        string prefix = category switch
         {
-            "divine" => "div_custom_",
-            "psionic" => "psi_custom_",
-            _ => "arc_custom_",
+            "divine" => "PRI",
+            "psionic" => "PSI",
+            _ => "WIZ",
         };
-        return prefix + SlugifySimple(name);
-    }
 
-    private string EnsureUniqueSpellId(string baseId, string originalId)
-    {
-        string candidate = baseId;
-        int suffix = 2;
-        while (_app.Rules.Spells.Any(s =>
-            !string.Equals(s.Id, originalId, System.StringComparison.OrdinalIgnoreCase)
-            && string.Equals(s.Id, candidate, System.StringComparison.OrdinalIgnoreCase)))
-        {
-            candidate = $"{baseId}_{suffix}";
-            suffix++;
-        }
+        int highestId = spells
+            .Where(spell => string.Equals(spell.Category, category, System.StringComparison.OrdinalIgnoreCase))
+            .Select(spell => Regex.Match(spell.Id ?? string.Empty, $@"^{prefix}(\d+)$", RegexOptions.IgnoreCase))
+            .Where(match => match.Success && int.TryParse(match.Groups[1].Value, out _))
+            .Select(match => int.Parse(match.Groups[1].Value))
+            .DefaultIfEmpty(0)
+            .Max();
 
-        return candidate;
+        return $"{prefix}{highestId + 1:D6}";
     }
 
     // ── Monsters tab ─────────────────────────────────────────────────────────

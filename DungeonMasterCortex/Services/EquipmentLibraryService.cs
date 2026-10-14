@@ -30,6 +30,8 @@ public sealed class EquipmentLibraryService
     private static readonly Regex TrailingFootnoteDigitsRegex = new(@"\d+$", RegexOptions.Compiled);
     // Detects stale old-parser "Sword - One handed" style names (no hyphen in sub-part).
     private static readonly Regex StaleNoHyphenGroupedWeaponRegex = new(@" - (One|Two)\s+handed$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex SetAcRegex = new(@"\bset(?:s)?\s+ac\s+to\s+(?<ac>\d{1,2})\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex VariantAcRegex = new(@"\bac\s*(?<ac>\d{1,2})\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     private static readonly string[] ArmorCategoryHints =
     {
@@ -157,6 +159,55 @@ public sealed class EquipmentLibraryService
         ),
     };
 
+    private static readonly (string Id, string Name, int CostGold, int CostSilver, int CostCopper, double Weight, string Description)[] SupplementalSpellComponents =
+    {
+        (
+            "component_holy_symbol",
+            "Holy Symbol",
+            0,
+            0,
+            0,
+            0,
+            "Common divine focus used for many priest spells."
+        ),
+        (
+            "component_prayer_beads",
+            "Prayer Beads",
+            0,
+            0,
+            0,
+            0,
+            "Prayer beads or similar devotional focus."
+        ),
+        (
+            "component_mistletoe",
+            "Mistletoe Sprig",
+            0,
+            0,
+            0,
+            0,
+            "Traditional druidic spell component."
+        ),
+        (
+            "component_powdered_silver",
+            "Powdered Silver",
+            0,
+            0,
+            0,
+            0,
+            "Powdered silver used by certain protection and warding spells."
+        ),
+        (
+            "component_diamond_dust",
+            "Diamond Dust",
+            0,
+            0,
+            0,
+            0,
+            "Fine diamond dust used by select high-value spells."
+        ),
+    };
+
     // Canonical armor names that should always be treated as body armor when encountered.
     private static readonly Dictionary<string, int> CanonicalArmorNameToAc = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -253,6 +304,11 @@ public sealed class EquipmentLibraryService
                 WeaponDamageLarge = item.WeaponDamageLarge,
                 WeaponType = item.WeaponType,
                 WeaponSize = item.WeaponSize,
+                EnchantmentBonus = item.EnchantmentBonus,
+                WeaponAttackBonus = item.WeaponAttackBonus,
+                WeaponDamageBonus = item.WeaponDamageBonus,
+                WeaponThac0Modifier = item.WeaponThac0Modifier,
+                ArmorClassModifier = item.ArmorClassModifier,
                 CostCopper = item.CostCopper,
                 CostSilver = item.CostSilver,
                 CostGold = item.CostGold,
@@ -260,6 +316,7 @@ public sealed class EquipmentLibraryService
                 ContainerMaxItems = item.ContainerMaxItems,
                 ContainerMaxWeight = item.ContainerMaxWeight,
                 AllowedContentTags = item.AllowedContentTags,
+                MagicalItemMetadata = item.MagicalItemMetadata,
             };
 
             var normalized = Normalize(updated);
@@ -467,7 +524,7 @@ public sealed class EquipmentLibraryService
     {
         var normalizedCategories = source.Categories
             .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Select(x => x.Trim())
+            .Select(NormalizeCategoryLabel)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
             .ToList();
@@ -485,6 +542,13 @@ public sealed class EquipmentLibraryService
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
             .ToList();
+
+        var normalizedMetadata = (source.MagicalItemMetadata ?? new Dictionary<string, string>())
+            .Where(kv => !string.IsNullOrWhiteSpace(kv.Key))
+            .ToDictionary(
+                kv => kv.Key.Trim(),
+                kv => (kv.Value ?? string.Empty).Trim(),
+                StringComparer.OrdinalIgnoreCase);
 
         string cleanName = (source.Name ?? string.Empty).Trim();
         cleanName = CollapseWhitespace(cleanName);
@@ -517,6 +581,11 @@ public sealed class EquipmentLibraryService
             WeaponDamageLarge = CollapseWhitespace((source.WeaponDamageLarge ?? string.Empty).Trim()),
             WeaponType = string.IsNullOrWhiteSpace(source.WeaponType) ? string.Empty : source.WeaponType.Trim().ToUpperInvariant(),
             WeaponSize = string.IsNullOrWhiteSpace(source.WeaponSize) ? string.Empty : source.WeaponSize.Trim().ToUpperInvariant(),
+            EnchantmentBonus = source.EnchantmentBonus,
+            WeaponAttackBonus = source.WeaponAttackBonus,
+            WeaponDamageBonus = source.WeaponDamageBonus,
+            WeaponThac0Modifier = source.WeaponThac0Modifier,
+            ArmorClassModifier = source.ArmorClassModifier,
             CostCopper = Math.Max(0, source.CostCopper),
             CostSilver = Math.Max(0, source.CostSilver),
             CostGold = Math.Max(0, source.CostGold),
@@ -524,6 +593,7 @@ public sealed class EquipmentLibraryService
             ContainerMaxItems = Math.Max(0, source.ContainerMaxItems),
             ContainerMaxWeight = Math.Max(0, source.ContainerMaxWeight),
             AllowedContentTags = allowedTags,
+            MagicalItemMetadata = normalizedMetadata,
         };
     }
 
@@ -534,6 +604,10 @@ public sealed class EquipmentLibraryService
         var baseCosts = BuildBaseCatalogCostLookup();
         var supplementalWeights = BuildSupplementalWeightLookup();
         var weaponStatLookup = BuildWeaponStatLookup();
+        var sourceByName = source
+            .Where(x => !string.IsNullOrWhiteSpace(x.Name))
+            .GroupBy(x => BuildNameKey(x.Name), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => Normalize(g.Last()), StringComparer.OrdinalIgnoreCase);
 
         foreach (var item in source)
         {
@@ -593,6 +667,8 @@ public sealed class EquipmentLibraryService
             ApplyArmorMetadata(working, ref itemChanged);
             ForceCanonicalArmorClassification(working, ref itemChanged);
             ApplyWeaponMetadata(working, weaponStatLookup, ref itemChanged);
+            EnforceWeaponArmorSeparation(working, ref itemChanged);
+            ApplyMagicalArmorNormalization(working, sourceByName, ref itemChanged);
 
             string? combatCategory = DetectCombatCategory(working);
             if (!string.IsNullOrWhiteSpace(combatCategory))
@@ -683,6 +759,50 @@ public sealed class EquipmentLibraryService
             changed = true;
         }
 
+        // Add baseline spell components so players can buy/manage these from a dedicated category.
+        foreach (var component in BuildSupplementalSpellComponentEntries())
+        {
+            string nameKey = BuildNameKey(component.Name);
+            var existingComponent = migrated.FirstOrDefault(x =>
+                string.Equals(BuildNameKey(x.Name), nameKey, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(CanonicalizeId(x.Id), CanonicalizeId(component.Id), StringComparison.OrdinalIgnoreCase));
+
+            if (existingComponent is not null)
+            {
+                bool componentUpdated = false;
+                if (!existingComponent.Categories.Contains("Spell Components", StringComparer.OrdinalIgnoreCase))
+                {
+                    existingComponent.Categories.Add("Spell Components");
+                    componentUpdated = true;
+                }
+                if (!existingComponent.ItemTags.Contains("component", StringComparer.OrdinalIgnoreCase))
+                {
+                    existingComponent.ItemTags.Add("component");
+                    componentUpdated = true;
+                }
+                if (!existingComponent.ItemTags.Contains("spell", StringComparer.OrdinalIgnoreCase))
+                {
+                    existingComponent.ItemTags.Add("spell");
+                    componentUpdated = true;
+                }
+
+                if (componentUpdated)
+                {
+                    int existingIndex = migrated.IndexOf(existingComponent);
+                    if (existingIndex >= 0)
+                    {
+                        migrated[existingIndex] = Normalize(existingComponent);
+                        changed = true;
+                    }
+                }
+
+                continue;
+            }
+
+            migrated.Add(Normalize(component));
+            changed = true;
+        }
+
         // Add weapons from the AEG Master Weapons Chart (most complete weapon reference).
         foreach (var weapon in BuildWeaponEntriesFromFile(@"Core Rules\WEBHELP\AEG\DD00160.HTM"))
         {
@@ -712,7 +832,13 @@ public sealed class EquipmentLibraryService
 
     private static void ForceCanonicalArmorClassification(CustomEquipmentData item, ref bool changed)
     {
-        if (item.IsShield)
+        if (item.IsWeapon || item.IsShield || IsNonArmorGear(item.Name))
+            return;
+
+        bool armorContext = item.IsArmor
+            || item.Categories.Contains("Armor", StringComparer.OrdinalIgnoreCase)
+            || ContainsAny(item.Name.ToLowerInvariant(), new[] { "armor", "mail", "plate", "barding", "brigandine", "hide", "padded", "studded" });
+        if (!armorContext)
             return;
 
         string nameKey = BuildNameKey(item.Name);
@@ -752,8 +878,193 @@ public sealed class EquipmentLibraryService
         }
     }
 
+    private static void ApplyMagicalArmorNormalization(
+        CustomEquipmentData item,
+        IReadOnlyDictionary<string, CustomEquipmentData> byName,
+        ref bool changed)
+    {
+        if (!item.IsMagical || (!item.IsArmor && !item.IsShield))
+            return;
+
+        if (TryParseSetArmorClassFromMetadata(item.MagicalItemMetadata, out int setAc))
+        {
+            if (item.ArmorClassValue != setAc)
+            {
+                item.ArmorClassValue = setAc;
+                changed = true;
+            }
+            return;
+        }
+
+        int magicalAdjustment = item.ArmorClassModifier != 0
+            ? item.ArmorClassModifier
+            : -item.EnchantmentBonus;
+
+        if (!TryResolveBaseArmorClass(item, byName, out int baseAcOrAdj))
+            return;
+
+        int target = item.IsShield
+            ? baseAcOrAdj + magicalAdjustment
+            : Math.Clamp(baseAcOrAdj + magicalAdjustment, 1, 10);
+
+        if (item.ArmorClassValue != target)
+        {
+            item.ArmorClassValue = target;
+            changed = true;
+        }
+    }
+
+    private static bool TryParseSetArmorClassFromMetadata(Dictionary<string, string>? metadata, out int ac)
+    {
+        ac = 0;
+        if (metadata is null || metadata.Count == 0)
+            return false;
+
+        foreach (string key in new[] { "SetArmorClass", "SetAC", "ArmorClassSet" })
+        {
+            if (metadata.TryGetValue(key, out string? value)
+                && int.TryParse(value?.Trim(), out int parsed)
+                && parsed >= 1
+                && parsed <= 10)
+            {
+                ac = parsed;
+                return true;
+            }
+        }
+
+        foreach (string key in new[] { "EffectList", "EffectNotes", "ShortDescription" })
+        {
+            if (!metadata.TryGetValue(key, out string? text) || string.IsNullOrWhiteSpace(text))
+                continue;
+
+            var setMatch = SetAcRegex.Match(text);
+            if (setMatch.Success
+                && int.TryParse(setMatch.Groups["ac"].Value, out int parsed)
+                && parsed >= 1
+                && parsed <= 10)
+            {
+                ac = parsed;
+                return true;
+            }
+        }
+
+        foreach (string key in new[] { "VariantName", "ItemName" })
+        {
+            if (!metadata.TryGetValue(key, out string? text) || string.IsNullOrWhiteSpace(text))
+                continue;
+
+            var variantMatch = VariantAcRegex.Match(text);
+            if (variantMatch.Success
+                && int.TryParse(variantMatch.Groups["ac"].Value, out int parsed)
+                && parsed >= 1
+                && parsed <= 10)
+            {
+                ac = parsed;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool TryResolveBaseArmorClass(
+        CustomEquipmentData item,
+        IReadOnlyDictionary<string, CustomEquipmentData> byName,
+        out int baseAcOrAdj)
+    {
+        baseAcOrAdj = item.IsShield ? -1 : 10;
+        string? baseName = null;
+
+        if (item.MagicalItemMetadata is not null
+            && item.MagicalItemMetadata.TryGetValue("BaseItemName", out string? metadataBase)
+            && !string.IsNullOrWhiteSpace(metadataBase))
+        {
+            baseName = metadataBase.Trim();
+        }
+
+        if (string.IsNullOrWhiteSpace(baseName))
+            return false;
+
+        string baseKey = BuildNameKey(baseName);
+        string selfKey = BuildNameKey(item.Name);
+        if (string.Equals(baseKey, selfKey, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        if (byName.TryGetValue(baseKey, out var baseItem))
+        {
+            if (item.IsShield && baseItem.IsShield)
+            {
+                baseAcOrAdj = baseItem.ArmorClassValue;
+                return true;
+            }
+
+            if (item.IsArmor && !item.IsShield && baseItem.IsArmor)
+            {
+                baseAcOrAdj = baseItem.ArmorClassValue;
+                return true;
+            }
+        }
+
+        if (item.IsShield)
+        {
+            baseAcOrAdj = -1;
+            return true;
+        }
+
+        int inferred = InferArmorClassFromName(baseName);
+        if (inferred < 10)
+        {
+            baseAcOrAdj = inferred;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool IsNonArmorGear(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return false;
+        string lower = name.ToLowerInvariant();
+        return lower.Contains("backpack") || lower.Contains("sack") || lower.Contains("pouch")
+            || lower.Contains("bag") || lower.Contains("belt") || lower.Contains("boot")
+            || lower.Contains("shoe") || (!lower.Contains("gauntlet") && lower.Contains("glove"))
+            || lower.Contains("cloak") || lower.Contains("robe") || lower.Contains("hat")
+            || lower.Contains("cap") || lower.Contains("scabbard") || lower.Contains("sheath")
+            || lower.Contains("quiver") || lower.Contains("saddle") || lower.Contains("harness")
+            || lower.Contains("tack") || lower.Contains("case") || lower.Contains("box")
+            || lower.Contains("chest") || lower.Contains("barrel") || lower.Contains("bottle")
+            || lower.Contains("basket") || lower.Contains("mirror") || lower.Contains("chalk")
+            || lower.Contains("candle") || lower.Contains("torch") || lower.Contains("rope")
+            || lower.Contains("spike") || lower.Contains("piton") || lower.Contains("tent")
+            || lower.Contains("blanket") || lower.Contains("bedroll") || lower.Contains("tube")
+            || lower.Contains("wineskin") || lower.Contains("waterskin");
+    }
+
+    private static bool IsNonWeaponGear(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return false;
+        string lower = name.ToLowerInvariant();
+        return lower.Contains("spike") || lower.Contains("piton") || lower.Contains("chalk")
+            || lower.Contains("torch") || lower.Contains("candle") || lower.Contains("mirror")
+            || lower.Contains("backpack") || lower.Contains("sack") || lower.Contains("pouch")
+            || lower.Contains("rope") || lower.Contains("tent") || lower.Contains("tube");
+    }
+
     private static void ApplyArmorMetadata(CustomEquipmentData item, ref bool changed)
     {
+        if (IsNonArmorGear(item.Name))
+        {
+            if (item.IsArmor)
+            {
+                item.IsArmor = false;
+                item.ArmorClassValue = 10;
+                item.RogueArmorProfile = "no_armor";
+                item.Categories.RemoveAll(c => c.Equals("Armor", StringComparison.OrdinalIgnoreCase));
+                changed = true;
+            }
+            return;
+        }
+
         // Detect shields first — they are handled separately from body armor.
         bool isShieldType = ContainsAny(item.Name.ToLowerInvariant(), new[] { "shield", "buckler" });
         if (isShieldType)
@@ -819,6 +1130,22 @@ public sealed class EquipmentLibraryService
 
     private static void ApplyWeaponMetadata(CustomEquipmentData item, Dictionary<string, WeaponTableStat> weaponLookup, ref bool changed)
     {
+        if (IsNonWeaponGear(item.Name))
+        {
+            if (item.IsWeapon)
+            {
+                item.IsWeapon = false;
+                item.WeaponSpeed = 0;
+                item.WeaponDamageSmallMedium = string.Empty;
+                item.WeaponDamageLarge = string.Empty;
+                item.WeaponType = string.Empty;
+                item.WeaponSize = string.Empty;
+                item.Categories.RemoveAll(c => c.Contains("weapon", StringComparison.OrdinalIgnoreCase));
+                changed = true;
+            }
+            return;
+        }
+
         string haystack = $"{item.Name} {string.Join(' ', item.Categories)} {string.Join(' ', item.ItemTags)}";
         bool shouldBeWeapon = item.IsWeapon
             || item.Categories.Any(c => c.Contains("weapon", StringComparison.OrdinalIgnoreCase))
@@ -894,6 +1221,25 @@ public sealed class EquipmentLibraryService
         if (string.IsNullOrWhiteSpace(item.WeaponType))
         {
             item.WeaponType = InferWeaponType(item.Name);
+            changed = true;
+        }
+    }
+
+    private static void EnforceWeaponArmorSeparation(CustomEquipmentData item, ref bool changed)
+    {
+        // Weapon entries should never contribute to armor calculations.
+        if (item.IsWeapon && item.IsArmor)
+        {
+            item.IsArmor = false;
+            if (item.ArmorClassValue <= 0)
+                item.ArmorClassValue = 10;
+            changed = true;
+        }
+
+        // Shields are defensive gear; if a row is both, prefer shield classification.
+        if (item.IsShield && item.IsWeapon)
+        {
+            item.IsWeapon = false;
             changed = true;
         }
     }
@@ -1134,6 +1480,43 @@ public sealed class EquipmentLibraryService
                 AllowedContentTags = new List<string>(),
             };
         }
+    }
+
+    private static IEnumerable<CustomEquipmentData> BuildSupplementalSpellComponentEntries()
+    {
+        foreach (var (id, name, costGold, costSilver, costCopper, weight, description) in SupplementalSpellComponents)
+        {
+            yield return new CustomEquipmentData
+            {
+                Id = id,
+                Name = name,
+                Description = description,
+                IsMagical = false,
+                Categories = new List<string> { "Spell Components" },
+                ItemTags = new List<string> { "component", "spell" },
+                SizeClass = "Small",
+                Weight = weight,
+                IsArmor = false,
+                IsShield = false,
+                IsWeapon = false,
+                CostGold = costGold,
+                CostSilver = costSilver,
+                CostCopper = costCopper,
+                IsContainer = false,
+                ContainerMaxItems = 0,
+                ContainerMaxWeight = 0,
+                AllowedContentTags = new List<string>(),
+            };
+        }
+    }
+
+    public static string NormalizeCategoryLabel(string? category)
+    {
+        string text = CollapseWhitespace((category ?? string.Empty).Trim());
+        if (string.IsNullOrWhiteSpace(text))
+            return string.Empty;
+
+        return CultureInfo.InvariantCulture.TextInfo.ToTitleCase(text.ToLowerInvariant());
     }
 
     /// <summary>Returns true when a weapon table cell value represents "no data" (dash, blank, special char).</summary>
@@ -2030,7 +2413,22 @@ public sealed class EquipmentLibraryService
     }
 
     private static bool ContainsAny(string text, IEnumerable<string> terms)
-        => terms.Any(term => text.Contains(term, StringComparison.OrdinalIgnoreCase));
+    {
+        if (string.IsNullOrWhiteSpace(text)) return false;
+        foreach (var term in terms)
+        {
+            if (term.Equals("pike", StringComparison.OrdinalIgnoreCase))
+            {
+                if (Regex.IsMatch(text, @"\bpike\b", RegexOptions.IgnoreCase))
+                    return true;
+            }
+            else if (text.Contains(term, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
 
     public static string BuildId(string name)
     {

@@ -24,7 +24,10 @@ public partial class HubScreen : UserControl, IScreen
         TxtActivationStatus.Text = _app.License.ActivationStatusLabel;
         TxtAppVersion.Text = $"Version {AppUpdateService.GetCurrentDisplayVersion()}";
 
-        CardSessions.Visibility = Visibility.Collapsed;
+        CardSessions.Visibility = SessionService.NetworkingEnabled ? Visibility.Visible : Visibility.Collapsed;
+        TxtSessionCardDescription.Text = SessionService.NetworkingEnabled
+            ? "Host a table session or join one on your local network"
+            : "Networking is disabled in this build.";
         CardDmTools.Visibility = Visibility.Visible;
         CardCampaign.Visibility = playerEdition ? Visibility.Collapsed : Visibility.Visible;
         CardCampaignTracker.Visibility = playerEdition ? Visibility.Collapsed : Visibility.Visible;
@@ -33,11 +36,17 @@ public partial class HubScreen : UserControl, IScreen
     private void BtnCharGen_Click(object sender, RoutedEventArgs e) => _app.GoTo("characters");
     private void BtnSessions_Click(object sender, RoutedEventArgs e)
     {
-        MessageBox.Show(
-            "Session Manager is hidden in this release.",
-            "Feature Hidden",
-            MessageBoxButton.OK,
-            MessageBoxImage.Information);
+        if (!SessionService.NetworkingEnabled)
+        {
+            MessageBox.Show(
+                "Networking is disabled in this build.",
+                "Feature Disabled",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        _app.GoTo("sessions");
     }
     private void BtnDmTools_Click(object sender, RoutedEventArgs e) => _app.GoTo("dm_tools");
     private void BtnCampaign_Click(object sender, RoutedEventArgs e) => _app.GoTo("campaign");

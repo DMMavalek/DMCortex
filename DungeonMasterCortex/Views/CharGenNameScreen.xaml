@@ -13,12 +13,21 @@
                        HorizontalAlignment="Center" Margin="0,4,0,16"/>
             <Rectangle Height="1" Fill="{StaticResource BrushBorder}" Margin="0,0,0,24"/>
 
-            <!-- Name -->
+            <!-- Character Name -->
             <StackPanel Orientation="Horizontal" Margin="0,0,0,16"
                         HorizontalAlignment="Center">
                 <TextBlock Text="Character Name:" Style="{StaticResource LabelText}"
                            VerticalAlignment="Center" Width="160"/>
                 <TextBox x:Name="TxtName" Style="{StaticResource DarkTextBox}"
+                         Width="280"/>
+            </StackPanel>
+
+            <!-- Player Name -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,16"
+                        HorizontalAlignment="Center">
+                <TextBlock Text="Player Name:" Style="{StaticResource LabelText}"
+                           VerticalAlignment="Center" Width="160"/>
+                <TextBox x:Name="TxtPlayerName" Style="{StaticResource DarkTextBox}"
                          Width="280"/>
             </StackPanel>
 

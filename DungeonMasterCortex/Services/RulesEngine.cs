@@ -16,6 +16,14 @@ namespace DungeonMasterCortex.Services;
 public class RulesEngine
 {
     private const string ClassAbilitySelectionTextDelimiter = "::text::";
+    private static readonly string CustomRulesPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "DungeonMasterCortex",
+        "custom_rules.json");
+    private static readonly string CustomSpellsPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "DungeonMasterCortex",
+        "custom_spells.json");
 
     private static readonly Regex ImportedSubraceAbilityRegex =
         new(@"^\s*Subrace\s*:\s*([^|]+?)\s*\|\s*(.*)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -35,6 +43,8 @@ public class RulesEngine
 
     public Dictionary<string, RaceDefinition>  Races   { get; } = new();
     public Dictionary<string, ClassDefinition> Classes { get; } = new();
+    public Dictionary<string, DeityDefinition> Deities { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public bool DeityRulesEnabled { get; private set; }
     public Dictionary<string, AbilityDefinition> ClassAbilityLibrary { get; } = new(StringComparer.OrdinalIgnoreCase);
     public List<KitDefinition>                 Kits    { get; } = new();
     public List<MultiClassComboGroup>          MultiClassCombos { get; } = new();
@@ -58,6 +68,7 @@ public class RulesEngine
         LoadFallback();
         TryLoadFromFiles();
         TryLoadClassAbilitiesWorkbook();
+        TryLoadCustomRules();
         TryLoadWeapons();
         TryLoadKits();
         TryLoadMultiClassCombos();
@@ -71,7 +82,16 @@ public class RulesEngine
     private void TryLoadFromFiles()
     {
         var basePath = FindBaseRulesetPath();
-        if (basePath is null) return;
+        if (basePath is null)
+        {
+            WriteRulesLoadDiagnostic("Base ruleset was not found. Running with fallback rules only.");
+            return;
+        }
+
+        var racesBackup = Races.ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase);
+        var classesBackup = Classes.ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase);
+        var deitiesBackup = Deities.ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase);
+        var classAbilityLibraryBackup = ClassAbilityLibrary.ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase);
 
         try
         {
@@ -104,8 +124,56 @@ public class RulesEngine
                 if (overlayDoc.RootElement.TryGetProperty("classes", out var overlayClassesEl))
                     LoadClasses(overlayClassesEl, "players_option");
             }
+
+            var specialtyPriestPath = FindSpecialtyPriestOverlayPath();
+            if (specialtyPriestPath is not null)
+            {
+                using var specialtyStream = File.OpenRead(specialtyPriestPath);
+                var specialtyDoc = JsonDocument.Parse(specialtyStream);
+                LoadDeities(specialtyDoc.RootElement);
+                LoadClassAbilityLibrary(specialtyDoc.RootElement);
+                if (specialtyDoc.RootElement.TryGetProperty("classes", out var specialtyClassesEl))
+                    LoadClasses(specialtyClassesEl, "players_option");
+            }
+
+            WriteRulesLoadDiagnostic(
+                $"Rules loaded. Base={basePath}; Overlay={(overlayPath ?? "<missing>")}; SpecialtyPriests={(specialtyPriestPath ?? "<missing>")}; Races={Races.Count}; Classes={Classes.Count}; AbilityLibrary={ClassAbilityLibrary.Count}");
         }
-        catch { /* keep fallback data */ }
+        catch (Exception ex)
+        {
+            WriteRulesLoadDiagnostic($"Rules load failed for base path '{basePath}'. Falling back to previous in-memory rules. Error: {ex.Message}");
+
+            Races.Clear();
+            foreach (var kv in racesBackup)
+                Races[kv.Key] = kv.Value;
+
+            Classes.Clear();
+            foreach (var kv in classesBackup)
+                Classes[kv.Key] = kv.Value;
+
+            Deities.Clear();
+            foreach (var kv in deitiesBackup)
+                Deities[kv.Key] = kv.Value;
+
+            ClassAbilityLibrary.Clear();
+            foreach (var kv in classAbilityLibraryBackup)
+                ClassAbilityLibrary[kv.Key] = kv.Value;
+        }
+    }
+
+    private static void WriteRulesLoadDiagnostic(string message)
+    {
+        try
+        {
+            string logDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DMCortex", "logs");
+            Directory.CreateDirectory(logDir);
+            string logPath = Path.Combine(logDir, "rules-load.log");
+            File.AppendAllText(logPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {message}{Environment.NewLine}");
+        }
+        catch
+        {
+            // Non-fatal diagnostics only.
+        }
     }
 
     private void LoadClasses(JsonElement classesEl, string defaultRulesMode = "all")
@@ -114,6 +182,7 @@ public class RulesEngine
         {
             var mins = ParseIntDict(cp.Value, "ability_minimums");
             var allowed = ParseStringList(cp.Value, "allowed_races");
+            var allowedAlignments = ParseStringList(cp.Value, "allowed_alignments");
             var name = cp.Value.TryGetProperty("name", out var nEl) ? nEl.GetString() ?? cp.Name : cp.Name;
             var classAbilities = ParseStructuredAbilities(cp.Value, "class_abilities");
             var classAbilityIds = ParseStringList(cp.Value, "class_ability_ids")
@@ -126,6 +195,17 @@ public class RulesEngine
                 if (classAbilities.Any(a => string.Equals(a.Id, sharedAbility.Id, StringComparison.OrdinalIgnoreCase)))
                     continue;
                 classAbilities.Add(CloneAbilityDefinition(sharedAbility));
+            }
+
+            if (cp.Name.StartsWith("specialty_priest_", StringComparison.OrdinalIgnoreCase)
+                && Classes.TryGetValue("cleric", out var clericClass))
+            {
+                foreach (var clericAbility in clericClass.StructuredAbilities.Where(ability => !ability.AutoGranted))
+                {
+                    if (classAbilities.Any(ability => string.Equals(ability.Id, clericAbility.Id, StringComparison.OrdinalIgnoreCase)))
+                        continue;
+                    classAbilities.Add(CloneAbilityDefinition(clericAbility));
+                }
             }
 
             RegisterClassAbilitiesInLibrary(classAbilities);
@@ -142,8 +222,107 @@ public class RulesEngine
             var specializations = ParseSpecializations(cp.Value);
             var source = ParseSourceTag(cp.Value);
             var rulesMode = ParseClassRulesMode(cp.Value, budget, classAbilities, defaultRulesMode);
-            Classes[cp.Name] = new ClassDefinition(cp.Name, name, mins, allowed, classAbilities, budget, specializations, source, rulesMode, startingFundsRoll);
+            var fixedSpheres = ParseStringDict(cp.Value, "fixed_spheres");
+            var deityId = cp.Value.TryGetProperty("deity_id", out var deityEl)
+                ? deityEl.GetString() ?? string.Empty
+                : string.Empty;
+
+            if (Classes.TryGetValue(cp.Name, out var existingClass))
+            {
+                var mergedAbilities = existingClass.StructuredAbilities
+                    .Concat(classAbilities)
+                    .GroupBy(a => a.Id, StringComparer.OrdinalIgnoreCase)
+                    .Select(g => CloneAbilityDefinition(g.Last()))
+                    .ToList();
+
+                var mergedMinimums = new Dictionary<string, int>(existingClass.AbilityMinimums);
+                foreach (var pair in mins)
+                    mergedMinimums[pair.Key] = pair.Value;
+
+                var mergedAllowedRaces = existingClass.AllowedRaces
+                    .Concat(allowed)
+                    .Where(r => !string.IsNullOrWhiteSpace(r))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                var mergedAllowedAlignments = allowedAlignments.Count > 0
+                    ? allowedAlignments
+                    : existingClass.AllowedAlignments;
+
+                var mergedSpecializations = specializations is { Count: > 0 }
+                    ? specializations
+                    : existingClass.Specializations;
+
+                string mergedRulesMode = MergeRulesModes(existingClass.RulesMode, rulesMode);
+                int mergedBudget = Math.Max(existingClass.ClassPointBudget, budget);
+                string mergedName = string.IsNullOrWhiteSpace(existingClass.Name) ? name : existingClass.Name;
+                string mergedSource = string.Equals(existingClass.Source, "custom", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(source, "custom", StringComparison.OrdinalIgnoreCase)
+                    ? "custom"
+                    : existingClass.Source;
+                string mergedStartingFundsRoll = !string.IsNullOrWhiteSpace(existingClass.StartingFundsRoll)
+                    ? existingClass.StartingFundsRoll
+                    : startingFundsRoll;
+
+                Classes[cp.Name] = new ClassDefinition(
+                    cp.Name,
+                    mergedName,
+                    mergedMinimums,
+                    mergedAllowedRaces,
+                    mergedAbilities,
+                    mergedBudget,
+                    mergedSpecializations,
+                    mergedSource,
+                    mergedRulesMode,
+                    mergedStartingFundsRoll,
+                    fixedSpheres.Count > 0 ? fixedSpheres : existingClass.FixedSpheres,
+                    string.IsNullOrWhiteSpace(deityId) ? existingClass.DeityId : deityId,
+                    mergedAllowedAlignments);
+                continue;
+            }
+
+            Classes[cp.Name] = new ClassDefinition(cp.Name, name, mins, allowed, classAbilities, budget, specializations, source, rulesMode, startingFundsRoll, fixedSpheres, deityId, allowedAlignments);
         }
+    }
+
+    private void LoadDeities(JsonElement root)
+    {
+        if (!root.TryGetProperty("deities", out var deitiesEl) || deitiesEl.ValueKind != JsonValueKind.Object)
+            return;
+
+        foreach (var property in deitiesEl.EnumerateObject())
+        {
+            var value = property.Value;
+            string name = value.TryGetProperty("name", out var nameEl) ? nameEl.GetString() ?? property.Name : property.Name;
+            string alignment = value.TryGetProperty("alignment", out var alignmentEl) ? alignmentEl.GetString() ?? string.Empty : string.Empty;
+            string portfolio = value.TryGetProperty("portfolio", out var portfolioEl) ? portfolioEl.GetString() ?? string.Empty : string.Empty;
+            var followerAlignments = ParseStringList(value, "follower_alignments");
+            AbilityDefinition? followerAbility = null;
+            if (value.TryGetProperty("follower_ability", out var abilityEl) && abilityEl.ValueKind == JsonValueKind.Object)
+                followerAbility = ParseAbilityDefinition(abilityEl, $"deity_{property.Name}_follower");
+
+            Deities[property.Name] = new DeityDefinition(
+                property.Name,
+                name,
+                alignment,
+                portfolio,
+                followerAlignments,
+                followerAbility);
+        }
+    }
+
+    private static string MergeRulesModes(string first, string second)
+    {
+        string left = NormalizeCharacterMode(first);
+        string right = NormalizeCharacterMode(second);
+
+        if (string.Equals(left, right, StringComparison.OrdinalIgnoreCase))
+            return left;
+
+        if (string.Equals(left, "all", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(right, "all", StringComparison.OrdinalIgnoreCase))
+            return "all";
+
+        return "all";
     }
 
     private void LoadClassAbilityLibrary(JsonElement root)
@@ -286,10 +465,37 @@ public class RulesEngine
 
     private static string? FindRulesDirectory()
     {
-        var dir = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
+        var directCandidates = new List<string>();
+
+        static void AddCandidate(List<string> list, string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return;
+            if (!Directory.Exists(path))
+                return;
+            if (list.Any(existing => string.Equals(existing, path, StringComparison.OrdinalIgnoreCase)))
+                return;
+            list.Add(path);
+        }
+
+        AddCandidate(directCandidates, Path.Combine(AppContext.BaseDirectory, "data", "rulesets"));
+
+        string? processPath = Environment.ProcessPath;
+        if (!string.IsNullOrWhiteSpace(processPath))
+        {
+            var processDir = Path.GetDirectoryName(processPath);
+            AddCandidate(directCandidates, Path.Combine(processDir ?? string.Empty, "data", "rulesets"));
+        }
+
+        AddCandidate(directCandidates, Path.Combine(Directory.GetCurrentDirectory(), "data", "rulesets"));
+
+        if (directCandidates.Count > 0)
+            return directCandidates[0];
+
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
         string? nearestCandidate = null;
 
-        for (int i = 0; i < 8; i++)
+        for (int i = 0; i < 12; i++)
         {
             var candidate = Path.Combine(dir.FullName, "data", "rulesets");
             if (Directory.Exists(candidate))
@@ -326,10 +532,45 @@ public class RulesEngine
         return File.Exists(path) ? path : null;
     }
 
+    private static string? FindSpecialtyPriestOverlayPath()
+    {
+        var rulesDir = FindRulesDirectory();
+        if (rulesDir is null) return null;
+        var path = Path.Combine(rulesDir, "overlays", "specialty_priests.json");
+        return File.Exists(path) ? path : null;
+    }
+
     private static string? FindAssetsDirectory()
     {
-        var dir = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
-        for (int i = 0; i < 10; i++)
+        var directCandidates = new List<string>();
+
+        static void AddCandidate(List<string> list, string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return;
+            if (!Directory.Exists(path))
+                return;
+            if (list.Any(existing => string.Equals(existing, path, StringComparison.OrdinalIgnoreCase)))
+                return;
+            list.Add(path);
+        }
+
+        AddCandidate(directCandidates, Path.Combine(AppContext.BaseDirectory, "Assets"));
+
+        string? processPath = Environment.ProcessPath;
+        if (!string.IsNullOrWhiteSpace(processPath))
+        {
+            var processDir = Path.GetDirectoryName(processPath);
+            AddCandidate(directCandidates, Path.Combine(processDir ?? string.Empty, "Assets"));
+        }
+
+        AddCandidate(directCandidates, Path.Combine(Directory.GetCurrentDirectory(), "Assets"));
+
+        if (directCandidates.Count > 0)
+            return directCandidates[0];
+
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        for (int i = 0; i < 12; i++)
         {
             var candidate = Path.Combine(dir.FullName, "Assets");
             if (Directory.Exists(candidate))
@@ -355,7 +596,10 @@ public class RulesEngine
     {
         var workbookPath = FindClassAbilitiesWorkbookPath();
         if (workbookPath is null)
+        {
+            WriteRulesLoadDiagnostic("Class abilities workbook not found. Using JSON-defined class abilities only.");
             return;
+        }
 
         try
         {
@@ -458,10 +702,39 @@ public class RulesEngine
                 if (normalized.Count > 0)
                     Classes[kvp.Key] = cls with { StructuredAbilities = normalized };
             }
+
+            WriteRulesLoadDiagnostic($"Class abilities workbook loaded: {workbookPath}. Imported classes={importedByClass.Count}");
         }
-        catch
+        catch (Exception ex)
         {
+            WriteRulesLoadDiagnostic($"Class abilities workbook load failed: {workbookPath}. Error: {ex.Message}");
             // Keep existing class abilities if workbook import fails.
+        }
+    }
+
+    private void TryLoadCustomRules()
+    {
+        if (!File.Exists(CustomRulesPath))
+            return;
+
+        try
+        {
+            using var customStream = File.OpenRead(CustomRulesPath);
+            var customDoc = JsonDocument.Parse(customStream);
+            DeityRulesEnabled = customDoc.RootElement.TryGetProperty("deity_rules_enabled", out var enabledEl)
+                && enabledEl.ValueKind == JsonValueKind.True;
+            LoadDeities(customDoc.RootElement);
+            LoadClassAbilityLibrary(customDoc.RootElement);
+            if (customDoc.RootElement.TryGetProperty("races", out var customRacesEl))
+                LoadRaces(customRacesEl);
+            if (customDoc.RootElement.TryGetProperty("classes", out var customClassesEl))
+                LoadClasses(customClassesEl);
+
+            WriteRulesLoadDiagnostic($"Custom rules loaded: {CustomRulesPath}; Classes={Classes.Count}; AbilityLibrary={ClassAbilityLibrary.Count}");
+        }
+        catch (Exception ex)
+        {
+            WriteRulesLoadDiagnostic($"Custom rules load failed: {CustomRulesPath}. Error: {ex.Message}");
         }
     }
 
@@ -602,6 +875,7 @@ public class RulesEngine
                 AcBonus = GetInt(mech, "ac_bonus"),
                 AcBonusRequiresNoArmor = GetBool(mech, "ac_bonus_requires_no_armor") || GetBool(mech, "requires_no_armor"),
                 AttackBonus = GetInt(mech, "attack_bonus"),
+                AttackBonusPerLevels = GetInt(mech, "attack_bonus_per_levels") != 0 ? GetInt(mech, "attack_bonus_per_levels") : GetInt(mech, "attack_per_levels"),
                 DamageBonus = GetInt(mech, "damage_bonus"),
                 MovementBonus = GetInt(mech, "movement_bonus"),
                 XpModifierPercent = GetInt(mech, "xp_modifier_percent"),
@@ -611,6 +885,7 @@ public class RulesEngine
                 NwpSlotBonus = GetInt(mech, "nwp_slot_bonus"),
                 NwpCostReduction = GetInt(mech, "nwp_cost_reduction"),
                 NwpCheckBonus = GetInt(mech, "nwp_check_bonus"),
+                NwpCheckBonusesById = ParseIntDict(mech, "nwp_check_bonuses_by_id"),
                 SurpriseBonus = GetInt(mech, "surprise_bonus"),
                 InfravisionFeet = GetInt(mech, "infravision_feet"),
                 MagicResistPercent = GetInt(mech, "magic_resist_percent"),
@@ -646,7 +921,7 @@ public class RulesEngine
                 return effect;
 
             case "appearancebonus":
-                effect.ReactionBonus = 1;
+                effect.SubAbilityBonuses["cha_appearance"] = effect.SubAbilityBonuses.GetValueOrDefault("cha_appearance") + 1;
                 return effect;
 
             case "fascinate":
@@ -705,6 +980,7 @@ public class RulesEngine
         return effect.AcBonus == 0
             && !effect.AcBonusRequiresNoArmor
             && effect.AttackBonus == 0
+            && effect.AttackBonusPerLevels == 0
             && effect.DamageBonus == 0
             && effect.MovementBonus == 0
             && effect.XpModifierPercent == 0
@@ -714,6 +990,7 @@ public class RulesEngine
             && effect.NwpSlotBonus == 0
             && effect.NwpCostReduction == 0
             && effect.NwpCheckBonus == 0
+            && effect.NwpCheckBonusesById.Count == 0
             && effect.SurpriseBonus == 0
             && effect.InfravisionFeet == 0
             && effect.MagicResistPercent == 0
@@ -1143,121 +1420,65 @@ public class RulesEngine
 
         try
         {
-            using var stream = File.OpenRead(path);
-            var doc = JsonDocument.Parse(stream);
-            var root = doc.RootElement;
+            var merged = ReadSpellDefinitions(path)
+                .ToDictionary(spell => spell.Id, StringComparer.OrdinalIgnoreCase);
 
-            if (!root.TryGetProperty("spells", out var spellsEl)) return;
-
-            static string ReadString(JsonElement obj, string propName)
+            if (File.Exists(CustomSpellsPath))
             {
-                if (!obj.TryGetProperty(propName, out var p)) return "";
-                return p.ValueKind switch
-                {
-                    JsonValueKind.String => p.GetString() ?? "",
-                    JsonValueKind.Null => "",
-                    _ => p.ToString() ?? "",
-                };
-            }
+                foreach (var spell in ReadSpellDefinitions(CustomSpellsPath))
+                    merged[spell.Id] = spell;
 
-            static bool ReadBool(JsonElement obj, string propName)
-            {
-                if (!obj.TryGetProperty(propName, out var p)) return false;
-                return p.ValueKind switch
+                using var customStream = File.OpenRead(CustomSpellsPath);
+                using var customDoc = JsonDocument.Parse(customStream);
+                if (customDoc.RootElement.TryGetProperty("deleted_spell_ids", out var deletedIds))
                 {
-                    JsonValueKind.True => true,
-                    JsonValueKind.False => false,
-                    JsonValueKind.String => bool.TryParse(p.GetString(), out bool parsed) && parsed,
-                    _ => false,
-                };
+                    foreach (var idElement in deletedIds.EnumerateArray())
+                    {
+                        string id = idElement.GetString() ?? string.Empty;
+                        if (!string.IsNullOrWhiteSpace(id))
+                            merged.Remove(id);
+                    }
+                }
             }
 
             Spells.Clear();
-            foreach (var s in spellsEl.EnumerateArray())
-            {
-                try
-                {
-                    string id = ReadString(s, "id");
-                    if (string.IsNullOrWhiteSpace(id))
-                        id = ReadString(s, "spell_id");
-
-                    if (string.IsNullOrWhiteSpace(id))
-                        continue;
-
-                    Spells.Add(new SpellDefinition(
-                        id,
-                        ReadString(s, "category"),
-                        ReadString(s, "level"),
-                        ReadString(s, "name"),
-                        ReadString(s, "reversal"),
-                        ReadString(s, "schools"),
-                        ReadString(s, "range"),
-                        ReadString(s, "components"),
-                        ReadString(s, "materials"),
-                        ReadString(s, "cast_time"),
-                        ReadString(s, "duration"),
-                        ReadString(s, "area"),
-                        ReadString(s, "save"),
-                        ReadString(s, "frequency"),
-                        ReadString(s, "volume"),
-                        ReadString(s, "page"),
-                        ReadBool(s, "is_healing"),
-                        ReadString(s, "damage"),
-                        ReadString(s, "damage_step"),
-                        ReadString(s, "damage_scale_start_level"),
-                        ReadString(s, "damage_scale_every_levels"),
-                        ReadString(s, "damage_max_at_level"),
-                        ReadString(s, "damage_max"),
-                        ReadString(s, "brief_description"),
-                        ReadString(s, "description")));
-                }
-                catch { }
-            }
+            Spells.AddRange(merged.Values);
         }
         catch { }
     }
 
     public void SaveSpellDefinitions(IEnumerable<SpellDefinition> spells)
     {
-        var rulesDir = FindRulesDirectory();
-        if (rulesDir is null) return;
-        var path = Path.Combine(rulesDir, "spells.json");
+        var bundledPath = FindSpellsDataPath();
+        if (bundledPath is null)
+            throw new InvalidOperationException("Bundled spell data was not found.");
 
-        var list = spells.ToList();
-        using var stream = File.Create(path);
+        var bundled = ReadSpellDefinitions(bundledPath)
+            .ToDictionary(spell => spell.Id, StringComparer.OrdinalIgnoreCase);
+        var desired = spells
+            .GroupBy(spell => spell.Id, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.Last(), StringComparer.OrdinalIgnoreCase);
+        var overrides = desired.Values
+            .Where(spell => IsCustomSpellId(spell.Id)
+                || !bundled.TryGetValue(spell.Id, out var original)
+                || spell != original)
+            .ToList();
+        var deletedIds = bundled.Keys
+            .Where(id => !desired.ContainsKey(id))
+            .OrderBy(id => id, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        Directory.CreateDirectory(Path.GetDirectoryName(CustomSpellsPath)!);
+        using var stream = File.Create(CustomSpellsPath);
         using var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true });
         writer.WriteStartObject();
         writer.WriteStartArray("spells");
-        foreach (var spell in list)
-        {
-            writer.WriteStartObject();
-            writer.WriteString("id", spell.Id);
-            writer.WriteString("category", spell.Category);
-            writer.WriteString("level", spell.Level);
-            writer.WriteString("name", spell.Name);
-            writer.WriteString("reversal", spell.Reversal);
-            writer.WriteString("schools", spell.Schools);
-            writer.WriteString("range", spell.Range);
-            writer.WriteString("components", spell.Components);
-            writer.WriteString("materials", spell.Materials);
-            writer.WriteString("cast_time", spell.CastTime);
-            writer.WriteString("duration", spell.Duration);
-            writer.WriteString("area", spell.Area);
-            writer.WriteString("save", spell.Save);
-            writer.WriteString("frequency", spell.Frequency);
-            writer.WriteString("volume", spell.Volume);
-            writer.WriteString("page", spell.Page);
-            writer.WriteBoolean("is_healing", spell.IsHealing);
-            writer.WriteString("damage", spell.Damage);
-            writer.WriteString("damage_step", spell.DamageStep);
-            writer.WriteString("damage_scale_start_level", spell.DamageScaleStartLevel);
-            writer.WriteString("damage_scale_every_levels", spell.DamageScaleEveryLevels);
-            writer.WriteString("damage_max_at_level", spell.DamageMaxAtLevel);
-            writer.WriteString("damage_max", spell.DamageMax);
-            writer.WriteString("brief_description", spell.BriefDescription);
-            writer.WriteString("description", spell.Description);
-            writer.WriteEndObject();
-        }
+        foreach (var spell in overrides)
+            WriteSpellDefinition(writer, spell);
+        writer.WriteEndArray();
+        writer.WriteStartArray("deleted_spell_ids");
+        foreach (string id in deletedIds)
+            writer.WriteStringValue(id);
         writer.WriteEndArray();
         writer.WriteEndObject();
         writer.Flush();
@@ -1265,12 +1486,100 @@ public class RulesEngine
         TryLoadSpells();
     }
 
+    private static bool IsCustomSpellId(string? spellId)
+        => (spellId ?? string.Empty).StartsWith("arc_custom_", StringComparison.OrdinalIgnoreCase)
+            || (spellId ?? string.Empty).StartsWith("div_custom_", StringComparison.OrdinalIgnoreCase)
+            || (spellId ?? string.Empty).StartsWith("psi_custom_", StringComparison.OrdinalIgnoreCase);
+
+    private static List<SpellDefinition> ReadSpellDefinitions(string path)
+    {
+        using var stream = File.OpenRead(path);
+        using var doc = JsonDocument.Parse(stream);
+        if (!doc.RootElement.TryGetProperty("spells", out var spellsElement))
+            return new List<SpellDefinition>();
+
+        static string ReadString(JsonElement element, string propertyName)
+        {
+            if (!element.TryGetProperty(propertyName, out var value)) return string.Empty;
+            return value.ValueKind switch
+            {
+                JsonValueKind.String => value.GetString() ?? string.Empty,
+                JsonValueKind.Null => string.Empty,
+                _ => value.ToString() ?? string.Empty,
+            };
+        }
+
+        static bool ReadBool(JsonElement element, string propertyName)
+        {
+            if (!element.TryGetProperty(propertyName, out var value)) return false;
+            return value.ValueKind switch
+            {
+                JsonValueKind.True => true,
+                JsonValueKind.False => false,
+                JsonValueKind.String => bool.TryParse(value.GetString(), out bool parsed) && parsed,
+                _ => false,
+            };
+        }
+
+        var results = new List<SpellDefinition>();
+        foreach (var element in spellsElement.EnumerateArray())
+        {
+            string id = ReadString(element, "id");
+            if (string.IsNullOrWhiteSpace(id)) id = ReadString(element, "spell_id");
+            if (string.IsNullOrWhiteSpace(id)) continue;
+
+            results.Add(new SpellDefinition(
+                id, ReadString(element, "category"), ReadString(element, "level"), ReadString(element, "name"),
+                ReadString(element, "reversal"), ReadString(element, "schools"), ReadString(element, "range"),
+                ReadString(element, "components"), ReadString(element, "materials"), ReadString(element, "cast_time"),
+                ReadString(element, "duration"), ReadString(element, "area"), ReadString(element, "save"),
+                ReadString(element, "frequency"), ReadString(element, "volume"), ReadString(element, "page"),
+                ReadBool(element, "is_healing"), ReadString(element, "damage"), ReadString(element, "damage_step"),
+                ReadString(element, "damage_scale_start_level"), ReadString(element, "damage_scale_every_levels"),
+                ReadString(element, "damage_max_at_level"), ReadString(element, "damage_max"),
+                ReadString(element, "brief_description"), ReadString(element, "description")));
+        }
+
+        return results;
+    }
+
+    private static void WriteSpellDefinition(Utf8JsonWriter writer, SpellDefinition spell)
+    {
+        writer.WriteStartObject();
+        writer.WriteString("id", spell.Id);
+        writer.WriteString("category", spell.Category);
+        writer.WriteString("level", spell.Level);
+        writer.WriteString("name", spell.Name);
+        writer.WriteString("reversal", spell.Reversal);
+        writer.WriteString("schools", spell.Schools);
+        writer.WriteString("range", spell.Range);
+        writer.WriteString("components", spell.Components);
+        writer.WriteString("materials", spell.Materials);
+        writer.WriteString("cast_time", spell.CastTime);
+        writer.WriteString("duration", spell.Duration);
+        writer.WriteString("area", spell.Area);
+        writer.WriteString("save", spell.Save);
+        writer.WriteString("frequency", spell.Frequency);
+        writer.WriteString("volume", spell.Volume);
+        writer.WriteString("page", spell.Page);
+        writer.WriteBoolean("is_healing", spell.IsHealing);
+        writer.WriteString("damage", spell.Damage);
+        writer.WriteString("damage_step", spell.DamageStep);
+        writer.WriteString("damage_scale_start_level", spell.DamageScaleStartLevel);
+        writer.WriteString("damage_scale_every_levels", spell.DamageScaleEveryLevels);
+        writer.WriteString("damage_max_at_level", spell.DamageMaxAtLevel);
+        writer.WriteString("damage_max", spell.DamageMax);
+        writer.WriteString("brief_description", spell.BriefDescription);
+        writer.WriteString("description", spell.Description);
+        writer.WriteEndObject();
+    }
+
     /// <summary>Returns kits available for the given race and class combination.</summary>
     public List<KitDefinition> KitsFor(string raceId, string classId = "", string characterMode = "")
     {
         if (!Races.TryGetValue(raceId, out var race)) return new List<KitDefinition>();
         string baseRaceId = race.BaseRaceId ?? "";
-        string mode = NormalizeCharacterMode(characterMode);
+        string mode = NormalizeSelectedCharacterMode(characterMode);
 
         return Kits.Where(kit =>
         {
@@ -1531,6 +1840,11 @@ public class RulesEngine
         "cleric", "druid", "priest",
     };
 
+    public static bool IsPriestClassId(string? classId)
+        => !string.IsNullOrWhiteSpace(classId)
+            && (PriestWeaponClasses.Contains(classId)
+                || classId.StartsWith("specialty_priest_", StringComparison.OrdinalIgnoreCase));
+
     private static readonly HashSet<string> WizardWeaponClasses = new(StringComparer.OrdinalIgnoreCase)
     {
         "wizard", "mage", "illusionist",
@@ -1567,7 +1881,7 @@ public class RulesEngine
     {
         if (WarriorWeaponClasses.Contains(classId)) return 2;
         if (RogueWeaponClasses.Contains(classId))   return 3;
-        if (PriestWeaponClasses.Contains(classId))  return 3;
+        if (IsPriestClassId(classId))               return 3;
         if (WizardWeaponClasses.Contains(classId))  return 5;
         return 3; // default rogue-tier
     }
@@ -1627,7 +1941,7 @@ public class RulesEngine
     {
         if (WarriorWeaponClasses.Contains(classId)) return 6;
         if (RogueWeaponClasses.Contains(classId))   return 6;
-        if (PriestWeaponClasses.Contains(classId))  return 8;
+        if (IsPriestClassId(classId))               return 8;
         if (WizardWeaponClasses.Contains(classId))  return 8;
         return 6;
     }
@@ -1661,7 +1975,7 @@ public class RulesEngine
     private static int GetWeaponClassAllotmentForSingleClass(string classId)
     {
         if (WarriorWeaponClasses.Contains(classId)) return 8;
-        if (PriestWeaponClasses.Contains(classId))  return 8;
+        if (IsPriestClassId(classId))               return 8;
         if (RogueWeaponClasses.Contains(classId))   return 6;
         if (WizardWeaponClasses.Contains(classId))  return 3;
         return 6;
@@ -1692,29 +2006,110 @@ public class RulesEngine
 
     public int GetTotalWeaponProficiencyCpUsed(IEnumerable<string> classIds, IEnumerable<WeaponProficiencySelection> selections)
     {
+        var effectiveClassIds = (classIds ?? Array.Empty<string>())
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var selList = (selections ?? Array.Empty<WeaponProficiencySelection>()).ToList();
         int total = 0;
-        foreach (var selection in selections)
+        foreach (var selection in selList)
         {
-            int cost = GetWeaponProficiencyCpCost(classIds, selection.ProficiencyId, selection.ProficiencyType, selection.Specialized);
-            if (cost < 0)
-                cost = GetWeaponProficiencySlotCost(selection.ProficiencyType) + (selection.Specialized ? 1 : 0);
+            bool coveredByGroup = string.Equals(selection.ProficiencyType, "individual", StringComparison.OrdinalIgnoreCase)
+                && IsWeaponCoveredByGroupSelections(selection.ProficiencyId, selList);
+
+            int cost;
+            if (coveredByGroup)
+            {
+                cost = selection.Specialized ? GetWeaponSpecializationOnlyCpCost(effectiveClassIds) : 0;
+            }
+            else
+            {
+                cost = GetWeaponProficiencyCpCost(effectiveClassIds, selection.ProficiencyId, selection.ProficiencyType, selection.Specialized);
+                if (cost < 0)
+                    cost = GetWeaponProficiencySlotCost(selection.ProficiencyType, selection.ProficiencyId) + (selection.Specialized ? 1 : 0);
+            }
 
             if (selection.WeaponOfChoice)
             {
-                int choiceCost = GetWeaponProficiencyCpCost(classIds, "weapon_of_choice", "combat_option", specialized: false);
+                int choiceCost = GetWeaponProficiencyCpCost(effectiveClassIds, "weapon_of_choice", "combat_option", specialized: false);
                 if (choiceCost > 0)
                     cost += choiceCost;
             }
             if (selection.WeaponExpertise)
             {
-                int expertiseCost = GetWeaponProficiencyCpCost(classIds, "weapon_expertise", "combat_option", specialized: false);
+                int expertiseCost = GetWeaponProficiencyCpCost(effectiveClassIds, "weapon_expertise", "combat_option", specialized: false);
                 if (expertiseCost > 0)
                     cost += expertiseCost;
+            }
+            if (selection.WeaponMastery)
+            {
+                bool singleFighter = effectiveClassIds.Count == 1
+                    && string.Equals(effectiveClassIds[0], "fighter", StringComparison.OrdinalIgnoreCase);
+                cost += singleFighter ? 2 : 8;
+            }
+            if (selection.HighMastery)
+            {
+                bool singleFighter = effectiveClassIds.Count == 1
+                    && string.Equals(effectiveClassIds[0], "fighter", StringComparison.OrdinalIgnoreCase);
+                cost += singleFighter ? 2 : 8;
+            }
+            if (selection.GrandMastery)
+            {
+                cost += 2;
             }
 
             total += cost;
         }
         return total;
+    }
+
+    public static int GetCombatOptionSlotCost(string proficiencyId)
+    {
+        string key = (proficiencyId ?? string.Empty).Trim().ToLowerInvariant();
+        if (key.StartsWith("talent_", StringComparison.OrdinalIgnoreCase))
+            key = key["talent_".Length..];
+
+        return key switch
+        {
+            "quickness" => 2,
+            "endurance" => 2,
+            "fine_balance" => 2,
+            "iron_will" => 2,
+            _ => 1,
+        };
+    }
+
+    public static int GetCombatOptionCpCost(string proficiencyId)
+    {
+        string key = (proficiencyId ?? string.Empty).Trim().ToLowerInvariant();
+        if (key.StartsWith("talent_", StringComparison.OrdinalIgnoreCase))
+            key = key["talent_".Length..];
+
+        return key switch
+        {
+            "alertness" => 6,
+            "iron_will" => 6,
+            "quickness" => 6,
+            "fine_balance" => 5,
+            "steady_hand" => 5,
+            "ambidexterity" => 4,
+            "ambush" => 4,
+            "camouflage" => 4,
+            "endurance" => 4,
+            "trouble_sense" => 4,
+            "dirty_fighting" => 3,
+            "leadership" => 3,
+            "armor_proficiency_light" => 2,
+            "armor_proficiency_medium" => 2,
+            "armor_proficiency_heavy" => 2,
+            "shield_proficiency" => 2,
+            "fighting_style_single" => 2,
+            "fighting_style_two_weapon" => 2,
+            "fighting_style_two_handed" => 2,
+            "fighting_style_missile" => 2,
+            "fighting_style_sword_shield" => 2,
+            _ => 2,
+        };
     }
 
     private int? GetWeaponProficiencyCpCostForClass(string classId, string proficiencyId, string profType, bool specialized, bool isMultiClass, int characterLevel = -1)
@@ -1723,9 +2118,7 @@ public class RulesEngine
         switch ((profType ?? string.Empty).Trim().ToLowerInvariant())
         {
             case "combat_option":
-                // Generic combat-training picks (weapon of choice, expertise, mastery,
-                // armor/shield proficiencies, and fighting styles) share a flat cost.
-                baseCost = 2;
+                baseCost = GetCombatOptionCpCost(proficiencyId);
                 break;
 
             case "broad_group":
@@ -1802,7 +2195,7 @@ public class RulesEngine
         if (string.Equals(classId, "paladin", StringComparison.OrdinalIgnoreCase)
             || string.Equals(classId, "ranger", StringComparison.OrdinalIgnoreCase))
             return 4;
-        if (PriestWeaponClasses.Contains(classId))
+        if (IsPriestClassId(classId))
             return 6;
         if (RogueWeaponClasses.Contains(classId))
             return 8;
@@ -1823,7 +2216,7 @@ public class RulesEngine
         if (string.Equals(classId, "paladin", StringComparison.OrdinalIgnoreCase)
             || string.Equals(classId, "ranger", StringComparison.OrdinalIgnoreCase))
             return 3;
-        if (PriestWeaponClasses.Contains(classId))
+        if (IsPriestClassId(classId))
             return 5;
         if (RogueWeaponClasses.Contains(classId))
             return 6;
@@ -1857,7 +2250,7 @@ public class RulesEngine
     {
         if (IsWarriorWeaponClass(classId))
             return WeaponCostFamily.Warrior;
-        if (PriestWeaponClasses.Contains(classId))
+        if (IsPriestClassId(classId))
             return WeaponCostFamily.Priest;
         if (WizardWeaponClasses.Contains(classId))
             return WeaponCostFamily.Wizard;
@@ -1880,24 +2273,119 @@ public class RulesEngine
         return WeaponAccessTier.Warrior;
     }
 
+    public bool IsWeaponCoveredByGroupSelections(string weaponId, IEnumerable<WeaponProficiencySelection>? selections)
+    {
+        if (string.IsNullOrWhiteSpace(weaponId) || selections is null)
+            return false;
+
+        var groupSelections = selections
+            .Where(s => string.Equals(s.ProficiencyType, "broad_group", StringComparison.OrdinalIgnoreCase)
+                     || string.Equals(s.ProficiencyType, "tight_group", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        if (groupSelections.Count == 0)
+            return false;
+
+        WeaponById.TryGetValue(weaponId, out var weapon);
+
+        foreach (var grp in groupSelections)
+        {
+            string gid = grp.ProficiencyId ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(gid))
+                continue;
+
+            if (string.Equals(grp.ProficiencyType, "tight_group", StringComparison.OrdinalIgnoreCase))
+            {
+                if (weapon is not null && string.Equals(weapon.TightGroupId, gid, StringComparison.OrdinalIgnoreCase))
+                    return true;
+                if (TightGroups.TryGetValue(gid, out var tg) && tg.WeaponIds.Contains(weaponId, StringComparer.OrdinalIgnoreCase))
+                    return true;
+            }
+            else if (string.Equals(grp.ProficiencyType, "broad_group", StringComparison.OrdinalIgnoreCase))
+            {
+                if (weapon is not null && string.Equals(weapon.GroupId, gid, StringComparison.OrdinalIgnoreCase))
+                    return true;
+
+                var bg = WeaponGroups.FirstOrDefault(g => string.Equals(g.Id, gid, StringComparison.OrdinalIgnoreCase));
+                if (bg is not null)
+                {
+                    if (bg.TightGroups.Any(t => t.WeaponIds.Contains(weaponId, StringComparer.OrdinalIgnoreCase)))
+                        return true;
+                    if (weapon is not null && bg.TightGroups.Any(t => string.Equals(t.Id, weapon.TightGroupId, StringComparison.OrdinalIgnoreCase)))
+                        return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    public int GetWeaponSpecializationOnlyCpCost(IEnumerable<string> classIds)
+    {
+        var effectiveClassIds = (classIds ?? Array.Empty<string>())
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (effectiveClassIds.Count == 0)
+            effectiveClassIds.Add("fighter");
+
+        bool isMultiClass = effectiveClassIds.Count > 1;
+        int best = int.MaxValue;
+        foreach (var classId in effectiveClassIds)
+        {
+            if (CanSpecializeInWeapons(classId, playersOption: true))
+            {
+                int cost = GetWeaponSpecializationCpCost(classId, isMultiClass);
+                best = Math.Min(best, cost);
+            }
+        }
+        return best == int.MaxValue ? 2 : best;
+    }
+
     /// <summary>
     /// Returns the slot cost for a given proficiency type.
-    /// individual=1, tight_group=1, broad_group=2
+    /// individual=1, tight_group=1, broad_group=2, combat_option varies by option (e.g. 2 for Quickness)
     /// </summary>
-    public static int GetWeaponProficiencySlotCost(string profType)
-        => string.Equals(profType, "broad_group", StringComparison.OrdinalIgnoreCase) ? 2 : 1;
+    public static int GetWeaponProficiencySlotCost(string profType, string? proficiencyId = null)
+    {
+        if (string.Equals(profType, "broad_group", StringComparison.OrdinalIgnoreCase))
+            return 2;
+
+        if (string.Equals(profType, "combat_option", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(proficiencyId))
+            return GetCombatOptionSlotCost(proficiencyId);
+
+        return 1;
+    }
 
     /// <summary>
     /// Calculates the total slots used by a list of weapon proficiency selections.
-    /// Each specialization costs 1 additional slot.
+    /// Each specialization or mastery tier costs 1 additional slot.
+    /// If an individual weapon is already covered by a group selection, its base proficiency slot is 0.
     /// </summary>
-    public static int GetTotalWeaponProficiencySlotsUsed(IEnumerable<WeaponProficiencySelection> selections)
+    public int GetTotalWeaponProficiencySlotsUsed(IEnumerable<WeaponProficiencySelection> selections)
     {
+        var selList = (selections ?? Array.Empty<WeaponProficiencySelection>()).ToList();
         int total = 0;
-        foreach (var sel in selections)
+        foreach (var sel in selList)
         {
-            total += GetWeaponProficiencySlotCost(sel.ProficiencyType);
-            if (sel.Specialized) total += 1;
+            bool covered = string.Equals(sel.ProficiencyType, "individual", StringComparison.OrdinalIgnoreCase)
+                && IsWeaponCoveredByGroupSelections(sel.ProficiencyId, selList);
+
+            if (covered)
+            {
+                // Base proficiency is granted by group; only specialization/mastery takes slots
+                if (sel.Specialized) total += 1;
+            }
+            else
+            {
+                total += GetWeaponProficiencySlotCost(sel.ProficiencyType, sel.ProficiencyId);
+                if (sel.Specialized) total += 1;
+            }
+
+            if (sel.WeaponMastery) total += 1;
+            if (sel.HighMastery) total += 1;
+            if (sel.GrandMastery) total += 1;
         }
         return total;
     }
@@ -1920,6 +2408,23 @@ public class RulesEngine
         if (el.TryGetProperty(prop, out var dictEl))
             foreach (var p in dictEl.EnumerateObject())
                 result[p.Name] = p.Value.GetInt32();
+        return result;
+    }
+
+    private static Dictionary<string, string> ParseStringDict(JsonElement el, string prop)
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (el.TryGetProperty(prop, out var dictEl) && dictEl.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var property in dictEl.EnumerateObject())
+            {
+                if (property.Value.ValueKind == JsonValueKind.String
+                    && property.Value.GetString() is string value)
+                {
+                    result[property.Name] = value;
+                }
+            }
+        }
         return result;
     }
 
@@ -1996,6 +2501,7 @@ public class RulesEngine
             effect.AcBonus            = GetInt(mech, "ac_bonus");
             effect.AcBonusRequiresNoArmor = GetBool(mech, "ac_bonus_requires_no_armor") || GetBool(mech, "requires_no_armor");
             effect.AttackBonus        = GetInt(mech, "attack_bonus");
+            effect.AttackBonusPerLevels = GetInt(mech, "attack_bonus_per_levels") != 0 ? GetInt(mech, "attack_bonus_per_levels") : GetInt(mech, "attack_per_levels");
             effect.DamageBonus        = GetInt(mech, "damage_bonus");
             effect.MovementBonus      = GetInt(mech, "movement_bonus");
             effect.XpModifierPercent  = GetInt(mech, "xp_modifier_percent");
@@ -2005,6 +2511,7 @@ public class RulesEngine
             effect.NwpSlotBonus       = GetInt(mech, "nwp_slot_bonus");
             effect.NwpCostReduction   = GetInt(mech, "nwp_cost_reduction");
             effect.NwpCheckBonus      = GetInt(mech, "nwp_check_bonus");
+            effect.NwpCheckBonusesById = ParseIntDict(mech, "nwp_check_bonuses_by_id");
             effect.SurpriseBonus      = GetInt(mech, "surprise_bonus");
             effect.InfravisionFeet    = GetInt(mech, "infravision_feet");
             effect.MagicResistPercent = GetInt(mech, "magic_resist_percent");
@@ -2110,6 +2617,7 @@ public class RulesEngine
             AcBonus = src.AcBonus,
             AcBonusRequiresNoArmor = src.AcBonusRequiresNoArmor,
             AttackBonus = src.AttackBonus,
+            AttackBonusPerLevels = src.AttackBonusPerLevels,
             DamageBonus = src.DamageBonus,
             MovementBonus = src.MovementBonus,
             SaveBonuses = new Dictionary<string, int>(src.SaveBonuses),
@@ -2120,6 +2628,7 @@ public class RulesEngine
             NwpSlotBonus = src.NwpSlotBonus,
             NwpCostReduction = src.NwpCostReduction,
             NwpCheckBonus = src.NwpCheckBonus,
+            NwpCheckBonusesById = new Dictionary<string, int>(src.NwpCheckBonusesById, StringComparer.OrdinalIgnoreCase),
             SurpriseBonus = src.SurpriseBonus,
             SubAbilityBonuses = new Dictionary<string, int>(src.SubAbilityBonuses),
             InfravisionFeet = src.InfravisionFeet,
@@ -2265,6 +2774,12 @@ public class RulesEngine
             return 0;
 
         string playerText = ExtractClassAbilityPlayerText(selectionEntry);
+        if (string.Equals(ability.Id, "wizard_restriction_environmental_condition", StringComparison.OrdinalIgnoreCase)
+            && TryParseEnvironmentalRestrictionCp(playerText, out int environmentalCp))
+        {
+            return -environmentalCp;
+        }
+
         if (string.Equals(ability.Id, "cleric_spell_like_granted_power", StringComparison.OrdinalIgnoreCase)
             && TryParseSpellLikeGrantedPowerSelection(playerText, out var spellLikeSelection))
         {
@@ -2281,10 +2796,76 @@ public class RulesEngine
         return ability.PointCost;
     }
 
+    private static bool TryParseEnvironmentalRestrictionCp(string? playerText, out int cp)
+    {
+        cp = 0;
+        if (string.IsNullOrWhiteSpace(playerText))
+            return false;
+
+        string normalizedText = playerText.Trim();
+
+        var match = Regex.Match(normalizedText, @"-?\d+");
+        if (match.Success && int.TryParse(match.Value, out int parsed))
+        {
+            int normalized = Math.Abs(parsed);
+            if (normalized is 5 or 10 or 15 or 20)
+            {
+                cp = normalized;
+                return true;
+            }
+        }
+
+        if (normalizedText.Contains("daily", StringComparison.OrdinalIgnoreCase)
+            || normalizedText.Contains("every day", StringComparison.OrdinalIgnoreCase)
+            || normalizedText.Contains("per day", StringComparison.OrdinalIgnoreCase))
+        {
+            cp = 20;
+            return true;
+        }
+
+        if (normalizedText.Contains("frequent", StringComparison.OrdinalIgnoreCase)
+            || normalizedText.Contains("often", StringComparison.OrdinalIgnoreCase)
+            || normalizedText.Contains("common", StringComparison.OrdinalIgnoreCase))
+        {
+            cp = 15;
+            return true;
+        }
+
+        if (normalizedText.Contains("regular", StringComparison.OrdinalIgnoreCase)
+            || normalizedText.Contains("weekly", StringComparison.OrdinalIgnoreCase)
+            || normalizedText.Contains("once per week", StringComparison.OrdinalIgnoreCase))
+        {
+            cp = 10;
+            return true;
+        }
+
+        if (normalizedText.Contains("occasional", StringComparison.OrdinalIgnoreCase)
+            || normalizedText.Contains("rare", StringComparison.OrdinalIgnoreCase)
+            || normalizedText.Contains("infrequent", StringComparison.OrdinalIgnoreCase))
+        {
+            cp = 5;
+            return true;
+        }
+
+        return false;
+    }
+
     public static string FormatClassAbilitySelectionText(string abilityId, string? playerText)
     {
         if (string.IsNullOrWhiteSpace(playerText))
             return string.Empty;
+
+        if (string.Equals(abilityId, "wizard_restriction_environmental_condition", StringComparison.OrdinalIgnoreCase)
+            && TryParseEnvironmentalRestrictionCp(playerText, out int environmentalCp))
+        {
+            return environmentalCp switch
+            {
+                20 => "Daily condition (-20 CP)",
+                15 => "Frequent condition (-15 CP)",
+                10 => "Regular condition (-10 CP)",
+                _ => "Occasional condition (-5 CP)",
+            };
+        }
 
         if (string.Equals(abilityId, "cleric_spell_like_granted_power", StringComparison.OrdinalIgnoreCase)
             && TryParseSpellLikeGrantedPowerSelection(playerText, out var spellLikeSelection))
@@ -2386,6 +2967,7 @@ public class RulesEngine
 
         cost += Math.Abs(effect.AcBonus) * 2;
         cost += Math.Abs(effect.AttackBonus) * 4;
+        if (effect.AttackBonusPerLevels > 0) cost += Math.Max(2, 12 / Math.Max(1, effect.AttackBonusPerLevels));
         cost += Math.Abs(effect.DamageBonus) * 4;
         cost += effect.SaveBonuses.Values.Sum(v => Math.Abs(v)) / 2;
         cost += Math.Abs(effect.XpModifierPercent) / 5;
@@ -2394,6 +2976,7 @@ public class RulesEngine
         cost += Math.Abs(effect.NwpSlotBonus) * 3;
         cost += Math.Abs(effect.NwpCostReduction) * 2;
         cost += Math.Abs(effect.NwpCheckBonus) * 2;
+        cost += effect.NwpCheckBonusesById.Values.Sum(v => Math.Abs(v)) * 2;
         cost += Math.Abs(effect.SurpriseBonus) * 2;
         cost += effect.SubAbilityBonuses.Values.Sum(v => Math.Abs(v)) * 4;
         cost += effect.InfravisionFeet / 30;
@@ -2454,15 +3037,18 @@ public class RulesEngine
     /// <summary>
     /// Aggregates all AbilityEffect records into a single AbilityBonuses object.
     /// </summary>
-    public static AbilityBonuses AggregateEffects(IEnumerable<AbilityDefinition> abilities, bool isUnarmored = true)
+    public static AbilityBonuses AggregateEffects(IEnumerable<AbilityDefinition> abilities, bool isUnarmored = true, int characterLevel = 1)
     {
         var b = new AbilityBonuses();
+        int effectiveLevel = Math.Max(1, characterLevel);
         foreach (var ab in abilities)
         {
             var e = ab.Effect;
             if (!e.AcBonusRequiresNoArmor || isUnarmored)
                 b.AcBonus += e.AcBonus;
             b.AttackBonus        += e.AttackBonus;
+            if (e.AttackBonusPerLevels > 0)
+                b.AttackBonus += effectiveLevel / e.AttackBonusPerLevels;
             b.DamageBonus        += e.DamageBonus;
             b.MovementBonus      += e.MovementBonus;
             b.XpModifierPercent  += e.XpModifierPercent;
@@ -2474,6 +3060,11 @@ public class RulesEngine
             b.SurpriseBonus      += e.SurpriseBonus;
             b.InfravisionFeet     = Math.Max(b.InfravisionFeet, e.InfravisionFeet); // use longest
             b.MagicResistPercent += e.MagicResistPercent;
+            if (string.Equals(ab.Id, "fighter_magic_resistance", StringComparison.OrdinalIgnoreCase)
+                || (ab.Description?.Contains("2% magic resistance per level", StringComparison.OrdinalIgnoreCase) == true))
+            {
+                b.MagicResistPercent += 2 * effectiveLevel;
+            }
             b.ReactionBonus      += e.ReactionBonus;
             b.GrantsStealth      |= e.GrantsStealth;
             b.DetectSecretDoors  |= e.DetectSecretDoors;
@@ -2483,6 +3074,8 @@ public class RulesEngine
                 b.SaveBonuses[kv.Key] = b.SaveBonuses.GetValueOrDefault(kv.Key) + kv.Value;
             foreach (var kv in e.SubAbilityBonuses)
                 b.SubAbilityBonuses[kv.Key] = b.SubAbilityBonuses.GetValueOrDefault(kv.Key) + kv.Value;
+            foreach (var kv in e.NwpCheckBonusesById)
+                b.NwpCheckBonusesById[kv.Key] = b.NwpCheckBonusesById.GetValueOrDefault(kv.Key) + kv.Value;
             foreach (var kv in e.EnemyAttackBonuses)
                 b.EnemyAttackBonuses[kv.Key] = b.EnemyAttackBonuses.GetValueOrDefault(kv.Key) + kv.Value;
             foreach (var kv in e.EnemyDamageBonuses)
@@ -2495,16 +3088,35 @@ public class RulesEngine
         return b;
     }
 
-    private static string NormalizeCharacterMode(string? mode) => mode switch
+    private static string NormalizeCharacterMode(string? mode)
     {
-        "core_rules" => "core_rules",
-        "players_option" => "players_option",
-        _ => "all",
-    };
+        if (string.IsNullOrWhiteSpace(mode))
+            return "all";
+
+        string normalized = new string(mode
+            .Trim()
+            .ToLowerInvariant()
+            .Where(char.IsLetterOrDigit)
+            .ToArray());
+
+        return normalized switch
+        {
+            "corerules" or "core" => "core_rules",
+            "playersoption" or "po" => "players_option",
+            "all" or "any" => "all",
+            _ => "all",
+        };
+    }
+
+    private static string NormalizeSelectedCharacterMode(string? mode)
+    {
+        var normalized = NormalizeCharacterMode(mode);
+        return normalized == "all" ? "core_rules" : normalized;
+    }
 
     public IEnumerable<RaceDefinition> RacesForMode(string characterMode)
     {
-        var mode = NormalizeCharacterMode(characterMode);
+        var mode = NormalizeSelectedCharacterMode(characterMode);
         var filtered = Races.Values
             .Where(r => r.CharacterMode == "all" || r.CharacterMode == mode)
             .GroupBy(r => r.BaseRaceId)
@@ -2522,7 +3134,7 @@ public class RulesEngine
 
     public IEnumerable<RaceDefinition> SubracesForBase(string characterMode, string baseRaceId)
     {
-        var mode = NormalizeCharacterMode(characterMode);
+        var mode = NormalizeSelectedCharacterMode(characterMode);
         var baseId = (baseRaceId ?? string.Empty).Trim();
         if (string.IsNullOrWhiteSpace(baseId)) return Enumerable.Empty<RaceDefinition>();
 
@@ -2573,32 +3185,6 @@ public class RulesEngine
             subraces = MergeHalflingOptionsIntoBasic(subraces);
         }
 
-        // Core rules fallback: if the base dataset has no explicit subraces,
-        // surface Player's Option subraces as selectable lineage entries.
-        // Character mode remains core when the sheet is built from char-gen state.
-        if (subraces.Count == 0 && string.Equals(mode, "core_rules", StringComparison.OrdinalIgnoreCase))
-        {
-            subraces = Races.Values
-                .Where(r => string.Equals(r.BaseRaceId, baseId, StringComparison.OrdinalIgnoreCase))
-                .Where(r => r.CharacterMode == "players_option" || r.CharacterMode == "all")
-                .GroupBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
-                .Select(group => group
-                    .OrderByDescending(r => r.CharacterMode == "players_option")
-                    .ThenByDescending(r => r.CharacterMode == "all")
-                    .ThenBy(r => r.Name.StartsWith("Basic ", StringComparison.OrdinalIgnoreCase) ? 1 : 0)
-                    .ThenBy(r => r.Name)
-                    .First())
-                .OrderBy(r => r.Name.StartsWith("Basic ", StringComparison.OrdinalIgnoreCase) ? 1 : 0)
-                .ThenBy(r => r.Name)
-                .ToList();
-
-            var nonBasic = subraces
-                .Where(r => !r.Name.StartsWith("Basic ", StringComparison.OrdinalIgnoreCase))
-                .ToList();
-            if (nonBasic.Count > 0)
-                subraces = nonBasic;
-        }
-
         if (subraces.Count > 0) return subraces;
 
         // Fallback if only a single race entry exists without explicit base linkage.
@@ -2613,6 +3199,21 @@ public class RulesEngine
                 .First())
             .OrderBy(r => r.Name)
             .ToList();
+    }
+
+    public bool IsWizardSpecializationAllowedForRace(WizardSpecialization specialization, string? raceId)
+    {
+        if (specialization.AllowedRaces.Count == 0)
+            return true;
+
+        string selectedRaceId = raceId?.Trim() ?? string.Empty;
+        string baseRaceId = Races.TryGetValue(selectedRaceId, out var race)
+            ? race.BaseRaceId
+            : string.Empty;
+
+        return specialization.AllowedRaces.Contains(selectedRaceId, StringComparer.OrdinalIgnoreCase)
+            || (!string.IsNullOrWhiteSpace(baseRaceId)
+                && specialization.AllowedRaces.Contains(baseRaceId, StringComparer.OrdinalIgnoreCase));
     }
 
     private static bool IsRedundantZeroCostBaseSubrace(RaceDefinition race, string baseRaceId)
@@ -3560,7 +4161,11 @@ public class RulesEngine
             cls.ClassPointBudget,
             cls.Specializations is null ? null : new List<WizardSpecialization>(cls.Specializations),
             cls.Source,
-            NormalizeCharacterMode(cls.RulesMode));
+            NormalizeCharacterMode(cls.RulesMode),
+            cls.StartingFundsRoll,
+            cls.FixedSpheres is null ? null : new Dictionary<string, string>(cls.FixedSpheres, StringComparer.OrdinalIgnoreCase),
+            cls.DeityId,
+            cls.AllowedAlignments is null ? null : new List<string>(cls.AllowedAlignments));
 
         Classes[normalized.Id] = normalized;
         PersistClass(normalized);
@@ -3569,55 +4174,80 @@ public class RulesEngine
     public void DeleteRace(string raceId)
     {
         if (!Races.Remove(raceId)) return;
-        RemoveRaceFromFile(FindBaseRulesetPath(), raceId);
-        RemoveRaceFromFile(FindPlayersOptionOverlayPath(), raceId);
+        RemoveRaceFromFile(CustomRulesPath, raceId);
     }
 
     public void DeleteClass(string classId)
     {
         if (!Classes.Remove(classId)) return;
-        RemoveClassFromFile(FindBaseRulesetPath(), classId);
-        RemoveClassFromFile(FindPlayersOptionOverlayPath(), classId);
+        RemoveClassFromFile(CustomRulesPath, classId);
+    }
+
+    public void SetDeityRulesEnabled(bool enabled)
+    {
+        DeityRulesEnabled = enabled;
+        var root = ReadOrCreateJsonObject(CustomRulesPath);
+        root["deity_rules_enabled"] = enabled;
+        WriteJsonObject(CustomRulesPath, root);
+    }
+
+    public void SaveDeity(DeityDefinition deity)
+    {
+        if (string.IsNullOrWhiteSpace(deity.Id) || string.IsNullOrWhiteSpace(deity.Name))
+            throw new ArgumentException("Deity ID and name are required.");
+
+        var normalized = deity with
+        {
+            Id = deity.Id.Trim().ToLowerInvariant(),
+            Name = deity.Name.Trim(),
+            Alignment = deity.Alignment.Trim().ToUpperInvariant(),
+            Portfolio = deity.Portfolio.Trim(),
+            FollowerAlignments = deity.FollowerAlignments
+                .Select(value => value.Trim().ToUpperInvariant())
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList(),
+        };
+
+        Deities[normalized.Id] = normalized;
+        var root = ReadOrCreateJsonObject(CustomRulesPath);
+        var deitiesObject = root["deities"]?.AsObject() ?? new JsonObject();
+        var followerAlignments = new JsonArray();
+        foreach (string alignment in normalized.FollowerAlignments)
+            followerAlignments.Add(alignment);
+
+        var deityObject = new JsonObject
+        {
+            ["name"] = normalized.Name,
+            ["alignment"] = normalized.Alignment,
+            ["portfolio"] = normalized.Portfolio,
+            ["follower_alignments"] = followerAlignments,
+        };
+        if (normalized.FollowerAbility is not null)
+            deityObject["follower_ability"] = ToJsonAbilityObject(normalized.FollowerAbility, includeId: false);
+
+        deitiesObject[normalized.Id] = deityObject;
+        root["deities"] = deitiesObject;
+        WriteJsonObject(CustomRulesPath, root);
     }
 
     private void PersistRace(RaceDefinition race)
     {
-        var basePath = FindBaseRulesetPath();
-        var overlayPath = FindPlayersOptionOverlayPath();
-        if (basePath is null || overlayPath is null)
-            throw new InvalidOperationException("Unable to locate the ruleset files.");
-
-        RemoveRaceFromFile(basePath, race.Id);
-        RemoveRaceFromFile(overlayPath, race.Id);
-
-        var targetPath = race.CharacterMode == "players_option" ? overlayPath : basePath;
-        var root = ReadOrCreateJsonObject(targetPath);
+        var root = ReadOrCreateJsonObject(CustomRulesPath);
         var racesObject = root["races"]?.AsObject() ?? new JsonObject();
         racesObject[race.Id] = ToJsonRaceObject(race);
         root["races"] = racesObject;
-        WriteJsonObject(targetPath, root);
+        WriteJsonObject(CustomRulesPath, root);
     }
 
     private void PersistClass(ClassDefinition cls)
     {
-        var basePath = FindBaseRulesetPath();
-        var overlayPath = FindPlayersOptionOverlayPath();
-        if (basePath is null || overlayPath is null)
-            throw new InvalidOperationException("Unable to locate the ruleset files.");
-
-        RemoveClassFromFile(basePath, cls.Id);
-        RemoveClassFromFile(overlayPath, cls.Id);
-
-        var targetPath = string.Equals(cls.RulesMode, "players_option", StringComparison.OrdinalIgnoreCase)
-            ? overlayPath
-            : basePath;
-
-        var root = ReadOrCreateJsonObject(targetPath);
+        var root = ReadOrCreateJsonObject(CustomRulesPath);
         UpsertClassAbilityLibrary(root, cls.StructuredAbilities);
         var classesObject = root["classes"]?.AsObject() ?? new JsonObject();
         classesObject[cls.Id] = ToJsonClassObject(cls, includeInlineClassAbilities: false);
         root["classes"] = classesObject;
-        WriteJsonObject(targetPath, root);
+        WriteJsonObject(CustomRulesPath, root);
     }
 
     private static void UpsertClassAbilityLibrary(JsonObject root, IEnumerable<AbilityDefinition> abilities)
@@ -3649,6 +4279,7 @@ public class RulesEngine
         var mech = new JsonObject();
         if (e.AcBonus            != 0) mech["ac_bonus"]              = e.AcBonus;
         if (e.AttackBonus        != 0) mech["attack_bonus"]          = e.AttackBonus;
+        if (e.AttackBonusPerLevels > 0) mech["attack_bonus_per_levels"] = e.AttackBonusPerLevels;
         if (e.DamageBonus        != 0) mech["damage_bonus"]          = e.DamageBonus;
         if (e.MovementBonus      != 0) mech["movement_bonus"]        = e.MovementBonus;
         if (e.XpModifierPercent  != 0) mech["xp_modifier_percent"]   = e.XpModifierPercent;
@@ -3659,6 +4290,7 @@ public class RulesEngine
         if (e.NwpSlotBonus       != 0) mech["nwp_slot_bonus"]        = e.NwpSlotBonus;
         if (e.NwpCostReduction   != 0) mech["nwp_cost_reduction"]    = e.NwpCostReduction;
         if (e.NwpCheckBonus      != 0) mech["nwp_check_bonus"]       = e.NwpCheckBonus;
+        if (e.NwpCheckBonusesById.Count > 0) mech["nwp_check_bonuses_by_id"] = ToJsonObject(e.NwpCheckBonusesById);
         if (e.SurpriseBonus      != 0) mech["surprise_bonus"]        = e.SurpriseBonus;
         if (e.InfravisionFeet    != 0) mech["infravision_feet"]      = e.InfravisionFeet;
         if (e.MagicResistPercent != 0) mech["magic_resist_percent"]  = e.MagicResistPercent;
@@ -3732,6 +4364,19 @@ public class RulesEngine
 
         if (cls.IsCustom)
             obj["source"] = "custom";
+
+        if (cls.FixedSpheres is { Count: > 0 })
+        {
+            var fixedSpheres = new JsonObject();
+            foreach (var (sphere, access) in cls.FixedSpheres.OrderBy(pair => pair.Key))
+                fixedSpheres[sphere] = access;
+            obj["fixed_spheres"] = fixedSpheres;
+        }
+
+        if (!string.IsNullOrWhiteSpace(cls.DeityId))
+            obj["deity_id"] = cls.DeityId;
+        if (cls.AllowedAlignments is { Count: > 0 })
+            obj["allowed_alignments"] = new JsonArray(cls.AllowedAlignments.Select(value => JsonValue.Create(value)).ToArray());
 
         if (cls.Specializations is { Count: > 0 })
         {
@@ -3908,6 +4553,14 @@ public class RulesEngine
                     : 0;
                 var specializations = ParseSpecializations(classJson);
                 var rulesMode = ParseClassRulesMode(classJson, budget, classAbilities);
+                var startingFundsRoll = classJson.TryGetProperty("starting_funds_roll", out var fundsEl)
+                    ? fundsEl.GetString() ?? string.Empty
+                    : string.Empty;
+                var fixedSpheres = ParseStringDict(classJson, "fixed_spheres");
+                var deityId = classJson.TryGetProperty("deity_id", out var deityEl)
+                    ? deityEl.GetString() ?? string.Empty
+                    : string.Empty;
+                var allowedAlignments = ParseStringList(classJson, "allowed_alignments");
 
                 var importedClass = new ClassDefinition(
                     classId,
@@ -3918,7 +4571,11 @@ public class RulesEngine
                     budget,
                     specializations,
                     "custom",
-                    rulesMode);
+                    rulesMode,
+                    startingFundsRoll,
+                    fixedSpheres,
+                    deityId,
+                    allowedAlignments);
 
                 SaveClass(importedClass);
                 classCount += 1;
@@ -3930,19 +4587,26 @@ public class RulesEngine
 
     private static JsonObject ReadOrCreateJsonObject(string path)
     {
+        if (!File.Exists(path))
+            return new JsonObject();
+
         using var stream = File.OpenRead(path);
         return JsonNode.Parse(stream)?.AsObject() ?? new JsonObject();
     }
 
     private static void WriteJsonObject(string path, JsonObject root)
     {
+        var directory = Path.GetDirectoryName(path);
+        if (!string.IsNullOrWhiteSpace(directory))
+            Directory.CreateDirectory(directory);
+
         var options = new JsonSerializerOptions { WriteIndented = true };
         File.WriteAllText(path, root.ToJsonString(options));
     }
 
     private static void RemoveRaceFromFile(string? path, string raceId)
     {
-        if (path is null) return;
+        if (path is null || !File.Exists(path)) return;
         var root = ReadOrCreateJsonObject(path);
         if (root["races"] is not JsonObject racesObject || !racesObject.Remove(raceId)) return;
         root["races"] = racesObject;
@@ -3951,7 +4615,7 @@ public class RulesEngine
 
     private static void RemoveClassFromFile(string? path, string classId)
     {
-        if (path is null) return;
+        if (path is null || !File.Exists(path)) return;
         var root = ReadOrCreateJsonObject(path);
         if (root["classes"] is not JsonObject classesObject || !classesObject.Remove(classId)) return;
         root["classes"] = classesObject;
@@ -4082,6 +4746,8 @@ public class RulesEngine
             new() { {"str",12},{"con",9},{"wis",13},{"cha",17} },
             new() { "human" },
             new());
+        Classes["ranger"] = Classes["ranger"] with { AllowedAlignments = new() { "LG", "NG", "CG" } };
+        Classes["paladin"] = Classes["paladin"] with { AllowedAlignments = new() { "LG" } };
     }
 
     // ── Character generation ─────────────────────────────────────────────────
@@ -4343,8 +5009,33 @@ public class RulesEngine
 
     // ── Validation ───────────────────────────────────────────────────────────
 
+    public bool IsClassAlignmentAllowed(string classId, string alignment)
+    {
+        if (!Classes.TryGetValue(classId, out var cls) || cls.AllowedAlignments is not { Count: > 0 })
+            return true;
+
+        return cls.AllowedAlignments.Contains(alignment, StringComparer.OrdinalIgnoreCase);
+    }
+
+    public bool IsClassCombinationAlignmentAllowed(IEnumerable<string> classIds, string alignment)
+    {
+        var effectiveClassIds = classIds
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        if (effectiveClassIds.SetEquals(new[] { "druid", "ranger" }))
+        {
+            return new[] { "NG", "N", "CG" }.Contains(alignment, StringComparer.OrdinalIgnoreCase);
+        }
+
+        return effectiveClassIds.All(classId => IsClassAlignmentAllowed(classId, alignment));
+    }
+
     public List<string> Validate(string raceId, string classId,
-                                  Dictionary<string, int> abilities)
+                                  Dictionary<string, int> abilities,
+                                  string alignment = "",
+                                  bool ignoreAlignment = false)
     {
         var issues = new List<string>();
         if (!Races.TryGetValue(raceId, out var race))   { issues.Add($"Unknown race: {raceId}");  return issues; }
@@ -4366,6 +5057,11 @@ public class RulesEngine
             !cls.AllowedRaces.Contains(raceId) &&
             !cls.AllowedRaces.Contains(race.BaseRaceId))
             issues.Add($"{race.Name} cannot be a {cls.Name}");
+
+        if (!ignoreAlignment && !IsClassAlignmentAllowed(classId, alignment))
+        {
+            issues.Add($"{cls.Name} requires alignment: {string.Join(", ", cls.AllowedAlignments ?? new List<string>())}");
+        }
 
         if (race.RacialPointBudget > 0)
         {
@@ -4407,7 +5103,8 @@ public class RulesEngine
                                  IEnumerable<string>? selectedOptionalClassAbilityIds = null,
                                  int classAbilityCarryoverPoints = 0,
                                  string? specializationId = null,
-                                 int characterLevel = int.MaxValue)
+                                 int characterLevel = int.MaxValue,
+                                 string? raceId = null)
     {
         if (!Classes.TryGetValue(classId, out var cls))
             return (0, 0, 0, new List<AbilityDefinition>());
@@ -4433,10 +5130,17 @@ public class RulesEngine
 
         var selected = SelectClassAbilities(cls, mergedEntries, characterLevel);
         var spent = selected.Sum(a => a.PointCost);
-        var carryover = Math.Clamp(classAbilityCarryoverPoints, 0, 5);
+        var carryover = NormalizeClassAbilityCarryover(raceId, classAbilityCarryoverPoints);
         var budget = Math.Max(0, classBudget) + carryover;
         var remaining = budget - spent;
         return (budget, spent, remaining, selected);
+    }
+
+    public static int NormalizeClassAbilityCarryover(string? raceId, int classAbilityCarryoverPoints)
+    {
+        int carryover = Math.Max(0, classAbilityCarryoverPoints);
+        bool isHuman = string.Equals((raceId ?? string.Empty).Trim(), "human", StringComparison.OrdinalIgnoreCase);
+        return isHuman ? carryover : Math.Min(5, carryover);
     }
 
     private static List<AbilityDefinition> SelectRacialAbilities(RaceDefinition race,
@@ -4578,7 +5282,8 @@ public class RulesEngine
                 selectedOptionalClassAbilityIds,
                 classAbilityCarryoverPoints,
                 specializationId,
-                characterLevel);
+                characterLevel,
+                raceId);
             selectedClass = classPackage.selectedAbilities;
             classBudget = classPackage.budget;
             classSpent = classPackage.spent;
@@ -4587,7 +5292,7 @@ public class RulesEngine
         }
 
         // Aggregate the race/class ability bonuses first
-        var bonuses = AggregateEffects(allStructured, isUnarmored);
+        var bonuses = AggregateEffects(allStructured, isUnarmored, characterLevel);
 
         // Seed sub-abilities: use provided values (PO flow), else default to base ability values.
         var effectiveSubAbilities = BuildDefaultSubAbilities(abilities, subAbilities);
@@ -4610,9 +5315,9 @@ public class RulesEngine
                 effectiveSubAbilities[matchKey] += mod;
         }
 
-        // Clamp to playable bounds after modifiers.
+        // Clamp to PO bounds after modifiers: STR sub-abilities can reach 20, others cap at 18.
         foreach (var k in effectiveSubAbilities.Keys.ToList())
-            effectiveSubAbilities[k] = Math.Clamp(effectiveSubAbilities[k], 1, 20);
+            effectiveSubAbilities[k] = ClampSubAbilityScore(k, effectiveSubAbilities[k]);
 
         // Derive concrete mechanics from sub-abilities and fold into character bonuses.
         var subTotals = SubAbilityTables.CalculateTotals(effectiveSubAbilities, exceptionalStrength, classId);
@@ -4641,33 +5346,51 @@ public class RulesEngine
         if (subTotals.MagicDefenseAdjustment != 0)
             bonuses.SaveBonuses["magic"] = bonuses.SaveBonuses.GetValueOrDefault("magic") + subTotals.MagicDefenseAdjustment;
 
-        if (subTotals.SpellImmunityPercent != 0)
-            bonuses.MagicResistPercent += subTotals.SpellImmunityPercent;
-
         // Preserve thief-style sub-check adjustments explicitly for downstream systems.
         bonuses.SubAbilityBonuses["pick_pockets"] = bonuses.SubAbilityBonuses.GetValueOrDefault("pick_pockets") + subTotals.PickPocketsAdjustment;
         bonuses.SubAbilityBonuses["open_locks"] = bonuses.SubAbilityBonuses.GetValueOrDefault("open_locks") + subTotals.OpenLocksAdjustment;
         bonuses.SubAbilityBonuses["move_silently"] = bonuses.SubAbilityBonuses.GetValueOrDefault("move_silently") + subTotals.MoveSilentlyAdjustment;
         bonuses.SubAbilityBonuses["climb_walls"] = bonuses.SubAbilityBonuses.GetValueOrDefault("climb_walls") + subTotals.ClimbWallsAdjustment;
 
-        // Base HP: check if any ability provides a dice expression; otherwise use class hit die
-        int baseHp;
-        var hpDiceExpression = allStructured
-            .FirstOrDefault(a => !string.IsNullOrWhiteSpace(a.Effect?.HpDiceExpression))
-            ?.Effect?.HpDiceExpression;
+        string resolvedCharacterMode = NormalizeCharacterMode(
+            string.IsNullOrWhiteSpace(characterMode) ? race?.CharacterMode : characterMode);
+        bool isCoreRulesCharacter = string.Equals(resolvedCharacterMode, "core_rules", StringComparison.OrdinalIgnoreCase);
 
-        if (!string.IsNullOrWhiteSpace(hpDiceExpression))
+        // Core rules HP uses only hit die and CON (no race/class hp bonus carry-over).
+        if (isCoreRulesCharacter)
         {
-            // Roll the dice from the ability
-            baseHp = DiceRoller.Roll(hpDiceExpression);
+            bonuses.HpPerLevel = 0;
+            bonuses.HpFlatBonus = 0;
+        }
+
+        int conScore = abilities.GetValueOrDefault("con", 10);
+        int conHpBonus = CharacterProgressionService.GetConHitPointBonus(conScore, classId);
+
+        // Base HP: Core rules uses class hit die only. Players Option can override via HP dice expression.
+        int baseHp;
+        if (isCoreRulesCharacter)
+        {
+            baseHp = BaseHitPoints(classId);
         }
         else
         {
-            // Use default class hit die
-            baseHp = BaseHitPoints(classId);
+            var hpDiceExpression = allStructured
+                .FirstOrDefault(a => !string.IsNullOrWhiteSpace(a.Effect?.HpDiceExpression))
+                ?.Effect?.HpDiceExpression;
+
+            if (!string.IsNullOrWhiteSpace(hpDiceExpression))
+            {
+                // Roll the dice from the ability.
+                baseHp = DiceRoller.Roll(hpDiceExpression);
+            }
+            else
+            {
+                // Use default class hit die.
+                baseHp = BaseHitPoints(classId);
+            }
         }
 
-        baseHp += ConModifier(abilities.GetValueOrDefault("con", 10));
+        baseHp += conHpBonus;
         if (baseHp < 1) baseHp = 1;
 
         // Effective HP at level 1: flat bonuses and hp/level both apply once.
@@ -4700,9 +5423,6 @@ public class RulesEngine
         if (classBudget > 0 && classRemaining < 0)
             throw new InvalidOperationException($"Class ability cost exceeds budget for {cls?.Name ?? classId}: spent {classSpent}, budget {classBudget}.");
 
-        string resolvedCharacterMode = NormalizeCharacterMode(
-            string.IsNullOrWhiteSpace(characterMode) ? race?.CharacterMode : characterMode);
-
         return new CharacterSheet
         {
             Name          = name,
@@ -4730,7 +5450,7 @@ public class RulesEngine
             ClassPointBudget = classBudget,
             ClassPointSpent = classSpent,
             ClassPointRemaining = classRemaining,
-            ClassAbilityCarryoverPoints = Math.Max(0, classAbilityCarryoverPoints),
+            ClassAbilityCarryoverPoints = NormalizeClassAbilityCarryover(raceId, classAbilityCarryoverPoints),
             SelectedRacialAbilityIds = selectedRacialIds,
             SelectedClassAbilityIds = selectedClassIds,
             SubAbilities = effectiveSubAbilities,
@@ -4784,11 +5504,21 @@ public class RulesEngine
         return result;
     }
 
+    private static int ClampSubAbilityScore(string subAbilityKey, int value)
+    {
+        if (string.IsNullOrWhiteSpace(subAbilityKey))
+            return Math.Clamp(value, 1, 18);
+
+        bool isStrengthSubAbility = subAbilityKey.StartsWith("str_", StringComparison.OrdinalIgnoreCase);
+        int max = isStrengthSubAbility ? 20 : 18;
+        return Math.Clamp(value, 1, max);
+    }
+
     // ── Class eligibility for a given race ───────────────────────────────────
 
     public IEnumerable<ClassDefinition> EligibleClasses(string raceId, string? characterMode = null)
     {
-        var mode = NormalizeCharacterMode(characterMode);
+        var mode = NormalizeSelectedCharacterMode(characterMode);
 
         bool ClassModeAllowed(ClassDefinition cls)
         {
@@ -4923,11 +5653,13 @@ public class RulesEngine
     public static readonly Dictionary<string, string> RogueSkillAbilityToSkillId =
         new(StringComparer.OrdinalIgnoreCase)
         {
+            ["thief_bribe"] = "bribe",
             ["thief_pick_pockets"] = "pick_pockets",
             ["thief_open_locks"] = "open_locks",
             ["thief_find_remove_traps"] = "find_remove_traps",
             ["thief_move_silently"] = "move_silently",
             ["thief_hide_in_shadows"] = "hide_in_shadows",
+            ["thief_detect_magic"] = "detect_magic",
             ["thief_detect_noise"] = "detect_noise",
             ["thief_climb_walls"] = "climb_walls",
             ["thief_read_languages"] = "read_languages",
@@ -4957,27 +5689,64 @@ public class RulesEngine
     public static readonly Dictionary<string, string> RogueSkillNames =
         new(StringComparer.OrdinalIgnoreCase)
         {
+            ["bribe"] = "Bribe",
             ["pick_pockets"] = "Pick Pockets",
             ["open_locks"] = "Open Locks",
             ["find_remove_traps"] = "Find/Remove Traps",
             ["move_silently"] = "Move Silently",
             ["hide_in_shadows"] = "Hide in Shadows",
+            ["detect_magic"] = "Detect Magic",
             ["detect_noise"] = "Detect Noise",
             ["climb_walls"] = "Climb Walls",
             ["read_languages"] = "Read Languages",
         };
 
+    private static readonly string[] BardStandardRogueSkillIds =
+    {
+        "pick_pockets",
+        "detect_noise",
+        "climb_walls",
+        "read_languages",
+    };
+
+    private static readonly string[] ThiefStandardRogueSkillIds =
+    {
+        "pick_pockets",
+        "open_locks",
+        "find_remove_traps",
+        "move_silently",
+        "hide_in_shadows",
+        "detect_noise",
+        "climb_walls",
+        "read_languages",
+    };
+
     private static readonly Dictionary<string, int> RogueSkillBaseScores =
         new(StringComparer.OrdinalIgnoreCase)
         {
+            ["bribe"] = 0,
             ["pick_pockets"] = 15,
             ["open_locks"] = 10,
             ["find_remove_traps"] = 5,
             ["move_silently"] = 10,
             ["hide_in_shadows"] = 5,
+            ["detect_magic"] = 0,
             ["detect_noise"] = 15,
             ["climb_walls"] = 60,
             ["read_languages"] = 0,
+        };
+
+    private static readonly Dictionary<string, int[]> RogueSkillAverageScoresByLevel =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["pick_pockets"] = new[] { 30, 35, 40, 45, 50, 55, 60, 65, 70, 80, 90, 95, 99, 99, 99, 99, 99 },
+            ["open_locks"] = new[] { 25, 29, 33, 37, 42, 47, 52, 57, 62, 67, 72, 77, 82, 87, 92, 97, 99 },
+            ["find_remove_traps"] = new[] { 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 99 },
+            ["move_silently"] = new[] { 15, 21, 27, 33, 40, 47, 55, 62, 70, 78, 86, 94, 99, 99, 99, 99, 99 },
+            ["hide_in_shadows"] = new[] { 10, 15, 20, 25, 31, 37, 43, 49, 56, 63, 70, 77, 85, 93, 99, 99, 99 },
+            ["detect_noise"] = new[] { 10, 10, 15, 15, 20, 20, 25, 25, 30, 30, 35, 35, 40, 40, 50, 50, 55 },
+            ["climb_walls"] = new[] { 85, 86, 87, 88, 90, 92, 94, 96, 98, 99, 99, 99, 99, 99, 99, 99, 99 },
+            ["read_languages"] = new[] { 0, 0, 0, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 80 },
         };
 
     private static readonly Dictionary<string, Dictionary<string, int>> RogueSkillRacialAdjustments =
@@ -5072,14 +5841,26 @@ public class RulesEngine
         "pick_pockets", "open_locks", "find_remove_traps", "move_silently", "hide_in_shadows", "climb_walls"
     };
 
-    public static int GetRogueSkillCreationPool() => 60;
+    public static int GetRogueSkillCreationPool(string? classId = null)
+        => string.Equals(classId, "bard", StringComparison.OrdinalIgnoreCase) ? 20 : 60;
 
-    public static int GetRogueSkillPerLevelGain() => 30;
+    public static int GetRogueSkillPerLevelGain(string? classId = null)
+        => string.Equals(classId, "bard", StringComparison.OrdinalIgnoreCase) ? 15 : 30;
 
-    public static int GetRogueSkillPointPoolForLevel(int level)
+    public static int GetRogueSkillPointPoolForLevel(int level, string? classId = null)
     {
         var clampedLevel = Math.Max(1, level);
-        return GetRogueSkillCreationPool() + ((clampedLevel - 1) * GetRogueSkillPerLevelGain());
+        return GetRogueSkillCreationPool(classId) + ((clampedLevel - 1) * GetRogueSkillPerLevelGain(classId));
+    }
+
+    public static bool UsesAutomaticRogueSkillProgression(string? classId)
+    {
+        var classTokens = (classId ?? string.Empty)
+            .Split(new[] { '/', '+', ',', ';', '|' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return !classTokens.Any(token =>
+            string.Equals(token, "thief", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(token, "rogue", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(token, "bard", StringComparison.OrdinalIgnoreCase));
     }
 
     public static int GetRogueSkillPerSkillAllocationCap(int level)
@@ -5111,11 +5892,42 @@ public class RulesEngine
         return result;
     }
 
+    public static List<string> GetRogueSkillIdsForClassProfile(string? classId, IEnumerable<string> selectedAbilityIds)
+    {
+        if (string.Equals(classId, "bard", StringComparison.OrdinalIgnoreCase))
+            return BardStandardRogueSkillIds.ToList();
+
+        return GetRogueSkillIdsForAbilitySelection(selectedAbilityIds);
+    }
+
+    public static List<string> GetStandardCoreRogueSkillIdsForClassProfile(string? classId)
+    {
+        if (string.Equals(classId, "bard", StringComparison.OrdinalIgnoreCase))
+            return BardStandardRogueSkillIds.ToList();
+
+        if (string.Equals(classId, "thief", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(classId, "rogue", StringComparison.OrdinalIgnoreCase))
+        {
+            return ThiefStandardRogueSkillIds.ToList();
+        }
+
+        return new List<string>();
+    }
+
     public static string GetRogueSkillName(string skillId)
         => RogueSkillNames.TryGetValue(skillId, out var name) ? name : skillId;
 
     public static int GetRogueSkillBaseScore(string skillId)
         => RogueSkillBaseScores.TryGetValue(skillId, out var value) ? value : 0;
+
+    public static int GetRogueSkillAverageScore(string skillId, int level)
+    {
+        if (!RogueSkillAverageScoresByLevel.TryGetValue(skillId, out var scores))
+            return GetRogueSkillBaseScore(skillId);
+
+        int index = Math.Clamp(level, 1, scores.Length) - 1;
+        return scores[index];
+    }
 
     public static int GetRogueSkillRacialAdjustment(string skillId, string? raceId)
     {
@@ -5165,7 +5977,8 @@ public class RulesEngine
         int dexterity,
         string? armorProfile,
         Dictionary<string, int>? allocatedPoints,
-        int level)
+        int level,
+        bool useAverageProgression = false)
     {
         var skillIds = selectedSkillIds?.Distinct(StringComparer.OrdinalIgnoreCase).ToList()
             ?? new List<string>();
@@ -5175,12 +5988,16 @@ public class RulesEngine
         var result = new List<RogueSkillBreakdown>();
         foreach (var skillId in skillIds)
         {
-            int baseScore = GetRogueSkillBaseScore(skillId);
+            int baseScore = useAverageProgression
+                ? GetRogueSkillAverageScore(skillId, level)
+                : GetRogueSkillBaseScore(skillId);
             int racial = GetRogueSkillRacialAdjustment(skillId, raceId);
             int dex = GetRogueSkillDexterityAdjustment(skillId, dexterity);
             int armor = GetRogueSkillArmorAdjustment(skillId, armorProfile);
-            int allocated = allocations.TryGetValue(skillId, out var points) ? Math.Clamp(points, 0, perSkillCap) : 0;
-            int final = Math.Clamp(baseScore + racial + dex + armor + allocated, 0, 95);
+            int allocated = !useAverageProgression && allocations.TryGetValue(skillId, out var points)
+                ? Math.Clamp(points, 0, perSkillCap)
+                : 0;
+            int final = Math.Clamp(baseScore + racial + dex + armor + allocated, 0, useAverageProgression ? 99 : 95);
 
             result.Add(new RogueSkillBreakdown(
                 skillId,
@@ -5311,6 +6128,7 @@ public class RulesEngine
         "cleric" or "druid" or "thief" => 8,
         "wizard" => 4,
         "bard" or "psionicist" => 6,
+        _ when IsPriestClassId(classId) => 8,
         _ => 6,
     };
 

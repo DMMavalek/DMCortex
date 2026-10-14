@@ -36,8 +36,11 @@
                         <TextBox x:Name="TxtSessionName" Margin="0,0,0,10" MinWidth="260" Text="Saturday Table"/>
                         <TextBlock Text="Host Display Name" Style="{StaticResource SubtitleText}" Margin="0,0,0,4"/>
                         <TextBox x:Name="TxtHostName" Margin="0,0,0,10" MinWidth="260" Text="Dungeon Master"/>
+                        <TextBlock Text="Host Port" Style="{StaticResource SubtitleText}" Margin="0,0,0,4"/>
+                        <TextBox x:Name="TxtHostPort" Margin="0,0,0,10" MinWidth="140" Text="45731"/>
                         <TextBlock Text="Trust Mode" Style="{StaticResource SubtitleText}" Margin="0,0,0,4"/>
                         <ComboBox x:Name="CmbTrustMode" Margin="0,0,0,14" MinWidth="260"/>
+                        <CheckBox x:Name="ChkLanVisible" Content="Advertise this session over LAN discovery" Margin="0,0,0,14" IsChecked="True"/>
                         <StackPanel Orientation="Horizontal">
                             <Button x:Name="BtnStartHosting" Content="START HOSTING" Style="{StaticResource GoldButton}" Width="150" Margin="0,0,10,0" Click="BtnStartHosting_Click"/>
                             <Button x:Name="BtnStopHosting" Content="STOP" Style="{StaticResource GoldButton}" Width="100" Click="BtnStopHosting_Click"/>
@@ -63,6 +66,22 @@
                         <TextBox x:Name="TxtPlayerName" Margin="0,0,0,10" MinWidth="260"/>
                         <TextBlock Text="Character" Style="{StaticResource SubtitleText}" Margin="0,0,0,4"/>
                         <ComboBox x:Name="CmbPlayerCharacter" Margin="0,0,0,10" MinWidth="260" DisplayMemberPath="DisplayName"/>
+                        <TextBlock Text="Direct Join Host" Style="{StaticResource SubtitleText}" Margin="0,0,0,4"/>
+                        <TextBox x:Name="TxtDirectHost" Margin="0,0,0,10" MinWidth="260"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <StackPanel>
+                                <TextBlock Text="Direct Join Port" Style="{StaticResource SubtitleText}" Margin="0,0,0,4"/>
+                                <TextBox x:Name="TxtDirectPort" MinWidth="120" Text="45731"/>
+                            </StackPanel>
+                            <StackPanel Margin="12,0,0,0">
+                                <TextBlock Text="Discovery Timeout (ms)" Style="{StaticResource SubtitleText}" Margin="0,0,0,4"/>
+                                <TextBox x:Name="TxtDiscoveryTimeoutMs" MinWidth="140" Text="1200"/>
+                            </StackPanel>
+                            <StackPanel Margin="12,0,0,0">
+                                <TextBlock Text="Auto-Sync Seconds" Style="{StaticResource SubtitleText}" Margin="0,0,0,4"/>
+                                <TextBox x:Name="TxtAutoSyncSeconds" MinWidth="120" Text="20"/>
+                            </StackPanel>
+                        </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                             <Button x:Name="BtnRefreshSessions" Content="FIND SESSIONS" Style="{StaticResource GoldButton}" Width="150" Margin="0,0,10,0" Click="BtnRefreshSessions_Click"/>
                             <Button x:Name="BtnJoinSession" Content="JOIN SELECTED" Style="{StaticResource GoldButton}" Width="150" Click="BtnJoinSession_Click"/>
@@ -75,7 +94,7 @@
                                    Style="{StaticResource SubtitleText}"
                                    TextWrapping="Wrap"
                                    Margin="0,10,0,0"
-                                   Text="LAN discovery uses UDP broadcast; join and character sync use TCP to the selected host."/>
+                                   Text="LAN discovery uses UDP broadcast; join and character sync use TCP to the selected host. If discovery misses the table, enter a host and port above and join directly."/>
                     </StackPanel>
                 </Border>
 

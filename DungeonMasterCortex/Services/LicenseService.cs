@@ -366,6 +366,62 @@ public sealed class LicenseService
         }
     }
 
+    public bool TrySendBugReportBySmtp(string subjectSuffix, string reportBody, out string message, string reporterEmail = "")
+    {
+        var settings = GetSmtpSettings();
+        if (string.IsNullOrWhiteSpace(settings.Host)
+            || settings.Port <= 0
+            || string.IsNullOrWhiteSpace(settings.FromEmail)
+            || string.IsNullOrWhiteSpace(settings.ToEmail))
+        {
+            message = "SMTP settings are incomplete. Open SMTP Settings first.";
+            return false;
+        }
+
+        string safeSuffix = string.IsNullOrWhiteSpace(subjectSuffix)
+            ? "General"
+            : subjectSuffix.Trim();
+        string subject = $"Dungeon Master Codex Bug Report ({EditionLabel}) - {safeSuffix}";
+        string body = "Bug report submitted from Dungeon Master Codex.\n\n"
+            + reportBody
+            + "\n";
+
+        try
+        {
+            using var client = new SmtpClient(settings.Host, settings.Port)
+            {
+                EnableSsl = settings.UseSsl,
+                UseDefaultCredentials = false,
+                Timeout = 20000,
+            };
+
+            if (!string.IsNullOrWhiteSpace(settings.Username))
+            {
+                client.Credentials = new NetworkCredential(settings.Username, settings.Password ?? string.Empty);
+            }
+
+            using var mail = new MailMessage(settings.FromEmail, settings.ToEmail, subject, body);
+            if (!string.IsNullOrWhiteSpace(reporterEmail) && reporterEmail.Contains('@', StringComparison.Ordinal))
+            {
+                mail.ReplyToList.Add(reporterEmail.Trim());
+            }
+
+            client.Send(mail);
+            message = "Bug report email sent.";
+            return true;
+        }
+        catch (SmtpException ex)
+        {
+            message = BuildSmtpErrorMessage(ex);
+            return false;
+        }
+        catch (Exception ex)
+        {
+            message = $"SMTP send failed: {ex.Message}";
+            return false;
+        }
+    }
+
     private static string BuildSmtpErrorMessage(SmtpException ex)
     {
         var detail = $"SMTP send failed ({ex.StatusCode}): {ex.Message}";

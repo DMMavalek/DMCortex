@@ -249,7 +249,9 @@ public sealed class AppUpdateService
         {
             shortcutNames = new[]
             {
+                "Player Codex.lnk",
                 "PlayerCodex.lnk",
+                "Player Cortex.lnk",
                 "PlayerCortex.lnk",
             };
         }
@@ -257,10 +259,14 @@ public sealed class AppUpdateService
         {
             shortcutNames = new[]
             {
+                "Dungeon Master Codex.lnk",
                 "DMCodex.lnk",
+                "Dungeon Master Cortex.lnk",
                 "DungeonMasterCodex.lnk",
                 "DMCortex.lnk",
                 "DungeonMasterCortex.lnk",
+                "Dungeon Master Codex Activation Tool.lnk",
+                "Dungeon Master Cortex Activation Tool.lnk",
                 "DungeonMasterCodex Activation Tool.lnk",
                 "DungeonMasterCortex Activation Tool.lnk",
             };
@@ -282,10 +288,18 @@ public sealed class AppUpdateService
 
     private bool DownloadInstaller(string downloadUrl, string localInstaller, out string message)
     {
-        if (File.Exists(localInstaller) && IsWindowsExecutable(localInstaller))
+        // Always refresh from GitHub to avoid stale cached installers when a
+        // release asset is re-uploaded under the same file name/version.
+        if (File.Exists(localInstaller))
         {
-            message = string.Empty;
-            return true;
+            try
+            {
+                File.Delete(localInstaller);
+            }
+            catch
+            {
+                // Best-effort cleanup; we'll fail later with a clear message if needed.
+            }
         }
 
         string tempDownloadPath = localInstaller + ".download";

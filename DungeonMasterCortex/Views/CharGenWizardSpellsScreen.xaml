@@ -14,6 +14,7 @@
             <TextBlock Text="Choose arcane spells your wizard can learn and organize named spell lists."
                        Style="{StaticResource SubtitleText}" Margin="0,0,0,10"/>
             <TextBlock x:Name="DailySlotsSummary" Style="{StaticResource BodyText}" Margin="0,0,0,8" TextWrapping="Wrap"/>
+            <TextBlock x:Name="SpellComponentModeText" Style="{StaticResource BodyText}" Margin="0,0,0,8" TextWrapping="Wrap"/>
             <Rectangle Height="1" Fill="{StaticResource BrushBorder}" Margin="0,0,0,10"/>
         </StackPanel>
 

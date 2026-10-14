@@ -45,9 +45,8 @@
                            Margin="0,0,0,8"/>
                 <TextBlock Text="Rolling Method" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
                 <ComboBox x:Name="CmbMethod" SelectedIndex="0" SelectionChanged="CmbMethod_SelectionChanged"
-                          Margin="0,0,0,10" Padding="6,4" FontSize="12" MinWidth="320"
-                          Background="{StaticResource BrushInputBg}" Foreground="{StaticResource BrushText}"
-                          BorderBrush="{StaticResource BrushBorder2}"/>
+                          Style="{StaticResource DarkComboBox}"
+                          Margin="0,0,0,10" FontSize="12" MinWidth="320"/>
 
                 <TextBlock x:Name="MethodDesc" Style="{StaticResource SubtitleText}"
                            TextWrapping="Wrap" Margin="0,0,0,10"/>

@@ -56,7 +56,7 @@
                     <TextBlock Grid.Column="2" Text="Race" Style="{StaticResource SubtitleText}" HorizontalAlignment="Center"/>
                     <TextBlock Grid.Column="3" Text="DEX" Style="{StaticResource SubtitleText}" HorizontalAlignment="Center"/>
                     <TextBlock Grid.Column="4" Text="Armor" Style="{StaticResource SubtitleText}" HorizontalAlignment="Center"/>
-                    <TextBlock Grid.Column="5" Text="Allocate" Style="{StaticResource SubtitleText}" HorizontalAlignment="Center"/>
+                    <TextBlock x:Name="AllocationHeader" Grid.Column="5" Text="Allocate" Style="{StaticResource SubtitleText}" HorizontalAlignment="Center"/>
                     <TextBlock Grid.Column="6" Text="Final" Style="{StaticResource SubtitleText}" HorizontalAlignment="Center"/>
                 </Grid>
 
@@ -80,6 +80,7 @@
                                     <TextBlock Grid.Column="3" Text="{Binding DexLabel}" Style="{StaticResource BodyText}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     <TextBlock Grid.Column="4" Text="{Binding ArmorLabel}" Style="{StaticResource BodyText}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     <TextBox Grid.Column="5" Text="{Binding AllocatedPointsText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             IsEnabled="{Binding CanAllocate}"
                                              Height="24" HorizontalContentAlignment="Center"
                                              VerticalContentAlignment="Center" Margin="8,0,8,0"
                                              Background="#111111" Foreground="{StaticResource BrushLightGold}" BorderBrush="{StaticResource BrushBorder2}"/>

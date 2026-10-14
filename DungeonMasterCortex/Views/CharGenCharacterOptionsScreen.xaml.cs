@@ -43,6 +43,10 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
         Array.Empty<NonweaponProficiencyDefinition>(),
         Array.Empty<TraitDefinition>(),
         Array.Empty<DisadvantageDefinition>());
+    private int _aggregatedNwpCheckBonus = 0;
+    private readonly Dictionary<string, int> _targetedNwpCheckBonuses = new(StringComparer.OrdinalIgnoreCase);
+    private bool _deitySelectionRequired;
+    private bool _updatingFaithUi;
 
     private bool IsPlayersOptionMode
         => string.Equals(_app.CharGen.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase);
@@ -83,14 +87,103 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
             TraitsTab.Visibility = IsPlayersOptionMode ? Visibility.Visible : Visibility.Collapsed;
         if (DisadvantagesTab != null)
             DisadvantagesTab.Visibility = IsPlayersOptionMode ? Visibility.Visible : Visibility.Collapsed;
+        FaithTab.Visibility = Visibility.Visible;
+        UpdateAlignmentPanel.Visibility = Visibility.Visible;
+        _updatingFaithUi = true;
+        EnableDeityRulesCheck.IsChecked = _app.Rules.DeityRulesEnabled;
+        RefreshAlignmentOptions();
+        _updatingFaithUi = false;
+        RefreshFaithRuleVisibility();
         if (!IsPlayersOptionMode && OptionsTabControl != null && NwpTab != null)
             OptionsTabControl.SelectedItem = NwpTab;
 
+        if (_app.Rules.DeityRulesEnabled)
+            RefreshDeityOptions();
+        else
+        {
+            _deitySelectionRequired = false;
+        }
         RefreshAll();
+    }
+
+    private void RefreshAlignmentOptions()
+    {
+        var classIds = _app.CharGen.SelectedClassIds
+            .Append(_app.CharGen.ClassId)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var allowedItems = new List<ComboBoxItem>();
+
+        foreach (var item in UpdateAlignmentCombo.Items.OfType<ComboBoxItem>())
+        {
+            string alignment = item.Tag?.ToString() ?? string.Empty;
+            bool allowed = _app.Rules.IsClassCombinationAlignmentAllowed(classIds, alignment);
+            item.Visibility = allowed ? Visibility.Visible : Visibility.Collapsed;
+            item.IsEnabled = allowed;
+            if (allowed)
+                allowedItems.Add(item);
+        }
+
+        var selectedItem = allowedItems.FirstOrDefault(item =>
+            string.Equals(item.Tag?.ToString(), _app.CharGen.Alignment, StringComparison.OrdinalIgnoreCase));
+        UpdateAlignmentCombo.SelectedItem = selectedItem;
+        if (selectedItem is null)
+            _app.CharGen.Alignment = string.Empty;
+
+        AlignmentRequirementText.Text = allowedItems.Count == 0
+            ? "The selected classes have no compatible alignment. Go back and revise the class selection."
+            : $"Choose an alignment allowed by the selected class{(classIds.Count == 1 ? string.Empty : "es")}: {string.Join(", ", allowedItems.Select(item => item.Content?.ToString()))}.";
+    }
+
+    private void RefreshFaithRuleVisibility()
+    {
+        bool enabled = _app.Rules.DeityRulesEnabled;
+        DeitySelectionPanel.Visibility = enabled ? Visibility.Visible : Visibility.Collapsed;
+        DeityDetailsPanel.Visibility = enabled ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void EnableDeityRulesCheck_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_updatingFaithUi)
+            return;
+
+        bool enabled = EnableDeityRulesCheck.IsChecked == true;
+        _app.Rules.SetDeityRulesEnabled(enabled);
+        RefreshFaithRuleVisibility();
+        if (enabled)
+            RefreshDeityOptions();
+        else
+            _deitySelectionRequired = false;
+    }
+
+    private void UpdateAlignmentCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_updatingFaithUi || UpdateAlignmentCombo.SelectedItem is not ComboBoxItem selected)
+            return;
+
+        string alignment = selected.Tag?.ToString() ?? string.Empty;
+        _app.CharGen.Alignment = alignment;
+        if (_app.Rules.DeityRulesEnabled)
+            RefreshDeityOptions();
     }
 
     private void Advance()
     {
+        if (string.IsNullOrWhiteSpace(_app.CharGen.Alignment))
+        {
+            MessageBox.Show(
+                "Select an alignment allowed by your chosen class before continuing.",
+                "Alignment Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+            OptionsTabControl.SelectedItem = FaithTab;
+            return;
+        }
+        if (_deitySelectionRequired && string.IsNullOrWhiteSpace(_app.CharGen.DeityId))
+        {
+            MessageBox.Show("Please select a deity for this class.", "Deity Required", MessageBoxButton.OK, MessageBoxImage.Warning);
+            OptionsTabControl.SelectedItem = FaithTab;
+            return;
+        }
         if (!ValidateLanguageSelections(out string message))
         {
             MessageBox.Show(message, "Languages", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -98,6 +191,75 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
         }
 
         _app.GoTo("chargen_weapon_prof");
+    }
+
+    private void RefreshDeityOptions()
+    {
+        string selectedDeityId = _app.CharGen.DeityId;
+        var classIds = _app.CharGen.SelectedClassIds
+            .Append(_app.CharGen.ClassId)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var specialtyClass = classIds
+            .Select(id => _app.Rules.Classes.GetValueOrDefault(id))
+            .FirstOrDefault(definition => definition?.IsSpecialtyPriest == true);
+        bool isDruid = classIds.Any(id => string.Equals(id, "druid", StringComparison.OrdinalIgnoreCase));
+        bool isPaladin = classIds.Any(id => string.Equals(id, "paladin", StringComparison.OrdinalIgnoreCase));
+        bool isRequiredDivineClass = classIds.Any(id =>
+            string.Equals(id, "cleric", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(id, "ranger", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(id, "paladin", StringComparison.OrdinalIgnoreCase));
+
+        string lockedDeityId = specialtyClass?.DeityId ?? (isDruid ? "una" : string.Empty);
+        _deitySelectionRequired = !string.IsNullOrWhiteSpace(lockedDeityId) || isRequiredDivineClass;
+
+        IEnumerable<DeityDefinition> choices = _app.Rules.Deities.Values;
+        if (!string.IsNullOrWhiteSpace(lockedDeityId))
+        {
+            choices = choices.Where(deity => string.Equals(deity.Id, lockedDeityId, StringComparison.OrdinalIgnoreCase));
+            _app.CharGen.DeityId = lockedDeityId;
+            selectedDeityId = lockedDeityId;
+            DeityCombo.IsEnabled = false;
+            FaithRequirementText.Text = specialtyClass is not null
+                ? "Your specialty-priest deity is fixed by class."
+                : "All Druids follow Una.";
+        }
+        else
+        {
+            DeityCombo.IsEnabled = true;
+            choices = isPaladin
+                ? choices.Where(deity => string.Equals(deity.Alignment, "LG", StringComparison.OrdinalIgnoreCase))
+                : choices.Where(deity => deity.FollowerAlignments.Contains(_app.CharGen.Alignment, StringComparer.OrdinalIgnoreCase));
+            FaithRequirementText.Text = isRequiredDivineClass
+                ? "A deity compatible with your alignment is required."
+                : "Faith is optional. Available deities accept your alignment.";
+        }
+
+        var items = choices.OrderBy(deity => deity.Name).ToList();
+        if (!_deitySelectionRequired)
+            items.Insert(0, new DeityDefinition("", "No deity", "", "", new List<string>(), null));
+        DeityCombo.ItemsSource = items;
+        DeityCombo.SelectedItem = items.FirstOrDefault(deity =>
+            string.Equals(deity.Id, selectedDeityId, StringComparison.OrdinalIgnoreCase));
+        RefreshDeityDetails(DeityCombo.SelectedItem is DeityDefinition selected && !string.IsNullOrWhiteSpace(selected.Id) ? selected : null);
+    }
+
+    private void DeityCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        var deity = DeityCombo.SelectedItem as DeityDefinition;
+        _app.CharGen.DeityId = deity?.Id ?? string.Empty;
+        RefreshDeityDetails(deity is not null && !string.IsNullOrWhiteSpace(deity.Id) ? deity : null);
+    }
+
+    private void RefreshDeityDetails(DeityDefinition? deity)
+    {
+        DeityNameText.Text = deity?.Name ?? "No deity selected";
+        DeityProfileText.Text = deity is null
+            ? ""
+            : $"Alignment: {deity.Alignment}  |  Portfolio: {deity.Portfolio}";
+        FollowerBenefitText.Text = deity?.FollowerAbility?.Description
+            ?? "No universal follower benefit is recorded.";
     }
 
     private bool ConfirmSensitiveJump(string typeName)
@@ -197,7 +359,7 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
         bool hasOptionsCpBudget = string.Equals(_app.CharGen.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase);
         int cpBudget = hasOptionsCpBudget ? GetCharacterOptionsCpBudget() : 0;
         int cpSpent = traitCost + nwpPurchaseCp + nwpImprovementCp;
-        int cpRemaining = hasOptionsCpBudget ? cpBudget + disadvantageBonus - cpSpent : 0;
+        int cpRemaining = hasOptionsCpBudget ? GetOptionsCpRemaining() : 0;
 
         OverallNwpSummary.Text = hasOptionsCpBudget
             ? $"{selectedNwps.Count} selected • {nwpPurchaseCp} CP purchases • {nwpImprovementCp} CP improvements"
@@ -206,7 +368,9 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
             ? $"{selectedTraits.Count} selected • {traitCost} CP"
             : $"{selectedTraits.Count} selected • {traitCost} CP";
         OverallDisadvantageSummary.Text = hasOptionsCpBudget
-            ? $"{selectedDisadvantages.Count} selected • +{disadvantageBonus} CP • options budget {cpBudget}"
+            ? (_app.CharGen.IsLevelUpMode || _app.CharGen.IsExistingCharacterMode
+                ? $"{selectedDisadvantages.Count} selected • +{disadvantageBonus} CP • global pool {GetUpdateAvailablePoolCp()}"
+                : $"{selectedDisadvantages.Count} selected • +{disadvantageBonus} CP • options budget {cpBudget}")
             : $"{selectedDisadvantages.Count} selected • +{disadvantageBonus} CP";
         OverallLanguageSummary.Text = $"{selectedLanguages}/{languageSlots} recorded";
         OverallCpSummary.Text = hasOptionsCpBudget ? cpRemaining.ToString() : "Core mode";
@@ -250,6 +414,8 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
     {
         if (NwpSearchBox == null || NwpGroupFilter == null || NwpSourceFilter == null || AvailableNwpList == null || SelectedNwpList == null)
             return;
+
+        RefreshAggregatedNwpCheckBonuses();
 
         string? currentAvailableId = (AvailableNwpList.SelectedItem as CatalogListItem)?.Id;
         string? currentSelectedId = (SelectedNwpList.SelectedItem as CatalogListItem)?.Id;
@@ -404,10 +570,22 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
     private int GetNwpPurchaseCost(NonweaponProficiencyDefinition proficiency)
     {
         if (IsKitFreeNwp(proficiency.Id)) return 0;
+        if (RangerTrackingRules.IsTracking(proficiency.Id, proficiency.Name)
+            && HasSelectedClassAbility(RangerTrackingRules.TrackingAbilityId))
+        {
+            return 0;
+        }
+
+        bool isLanguageNwp = IsLanguageNwpForSource(proficiency, ModernLanguagesSource)
+            || IsLanguageNwpForSource(proficiency, AncientLanguagesSource)
+            || IsLanguageNwpForSource(proficiency, ReadingWritingSource);
+
         if (string.Equals(_app.CharGen.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase)
             && proficiency.CpCost > 0)
         {
-            return proficiency.CpCost + (HasNwpCrossoverPenalty(proficiency) ? 1 : 0);
+            int baseCost = proficiency.CpCost + (HasNwpCrossoverPenalty(proficiency) ? 1 : 0);
+            int reduction = isLanguageNwp ? 0 : GetNwpCostReductionFromClassAbilities();
+            return Math.Max(1, baseCost - reduction);
         }
 
         return GetEffectiveNwpSlotCost(proficiency);
@@ -418,13 +596,115 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
         if (!string.Equals(_app.CharGen.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase))
             return 0;
 
+        if (_app.CharGen.IsLevelUpMode)
+        {
+            int availablePool = GetUpdateAvailablePoolCp();
+
+            int baselineTraitCost = GetTraitCost(_app.CharGen.BaselineTraitIds);
+            int currentTraitCost = GetSelectedTraits().Sum(x => x.Cost);
+            int deltaTraitCost = currentTraitCost - baselineTraitCost;
+
+            int baselineDisadvantageBonus = GetDisadvantageBonus(_app.CharGen.BaselineDisadvantageSeverities);
+            int currentDisadvantageBonus = GetSelectedDisadvantages().Sum(x => x.Bonus);
+            int deltaDisadvantageBonus = currentDisadvantageBonus - baselineDisadvantageBonus;
+
+            int baselineNwpPurchaseCp = GetNwpPurchaseCpForIds(_app.CharGen.BaselineNonweaponProficiencyIds);
+            int currentNwpPurchaseCp = GetSelectedNwpPurchaseCp();
+            int deltaNwpPurchaseCp = currentNwpPurchaseCp - baselineNwpPurchaseCp;
+
+            int baselineNwpImprovementCp = GetNwpImprovementCpForState(
+                _app.CharGen.BaselineNonweaponProficiencyIds,
+                _app.CharGen.BaselineNonweaponProficiencyImprovements);
+            int currentNwpImprovementCp = GetTotalNwpImprovementCp();
+            int deltaNwpImprovementCp = currentNwpImprovementCp - baselineNwpImprovementCp;
+
+            int spentThisUpdate = deltaTraitCost + deltaNwpPurchaseCp + deltaNwpImprovementCp - deltaDisadvantageBonus;
+            return Math.Max(0, availablePool - spentThisUpdate);
+        }
+
         int cpBudget = GetCharacterOptionsCpBudget();
+        int existingCharacterPool = _app.CharGen.IsExistingCharacterMode
+            ? _app.CharGen.GetExistingCharacterPointPool()
+            : 0;
         int disadvantageBonus = GetSelectedDisadvantages().Sum(x => x.Bonus);
         int traitCost = GetSelectedTraits().Sum(x => x.Cost);
         int nwpPurchaseCp = GetSelectedNwpPurchaseCp();
         int nwpImprovementCp = GetTotalNwpImprovementCp();
         // Weapons are a separate CP pool; NWP budget only tracks traits/NWPs/disadvantages.
-        return cpBudget + disadvantageBonus - traitCost - nwpPurchaseCp - nwpImprovementCp;
+        return cpBudget + existingCharacterPool + disadvantageBonus - traitCost - nwpPurchaseCp - nwpImprovementCp;
+    }
+
+    private int GetUpdateAvailablePoolCp()
+    {
+        int startingPool = _app.CharGen.IsLevelUpMode
+            && _app.CharGen.LevelUpCharacterIndex >= 0
+            && _app.CharGen.LevelUpCharacterIndex < _app.Characters.Count
+                ? Math.Max(0, _app.Characters[_app.CharGen.LevelUpCharacterIndex].UnspentCharacterPoints)
+                : _app.CharGen.GetExistingCharacterPointPool();
+        int pendingGain = Math.Max(0, _app.CharGen.LevelUpPendingCharacterPointGain);
+        return Math.Max(0, startingPool + pendingGain);
+    }
+
+    private int GetTraitCost(IEnumerable<string> traitIds)
+    {
+        var selectedIds = traitIds
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        return _catalog.Traits
+            .Where(x => selectedIds.Contains(x.Id))
+            .Sum(x => x.Cost);
+    }
+
+    private int GetDisadvantageBonus(IReadOnlyDictionary<string, string> severities)
+    {
+        if (severities == null || severities.Count == 0)
+            return 0;
+
+        return _catalog.Disadvantages
+            .Where(x => severities.ContainsKey(x.Id))
+            .Sum(x =>
+            {
+                string severity = severities[x.Id];
+                bool isSevere = string.Equals(severity, "severe", StringComparison.OrdinalIgnoreCase);
+                return isSevere && x.SevereBonus.HasValue ? x.SevereBonus.Value : x.ModerateBonus;
+            });
+    }
+
+    private int GetNwpPurchaseCpForIds(IEnumerable<string> proficiencyIds)
+    {
+        if (!IsPlayersOptionMode)
+            return 0;
+
+        var proficiencyById = _catalog.NonweaponProficiencies
+            .GroupBy(x => x.Id, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+
+        int total = 0;
+        foreach (string id in proficiencyIds)
+        {
+            if (!proficiencyById.TryGetValue(id, out var proficiency))
+                continue;
+
+            if (IsKitFreeNwp(proficiency.Id))
+                continue;
+
+            total += GetNwpPurchaseCost(proficiency);
+        }
+
+        return total;
+    }
+
+    private static int GetNwpImprovementCpForState(IEnumerable<string> proficiencyIds, IReadOnlyDictionary<string, int> improvementsById)
+    {
+        var selectedDistinct = proficiencyIds
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        return improvementsById
+            .Where(kv => selectedDistinct.Contains(kv.Key))
+            .Sum(kv => Math.Max(0, kv.Value));
     }
 
     private int GetNwpImprovementCp(string proficiencyId)
@@ -482,16 +762,13 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
                 _app.CharGen.RacialCarryoverToClassPoints,
                 specializationId);
 
-            int extraCost = 0;
-            if (string.Equals(classId, "cleric", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(classId, "druid", StringComparison.OrdinalIgnoreCase))
-            {
-                extraCost += CharGenClassAbilitiesScreen.CalculateSphereCpCost(GetSpheresForClass(classId));
-            }
-            if (string.Equals(classId, "wizard", StringComparison.OrdinalIgnoreCase))
-            {
-                extraCost += CharGenClassAbilitiesScreen.CalculateWizardSchoolCpCost(GetWizardSchoolsForClass(classId));
-            }
+            int extraCost = _app.Rules.Classes.TryGetValue(classId, out var classDefinition)
+                ? CharGenClassAbilitiesScreen.CalculateConfigurationCpCost(
+                    classDefinition,
+                    GetSpheresForClass(classId),
+                    GetWizardSchoolsForClass(classId),
+                    specializationId)
+                : 0;
 
             totalRemaining += Math.Max(0, classPackage.remaining - extraCost);
         }
@@ -573,34 +850,133 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
     {
         if (IsKitFreeNwp(proficiency.Id)) return 0;
         int baseCost = Math.Max(1, proficiency.Slots);
-        return baseCost + (HasNwpCrossoverPenalty(proficiency) ? 1 : 0);
+
+        bool isLanguageNwp = IsLanguageNwpForSource(proficiency, ModernLanguagesSource)
+            || IsLanguageNwpForSource(proficiency, AncientLanguagesSource)
+            || IsLanguageNwpForSource(proficiency, ReadingWritingSource);
+        int reduction = isLanguageNwp ? 0 : GetNwpCostReductionFromClassAbilities();
+        int adjusted = Math.Max(1, baseCost - reduction);
+        return adjusted + (HasNwpCrossoverPenalty(proficiency) ? 1 : 0);
+    }
+
+    private int GetNwpCostReductionFromClassAbilities()
+    {
+        int totalReduction = 0;
+        var classIds = GetEffectiveClassIds();
+
+        foreach (string classId in classIds)
+        {
+            var selectedAbilityIds = GetSelectedAbilityIdsForClass(classId);
+            var specializationId = GetSpecializationIdForClass(classId);
+            var package = _app.Rules.BuildClassAbilityPackage(
+                classId,
+                selectedAbilityIds,
+                _app.CharGen.RacialCarryoverToClassPoints,
+                specializationId,
+                Math.Max(1, _app.CharGen.CharacterLevel),
+                _app.CharGen.RaceId);
+
+            bool isUnarmored = string.IsNullOrWhiteSpace(_app.CharGen.RogueSkillArmorProfile)
+                || string.Equals(_app.CharGen.RogueSkillArmorProfile, "no_armor", StringComparison.OrdinalIgnoreCase);
+            var bonuses = RulesEngine.AggregateEffects(package.selectedAbilities, isUnarmored, Math.Max(1, _app.CharGen.CharacterLevel));
+            totalReduction += Math.Max(0, bonuses.NwpCostReduction);
+        }
+
+        return Math.Max(0, totalReduction);
     }
 
     private bool HasNwpCrossoverPenalty(NonweaponProficiencyDefinition proficiency)
     {
-        bool classRestricted = proficiency.AllowedClasses is { Count: > 0 }
-            && proficiency.AllowedClasses.Any(x => !string.IsNullOrWhiteSpace(x));
-        bool raceRestricted = TryGetNwpRaceRestrictions(proficiency, out var raceRestrictions);
+        // Core expectation: Healing is native for priest-side classes, including paladin.
+        if (IsHealingProficiency(proficiency) && HasPriestLikeClassForHealing())
+            return false;
 
-        bool classPenalty;
-        if (classRestricted)
+        return HasNwpClassCrossoverPenalty(
+            proficiency,
+            GetEffectiveClassIds(),
+            GetPurchasedClassAbilityNwpGroups());
+    }
+
+    internal static bool HasNwpClassCrossoverPenalty(
+        NonweaponProficiencyDefinition proficiency,
+        IEnumerable<string> classIds,
+        IEnumerable<string>? additionalGroups = null)
+    {
+        var selectedExactClasses = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var selectedClassGroups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (string classId in classIds)
         {
-            classPenalty = !MatchesAllowedClassSelection(proficiency.AllowedClasses!);
+            string normalized = NormalizeGroupToken(classId);
+            if (string.IsNullOrWhiteSpace(normalized))
+                continue;
+
+            selectedExactClasses.Add(normalized);
+            foreach (string alias in GetClassGroupAliases(normalized))
+                selectedClassGroups.Add(alias);
         }
-        else
+
+        if (additionalGroups is not null)
         {
-            var nwpGroups = GetNwpGroups(proficiency);
-            if (nwpGroups.Count == 0 || nwpGroups.Contains("general"))
-                classPenalty = false;
-            else
+            foreach (string group in additionalGroups)
             {
-                var classGroups = GetSelectedClassNwpGroups();
-                classPenalty = classGroups.Count > 0 && !nwpGroups.Overlaps(classGroups);
+                string normalized = NormalizeGroupToken(group);
+                if (!string.IsNullOrWhiteSpace(normalized))
+                    selectedClassGroups.Add(normalized);
             }
         }
 
-        bool racePenalty = raceRestricted && !GetSelectedRaceNwpTokens().Overlaps(raceRestrictions);
-        return classPenalty || racePenalty;
+        bool classRestricted = proficiency.AllowedClasses is { Count: > 0 }
+            && proficiency.AllowedClasses.Any(x => !string.IsNullOrWhiteSpace(x));
+        if (classRestricted)
+        {
+            foreach (string rawClass in proficiency.AllowedClasses!)
+            {
+                string normalizedClass = NormalizeGroupToken(rawClass);
+                if (string.IsNullOrWhiteSpace(normalizedClass))
+                    continue;
+                if (normalizedClass is "all" or "any" or "general")
+                    return false;
+
+                foreach (string allowedToken in GetClassGroupAliases(normalizedClass))
+                {
+                    if (selectedExactClasses.Contains(allowedToken) || selectedClassGroups.Contains(allowedToken))
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
+        var nwpGroups = GetNwpGroups(proficiency);
+        return nwpGroups.Count > 0
+            && !nwpGroups.Contains("general")
+            && selectedClassGroups.Count > 0
+            && !nwpGroups.Overlaps(selectedClassGroups);
+    }
+
+    private static bool IsHealingProficiency(NonweaponProficiencyDefinition proficiency)
+    {
+        if (string.Equals(proficiency.Id, "nwp_healing", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if ((proficiency.Name ?? string.Empty).Trim().StartsWith("Healing", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        string normalizedName = NormalizeCompact(proficiency.Name ?? string.Empty);
+        return string.Equals(normalizedName, "healing", StringComparison.OrdinalIgnoreCase)
+            || normalizedName.StartsWith("healing", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool HasPriestLikeClassForHealing()
+    {
+        foreach (string classId in GetEffectiveClassIds())
+        {
+            string normalized = NormalizeGroupToken(classId);
+            if (normalized is "cleric" or "druid" or "priest" or "paladin")
+                return true;
+        }
+
+        return false;
     }
 
     private bool MatchesAllowedClassSelection(IReadOnlyList<string> allowedClasses)
@@ -617,16 +993,10 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
             if (normalizedClass is "all" or "any" or "general")
                 return true;
 
-            if (selectedExactClasses.Contains(normalizedClass))
-                return true;
-
-            if (selectedClassGroups.Contains(normalizedClass))
-                return true;
-
-            if (TryGetClassFamilyToken(normalizedClass, out string familyToken)
-                && selectedClassGroups.Contains(familyToken))
+            foreach (string allowedToken in GetClassGroupAliases(normalizedClass))
             {
-                return true;
+                if (selectedExactClasses.Contains(allowedToken) || selectedClassGroups.Contains(allowedToken))
+                    return true;
             }
         }
 
@@ -697,7 +1067,7 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
         }
     }
 
-    private HashSet<string> GetNwpGroups(NonweaponProficiencyDefinition proficiency)
+    private static HashSet<string> GetNwpGroups(NonweaponProficiencyDefinition proficiency)
     {
         var groups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -747,18 +1117,8 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
                 continue;
 
             string id = classId.Trim().ToLowerInvariant();
-            groups.Add(id);
-
-            if (id is "fighter" or "ranger" or "paladin" or "warrior")
-                groups.Add("warrior");
-            if (id is "cleric" or "druid" or "priest")
-                groups.Add("priest");
-            if (id is "thief" or "bard" or "rogue")
-                groups.Add("rogue");
-            if (id is "wizard" or "illusionist" or "mage")
-                groups.Add("wizard");
-            if (id.Contains("psionic", StringComparison.OrdinalIgnoreCase))
-                groups.Add("psionicist");
+            foreach (string alias in GetClassGroupAliases(id))
+                groups.Add(alias);
         }
 
         foreach (string extraGroup in GetPurchasedClassAbilityNwpGroups())
@@ -802,7 +1162,11 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
         if (token.Contains("warrior", StringComparison.OrdinalIgnoreCase)) return "warrior";
         if (token.Contains("priest", StringComparison.OrdinalIgnoreCase)) return "priest";
         if (token.Contains("rogue", StringComparison.OrdinalIgnoreCase)) return "rogue";
-        if (token.Contains("wizard", StringComparison.OrdinalIgnoreCase) || token.Contains("mage", StringComparison.OrdinalIgnoreCase)) return "wizard";
+        if (token.Contains("wizard", StringComparison.OrdinalIgnoreCase)
+            || token.Contains("mage", StringComparison.OrdinalIgnoreCase)
+            || token.Contains("arcane", StringComparison.OrdinalIgnoreCase)
+            || token.Contains("sorcerer", StringComparison.OrdinalIgnoreCase)
+            || token.Contains("warlock", StringComparison.OrdinalIgnoreCase)) return "wizard";
         if (token.Contains("psionic", StringComparison.OrdinalIgnoreCase)) return "psionicist";
 
         if (token.Contains("fighter", StringComparison.OrdinalIgnoreCase)) return "fighter";
@@ -824,7 +1188,7 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
             "fighter" or "paladin" or "ranger" or "warrior" => "warrior",
             "cleric" or "druid" or "priest" => "priest",
             "thief" or "bard" or "rogue" => "rogue",
-            "wizard" or "mage" or "illusionist" => "wizard",
+            "wizard" or "mage" or "illusionist" or "arcane" or "sorcerer" or "warlock" => "wizard",
             _ => string.Empty,
         };
 
@@ -1006,9 +1370,8 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
         if (string.IsNullOrWhiteSpace(token))
             return;
 
-        tokens.Add(token);
-        if (TryGetClassFamilyToken(token, out string family))
-            tokens.Add(family);
+        foreach (string alias in GetClassGroupAliases(token))
+            tokens.Add(alias);
     }
 
     private static bool MatchesAllowedClassFilter(IReadOnlyList<string>? allowedClasses, string filter)
@@ -1027,14 +1390,61 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
 
             string normalizedClass = NormalizeClassGroupFilter(rawClass);
             if (string.Equals(normalizedClass, "all", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(normalizedClass, "any", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(normalizedClass, normalizedFilter, StringComparison.OrdinalIgnoreCase))
+                || string.Equals(normalizedClass, "any", StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }
+
+            if (GetClassGroupAliases(normalizedClass).Contains(normalizedFilter, StringComparer.OrdinalIgnoreCase))
+                return true;
         }
 
         return false;
+    }
+
+    private static IEnumerable<string> GetClassGroupAliases(string token)
+    {
+        string normalized = NormalizeGroupToken(token);
+        if (string.IsNullOrWhiteSpace(normalized))
+            yield break;
+
+        yield return normalized;
+
+        switch (normalized)
+        {
+            case "fighter":
+            case "ranger":
+            case "warrior":
+                yield return "warrior";
+                break;
+
+            case "paladin":
+                yield return "warrior";
+                break;
+
+            case "cleric":
+            case "druid":
+            case "priest":
+                yield return "priest";
+                break;
+
+            case "thief":
+            case "bard":
+            case "rogue":
+                yield return "rogue";
+                break;
+
+            case "wizard":
+            case "illusionist":
+            case "mage":
+                yield return "wizard";
+                break;
+
+            default:
+                if (normalized.Contains("psionic", StringComparison.OrdinalIgnoreCase))
+                    yield return "psionicist";
+                break;
+        }
     }
 
     private static string NormalizeClassGroupFilter(string value)
@@ -1047,7 +1457,7 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
             "fighter" or "paladin" or "ranger" or "warrior" => "warrior",
             "cleric" or "druid" or "priest" => "priest",
             "thief" or "bard" or "rogue" => "rogue",
-            "wizard" or "mage" or "illusionist" => "mage",
+            "wizard" or "mage" or "illusionist" => "wizard",
             _ => value.Trim().ToLowerInvariant(),
         };
     }
@@ -1107,13 +1517,15 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
 
     private int GetEffectiveNwpCheckTarget(NonweaponProficiencyDefinition proficiency)
     {
+        int abilityBonuses = GetNwpCheckBonusForProficiency(proficiency.Id);
+
         if (string.Equals(_app.CharGen.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase))
         {
-            int baseRating = GetMinimumPoBaseRating(proficiency);
+            int baseRating = Math.Max(0, proficiency.PlayersOptionBaseRating);
             int improvement = GetNwpImprovement(proficiency.Id);
             int relevantScore = GetRelevantSubAbilityScore(proficiency);
             int poTable44Bonus = GetTable44Modifier(relevantScore);
-            return baseRating + poTable44Bonus + improvement;
+            return baseRating + poTable44Bonus + improvement + abilityBonuses;
         }
 
         int familyScore = GetEffectiveNwpFamilyScore(proficiency);
@@ -1128,12 +1540,68 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
             if (scores.Count > 0)
                 table44Bonus = GetTable44Modifier((int)Math.Round(scores.Average(), MidpointRounding.AwayFromZero));
         }
-        return familyScore + proficiency.CheckModifier + table44Bonus + GetNwpImprovement(proficiency.Id);
+        return familyScore + proficiency.CheckModifier + table44Bonus + GetNwpImprovement(proficiency.Id) + abilityBonuses;
+    }
+
+    private int GetNwpCheckBonusForProficiency(string proficiencyId)
+    {
+        int targeted = _targetedNwpCheckBonuses.GetValueOrDefault(proficiencyId, 0);
+        var proficiency = _catalog.NonweaponProficiencies.FirstOrDefault(entry =>
+            string.Equals(entry.Id, proficiencyId, StringComparison.OrdinalIgnoreCase));
+        int rangerTrackingBonus = proficiency is null
+            ? 0
+            : RangerTrackingRules.GetBonus(_app.CharGen, proficiency);
+        return _aggregatedNwpCheckBonus + targeted + rangerTrackingBonus;
+    }
+
+    private void RefreshAggregatedNwpCheckBonuses()
+    {
+        _aggregatedNwpCheckBonus = 0;
+        _targetedNwpCheckBonuses.Clear();
+
+        var selectedAbilities = new List<AbilityDefinition>();
+
+        if (!string.IsNullOrWhiteSpace(_app.CharGen.RaceId))
+        {
+            var racePackage = _app.Rules.BuildRacialAbilityPackage(
+                _app.CharGen.RaceId,
+                _app.CharGen.SelectedRacialAbilityIds);
+            selectedAbilities.AddRange(racePackage.selectedAbilities);
+        }
+
+        foreach (string classId in GetEffectiveClassIds())
+        {
+            var classPackage = _app.Rules.BuildClassAbilityPackage(
+                classId,
+                GetSelectedAbilityIdsForClass(classId),
+                _app.CharGen.RacialCarryoverToClassPoints,
+                GetSpecializationIdForClass(classId),
+                Math.Max(1, _app.CharGen.CharacterLevel),
+                _app.CharGen.RaceId);
+            selectedAbilities.AddRange(classPackage.selectedAbilities);
+        }
+
+        foreach (var ability in selectedAbilities)
+        {
+            if (ability?.Effect is null)
+                continue;
+
+            _aggregatedNwpCheckBonus += ability.Effect.NwpCheckBonus;
+
+            foreach (var (nwpId, bonus) in ability.Effect.NwpCheckBonusesById)
+            {
+                if (string.IsNullOrWhiteSpace(nwpId) || bonus == 0)
+                    continue;
+
+                _targetedNwpCheckBonuses[nwpId] = _targetedNwpCheckBonuses.GetValueOrDefault(nwpId, 0) + bonus;
+            }
+        }
     }
 
     private string BuildNonweaponDetail(NonweaponProficiencyDefinition proficiency)
     {
         string checkAbility = GetActiveCheckAbility(proficiency);
+        int abilityBonus = GetNwpCheckBonusForProficiency(proficiency.Id);
         string noteSuffix = _app.CharGen.SelectedNonweaponProficiencyNotes.TryGetValue(proficiency.Id, out string? note)
             && !string.IsNullOrWhiteSpace(note)
             ? $"\nPlayer text: {note}"
@@ -1141,12 +1609,13 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
 
         if (string.Equals(_app.CharGen.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase))
         {
-            int baseRating = GetMinimumPoBaseRating(proficiency);
+            int baseRating = Math.Max(0, proficiency.PlayersOptionBaseRating);
             int relevantScore = GetRelevantSubAbilityScore(proficiency);
             int poTable44Bonus = GetTable44Modifier(relevantScore);
             int poImprovement = GetNwpImprovement(proficiency.Id);
             int cpSpent = GetNwpImprovementCp(proficiency.Id);
             int poTarget = baseRating + poTable44Bonus + poImprovement;
+            int finalTarget = poTarget + abilityBonus;
 
             int purchaseCp = GetNwpPurchaseCost(proficiency);
             string crossoverTag = HasNwpCrossoverPenalty(proficiency) ? " (includes crossover penalty)" : string.Empty;
@@ -1156,7 +1625,7 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
                      : $"Cost: {purchaseCp} CP{crossoverTag}\n")
                  + $"Initial rating: {baseRating}\n"
                  + $"Relevant ability: {checkAbility}\n"
-                 + $"Check: {baseRating}{FormatSigned(poTable44Bonus)} (Table 44 from {GetSubAbilitySourceLabel(proficiency)} {relevantScore}){(poImprovement > 0 ? $" {FormatSigned(poImprovement)} improvement" : string.Empty)} = {poTarget}\n"
+                 + $"Check: {baseRating}{FormatSigned(poTable44Bonus)} (Table 44 from {GetSubAbilitySourceLabel(proficiency)} {relevantScore}){(poImprovement > 0 ? $" {FormatSigned(poImprovement)} improvement" : string.Empty)}{(abilityBonus != 0 ? $" {FormatSigned(abilityBonus)} ability bonus" : string.Empty)} = {finalTarget}\n"
                  + (cpSpent > 0
                      ? $"Improvement CP spent: {cpSpent}\n\n"
                      : "\n")
@@ -1173,10 +1642,10 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
 
         bool isPO = _app.CharGen.CharacterMode == "players_option" && _app.CharGen.SubAbilities.Count > 0
             && AbilityFamilyMap.ContainsKey(checkAbility);
-        int table44Bonus = target - familyScore - proficiency.CheckModifier - improvement;
+        int table44Bonus = target - familyScore - proficiency.CheckModifier - improvement - abilityBonus;
         string checkLine = isPO
-            ? $"Check: {familySource} {familyScore}{FormatSigned(proficiency.CheckModifier)}{(table44Bonus != 0 ? $" {FormatSigned(table44Bonus)} (ability bonus)" : string.Empty)}{(improvement > 0 ? $" {FormatSigned(improvement)} improvement" : string.Empty)} = {target}"
-            : $"Check: {familySource} {familyScore}{FormatSigned(proficiency.CheckModifier)}{(improvement > 0 ? $" {FormatSigned(improvement)} improvement" : string.Empty)} = {target}";
+            ? $"Check: {familySource} {familyScore}{FormatSigned(proficiency.CheckModifier)}{(table44Bonus != 0 ? $" {FormatSigned(table44Bonus)} (ability bonus)" : string.Empty)}{(improvement > 0 ? $" {FormatSigned(improvement)} improvement" : string.Empty)}{(abilityBonus != 0 ? $" {FormatSigned(abilityBonus)} ability bonus" : string.Empty)} = {target}"
+            : $"Check: {familySource} {familyScore}{FormatSigned(proficiency.CheckModifier)}{(improvement > 0 ? $" {FormatSigned(improvement)} improvement" : string.Empty)}{(abilityBonus != 0 ? $" {FormatSigned(abilityBonus)} ability bonus" : string.Empty)} = {target}";
         int slotCostCore = GetEffectiveNwpSlotCost(proficiency);
         string crossoverTagCore = HasNwpCrossoverPenalty(proficiency) ? " (includes crossover penalty)" : string.Empty;
            return $"Group: {proficiency.Category}  |  Source: {proficiency.Source}\n"
@@ -1660,16 +2129,23 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
 
         if (string.Equals(_app.CharGen.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase))
         {
-            int baseRating = GetMinimumPoBaseRating(proficiency);
+            int baseRating = Math.Max(0, proficiency.PlayersOptionBaseRating);
             int relevantScore = GetRelevantSubAbilityScore(proficiency);
             int poTable44Bonus = GetTable44Modifier(relevantScore);
             int poImprovement = GetNwpImprovement(proficiency.Id);
+            int abilityBonuses = GetNwpCheckBonusForProficiency(proficiency.Id);
             int cpSpent = GetNwpImprovementCp(proficiency.Id);
-            int poTarget = baseRating + poTable44Bonus + poImprovement;
-            int poTotalBonus = poTable44Bonus + poImprovement;
-            string poBonusBreakdown = poImprovement > 0
-                ? $"{FormatSigned(poTable44Bonus)} from {GetSubAbilitySourceLabel(proficiency)}, {FormatSigned(poImprovement)} from CP"
-                : $"{FormatSigned(poTable44Bonus)} from {GetSubAbilitySourceLabel(proficiency)}";
+            int poTarget = baseRating + poTable44Bonus + poImprovement + abilityBonuses;
+            int poTotalBonus = poTable44Bonus + poImprovement + abilityBonuses;
+            var poBonusParts = new List<string>
+            {
+                $"{FormatSigned(poTable44Bonus)} from {GetSubAbilitySourceLabel(proficiency)}"
+            };
+            if (poImprovement > 0)
+                poBonusParts.Add($"{FormatSigned(poImprovement)} from CP");
+            if (abilityBonuses != 0)
+                poBonusParts.Add($"{FormatSigned(abilityBonuses)} from abilities");
+            string poBonusBreakdown = string.Join(", ", poBonusParts);
 
             int purchaseCp = GetNwpPurchaseCost(proficiency);
             string crossoverTag = HasNwpCrossoverPenalty(proficiency) ? " + crossover" : string.Empty;
@@ -1680,7 +2156,11 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
             string progressLabel = cpSpent > 0
                 ? $", improv {cpSpent} CP"
                 : string.Empty;
-            return $"{proficiency.Name} ({costLabel}), base {baseRating}, bonus {FormatSigned(poTotalBonus)} ({poBonusBreakdown}), target {poTarget}{progressLabel}{noteSuffix}{kitTag}";
+            string conditionalTargets = RangerTrackingRules.GetConditionalTargetSummary(
+                _app.CharGen,
+                proficiency,
+                poTarget);
+            return $"{proficiency.Name} ({costLabel}), base {baseRating}, bonus {FormatSigned(poTotalBonus)} ({poBonusBreakdown}), target {poTarget}{conditionalTargets}{progressLabel}{noteSuffix}{kitTag}";
         }
 
         int baseScore = GetEffectiveNwpFamilyScore(proficiency);
@@ -1706,9 +2186,6 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
         string coreCostLabel = $"{coreSlotCost} slot(s){coreCrossoverTag}";
         return $"{proficiency.Name} ({coreCostLabel}), base {baseScore}, bonus {FormatSigned(totalBonus)} ({bonusBreakdown}), target {target}{noteSuffix}{kitTag}";
     }
-
-    private static int GetMinimumPoBaseRating(NonweaponProficiencyDefinition proficiency)
-        => Math.Max(5, proficiency.PlayersOptionBaseRating);
 
     private Dictionary<string, int> GetLanguageAllowanceBySource()
     {
@@ -1759,6 +2236,13 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
             return 0;
 
         int purchases = matching.Count;
+        if (HasSelectedClassAbility("bard_learning_bonus")
+            && (string.Equals(sourceKey, ModernLanguagesSource, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(sourceKey, AncientLanguagesSource, StringComparison.OrdinalIgnoreCase)))
+        {
+            purchases *= 2;
+        }
+
         int improvements = matching
             .Select(proficiency => proficiency.Id)
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -1815,13 +2299,6 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
                 message = $"Too many languages are assigned to {LanguageSourceLabels[kv.Key]}: {used}/{kv.Value}. Remove or reassign entries in the Languages tab before continuing.";
                 return false;
             }
-        }
-
-        int freeSpokenUsed = GetSelectedLanguageCount(FreeSpokenLanguageSource);
-        if (freeSpokenUsed <= 0)
-        {
-            message = "Select at least one Free Spoken Language before continuing.";
-            return false;
         }
 
         message = string.Empty;

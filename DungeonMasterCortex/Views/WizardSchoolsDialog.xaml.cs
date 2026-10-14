@@ -17,11 +17,13 @@ public partial class WizardSchoolsDialog : Window
     {
         private bool _isSelected;
         private bool _isEnabled = true;
+        private bool _isAutomatic;
+        private bool _isOpposed;
 
         public string SchoolName  { get; set; } = "";
         public string SchoolLabel { get; set; } = "";
         public int Cost { get; set; }
-        public string CostLabel => $"{Cost} CP";
+        public string CostLabel => IsAutomatic ? "0 CP" : $"{Cost} CP";
 
         public bool IsSelected
         {
@@ -35,7 +37,19 @@ public partial class WizardSchoolsDialog : Window
             set { _isEnabled = value; OnPropertyChanged(); OnPropertyChanged(nameof(StatusLabel)); }
         }
 
-        public string StatusLabel => !IsEnabled ? "Opposed" : IsSelected ? "Selected" : "—";
+        public bool IsAutomatic
+        {
+            get => _isAutomatic;
+            set { _isAutomatic = value; OnPropertyChanged(); OnPropertyChanged(nameof(CostLabel)); OnPropertyChanged(nameof(StatusLabel)); }
+        }
+
+        public bool IsOpposed
+        {
+            get => _isOpposed;
+            set { _isOpposed = value; OnPropertyChanged(); OnPropertyChanged(nameof(StatusLabel)); }
+        }
+
+        public string StatusLabel => IsOpposed ? "Opposed" : IsAutomatic ? "Automatic" : !IsEnabled ? "Unavailable" : IsSelected ? "Selected" : "—";
 
         public Action? OnSelectionChanged { get; set; }
 
@@ -51,6 +65,8 @@ public partial class WizardSchoolsDialog : Window
         "Alchemy", "Artifice", "Dimensional", "Force", "Geometry", "Shadow", "Song",
         "Wild Magic", "Elemental (Air)", "Elemental (Earth)", "Elemental (Fire)", "Elemental (Water)"
     };
+
+    private static readonly HashSet<string> ClassicWizardSchools = new(WizardSchools.Take(8), System.StringComparer.OrdinalIgnoreCase);
 
     private static readonly Dictionary<string, string> PrimarySchoolBySpecializationId = new(System.StringComparer.OrdinalIgnoreCase)
     {
@@ -139,6 +155,8 @@ public partial class WizardSchoolsDialog : Window
         {
             var match = _specializations.FirstOrDefault(s =>
                 string.Equals(s.Id, _currentSpecId, System.StringComparison.OrdinalIgnoreCase));
+            if (match is null)
+                _currentSpecId = "";
             SpecialtyCombo.SelectedItem = match?.Name ?? "(None — General Wizard)";
             if (SpecialtyCombo.SelectedItem == null) SpecialtyCombo.SelectedIndex = 0;
         }
@@ -172,7 +190,11 @@ public partial class WizardSchoolsDialog : Window
         {
             foreach (var item in _items)
             {
-                item.IsEnabled  = true;
+                if (item.IsAutomatic)
+                    item.IsSelected = false;
+                item.IsAutomatic = false;
+                item.IsOpposed = false;
+                item.IsEnabled = true;
             }
         }
         else
@@ -180,17 +202,28 @@ public partial class WizardSchoolsDialog : Window
             var spec = _specializations?.FirstOrDefault(s =>
                 string.Equals(s.Id, _currentSpecId, System.StringComparison.OrdinalIgnoreCase));
             var opposed = spec?.OppositionSchools ?? new List<string>();
+            var automaticSchools = GetAutomaticSpecialistSchools(spec);
             foreach (var item in _items)
             {
-                bool isOpposed = opposed.Contains(item.SchoolName);
-                item.IsEnabled  = !isOpposed;
-                if (isOpposed)
-                    item.IsSelected = false;
-                else
-                    item.IsSelected = true;
+                bool isOpposed = opposed.Contains(item.SchoolName, System.StringComparer.OrdinalIgnoreCase);
+                bool isAutomatic = automaticSchools.Contains(item.SchoolName);
+                item.IsOpposed = isOpposed;
+                item.IsAutomatic = isAutomatic;
+                item.IsSelected = isAutomatic;
+                item.IsEnabled = false;
             }
         }
         UpdateTotalCost();
+    }
+
+    private static HashSet<string> GetAutomaticSpecialistSchools(WizardSpecialization? specialization)
+    {
+        if (specialization is null)
+            return new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+
+        return ClassicWizardSchools
+            .Where(school => !specialization.OppositionSchools.Contains(school, System.StringComparer.OrdinalIgnoreCase))
+            .ToHashSet(System.StringComparer.OrdinalIgnoreCase);
     }
 
     private void UpdateTotalCost()
@@ -204,7 +237,7 @@ public partial class WizardSchoolsDialog : Window
         _selections.Clear();
         foreach (var item in _items)
         {
-            if (item.IsEnabled && item.IsSelected)
+            if ((item.IsEnabled || item.IsAutomatic) && item.IsSelected)
                 _selections[item.SchoolName] = true;
         }
         DialogResult = true;

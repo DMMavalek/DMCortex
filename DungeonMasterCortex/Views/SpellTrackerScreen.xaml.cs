@@ -930,6 +930,12 @@ public class SpellTrackerScreen : UserControl, IScreen
                 ? ResolveSpellDisplayName(prepared.SpellId)
                 : prepared.SpellName;
 
+            if (!CanCastWithCurrentMaterials(_selectedCharacter, prepared.SpellId, out string materialFailure))
+            {
+                MessageBox.Show(materialFailure, "Missing Material Components", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             _selectedCharacter.SpellTracking.CastPreparedSpell(preparedIndex);
             _selectedCharacter.SpellTracking.CastSpell(prepared.SpellId, spellName, prepared.SpellLevel);
 
@@ -1572,6 +1578,7 @@ public class SpellTrackerScreen : UserControl, IScreen
             spell?.Materials ?? string.Empty,
             spell?.Area ?? string.Empty,
             spell?.Save ?? string.Empty,
+            character.UseSpellComponents,
             tags);
         row.Sources.Add(source);
         _knownSpellRows.Add(row);
@@ -1729,13 +1736,15 @@ public class SpellTrackerScreen : UserControl, IScreen
         {
             var current = visibleRows[currentIndex];
             titleBlock.Text = $"{current.Name} (Level {current.Level}, {current.Type})";
+            string componentBlock = current.ShowComponents
+                ? $"Components: {BlankAsDash(current.Components)}\nMaterial Component: {BlankAsDash(current.Materials)}\n"
+                : "Components: tracking is OFF for this character.\n";
             metaBlock.Text =
                 $"Schools/Spheres: {BlankAsDash(current.SchoolOrSphere)}\n" +
                 $"Cast Time: {BlankAsDash(current.CastTime)}\n" +
                 $"Duration: {BlankAsDash(current.Duration)}\n" +
                 $"Range: {BlankAsDash(current.Range)}\n" +
-                $"Components: {BlankAsDash(current.Components)}\n" +
-                $"Material Component: {BlankAsDash(current.Materials)}\n" +
+                componentBlock +
                 $"Area: {BlankAsDash(current.Area)}\n" +
                 $"Save: {BlankAsDash(current.Save)}\n" +
                 $"Spell {currentIndex + 1} of {visibleRows.Count}";
@@ -1860,10 +1869,160 @@ public class SpellTrackerScreen : UserControl, IScreen
 
     private static string BuildSpellDescriptionText(SpellRow row)
     {
+        if (!row.ShowComponents)
+            return string.IsNullOrWhiteSpace(row.FullDescription) ? "-" : row.FullDescription;
+
         string components = BlankAsDash(row.Components);
         string materials = BlankAsDash(row.Materials);
         string body = string.IsNullOrWhiteSpace(row.FullDescription) ? "-" : row.FullDescription;
         return $"Components: {components}\nMaterial Component: {materials}\n\n{body}";
+    }
+
+    private bool CanCastWithCurrentMaterials(CharacterSheet character, string spellId, out string failureMessage)
+    {
+        failureMessage = string.Empty;
+        if (!character.UseSpellComponents)
+            return true;
+
+        var spell = _app.Rules.Spells.FirstOrDefault(s => string.Equals(s.Id, spellId, StringComparison.OrdinalIgnoreCase));
+        if (spell is null)
+            return true;
+
+        bool hasMaterialMarker = ContainsToken(spell.Components ?? string.Empty, "M");
+        bool hasMaterialText = !string.IsNullOrWhiteSpace(spell.Materials);
+        if (!hasMaterialMarker && !hasMaterialText)
+            return true;
+
+        var required = ExtractMaterialComponents(spell.Materials).ToList();
+        if (required.Count == 0)
+            return true;
+
+        var inventoryNames = (character.EquipmentSelections ?? new List<EquipmentSelection>())
+            .Select(selection => NormalizeComponentName(selection.ItemName))
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var missing = required
+            .Where(component => !inventoryNames.Contains(NormalizeComponentName(component)))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (missing.Count == 0)
+            return true;
+
+        string shown = string.Join(", ", missing.Take(4));
+        if (missing.Count > 4)
+            shown += ", ...";
+
+        failureMessage = $"Cannot cast {spell.Name}: missing material component{(missing.Count == 1 ? string.Empty : "s")} ({shown}).";
+        return false;
+    }
+
+    private static IEnumerable<string> ExtractMaterialComponents(string? materialsText)
+    {
+        if (string.IsNullOrWhiteSpace(materialsText))
+            yield break;
+
+        string cleaned = Regex.Replace(materialsText, @"\([^)]*\)", string.Empty);
+        cleaned = Regex.Replace(cleaned, @"\b(material component(?:s)?|requires?|needed|must have|must be|consumes?)\b", string.Empty, RegexOptions.IgnoreCase);
+        cleaned = Regex.Replace(cleaned, @"\bworth\s+\d+\s*(gp|sp|cp|pp)\b", string.Empty, RegexOptions.IgnoreCase);
+        cleaned = cleaned.Trim();
+        if (string.IsNullOrWhiteSpace(cleaned))
+            yield break;
+
+        foreach (string part in Regex.Split(cleaned, @"\s*(,|;|\bor\b|\band\b|\bplus\b|/)\s*", RegexOptions.IgnoreCase))
+        {
+            string token = (part ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(token)
+                || token == ","
+                || token == ";"
+                || token == "/"
+                || string.Equals(token, "or", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(token, "and", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(token, "plus", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            string? normalized = CleanMaterialToken(token);
+            if (!string.IsNullOrWhiteSpace(normalized))
+                yield return normalized;
+        }
+    }
+
+    private static string NormalizeComponentName(string? value)
+    {
+        string normalized = Regex.Replace((value ?? string.Empty).Trim().ToLowerInvariant(), @"\s+", " ");
+        normalized = Regex.Replace(normalized, @"[^a-z0-9\s'-]", string.Empty).Trim();
+        normalized = Regex.Replace(normalized, @"^(a|an|the)\s+", string.Empty, RegexOptions.IgnoreCase).Trim();
+
+        if (Regex.IsMatch(normalized, @"\bholy symbol\b", RegexOptions.IgnoreCase))
+            return "holy symbol";
+        if (Regex.IsMatch(normalized, @"\b(prayer beads?|rosary)\b", RegexOptions.IgnoreCase))
+            return "prayer beads";
+        if (Regex.IsMatch(normalized, @"\bmistletoe\b", RegexOptions.IgnoreCase))
+            return "mistletoe";
+        if (Regex.IsMatch(normalized, @"\bpowdered silver\b|\bsilver powder\b", RegexOptions.IgnoreCase))
+            return "powdered silver";
+        if (Regex.IsMatch(normalized, @"\bdiamond dust\b", RegexOptions.IgnoreCase))
+            return "diamond dust";
+
+        return normalized;
+    }
+
+    private static string? CleanMaterialToken(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            return null;
+
+        string normalized = token.Trim(' ', '.', ':', '-');
+        normalized = Regex.Replace(normalized, @"\b(the caster|caster|priest|wizard|mage)('s)?\b", string.Empty, RegexOptions.IgnoreCase);
+        normalized = Regex.Replace(normalized, @"\bthat is consumed\b|\bwhich is consumed\b|\bif available\b", string.Empty, RegexOptions.IgnoreCase);
+        normalized = Regex.Replace(normalized, @"\s+", " ").Trim();
+
+        if (IsNoiseMaterialToken(normalized))
+            return null;
+
+        string compact = NormalizeComponentName(normalized);
+        if (IsNoiseMaterialToken(compact))
+            return null;
+
+        return ToDisplayComponentName(compact);
+    }
+
+    private static bool IsNoiseMaterialToken(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            return true;
+
+        string lower = token.Trim().ToLowerInvariant();
+        return lower == "none"
+            || lower == "n/a"
+            || lower == "na"
+            || lower == "see text"
+            || lower == "special"
+            || lower == "varies"
+            || lower == "various"
+            || lower == "optional"
+            || lower == "material"
+            || lower == "component"
+            || lower == "material component"
+            || Regex.IsMatch(lower, @"^see\s")
+            || Regex.IsMatch(lower, @"^as\s+")
+            || Regex.IsMatch(lower, @"^at\s+least\s+\d+")
+            || Regex.IsMatch(lower, @"^worth\s+\d+")
+            || Regex.IsMatch(lower, @"^up\s+to\s+\d+");
+    }
+
+    private static string ToDisplayComponentName(string normalized)
+    {
+        if (string.IsNullOrWhiteSpace(normalized))
+            return string.Empty;
+
+        return string.Join(" ", normalized
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Select(word => word.Length <= 2 ? word.ToUpperInvariant() : char.ToUpperInvariant(word[0]) + word[1..]));
     }
 
     private static bool ContainsToken(string haystack, string token)
@@ -2035,6 +2194,7 @@ public class SpellTrackerScreen : UserControl, IScreen
             string materials,
             string area,
             string save,
+            bool showComponents,
             List<string> tags)
         {
             Id = id;
@@ -2051,6 +2211,7 @@ public class SpellTrackerScreen : UserControl, IScreen
             Materials = materials ?? string.Empty;
             Area = area ?? string.Empty;
             Save = save ?? string.Empty;
+            ShowComponents = showComponents;
             Tags = tags ?? new List<string>();
         }
 
@@ -2068,14 +2229,15 @@ public class SpellTrackerScreen : UserControl, IScreen
         public string Materials { get; }
         public string Area { get; }
         public string Save { get; }
+        public bool ShowComponents { get; }
         public List<string> Tags { get; }
         public HashSet<string> Sources { get; } = new(StringComparer.OrdinalIgnoreCase);
 
         public override string ToString()
         {
             string school = string.IsNullOrWhiteSpace(SchoolOrSphere) ? string.Empty : $" [{SchoolOrSphere}]";
-            string components = string.IsNullOrWhiteSpace(Components) ? "" : $"  Comp: {Components}";
-            string material = string.IsNullOrWhiteSpace(Materials) ? "" : $"  Mtrl: {Materials}";
+            string components = ShowComponents && !string.IsNullOrWhiteSpace(Components) ? $"  Comp: {Components}" : "";
+            string material = ShowComponents && !string.IsNullOrWhiteSpace(Materials) ? $"  Mtrl: {Materials}" : "";
             string tags = Tags.Count == 0 ? "" : $"  Tags: {string.Join(",", Tags)}";
             string summary = string.IsNullOrWhiteSpace(Summary) ? "" : $"\n   {Summary}";
             return $"{Name} (L{Level}){school}{components}{material}{tags}{summary}";

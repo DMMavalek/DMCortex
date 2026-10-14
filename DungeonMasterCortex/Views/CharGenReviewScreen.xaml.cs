@@ -48,12 +48,24 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                 ? value
                 : Math.Max(1, (value + 1) / 2);
 
+        var selList = (selections ?? Array.Empty<WeaponProficiencySelection>()).ToList();
         int total = 0;
-        foreach (var selection in selections)
+        foreach (var selection in selList)
         {
-            int cost = _app.Rules.GetWeaponProficiencyCpCost(classIds, selection.ProficiencyId, selection.ProficiencyType, selection.Specialized);
-            if (cost < 0)
-                cost = RulesEngine.GetWeaponProficiencySlotCost(selection.ProficiencyType) + (selection.Specialized ? 1 : 0);
+            bool covered = string.Equals(selection.ProficiencyType, "individual", StringComparison.OrdinalIgnoreCase)
+                && _app.Rules.IsWeaponCoveredByGroupSelections(selection.ProficiencyId, selList);
+
+            int cost;
+            if (covered)
+            {
+                cost = selection.Specialized ? _app.Rules.GetWeaponSpecializationOnlyCpCost(classIds) : 0;
+            }
+            else
+            {
+                cost = _app.Rules.GetWeaponProficiencyCpCost(classIds, selection.ProficiencyId, selection.ProficiencyType, selection.Specialized);
+                if (cost < 0)
+                    cost = RulesEngine.GetWeaponProficiencySlotCost(selection.ProficiencyType, selection.ProficiencyId) + (selection.Specialized ? 1 : 0);
+            }
 
             cost = ApplyEase(cost);
 
@@ -69,6 +81,30 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                 int expertiseCost = _app.Rules.GetWeaponProficiencyCpCost(classIds, "weapon_expertise", "combat_option", specialized: false);
                 if (expertiseCost > 0)
                     cost += ApplyEase(expertiseCost);
+            }
+
+            if (selection.WeaponMastery)
+            {
+                var effectiveClasses = classIds.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+                bool singleFighter = effectiveClasses.Count == 1 && effectiveClasses.Any(id => string.Equals(id, "fighter", StringComparison.OrdinalIgnoreCase));
+                int masteryCost = singleFighter ? 2 : 8;
+                cost += ApplyEase(masteryCost);
+            }
+
+            if (selection.HighMastery)
+            {
+                var effectiveClasses = classIds.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+                bool singleFighter = effectiveClasses.Count == 1 && effectiveClasses.Any(id => string.Equals(id, "fighter", StringComparison.OrdinalIgnoreCase));
+                int highMasteryCost = singleFighter ? 2 : 8;
+                cost += ApplyEase(highMasteryCost);
+            }
+
+            if (selection.GrandMastery)
+            {
+                var effectiveClasses = classIds.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+                bool singleFighter = effectiveClasses.Count == 1 && effectiveClasses.Any(id => string.Equals(id, "fighter", StringComparison.OrdinalIgnoreCase));
+                int grandMasteryCost = singleFighter ? 2 : 8;
+                cost += ApplyEase(grandMasteryCost);
             }
 
             total += Math.Max(0, cost);
@@ -159,8 +195,14 @@ public partial class CharGenReviewScreen : UserControl, IScreen
         var effectiveClassIds = GetEffectiveClassIds(cg);
 
         SumName.Text  = cg.Name;
+        SumPlayerName.Text = cg.PlayerName;
+        SelectGenderComboValue(cg.Gender);
         SumRace.Text  = race?.Name  ?? cg.RaceId;
         SumClass.Text = BuildClassDisplayName(effectiveClassIds, cls?.Name ?? cg.ClassId);
+        SumAlignment.Text = string.IsNullOrWhiteSpace(cg.Alignment) ? "Not selected" : cg.Alignment;
+        SumDeity.Text = !_app.Rules.DeityRulesEnabled
+            ? "Deity rules disabled"
+            : _app.Rules.Deities.TryGetValue(cg.DeityId, out var deity) ? deity.Name : "None";
         _suppressCoreStatsRefresh = true;
 
         if (cg.IsLevelUpMode)
@@ -222,10 +264,22 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                 int derivedLevel = CharacterProgressionService.GetLevelForExperience(cg.ClassId, effectiveXp);
                 cg.CharacterLevel = derivedLevel;
                 LevelInput.Text = derivedLevel.ToString();
+                if (string.Equals(cg.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase))
+                {
+                    int classLevelAdvances = cg.GetExistingClassLevelAdvances();
+                    int levelBasedCp = Math.Max(0, cg.ExistingCpPerLevel) * classLevelAdvances;
+                    int startingPoolCp = Math.Max(0, cg.ExistingStartingUnspentCharacterPoints);
+                    LevelUpSummary.Text = classCount > 1 && cg.ExistingExperienceIsGrandTotalForMulticlass
+                        ? $"Existing character mode: Total XP {enteredXp:N0} split across {classCount} classes -> {effectiveXp:N0} per class -> Level {derivedLevel}.\nCP award: {levelBasedCp:N0} from {classLevelAdvances} class level(s) + {startingPoolCp:N0} starting pool = {levelBasedCp + startingPoolCp:N0}."
+                        : $"Existing character mode: XP {effectiveXp:N0} -> Level {derivedLevel}.\nCP award: {levelBasedCp:N0} from {classLevelAdvances} class level(s) + {startingPoolCp:N0} starting pool = {levelBasedCp + startingPoolCp:N0}.";
+                }
+                else
+                {
+                    LevelUpSummary.Text = classCount > 1 && cg.ExistingExperienceIsGrandTotalForMulticlass
+                        ? $"Existing character mode: Total XP {enteredXp:N0} split across {classCount} classes -> {effectiveXp:N0} per class -> Level {derivedLevel}."
+                        : $"Existing character mode: XP {effectiveXp:N0} -> Level {derivedLevel}.";
+                }
                 LevelUpSummary.Visibility = Visibility.Visible;
-                LevelUpSummary.Text = classCount > 1 && cg.ExistingExperienceIsGrandTotalForMulticlass
-                    ? $"Existing character mode: Total XP {enteredXp:N0} split across {classCount} classes -> {effectiveXp:N0} per class -> Level {derivedLevel}."
-                    : $"Existing character mode: XP {effectiveXp:N0} -> Level {derivedLevel}.";
             }
             else
             {
@@ -249,7 +303,8 @@ public partial class CharGenReviewScreen : UserControl, IScreen
             cg.SelectedClassAbilityIds,
             cg.RacialCarryoverToClassPoints,
             cg.WizardSpecializationId,
-            Math.Max(1, cg.CharacterLevel));
+            Math.Max(1, cg.CharacterLevel),
+            cg.RaceId);
         SumRacialAbilities.ItemsSource = selectedPackage.selectedAbilities.Count > 0
             ? selectedPackage.selectedAbilities.Select(a => a.Description).ToList()
             : new List<string> { "(No racial abilities selected)" };
@@ -316,9 +371,13 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                     : new List<string> { cg.ClassId };
             int slotsUsed = string.Equals(cg.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase)
                 ? GetEffectiveWeaponCpUsedForState(cg, classIds, cg.SelectedWeaponProficiencies)
-                : RulesEngine.GetTotalWeaponProficiencySlotsUsed(cg.SelectedWeaponProficiencies);
+                : _app.Rules.GetTotalWeaponProficiencySlotsUsed(cg.SelectedWeaponProficiencies);
             var wpNames = cg.SelectedWeaponProficiencies
-                .Select(wp => wp.Specialized ? $"{wp.DisplayName} ★" : wp.DisplayName)
+                .Select(wp => wp.GrandMastery ? $"{wp.DisplayName} ★★★ [Grand Master]"
+                    : wp.HighMastery ? $"{wp.DisplayName} ★★ [High Master]"
+                    : wp.WeaponMastery ? $"{wp.DisplayName} ★ [Master]"
+                    : wp.Specialized ? $"{wp.DisplayName} ★ [Specialist]"
+                    : wp.DisplayName)
                 .ToList();
             optionLines.Add(string.Equals(cg.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase)
                 ? $"Weapon proficiencies ({slotsUsed} CP): {string.Join(", ", wpNames)}"
@@ -340,7 +399,7 @@ public partial class CharGenReviewScreen : UserControl, IScreen
             : new List<string> { "(No proficiencies, traits, disadvantages, or languages selected)" };
 
         var spellcastingLines = new List<string>();
-        if (string.Equals(cg.ClassId, "cleric", StringComparison.OrdinalIgnoreCase)
+        if (RulesEngine.IsPriestClassId(cg.ClassId)
             && cg.SelectedSpheres.Count > 0)
         {
             var normalizedSpheres = CharGenClassScreen.NormalizeSphereSelections(cg.SelectedSpheres);
@@ -373,7 +432,17 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                 spellcastingLines.Add($"Wizard schools opposed: {string.Join(", ", opposed)}");
         }
 
-        var selectedSkillIds = RulesEngine.GetRogueSkillIdsForAbilitySelection(cg.SelectedClassAbilityIds);
+        bool isPlayersOptionMode = string.Equals(
+            CharGenState.NormalizeCharacterModeToken(cg.CharacterMode),
+            "players_option",
+            StringComparison.OrdinalIgnoreCase);
+        var selectedAbilityEntries = cg.SelectedClassAbilityIds
+            .Concat(cg.SelectedAbilitiesByClass.Values.SelectMany(entries => entries))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var selectedSkillIds = isPlayersOptionMode
+            ? RulesEngine.GetRogueSkillIdsForClassProfile(cg.ClassId, selectedAbilityEntries)
+            : RulesEngine.GetStandardCoreRogueSkillIdsForClassProfile(cg.ClassId);
         if (selectedSkillIds.Count > 0)
         {
             int level = Math.Max(1, cg.CharacterLevel);
@@ -381,6 +450,8 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                 ? modifiedDex
                 : cg.Abilities.GetValueOrDefault("dex", 10);
             string raceId = string.IsNullOrWhiteSpace(cg.BaseRaceId) ? cg.RaceId : cg.BaseRaceId;
+            bool useAverageProgression = isPlayersOptionMode
+                && RulesEngine.UsesAutomaticRogueSkillProgression(cg.ClassId);
 
             var breakdown = RulesEngine.BuildRogueSkillBreakdown(
                 selectedSkillIds,
@@ -388,14 +459,22 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                 dex,
                 cg.RogueSkillArmorProfile,
                 cg.SelectedRogueSkillPoints,
-                level);
+                level,
+                useAverageProgression);
 
-            int pool = RulesEngine.GetRogueSkillPointPoolForLevel(level);
-            int spent = breakdown.Sum(x => x.AllocatedPoints);
-            int remaining = pool - spent;
             var finalSkills = string.Join(", ", breakdown.Select(x => $"{x.SkillName} {x.FinalScore}%"));
 
-            spellcastingLines.Add($"Rogue skill points: {spent}/{pool} (remaining {remaining})");
+            if (useAverageProgression)
+            {
+                spellcastingLines.Add("Rogue skill progression: Automatic DMG average table");
+            }
+            else
+            {
+                int pool = RulesEngine.GetRogueSkillPointPoolForLevel(level, cg.ClassId);
+                int spent = breakdown.Sum(x => x.AllocatedPoints);
+                int remaining = pool - spent;
+                spellcastingLines.Add($"Rogue skill points: {spent}/{pool} (remaining {remaining})");
+            }
             spellcastingLines.Add($"Rogue skills: {finalSkills}");
         }
 
@@ -423,7 +502,29 @@ public partial class CharGenReviewScreen : UserControl, IScreen
             CpSummary.Text = "";
         }
 
-        if (classPackage.budget > 0)
+        if (cg.IsLevelUpMode || cg.IsExistingCharacterMode)
+        {
+            int startingPoolCp = cg.IsLevelUpMode
+                && cg.LevelUpCharacterIndex >= 0
+                && cg.LevelUpCharacterIndex < _app.Characters.Count
+                    ? Math.Max(0, _app.Characters[cg.LevelUpCharacterIndex].UnspentCharacterPoints)
+                    : cg.GetExistingCharacterPointPool();
+            int pendingCp = Math.Max(0, cg.LevelUpPendingCharacterPointGain);
+            int availablePoolCp = Math.Max(0, startingPoolCp + pendingCp);
+
+            var nwpDefinitions = _app.CharacterOptions.GetCatalog().NonweaponProficiencies.ToList();
+            int baselineNwpCp = CalculateTotalNwpCp(cg.BaselineNonweaponProficiencyIds, cg.BaselineNonweaponProficiencyImprovements, nwpDefinitions);
+            int currentNwpCp = CalculateTotalNwpCp(cg.SelectedNonweaponProficiencyIds, cg.SelectedNonweaponProficiencyImprovements, nwpDefinitions);
+            int baselineWeaponCp = GetEffectiveWeaponCpUsedForState(cg, effectiveClassIds, cg.BaselineWeaponProficiencies);
+            int currentWeaponCp = GetEffectiveWeaponCpUsedForState(cg, effectiveClassIds, cg.SelectedWeaponProficiencies);
+            int cpSpentThisCycle = Math.Max(0, currentNwpCp - baselineNwpCp) + Math.Max(0, currentWeaponCp - baselineWeaponCp);
+            int remainingGlobalCp = Math.Max(0, availablePoolCp - cpSpentThisCycle);
+
+            ClassCpSummary.Text = $"Global CP Pool: {remainingGlobalCp}  (Spent this update {cpSpentThisCycle} / Available {availablePoolCp})";
+            ClassCpSummary.Foreground = new SolidColorBrush(
+                (Color)ColorConverter.ConvertFromString(remainingGlobalCp == 0 ? "#E8C050" : "#C4A468"));
+        }
+        else if (classPackage.budget > 0)
         {
             ClassCpSummary.Text = $"Class CP: Remaining {classPackage.remaining}  (Spent {classPackage.spent} / {classPackage.budget})";
             ClassCpSummary.Foreground = new SolidColorBrush(
@@ -434,10 +535,11 @@ public partial class CharGenReviewScreen : UserControl, IScreen
             ClassCpSummary.Text = "";
         }
 
+        var effectiveAbilities = GetEffectiveReviewAbilities(cg);
         var items = new List<AbilityViewModel>();
         for (int i = 0; i < AbilityOrder.Length; i++)
         {
-            int score = cg.Abilities.GetValueOrDefault(AbilityOrder[i], 0);
+            int score = effectiveAbilities.GetValueOrDefault(AbilityOrder[i], cg.Abilities.GetValueOrDefault(AbilityOrder[i], 0));
             var color = score >= 15 ? "#E8C050" : score >= 9 ? "#C4A468" : "#C02828";
             items.Add(new AbilityViewModel
             {
@@ -451,12 +553,12 @@ public partial class CharGenReviewScreen : UserControl, IScreen
 
         if (cg.CharacterMode == "players_option")
         {
-            var effectiveSubAbilities = BuildReviewSubAbilities(cg);
+            var effectiveSubAbilities = BuildReviewSubAbilities(cg, effectiveAbilities);
             var subLines = new List<MechanicsLineViewModel>();
             foreach (var sub in SubAbilityOrder)
             {
                 int score = effectiveSubAbilities.GetValueOrDefault(sub.Key,
-                    cg.Abilities.GetValueOrDefault(sub.AbilityKey, 10));
+                    effectiveAbilities.GetValueOrDefault(sub.AbilityKey, cg.Abilities.GetValueOrDefault(sub.AbilityKey, 10)));
                 string effect = SubAbilityTables.GetEffect(sub.Key, score, cg.ExceptionalStrength);
                 subLines.Add(new MechanicsLineViewModel
                 {
@@ -527,6 +629,7 @@ public partial class CharGenReviewScreen : UserControl, IScreen
         int level = GetConfiguredLevel();
         bool maxHpAtLevelOne = MaxHpAtLevelOneCheck.IsChecked != false;
         var cg = _app.CharGen;
+        var effectiveAbilities = GetEffectiveReviewAbilities(cg);
         cg.CharacterLevel = level;
 
         Models.CharacterSheet? previewSheet;
@@ -536,7 +639,7 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                 cg.Name,
                 cg.RaceId,
                 cg.ClassId,
-                cg.Abilities,
+                effectiveAbilities,
                 cg.SelectedRacialAbilityIds,
                 cg.SelectedClassAbilityIds,
                 cg.RacialCarryoverToClassPoints,
@@ -555,7 +658,7 @@ public partial class CharGenReviewScreen : UserControl, IScreen
         }
 
         int con = cg.ModifiedAbilities.GetValueOrDefault("con", cg.Abilities.GetValueOrDefault("con", 10));
-        int hp = CalculateLevelScaledHitPoints(cg.ClassId, level, con, maxHpAtLevelOne, previewSheet.Bonuses);
+        int hp = CalculateLevelScaledHitPoints(cg.ClassId, level, con, maxHpAtLevelOne, cg.CharacterMode, previewSheet.Bonuses);
         int conHpBonus = CharacterProgressionService.GetConHitPointBonus(con, cg.ClassId);
         int totalHpPerLevelBonus = conHpBonus + previewSheet.Bonuses.HpPerLevel;
         int ac = previewSheet.ArmorClass;
@@ -590,6 +693,7 @@ public partial class CharGenReviewScreen : UserControl, IScreen
         "cleric" or "druid" or "thief" => 8,
         "wizard" => 4,
         "bard" or "psionicist" => 6,
+        _ when RulesEngine.IsPriestClassId(classId) => 8,
         _ => 6,
     };
 
@@ -610,29 +714,60 @@ public partial class CharGenReviewScreen : UserControl, IScreen
         int level,
         int con,
         bool maxHpAtLevelOne,
+        string characterMode,
         AbilityBonuses bonuses)
     {
         int hitDie = GetClassHitDie(classId);
         int averageDie = (hitDie + 1) / 2;
         int firstLevelDie = maxHpAtLevelOne ? hitDie : averageDie;
         int conMod = CharacterProgressionService.GetConHitPointBonus(con, classId);
-        int levelBonus = bonuses.HpPerLevel;
+        bool isPlayersOption = string.Equals(characterMode, "players_option", StringComparison.OrdinalIgnoreCase);
+        int levelBonus = isPlayersOption ? bonuses.HpPerLevel : 0;
+        int flatBonus = isPlayersOption ? bonuses.HpFlatBonus : 0;
 
-        int firstLevelHp = firstLevelDie + conMod + levelBonus + bonuses.HpFlatBonus;
+        int firstLevelHp = firstLevelDie + conMod + levelBonus + flatBonus;
         int additionalLevelHp = averageDie + conMod + levelBonus;
         int total = firstLevelHp + Math.Max(0, level - 1) * additionalLevelHp;
         return Math.Max(1, total);
     }
 
-    private static Dictionary<string, int> BuildReviewSubAbilities(CharGenState cg)
+    private Dictionary<string, int> GetEffectiveReviewAbilities(CharGenState cg)
+    {
+        if (cg.ModifiedAbilities is { Count: > 0 })
+            return new Dictionary<string, int>(cg.ModifiedAbilities, StringComparer.OrdinalIgnoreCase);
+
+        if (cg.Abilities.Count > 0 && !string.IsNullOrWhiteSpace(cg.RaceId))
+            return _app.Rules.ApplyRacialModifiers(cg.RaceId, cg.Abilities);
+
+        return new Dictionary<string, int>(cg.Abilities, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static Dictionary<string, int> BuildReviewSubAbilities(CharGenState cg, IReadOnlyDictionary<string, int> effectiveAbilities)
     {
         var result = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         foreach (var sub in SubAbilityOrder)
         {
-            int fallback = cg.Abilities.GetValueOrDefault(sub.AbilityKey, 10);
-            result[sub.Key] = cg.SubAbilities.GetValueOrDefault(sub.Key, fallback);
+            int baseAbility = cg.Abilities.GetValueOrDefault(sub.AbilityKey, 10);
+            int modifiedAbility = (cg.ModifiedAbilities is { Count: > 0 })
+                ? cg.ModifiedAbilities.GetValueOrDefault(sub.AbilityKey, baseAbility)
+                : baseAbility;
+            int effectiveAbility = effectiveAbilities.GetValueOrDefault(sub.AbilityKey, modifiedAbility);
+            int abilityDelta = effectiveAbility - modifiedAbility;
+
+            int currentValue = cg.SubAbilities.GetValueOrDefault(sub.Key, modifiedAbility);
+            result[sub.Key] = ClampSubAbilityScore(sub.Key, currentValue + abilityDelta);
         }
         return result;
+    }
+
+    private static int ClampSubAbilityScore(string subAbilityKey, int value)
+    {
+        if (string.IsNullOrWhiteSpace(subAbilityKey))
+            return Math.Clamp(value, 1, 18);
+
+        bool isStrengthSubAbility = subAbilityKey.StartsWith("str_", StringComparison.OrdinalIgnoreCase);
+        int max = isStrengthSubAbility ? 20 : 18;
+        return Math.Clamp(value, 1, max);
     }
 
     private int GetExistingExperienceForLeveling(CharGenState cg)
@@ -665,6 +800,7 @@ public partial class CharGenReviewScreen : UserControl, IScreen
             cg.SelectedAbilitiesByClass[cg.ClassId] = new List<string>(cg.SelectedClassAbilityIds);
         }
 
+        var effectiveAbilities = GetEffectiveReviewAbilities(cg);
         var racialPackage = _app.Rules.BuildRacialAbilityPackage(cg.RaceId, cg.SelectedRacialAbilityIds);
         var allStructured = new List<AbilityDefinition>(racialPackage.selectedAbilities);
 
@@ -691,21 +827,45 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                 selectedAbilityIds,
                 cg.RacialCarryoverToClassPoints,
                 specializationId,
-                Math.Max(1, sheet.Level));
+                Math.Max(1, sheet.Level),
+                cg.RaceId);
+
+            var spheres = cg.SpheresByClass.TryGetValue(classId, out var classSpheres)
+                ? classSpheres
+                : string.Equals(classId, cg.ClassId, StringComparison.OrdinalIgnoreCase)
+                    ? cg.SelectedSpheres
+                    : new Dictionary<string, string>();
+            var schools = cg.SchoolsByClass.TryGetValue(classId, out var classSchools)
+                ? classSchools
+                : string.Equals(classId, cg.ClassId, StringComparison.OrdinalIgnoreCase)
+                    ? cg.SelectedWizardSchools
+                    : new Dictionary<string, bool>();
+            int configurationCost = _app.Rules.Classes.TryGetValue(classId, out var classDefinition)
+                ? CharGenClassAbilitiesScreen.CalculateConfigurationCpCost(classDefinition, spheres, schools, specializationId)
+                : 0;
 
             classBudget += classPackage.budget;
-            classSpent += classPackage.spent;
-            classRemaining += classPackage.remaining;
+            classSpent += classPackage.spent + configurationCost;
+            classRemaining += classPackage.remaining - configurationCost;
             allStructured.AddRange(classPackage.selectedAbilities);
+        }
+
+        if (_app.Rules.DeityRulesEnabled
+            && !string.IsNullOrWhiteSpace(cg.DeityId)
+            && _app.Rules.Deities.TryGetValue(cg.DeityId, out var deity)
+            && deity.FollowerAbility is not null
+            && allStructured.All(ability => !string.Equals(ability.Id, deity.FollowerAbility.Id, StringComparison.OrdinalIgnoreCase)))
+        {
+            allStructured.Add(deity.FollowerAbility);
         }
 
         string normalizedArmorProfile = string.IsNullOrWhiteSpace(cg.RogueSkillArmorProfile)
             ? "no_armor"
             : cg.RogueSkillArmorProfile.Trim().ToLowerInvariant();
         bool isUnarmored = normalizedArmorProfile == "no_armor";
-        var bonuses = RulesEngine.AggregateEffects(allStructured, isUnarmored);
+        var bonuses = RulesEngine.AggregateEffects(allStructured, isUnarmored, Math.Max(1, cg.CharacterLevel));
 
-        var effectiveSubAbilities = BuildReviewSubAbilities(cg);
+        var effectiveSubAbilities = BuildReviewSubAbilities(cg, effectiveAbilities);
         foreach (var (key, mod) in bonuses.SubAbilityBonuses)
         {
             if (string.IsNullOrWhiteSpace(key) || mod == 0)
@@ -724,7 +884,7 @@ public partial class CharGenReviewScreen : UserControl, IScreen
         }
 
         foreach (var key in effectiveSubAbilities.Keys.ToList())
-            effectiveSubAbilities[key] = Math.Clamp(effectiveSubAbilities[key], 1, 20);
+            effectiveSubAbilities[key] = ClampSubAbilityScore(key, effectiveSubAbilities[key]);
 
         var subTotals = SubAbilityTables.CalculateTotals(effectiveSubAbilities, cg.ExceptionalStrength, GetEffectiveClassIdForConBonus(cg));
         bonuses.AttackBonus += subTotals.MeleeAttackBonus;
@@ -752,14 +912,19 @@ public partial class CharGenReviewScreen : UserControl, IScreen
         if (subTotals.MagicDefenseAdjustment != 0)
             bonuses.SaveBonuses["magic"] = bonuses.SaveBonuses.GetValueOrDefault("magic") + subTotals.MagicDefenseAdjustment;
 
-        if (subTotals.SpellImmunityPercent != 0)
-            bonuses.MagicResistPercent += subTotals.SpellImmunityPercent;
-
         bonuses.SubAbilityBonuses["pick_pockets"] = bonuses.SubAbilityBonuses.GetValueOrDefault("pick_pockets") + subTotals.PickPocketsAdjustment;
         bonuses.SubAbilityBonuses["open_locks"] = bonuses.SubAbilityBonuses.GetValueOrDefault("open_locks") + subTotals.OpenLocksAdjustment;
         bonuses.SubAbilityBonuses["move_silently"] = bonuses.SubAbilityBonuses.GetValueOrDefault("move_silently") + subTotals.MoveSilentlyAdjustment;
         bonuses.SubAbilityBonuses["climb_walls"] = bonuses.SubAbilityBonuses.GetValueOrDefault("climb_walls") + subTotals.ClimbWallsAdjustment;
 
+        bool isPlayersOption = string.Equals(cg.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase);
+        if (!isPlayersOption)
+        {
+            bonuses.HpPerLevel = 0;
+            bonuses.HpFlatBonus = 0;
+        }
+
+        sheet.Abilities = new Dictionary<string, int>(effectiveAbilities, StringComparer.OrdinalIgnoreCase);
         sheet.StructuredAbilities = allStructured;
         sheet.RacialAbilities = racialPackage.selectedAbilities.Select(a => a.Description).ToList();
         sheet.Bonuses = bonuses;
@@ -876,13 +1041,29 @@ public partial class CharGenReviewScreen : UserControl, IScreen
             return;
         }
         cg.Name = name;
+        cg.PlayerName = SumPlayerName.Text.Trim();
+        cg.Gender = GetSelectedGenderValue();
 
         if (!cg.IsLevelUpMode
             && string.Equals(cg.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase)
             && !ConfirmCpPerLevelSelection())
             return;
 
-        var issues = _app.Rules.Validate(cg.RaceId, cg.ClassId, cg.Abilities);
+        var effectiveClassIds = GetEffectiveClassIds(cg);
+        if (!_app.Rules.IsClassCombinationAlignmentAllowed(effectiveClassIds, cg.Alignment))
+        {
+            MessageBox.Show(
+                "The selected alignment is not allowed by this class combination.",
+                "Alignment Not Allowed", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var issues = _app.Rules.Validate(
+            cg.RaceId,
+            cg.ClassId,
+            GetEffectiveReviewAbilities(cg),
+            cg.Alignment,
+            ignoreAlignment: effectiveClassIds.Count > 1);
         if (issues.Count > 0)
         {
             var proceed = MessageBox.Show(
@@ -952,14 +1133,17 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                 ? cg.SelectedClassIds.Where(x => !string.IsNullOrWhiteSpace(x)).ToList()
                 : string.IsNullOrWhiteSpace(cg.ClassId) ? new List<string>() : new List<string> { cg.ClassId };
 
+            bool isPlayersOptionCharacter = string.Equals(existing.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(cg.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase);
+
             int pendingHpGain = Math.Max(0, cg.LevelUpPendingHitPointGain);
             existing.ExperiencePoints = Math.Max(0, existing.ExperiencePoints) + Math.Max(0, cg.LevelUpPendingExperienceGain);
-            if (string.Equals(cg.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase))
+            if (isPlayersOptionCharacter)
                 existing.UnspentCharacterPoints = Math.Max(0, existing.UnspentCharacterPoints) + Math.Max(0, cg.LevelUpPendingCharacterPointGain);
 
             var catalog = _app.CharacterOptions.GetCatalog();
             var nwpDefinitions = catalog.NonweaponProficiencies.ToList();
-            if (string.Equals(cg.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase))
+            if (isPlayersOptionCharacter)
             {
                 int currentNwpCp = CalculateTotalNwpCp(cg, nwpDefinitions);
                 int baselineNwpCp = CalculateTotalNwpCp(cg.BaselineNonweaponProficiencyIds, cg.BaselineNonweaponProficiencyImprovements, nwpDefinitions);
@@ -968,7 +1152,9 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                 int currentWeaponCp = GetEffectiveWeaponCpUsedForState(cg, classIdsForWeaponCp, cg.SelectedWeaponProficiencies);
                 int baselineWeaponCp = GetEffectiveWeaponCpUsedForState(cg, classIdsForWeaponCp, cg.BaselineWeaponProficiencies);
 
-                int cpSpentThisCycle = Math.Max(0, currentNwpCp - baselineNwpCp) + Math.Max(0, currentWeaponCp - baselineWeaponCp);
+                int nwpSpentThisCycle = Math.Max(0, currentNwpCp - baselineNwpCp);
+                int weaponSpentThisCycle = Math.Max(0, currentWeaponCp - baselineWeaponCp);
+                int cpSpentThisCycle = nwpSpentThisCycle + weaponSpentThisCycle;
                 if (cpSpentThisCycle > existing.UnspentCharacterPoints)
                 {
                     MessageBox.Show(
@@ -980,6 +1166,8 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                 }
 
                 existing.UnspentCharacterPoints -= cpSpentThisCycle;
+                existing.SpentNwpCharacterPoints += nwpSpentThisCycle;
+                existing.SpentWeaponCharacterPoints += weaponSpentThisCycle;
             }
 
             var advancement = CharacterProgressionService.ApplyLevelAdvancementFromExperience(existing, applyHitPointProgression: false);
@@ -1002,9 +1190,19 @@ public partial class CharGenReviewScreen : UserControl, IScreen
             }
 
             existing.ClassMode = cg.ClassMode;
+            existing.PlayerName = cg.PlayerName;
+            existing.Gender = cg.Gender;
+            existing.Alignment = cg.Alignment;
+            existing.DeityId = cg.DeityId;
             existing.ClassIds = currentClassIds;
             existing.ClassId = currentClassIds.FirstOrDefault() ?? existing.ClassId;
             existing.ClassName = BuildClassDisplayName(currentClassIds, existing.ClassName);
+            CharacterProgressionService.ApplyExperienceAdjustment(existing, 0);
+            if (!string.IsNullOrWhiteSpace(cg.ClassId)
+                && !string.Equals(cg.ClassMode, "multiclass", StringComparison.OrdinalIgnoreCase))
+            {
+                cg.SelectedAbilitiesByClass[cg.ClassId] = new List<string>(cg.SelectedClassAbilityIds);
+            }
             existing.SelectedClassAbilityIds = new List<string>(cg.SelectedClassAbilityIds);
             if (cg.SelectedAbilitiesByClass.Count == 0
                 && !string.IsNullOrWhiteSpace(cg.ClassId)
@@ -1024,6 +1222,9 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                     Specialized = x.Specialized,
                     WeaponOfChoice = x.WeaponOfChoice,
                     WeaponExpertise = x.WeaponExpertise,
+                    WeaponMastery = x.WeaponMastery,
+                    HighMastery = x.HighMastery,
+                    GrandMastery = x.GrandMastery,
                 })
                 .ToList();
             existing.EquipmentSelections = cg.SelectedEquipment
@@ -1044,17 +1245,27 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                     WeaponDamageLarge = x.WeaponDamageLarge,
                     WeaponType = x.WeaponType,
                     WeaponSize = x.WeaponSize,
+                    WeaponAttackBonus = x.WeaponAttackBonus,
+                    WeaponDamageBonus = x.WeaponDamageBonus,
+                    WeaponThac0Modifier = x.WeaponThac0Modifier,
                     CostGoldEach = x.CostGoldEach,
                     CostSilverEach = x.CostSilverEach,
                     CostCopperEach = x.CostCopperEach,
                     SizeClassEach = x.SizeClassEach,
                     WeightEach = x.WeightEach,
+                    UseAsOffHand = x.UseAsOffHand,
                 })
                 .ToList();
+            existing.UseSpellComponents = cg.UseSpellComponents;
             // Copy equipped slot selections.
             existing.EquippedArmorId  = cg.EquippedArmorId;
             existing.EquippedShieldId = cg.EquippedShieldId;
-            existing.EquippedWeaponId = cg.EquippedWeaponId;
+            existing.EquippedMainWeaponId = string.IsNullOrWhiteSpace(cg.EquippedMainWeaponId)
+                ? cg.EquippedWeaponId
+                : cg.EquippedMainWeaponId;
+            existing.EquippedOffHandWeaponId = cg.EquippedOffHandWeaponId;
+            existing.EquippedWeaponId = existing.EquippedMainWeaponId;
+            existing.EquippedMagicalItemIds = cg.EquippedMagicalItemIds?.Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase).ToList() ?? new List<string>();
             // Copy kit selection.
             if (!string.IsNullOrEmpty(cg.KitId))
             {
@@ -1175,11 +1386,13 @@ public partial class CharGenReviewScreen : UserControl, IScreen
             return;
         }
 
+        var effectiveAbilities = GetEffectiveReviewAbilities(cg);
+
         var sheet = _app.Rules.BuildCharacter(
             cg.Name,
             cg.RaceId,
             cg.ClassId,
-            cg.Abilities,
+            effectiveAbilities,
             cg.SelectedRacialAbilityIds,
             cg.SelectedClassAbilityIds,
             cg.RacialCarryoverToClassPoints,
@@ -1221,20 +1434,40 @@ public partial class CharGenReviewScreen : UserControl, IScreen
         bool maxHpAtLevelOne = MaxHpAtLevelOneCheck.IsChecked != false;
         int con = cg.ModifiedAbilities.GetValueOrDefault("con", cg.Abilities.GetValueOrDefault("con", 10));
         sheet.Level = configuredLevel;
+        sheet.PlayerName = cg.PlayerName;
+        sheet.Gender = cg.Gender;
+        sheet.Alignment = cg.Alignment;
+        sheet.DeityId = cg.DeityId;
         RebuildSheetAbilityStateForSelectedClasses(sheet, cg);
-        sheet.HitPoints = CalculateLevelScaledHitPoints(cg.ClassId, configuredLevel, con, maxHpAtLevelOne, sheet.Bonuses);
-        sheet.BaseHitPoints = CalculateLevelScaledHitPoints(cg.ClassId, 1, con, maxHpAtLevelOne, sheet.Bonuses);
+        sheet.HitPoints = CalculateLevelScaledHitPoints(cg.ClassId, configuredLevel, con, maxHpAtLevelOne, cg.CharacterMode, sheet.Bonuses);
+        sheet.BaseHitPoints = CalculateLevelScaledHitPoints(cg.ClassId, 1, con, maxHpAtLevelOne, cg.CharacterMode, sheet.Bonuses);
+
+        bool isCoreRulesCharacter = string.Equals(cg.CharacterMode, "core_rules", StringComparison.OrdinalIgnoreCase);
+        if (isCoreRulesCharacter && configuredLevel == 1)
+        {
+            int coreLevelOneHpCap = Math.Max(1, GetClassHitDie(cg.ClassId) + CharacterProgressionService.GetConHitPointBonus(con, cg.ClassId));
+            sheet.HitPoints = Math.Min(sheet.HitPoints, coreLevelOneHpCap);
+            sheet.BaseHitPoints = Math.Min(sheet.BaseHitPoints, coreLevelOneHpCap);
+        }
+
         sheet.HitPointGainByLevel.Clear();
         sheet.HitPointGainByLevel[1] = Math.Max(1, sheet.BaseHitPoints);
         if (configuredLevel > 1)
         {
-            int levelTwoHp = CalculateLevelScaledHitPoints(cg.ClassId, 2, con, maxHpAtLevelOne, sheet.Bonuses);
+            int levelTwoHp = CalculateLevelScaledHitPoints(cg.ClassId, 2, con, maxHpAtLevelOne, cg.CharacterMode, sheet.Bonuses);
             int perLevelGain = Math.Max(1, levelTwoHp - sheet.BaseHitPoints);
             for (int level = 2; level <= configuredLevel; level++)
                 sheet.HitPointGainByLevel[level] = perLevelGain;
         }
         sheet.Thac0 = GetBaseThac0(cg.ClassId, configuredLevel);
         CharacterProgressionService.InitializeCharacterProgression(sheet, seedLevelRewards: true);
+
+        if (cg.IsExistingCharacterMode && cg.ExistingStartingHitPoints > 0)
+        {
+            sheet.HitPoints = Math.Max(1, cg.ExistingStartingHitPoints);
+            sheet.CurrentHitPoints = sheet.HitPoints;
+        }
+
         bool assignedStartingFundsFromCharGen = !cg.IsLevelUpMode
             && cg.StartingFundsAssigned
             && !cg.IsExistingCharacterMode;
@@ -1272,6 +1505,17 @@ public partial class CharGenReviewScreen : UserControl, IScreen
         if (sheet.ClassIds.Count > 0)
             sheet.ClassId = sheet.ClassIds[0];
         sheet.ClassName = BuildClassDisplayName(sheet.ClassIds, sheet.ClassName);
+        if (cg.IsExistingCharacterMode)
+        {
+            CharacterProgressionService.ApplyExperienceAdjustment(sheet, 0);
+        }
+        else
+        {
+            sheet.ClassLevels = sheet.ClassIds.ToDictionary(
+                id => id,
+                _ => Math.Max(1, sheet.Level),
+                StringComparer.OrdinalIgnoreCase);
+        }
         if (cg.SelectedAbilitiesByClass.Count == 0
             && !string.IsNullOrWhiteSpace(cg.ClassId)
             && cg.SelectedClassAbilityIds.Count > 0)
@@ -1289,6 +1533,9 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                 Specialized = x.Specialized,
                 WeaponOfChoice = x.WeaponOfChoice,
                 WeaponExpertise = x.WeaponExpertise,
+                WeaponMastery = x.WeaponMastery,
+                HighMastery = x.HighMastery,
+                GrandMastery = x.GrandMastery,
             })
             .ToList();
         sheet.EquipmentSelections = cg.SelectedEquipment
@@ -1309,6 +1556,9 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                 WeaponDamageLarge = x.WeaponDamageLarge,
                 WeaponType = x.WeaponType,
                 WeaponSize = x.WeaponSize,
+                WeaponAttackBonus = x.WeaponAttackBonus,
+                WeaponDamageBonus = x.WeaponDamageBonus,
+                WeaponThac0Modifier = x.WeaponThac0Modifier,
                 CostGoldEach = x.CostGoldEach,
                 CostSilverEach = x.CostSilverEach,
                 CostCopperEach = x.CostCopperEach,
@@ -1316,10 +1566,16 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                 WeightEach = x.WeightEach,
             })
             .ToList();
+        sheet.UseSpellComponents = cg.UseSpellComponents;
         // Copy equipped slot selections.
         sheet.EquippedArmorId  = cg.EquippedArmorId;
         sheet.EquippedShieldId = cg.EquippedShieldId;
-        sheet.EquippedWeaponId = cg.EquippedWeaponId;
+        sheet.EquippedMainWeaponId = string.IsNullOrWhiteSpace(cg.EquippedMainWeaponId)
+            ? cg.EquippedWeaponId
+            : cg.EquippedMainWeaponId;
+        sheet.EquippedOffHandWeaponId = cg.EquippedOffHandWeaponId;
+        sheet.EquippedWeaponId = sheet.EquippedMainWeaponId;
+        sheet.EquippedMagicalItemIds = cg.EquippedMagicalItemIds?.Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase).ToList() ?? new List<string>();
         // Copy kit selection.
         if (!string.IsNullOrEmpty(cg.KitId))
         {
@@ -1369,12 +1625,16 @@ public partial class CharGenReviewScreen : UserControl, IScreen
 
         if (string.Equals(cg.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase))
         {
+            int startingPoolCp = (cg.IsLevelUpMode || cg.IsExistingCharacterMode)
+                ? (cg.IsExistingCharacterMode
+                    ? cg.GetExistingCharacterPointPool()
+                    : Math.Max(0, cg.ExistingStartingUnspentCharacterPoints))
+                : 0;
             int classCarryover = GetClassCarryoverCp(cg);
             int nwpBaseBudget = GetBaseNwpClassBudget(cg);
             int traitCost = GetSelectedTraitCost(cg, optionCatalog);
             int disadvantageBonus = GetSelectedDisadvantageBonus(cg, optionCatalog);
             int nwpSpent = CalculateTotalNwpCp(cg, optionCatalog.NonweaponProficiencies.ToList());
-            int nwpRemaining = Math.Max(0, nwpBaseBudget + classCarryover + disadvantageBonus - traitCost - nwpSpent);
 
             var classIdsForWeaponCp = cg.SelectedClassIds.Count > 0
                 ? cg.SelectedClassIds
@@ -1390,7 +1650,10 @@ public partial class CharGenReviewScreen : UserControl, IScreen
 
             sheet.SpentNwpCharacterPoints = Math.Max(0, nwpSpent);
             sheet.SpentWeaponCharacterPoints = Math.Max(0, weaponSpent);
-            sheet.UnspentCharacterPoints = Math.Max(0, weaponBaseBudget + nwpRemaining - weaponSpent);
+            sheet.UnspentCharacterPoints = Math.Max(
+                0,
+                startingPoolCp + weaponBaseBudget + nwpBaseBudget + classCarryover
+                    + disadvantageBonus - traitCost - nwpSpent - weaponSpent);
         }
         else
         {
@@ -1398,9 +1661,6 @@ public partial class CharGenReviewScreen : UserControl, IScreen
             sheet.SpentWeaponCharacterPoints = 0;
             sheet.UnspentCharacterPoints = 0;
         }
-
-        if (cg.IsExistingCharacterMode && cg.ExistingStartingUnspentCharacterPoints > 0)
-            sheet.UnspentCharacterPoints = Math.Max(0, sheet.UnspentCharacterPoints + cg.ExistingStartingUnspentCharacterPoints);
 
         if (sheet.NonweaponProficiencies.Count > 0)
             sheet.Notes.Add("Nonweapon proficiencies: " + string.Join(", ", sheet.NonweaponProficiencies));
@@ -1594,12 +1854,23 @@ public partial class CharGenReviewScreen : UserControl, IScreen
         int cpPerPoint = proficiency.CpCost > 0 ? proficiency.CpCost : 1;
         int improvement = cpSpent / Math.Max(1, cpPerPoint);
         int familyScore = GetReviewNwpFamilyScore(cg, proficiency);
+        int rangerTrackingBonus = RangerTrackingRules.GetBonus(cg, proficiency);
         int target = isPo
-            ? Math.Max(5, proficiency.PlayersOptionBaseRating) + GetReviewTable44Modifier(familyScore) + improvement
-            : familyScore + proficiency.CheckModifier + improvement;
-        string summary = isPo && improvement > 0
-            ? $"{proficiency.Name} {target} (+{cpSpent} CP)"
+            ? Math.Max(5, proficiency.PlayersOptionBaseRating) + GetReviewTable44Modifier(familyScore) + improvement + rangerTrackingBonus
+            : familyScore + proficiency.CheckModifier + improvement + rangerTrackingBonus;
+        int purchaseCp = IsNwpGrantedBySelectedClassAbility(cg, proficiency)
+            ? 0
+            : proficiency.CpCost > 0 ? proficiency.CpCost : Math.Max(1, proficiency.Slots);
+        int totalCp = purchaseCp + cpSpent;
+        string cpSummary = purchaseCp == 0
+            ? $"{totalCp} CP improvement; granted by class"
+            : cpSpent > 0
+                ? $"{totalCp} CP: {purchaseCp} purchase + {cpSpent} improvement"
+                : $"{totalCp} CP purchase";
+        string summary = isPo
+            ? $"{proficiency.Name} {target} ({cpSummary})"
             : $"{proficiency.Name} {target}";
+        summary += RangerTrackingRules.GetConditionalTargetSummary(cg, proficiency, target);
 
         if (cg.SelectedNonweaponProficiencyNotes.TryGetValue(proficiency.Id, out var note)
             && !string.IsNullOrWhiteSpace(note))
@@ -1626,6 +1897,54 @@ public partial class CharGenReviewScreen : UserControl, IScreen
         return string.Equals(classId, "wizard", StringComparison.OrdinalIgnoreCase)
             || string.Equals(classId, "mage", StringComparison.OrdinalIgnoreCase)
             || string.Equals(classId, "illusionist", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private string GetSelectedGenderValue()
+    {
+        if (SumGender.SelectedItem is ComboBoxItem item)
+            return NormalizeGenderToken(item.Tag as string ?? item.Content?.ToString());
+
+        return string.Empty;
+    }
+
+    private void SelectGenderComboValue(string? raw)
+    {
+        string target = NormalizeGenderToken(raw);
+        if (string.IsNullOrWhiteSpace(target))
+        {
+            SumGender.SelectedIndex = -1;
+            return;
+        }
+
+        for (int i = 0; i < SumGender.Items.Count; i++)
+        {
+            if (SumGender.Items[i] is not ComboBoxItem item)
+                continue;
+
+            string itemValue = NormalizeGenderToken(item.Tag as string ?? item.Content?.ToString());
+            if (string.Equals(itemValue, target, StringComparison.OrdinalIgnoreCase))
+            {
+                SumGender.SelectedIndex = i;
+                return;
+            }
+        }
+
+        SumGender.SelectedIndex = -1;
+    }
+
+    private static string NormalizeGenderToken(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return string.Empty;
+
+        string value = raw.Trim().ToLowerInvariant();
+        return value switch
+        {
+            "male" or "m" => "male",
+            "female" or "f" => "female",
+            "other" or "o" or "nonbinary" or "non-binary" => "other",
+            _ => string.Empty,
+        };
     }
 
     private static string FormatLanguageSummary(LanguageSelection language)
@@ -1737,7 +2056,8 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                 selectedAbilityIds,
                 cg.RacialCarryoverToClassPoints,
                 specializationId,
-                Math.Max(1, cg.CharacterLevel));
+                Math.Max(1, cg.CharacterLevel),
+                cg.RaceId);
 
             var spheres = cg.SpheresByClass.TryGetValue(classId, out var sp) && sp.Count > 0
                 ? sp
@@ -1750,16 +2070,9 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                     ? cg.SelectedWizardSchools
                     : new Dictionary<string, bool>();
 
-            int extraCost = 0;
-            if (string.Equals(classId, "cleric", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(classId, "druid", StringComparison.OrdinalIgnoreCase))
-            {
-                extraCost += CharGenClassAbilitiesScreen.CalculateSphereCpCost(spheres);
-            }
-            if (string.Equals(classId, "wizard", StringComparison.OrdinalIgnoreCase))
-            {
-                extraCost += CharGenClassAbilitiesScreen.CalculateWizardSchoolCpCost(schools);
-            }
+            int extraCost = _app.Rules.Classes.TryGetValue(classId, out var classDefinition)
+                ? CharGenClassAbilitiesScreen.CalculateConfigurationCpCost(classDefinition, spheres, schools, specializationId)
+                : 0;
 
             totalRemaining += Math.Max(0, classPackage.remaining - extraCost);
         }
@@ -1804,7 +2117,26 @@ public partial class CharGenReviewScreen : UserControl, IScreen
     }
 
     private static int CalculateTotalNwpCp(CharGenState cg, List<NonweaponProficiencyDefinition> definitions)
-        => CalculateTotalNwpCp(cg.SelectedNonweaponProficiencyIds, cg.SelectedNonweaponProficiencyImprovements, definitions);
+    {
+        int total = CalculateTotalNwpCp(cg.SelectedNonweaponProficiencyIds, cg.SelectedNonweaponProficiencyImprovements, definitions);
+        var grantedTracking = definitions.FirstOrDefault(definition =>
+            RangerTrackingRules.IsTracking(definition.Id, definition.Name)
+            && cg.SelectedNonweaponProficiencyIds.Contains(definition.Id, StringComparer.OrdinalIgnoreCase));
+        if (grantedTracking is not null && IsNwpGrantedBySelectedClassAbility(cg, grantedTracking))
+            total -= grantedTracking.CpCost > 0 ? grantedTracking.CpCost : Math.Max(1, grantedTracking.Slots);
+        return Math.Max(0, total);
+    }
+
+    private static bool IsNwpGrantedBySelectedClassAbility(CharGenState cg, NonweaponProficiencyDefinition proficiency)
+    {
+        if (!RangerTrackingRules.IsTracking(proficiency.Id, proficiency.Name))
+            return false;
+
+        return cg.SelectedClassAbilityIds
+            .Concat(cg.SelectedAbilitiesByClass.Values.SelectMany(ids => ids))
+            .Select(RulesEngine.ExtractClassAbilityBaseId)
+            .Any(id => string.Equals(id, RangerTrackingRules.TrackingAbilityId, StringComparison.OrdinalIgnoreCase));
+    }
 
     private static int CalculateTotalNwpCp(
         List<string> selectedIds,

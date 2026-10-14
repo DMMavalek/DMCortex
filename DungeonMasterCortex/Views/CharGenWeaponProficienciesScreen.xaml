@@ -114,20 +114,26 @@
                         <WrapPanel>
                             <RadioButton x:Name="ShowAll" Content="All" GroupName="ShowType"
                                          Checked="ShowType_Changed"
-                                         Foreground="{StaticResource BrushText}" Margin="0,0,10,0"/>
-                            <RadioButton x:Name="ShowIndividual" Content="Individual" GroupName="ShowType"
+                                         Foreground="{StaticResource BrushText}" Margin="0,0,10,4"/>
+                            <RadioButton x:Name="ShowIndividual" Content="Weapons" GroupName="ShowType"
                                          IsChecked="True"
                                          Checked="ShowType_Changed"
-                                         Foreground="{StaticResource BrushText}" Margin="0,0,10,0"/>
+                                         Foreground="{StaticResource BrushText}" Margin="0,0,10,4"/>
                             <RadioButton x:Name="ShowTight" Content="Tight Groups" GroupName="ShowType"
                                          Checked="ShowType_Changed"
-                                         Foreground="{StaticResource BrushText}" Margin="0,0,10,0"/>
+                                         Foreground="{StaticResource BrushText}" Margin="0,0,10,4"/>
                             <RadioButton x:Name="ShowBroad" Content="Broad Groups" GroupName="ShowType"
                                          Checked="ShowType_Changed"
-                                         Foreground="{StaticResource BrushText}" Margin="0,0,10,0"/>
-                            <RadioButton x:Name="ShowTraining" Content="Fighting Styles" GroupName="ShowType"
+                                         Foreground="{StaticResource BrushText}" Margin="0,0,10,4"/>
+                            <RadioButton x:Name="ShowArmor" Content="Armor &amp; Shields" GroupName="ShowType"
                                          Checked="ShowType_Changed"
-                                         Foreground="{StaticResource BrushText}"/>
+                                         Foreground="{StaticResource BrushText}" Margin="0,0,10,4"/>
+                            <RadioButton x:Name="ShowStyles" Content="Fighting Styles" GroupName="ShowType"
+                                         Checked="ShowType_Changed"
+                                         Foreground="{StaticResource BrushText}" Margin="0,0,10,4"/>
+                            <RadioButton x:Name="ShowTalents" Content="Special Talents" GroupName="ShowType"
+                                         Checked="ShowType_Changed"
+                                         Foreground="{StaticResource BrushText}" Margin="0,0,10,4"/>
                         </WrapPanel>
                     </StackPanel>
 
@@ -164,15 +170,27 @@
                 <Button x:Name="BtnSpecialize" Content="★ SPECIALIZE" Style="{StaticResource GoldButton}"
                         Margin="0,0,0,10" Click="BtnSpecialize_Click"/>
                 <Button x:Name="BtnWeaponChoice" Content="WEAPON OF CHOICE" Style="{StaticResource GoldButton}"
-                    Margin="0,0,0,10" Click="BtnWeaponChoice_Click"
+                    Margin="0,0,0,8" Click="BtnWeaponChoice_Click"
                     ToolTip="Weapon of Choice grants a focused bonus with one selected weapon. Pick it on the specific weapon entry, not globally. Right-click for details."
                     PreviewMouseRightButtonUp="WeaponOptionButton_MouseRightButtonUp"/>
                 <Button x:Name="BtnWeaponExpertise" Content="WEAPON EXPERTISE" Style="{StaticResource GoldButton}"
-                    Margin="0,0,0,10" Click="BtnWeaponExpertise_Click"
+                    Margin="0,0,0,8" Click="BtnWeaponExpertise_Click"
                     ToolTip="Weapon Expertise improves advanced mastery with one selected weapon after choosing that weapon. Right-click for details."
                     PreviewMouseRightButtonUp="WeaponOptionButton_MouseRightButtonUp"/>
+                <Button x:Name="BtnWeaponMastery" Content="★ WEAPON MASTERY" Style="{StaticResource GoldButton}"
+                    Margin="0,0,0,8" Click="BtnWeaponMastery_Click"
+                    ToolTip="Requires specialization and Level 5+. Melee mastery grants +3 attack and +3 damage. Missile mastery grants +2 attack beyond point blank, and +3 attack/+3 damage at point blank."
+                    PreviewMouseRightButtonUp="WeaponOptionButton_MouseRightButtonUp"/>
+                <Button x:Name="BtnHighMastery" Content="★★ HIGH MASTERY" Style="{StaticResource GoldButton}"
+                    Margin="0,0,0,8" Click="BtnHighMastery_Click"
+                    ToolTip="Requires Weapon Mastery and Level 6+. Weapon speed factor improves by one category (-3), critical hits score on 16+ (margin 5+), and missile weapons gain extreme range."
+                    PreviewMouseRightButtonUp="WeaponOptionButton_MouseRightButtonUp"/>
+                <Button x:Name="BtnGrandMastery" Content="★★★ GRAND MASTERY" Style="{StaticResource GoldButton}"
+                    Margin="0,0,0,8" Click="BtnGrandMastery_Click"
+                    ToolTip="Requires High Mastery, Level 9+, and single-class Fighter. Grants +1 attack/round above specialist, and increases weapon base damage die and knockdown die to next greater die size."
+                    PreviewMouseRightButtonUp="WeaponOptionButton_MouseRightButtonUp"/>
                 <Button x:Name="BtnRemove" Content="◀  REMOVE" Style="{StaticResource DarkButton}"
-                        Click="BtnRemove_Click"/>
+                        Margin="0,4,0,0" Click="BtnRemove_Click"/>
             </StackPanel>
 
             <!-- Right: Selected list -->

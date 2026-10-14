@@ -45,6 +45,17 @@ function Assert-TextMatch {
     }
 }
 
+function Assert-PathExists {
+    param(
+        [string]$Path,
+        [string]$FailureMessage
+    )
+
+    if (-not (Test-Path $Path)) {
+        throw $FailureMessage
+    }
+}
+
 Write-Host '[Preflight] Reading project metadata...'
 $csprojText = Get-Content -Raw -Path $csprojPath
 $dmIssText = Get-Content -Raw -Path $dmIssPath
@@ -75,6 +86,21 @@ Assert-TextMatch -InputText $dmIssText -Pattern ('OutputBaseFilename\s*=\s*DMCod
 Assert-TextMatch -InputText $playerIssText -Pattern ('OutputBaseFilename\s*=\s*PlayerCodex-Setup-{0}' -f $escapedVersion) -FailureMessage "Player installer output filename does not include version $appVersion."
 
 Assert-TextMatch -InputText $changelogText -Pattern ('(?m)^v{0}\s*\(' -f $escapedVersion) -FailureMessage "CHANGELOG is missing a v$appVersion entry."
+
+Assert-TextMatch -InputText $csprojText -Pattern '<Content\s+Include="\.\.\\Assets\\Equipment\\\*\*\\\*">' -FailureMessage 'Project file is missing Equipment publish content include.'
+Assert-TextMatch -InputText $csprojText -Pattern '<Content\s+Include="\.\.\\Assets\\Magical Items\\\*\*\\\*">' -FailureMessage 'Project file is missing Magical Items publish content include.'
+Assert-TextMatch -InputText $csprojText -Pattern '<Content\s+Include="\.\.\\Assets\\Spells\\\*\*\\\*">' -FailureMessage 'Project file is missing Spells publish content include.'
+Assert-TextMatch -InputText $csprojText -Pattern '<Content\s+Include="\.\.\\Assets\\Class Abilities\\\*\*\\\*">' -FailureMessage 'Project file is missing Class Abilities publish content include.'
+
+Assert-PathExists -Path (Join-Path $root 'Assets\Equipment\Equipment_List.txt') -FailureMessage 'Missing required equipment payload source file: Assets\Equipment\Equipment_List.txt'
+Assert-PathExists -Path (Join-Path $root 'Assets\Magical Items') -FailureMessage 'Missing required magical items payload source directory: Assets\Magical Items'
+Assert-PathExists -Path (Join-Path $root 'data\rulesets\spells.json') -FailureMessage 'Missing required spells ruleset payload source file: data\rulesets\spells.json'
+Assert-PathExists -Path (Join-Path $root 'Assets\Class Abilities') -FailureMessage 'Missing required class abilities payload source directory: Assets\Class Abilities'
+
+Assert-TextMatch -InputText $buildInstallersText -Pattern 'Remove-CustomRulesFromPayload\s+-publishDir\s+\$publishDir' -FailureMessage 'build-installers.ps1 is missing staged payload custom-rules sanitization.'
+Assert-TextMatch -InputText $buildInstallersText -Pattern 'Assert-NoCustomRulesInFile\s+\(Join-Path\s+\$publishDir\s+''data\\rulesets\\core_2e\.json''\)' -FailureMessage 'build-installers.ps1 is missing post-sanitization custom-rules validation for core_2e.json.'
+Assert-TextMatch -InputText $buildInstallersText -Pattern 'Assert-NoCustomRulesInFile\s+\(Join-Path\s+\$publishDir\s+''data\\rulesets\\overlays\\players_option\.json''\)' -FailureMessage 'build-installers.ps1 is missing post-sanitization custom-rules validation for players_option.json.'
+Assert-TextMatch -InputText $buildInstallersText -Pattern 'Assets\\Custom Info' -FailureMessage 'build-installers.ps1 is missing custom content exclusion guard for Assets\\Custom Info.'
 
 Assert-TextMatch -InputText $buildInstallersText -Pattern '\$disableNetworkingBuild\s*=\s*if\s*\(\$EnableNetworkingFeatures\)\s*\{\s*''false''\s*\}\s*else\s*\{\s*''true''\s*\}' -FailureMessage "Offline default check failed in build-installers.ps1."
 

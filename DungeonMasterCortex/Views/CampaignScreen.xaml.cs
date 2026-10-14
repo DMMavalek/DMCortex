@@ -363,7 +363,9 @@ public partial class CampaignScreen : UserControl, IScreen
     {
         string classId = (character.ClassId ?? string.Empty).ToLowerInvariant();
         return classId is "priest" or "cleric" or "druid" or "ranger" or "paladin"
-            || character.ClassIds.Any(id => (id ?? string.Empty).ToLowerInvariant() is "priest" or "cleric" or "druid" or "ranger" or "paladin");
+            || RulesEngine.IsPriestClassId(classId)
+            || character.ClassIds.Any(id => (id ?? string.Empty).ToLowerInvariant() is "priest" or "cleric" or "druid" or "ranger" or "paladin"
+                || RulesEngine.IsPriestClassId(id));
     }
 
     private void RefreshPartyMemberList()

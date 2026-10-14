@@ -609,6 +609,9 @@
     "paladin": {
       "name": "Paladin",
       "starting_funds_roll": "5d4x10",
+      "allowed_alignments": [
+        "LG"
+      ],
       "ability_minimums": {
         "cha": 17,
         "con": 9,
@@ -694,6 +697,11 @@
     "ranger": {
       "name": "Ranger",
       "starting_funds_roll": "5d4x10",
+      "allowed_alignments": [
+        "LG",
+        "NG",
+        "CG"
+      ],
       "ability_minimums": {
         "con": 14,
         "dex": 13,
@@ -1134,6 +1142,9 @@
     "druid": {
       "name": "Druid",
       "starting_funds_roll": "3d6x10",
+      "allowed_alignments": [
+        "N"
+      ],
       "ability_minimums": {
         "cha": 15,
         "wis": 12
@@ -1178,6 +1189,13 @@
     "bard": {
       "name": "Bard",
       "starting_funds_roll": "3d6x10",
+      "allowed_alignments": [
+        "NG",
+        "LN",
+        "N",
+        "CN",
+        "NE"
+      ],
       "ability_minimums": {
         "cha": 15,
         "dex": 12,

@@ -306,6 +306,7 @@ public partial class CharGenWizardSpellsScreen : UserControl, IScreen
     {
         BuildRows();
         RefreshDailySlotSummary();
+        RefreshSpellComponentModeSummary();
         RefreshFilterPickers();
         RefreshAvailableList();
         RefreshKnownList();
@@ -330,13 +331,13 @@ public partial class CharGenWizardSpellsScreen : UserControl, IScreen
 
         var wizardSpells = _app.Rules.Spells
             .Where(spell => string.Equals(spell.Category, "arcane", StringComparison.OrdinalIgnoreCase))
-            .Where(spell => IsSpellLevelCastableNow(spell.Level))
+            .Where(spell => IsSpellLevelLearnableNow(spell.Level))
             .Where(spell => IsWizardSpellAllowedForCharacter(spell, allowedSchools, blockedSchools))
             .Select(spell => new SpellRow
             {
                 SpellId = spell.Id,
                 LevelText = FormatSpellLevel(spell.Level),
-                DisplayText = BuildSpellDisplay(spell),
+                DisplayText = BuildSpellDisplay(spell, _app.CharGen.UseSpellComponents),
                 Schools = spell.Schools,
                 Spell = spell,
             })
@@ -447,7 +448,10 @@ public partial class CharGenWizardSpellsScreen : UserControl, IScreen
             .ToList();
 
         KnownSpellList.ItemsSource = ApplyLevelDividers(known);
-        KnownSummary.Text = $"{known.Count} learned spell(s)";
+        int withMaterial = known.Count(row => !string.IsNullOrWhiteSpace(row.Spell.Materials));
+        KnownSummary.Text = _app.CharGen.UseSpellComponents
+            ? $"{known.Count} learned spell(s) • {withMaterial} with material requirements"
+            : $"{known.Count} learned spell(s)";
         BtnUnlearnSpell.IsEnabled = KnownSpellList.SelectedItem is SpellRow;
     }
 
@@ -508,12 +512,12 @@ public partial class CharGenWizardSpellsScreen : UserControl, IScreen
         if (AvailableSpellList.SelectedItem is not SpellRow row)
             return;
 
-        if (!IsSpellLevelCastableNow(row.Spell.Level))
+        if (!IsSpellLevelLearnableNow(row.Spell.Level))
         {
-            int maxLevel = GetHighestCastableSpellLevel();
+            int maxLevel = GetHighestLearnableSpellLevel();
             LearnRollResult.Text = maxLevel <= 0
-                ? $"Cannot learn {row.Spell.Name}: this character cannot cast wizard spells yet."
-                : $"Cannot learn {row.Spell.Name}: only up to level {maxLevel} wizard spells are currently castable.";
+                ? $"Cannot learn {row.Spell.Name}: this character cannot learn wizard spells yet."
+                : $"Cannot learn {row.Spell.Name}: only up to level {maxLevel} wizard spells can currently be learned.";
             return;
         }
 
@@ -1074,13 +1078,87 @@ public partial class CharGenWizardSpellsScreen : UserControl, IScreen
             return "Conjuration/Summoning";
         }
 
+        if (token.Equals("Enchantment", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Charm", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Enchantment/Charm", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Charm/Enchantment", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Enchantment/Charm";
+        }
+
+        if (token.Equals("Dimension", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Dimensional", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Dimensional";
+        }
+
+        if (token.Equals("Wild", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Wild Magic", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Wild Magic";
+        }
+
+        if (token.Equals("Air", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Elemental Air", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Elemental (Air)", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Elemental (Air)";
+        }
+
+        if (token.Equals("Earth", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Elemental Earth", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Elemental (Earth)", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Elemental (Earth)";
+        }
+
+        if (token.Equals("Fire", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Elemental Fire", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Elemental (Fire)", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Elemental (Fire)";
+        }
+
+        if (token.Equals("Water", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Elemental Water", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Elemental (Water)", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Elemental (Water)";
+        }
+
         return token;
     }
 
-    private static string BuildSpellDisplay(SpellDefinition spell)
+    private static string BuildSpellDisplay(SpellDefinition spell, bool showComponents)
     {
         string schools = string.IsNullOrWhiteSpace(spell.Schools) ? "No school" : spell.Schools;
-        return $"{spell.Name}  [{schools}]";
+        if (!showComponents)
+            return $"{spell.Name}  [{schools}]";
+
+        string componentSuffix = string.IsNullOrWhiteSpace(spell.Components)
+            ? ""
+            : $"  Comp: {spell.Components}";
+        string materialSuffix = string.IsNullOrWhiteSpace(spell.Materials)
+            ? ""
+            : $"  Mat: {spell.Materials}";
+        return $"{spell.Name}  [{schools}]{componentSuffix}{materialSuffix}";
+    }
+
+    private void RefreshSpellComponentModeSummary()
+    {
+        if (SpellComponentModeText is null)
+            return;
+
+        if (_app.CharGen.UseSpellComponents)
+        {
+            SpellComponentModeText.Text = "Spell components are ON for this character. Component/material requirements are shown in spell entries.";
+            SpellComponentModeText.Foreground = (System.Windows.Media.Brush)FindResource("BrushText");
+        }
+        else
+        {
+            SpellComponentModeText.Text = "Spell components are OFF for this character.";
+            SpellComponentModeText.Foreground = (System.Windows.Media.Brush)FindResource("BrushDim");
+        }
     }
 
     private static string FormatSpellLevel(string level)
@@ -1244,19 +1322,28 @@ public partial class CharGenWizardSpellsScreen : UserControl, IScreen
         return result;
     }
 
-    private int GetHighestCastableSpellLevel()
+    private int GetHighestLearnableSpellLevel()
     {
-        var slots = GetDailyWizardSlotsByLevel();
-        return slots.Keys.DefaultIfEmpty(0).Max();
+        int characterLevel = Math.Clamp(_app.CharGen.CharacterLevel, 1, 20);
+        if (!WizardSpellLimitsByCharacterLevel.TryGetValue(characterLevel, out var slotRow))
+            return 0;
+
+        for (int index = slotRow.Length - 1; index >= 0; index--)
+        {
+            if (slotRow[index] > 0)
+                return index + 1;
+        }
+
+        return 0;
     }
 
-    private bool IsSpellLevelCastableNow(string levelText)
+    private bool IsSpellLevelLearnableNow(string levelText)
     {
         int spellLevel = ParseSpellLevel(levelText);
         if (spellLevel <= 0 || spellLevel == int.MaxValue)
             return false;
 
-        return spellLevel <= GetHighestCastableSpellLevel();
+        return spellLevel <= GetHighestLearnableSpellLevel();
     }
 
     private static int GetLearnChanceFromIntelligence(int intelligence)

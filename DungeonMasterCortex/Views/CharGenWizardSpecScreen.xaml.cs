@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using DungeonMasterCortex.Models;
+using DungeonMasterCortex.Services;
 
 namespace DungeonMasterCortex.Views;
 
@@ -36,7 +37,7 @@ public partial class CharGenWizardSpecScreen : UserControl, IScreen
         if (_app.Rules.Classes.TryGetValue("wizard", out var wizardClass)
             && wizardClass.Specializations is { Count: > 0 } specs)
         {
-            foreach (var s in specs)
+            foreach (var s in specs.Where(s => _app.Rules.IsWizardSpecializationAllowedForRace(s, _app.CharGen.RaceId)))
                 _entries.Add(new SpecEntry(s.Id, s.Name, s));
         }
 
@@ -83,7 +84,7 @@ public partial class CharGenWizardSpecScreen : UserControl, IScreen
     {
         // Use the specialization budget if specialist, otherwise wizard default 40
         int baseBudget = entry.Spec?.ClassPointBudget ?? 40;
-        var carryover = Math.Clamp(_app.CharGen.RacialCarryoverToClassPoints, 0, 5);
+        var carryover = RulesEngine.NormalizeClassAbilityCarryover(_app.CharGen.RaceId, _app.CharGen.RacialCarryoverToClassPoints);
         int total = baseBudget + carryover;
 
         // Account for already-selected class abilities cost
@@ -92,7 +93,9 @@ public partial class CharGenWizardSpecScreen : UserControl, IScreen
             "wizard",
             _app.CharGen.SelectedClassAbilityIds,
             _app.CharGen.RacialCarryoverToClassPoints,
-            specId);
+            specId,
+            int.MaxValue,
+            _app.CharGen.RaceId);
 
         BudgetSummary.Text = total > 0 ? package.remaining.ToString() : "-";
         BudgetDetail.Text  = total > 0

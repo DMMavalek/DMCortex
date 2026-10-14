@@ -14,8 +14,12 @@
             <TextBlock Text="EDIT INFORMATION"
                        Style="{StaticResource TitleText}" FontSize="20"
                        VerticalAlignment="Center"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="REPORT BUG" Style="{StaticResource GoldButton}"
+                Width="130" Margin="0,0,8,0" Click="BtnReportBug_Click"/>
             <Button Content="◀  DM TOOLS" Style="{StaticResource GoldButton}"
-                    HorizontalAlignment="Right" Width="150" Click="BtnBack_Click"/>
+                Width="150" Click="BtnBack_Click"/>
+            </StackPanel>
         </Grid>
         <Rectangle Grid.Row="1" Height="1" Fill="{StaticResource BrushBorder}" Margin="0,10,0,12"/>
 
@@ -45,6 +49,9 @@
                     <Button x:Name="TabBtnClasses" Content="Classes"
                         Style="{StaticResource GoldButton}" Width="120"
                         Click="TabClasses_Click" Margin="0,0,8,0"/>
+                    <Button x:Name="TabBtnDeities" Content="Deities"
+                        Style="{StaticResource GoldButton}" Width="120"
+                        Click="TabDeities_Click" Margin="0,0,8,0"/>
                     <Button x:Name="TabBtnMonsters" Content="Monsters"
                         Style="{StaticResource GoldButton}" Width="120"
                         Click="TabBtnMonsters_Click" Margin="0,0,8,0"/>
@@ -134,7 +141,10 @@
                            VerticalAlignment="Stretch"/>
 
                 <!-- Detail / edit panel -->
-                <Grid Grid.Column="2" Margin="16,0,0,0">
+                <ScrollViewer Grid.Column="2" Margin="16,0,0,0"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
@@ -231,6 +241,26 @@
 
                             <Button Content="💚  HEAL CHARACTER" Style="{StaticResource GoldButton}" Width="190" HorizontalAlignment="Left" Click="BtnHealCharacter_Click"/>
 
+                            <TextBlock Text="Direct HP Override" Style="{StaticResource SubtitleText}" Margin="0,10,0,4"/>
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="170"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Set Current HP" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                    <TextBox x:Name="CharSetCurrentHpInput" Style="{StaticResource DarkTextBox}" Text="0"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Set Max HP" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                    <TextBox x:Name="CharSetMaxHpInput" Style="{StaticResource DarkTextBox}" Text="0"/>
+                                </StackPanel>
+                                <Button Grid.Column="4" Content="APPLY HP" Style="{StaticResource GoldButton}" Click="BtnApplyHpOverride_Click"/>
+                            </Grid>
+
                             <TextBlock Text="Use Healing Spell" Style="{StaticResource SubtitleText}" Margin="0,10,0,4"/>
                             <Grid Margin="0,0,0,8">
                                 <Grid.ColumnDefinitions>
@@ -266,6 +296,46 @@
                         <StackPanel>
                             <TextBlock x:Name="CharUpdateHeader" Text="Level-Up &amp; CP Spending" Style="{StaticResource LabelText}" Margin="0,0,0,8"/>
 
+                            <Border Background="{StaticResource BrushPanel}" BorderBrush="{StaticResource BrushBorder2}"
+                                    BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,10">
+                                <StackPanel>
+                                    <TextBlock Text="Alignment &amp; Faith" Style="{StaticResource LabelText}" Margin="0,0,0,8"/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="12"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="12"/>
+                                            <ColumnDefinition Width="150"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="Alignment" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                            <ComboBox x:Name="CharAlignmentCombo" Style="{StaticResource DarkComboBox}"
+                                                      SelectionChanged="CharAlignmentCombo_SelectionChanged">
+                                                <ComboBoxItem Content="Lawful Good" Tag="LG"/>
+                                                <ComboBoxItem Content="Neutral Good" Tag="NG"/>
+                                                <ComboBoxItem Content="Chaotic Good" Tag="CG"/>
+                                                <ComboBoxItem Content="Lawful Neutral" Tag="LN"/>
+                                                <ComboBoxItem Content="True Neutral" Tag="N"/>
+                                                <ComboBoxItem Content="Chaotic Neutral" Tag="CN"/>
+                                                <ComboBoxItem Content="Lawful Evil" Tag="LE"/>
+                                                <ComboBoxItem Content="Neutral Evil" Tag="NE"/>
+                                                <ComboBoxItem Content="Chaotic Evil" Tag="CE"/>
+                                            </ComboBox>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="Deity" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                            <ComboBox x:Name="CharDeityCombo" Style="{StaticResource DarkComboBox}"
+                                                      DisplayMemberPath="Name"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="4" Content="SAVE FAITH" Style="{StaticResource GoldButton}"
+                                                Click="BtnSaveCharacterFaith_Click"/>
+                                    </Grid>
+                                    <TextBlock x:Name="CharFaithRequirementText" Style="{StaticResource SubtitleText}"
+                                               Margin="0,6,0,0" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+
                             <Grid Margin="0,0,0,8">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -275,11 +345,11 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Text="Add XP" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                    <TextBlock Text="XP Adjustment (+/-)" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
                                     <TextBox x:Name="CharXpGainInput" Style="{StaticResource DarkTextBox}" Text="0"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Add HP" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                    <TextBlock Text="HP Adjustment (+/-)" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
                                     <TextBox x:Name="CharHpGainInput" Style="{StaticResource DarkTextBox}" Text="0"/>
                                 </StackPanel>
                                 <StackPanel x:Name="CharAddCpPanel" Grid.Column="4">
@@ -290,23 +360,241 @@
 
                             <Button Content="⬆  APPLY LEVEL UPDATE" Style="{StaticResource GoldButton}" Width="190" HorizontalAlignment="Left" Click="BtnApplyLevelUpdate_Click"/>
 
-                            <Grid x:Name="CharSpendCpGrid" Margin="0,8,0,8">
+                            <Grid Margin="0,12,0,8">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="12"/>
                                     <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Text="Spend CP on NWPs" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                    <TextBlock Text="Levels Drained" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                    <TextBox x:Name="CharLevelsDrainedInput" Style="{StaticResource DarkTextBox}" Text="0"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="HP Lost (0 = recorded)" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                    <TextBox x:Name="CharDrainHpInput" Style="{StaticResource DarkTextBox}" Text="0"/>
+                                </StackPanel>
+                                <Button Grid.Column="4" Content="APPLY LEVEL DRAIN" Style="{StaticResource GoldButton}"
+                                        Width="180" VerticalAlignment="Bottom" Click="BtnApplyLevelDrain_Click"/>
+                            </Grid>
+
+                            <Grid x:Name="CharSpendCpGrid" Margin="0,8,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="10"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="10"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Spend on NWPs" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
                                     <TextBox x:Name="CharSpendNwpCpInput" Style="{StaticResource DarkTextBox}" Text="0"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Spend CP on Weapons" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                    <TextBlock Text="Spend on Weapons" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
                                     <TextBox x:Name="CharSpendWeaponCpInput" Style="{StaticResource DarkTextBox}" Text="0"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="4">
+                                    <TextBlock Text="Spend on HP Rerolls" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                    <TextBox x:Name="CharSpendHpRerollCpInput" Style="{StaticResource DarkTextBox}" Text="0"/>
                                 </StackPanel>
                             </Grid>
 
                             <Button x:Name="CharSpendCpButton" Content="💾  SPEND CP" Style="{StaticResource GoldButton}" Width="130" HorizontalAlignment="Left" Click="BtnSpendCharacterCp_Click"/>
+
+                            <Border Background="{StaticResource BrushPanel}"
+                                    BorderBrush="{StaticResource BrushBorder2}"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    Padding="10"
+                                    Margin="0,10,0,8">
+                                <StackPanel>
+                                    <TextBlock Text="DM Base Ability Adjustments"
+                                               Style="{StaticResource LabelText}"
+                                               Margin="0,0,0,4"/>
+                                    <TextBlock Text="Warning: Changes here alter base stats and shift linked sub-abilities by the same delta."
+                                               Style="{StaticResource SubtitleText}"
+                                               TextWrapping="Wrap"
+                                               Margin="0,0,0,8"/>
+
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="10"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="10"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="10"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="10"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="10"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="STR" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                            <TextBox x:Name="CharBaseStrInput" Style="{StaticResource DarkTextBox}" Text="10"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="DEX" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                            <TextBox x:Name="CharBaseDexInput" Style="{StaticResource DarkTextBox}" Text="10"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="4">
+                                            <TextBlock Text="CON" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                            <TextBox x:Name="CharBaseConInput" Style="{StaticResource DarkTextBox}" Text="10"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="6">
+                                            <TextBlock Text="INT" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                            <TextBox x:Name="CharBaseIntInput" Style="{StaticResource DarkTextBox}" Text="10"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="8">
+                                            <TextBlock Text="WIS" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                            <TextBox x:Name="CharBaseWisInput" Style="{StaticResource DarkTextBox}" Text="10"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="10">
+                                            <TextBlock Text="CHA" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                            <TextBox x:Name="CharBaseChaInput" Style="{StaticResource DarkTextBox}" Text="10"/>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <Button Content="⚠ APPLY BASE STAT CHANGES"
+                                            Style="{StaticResource GoldButton}"
+                                            Width="230"
+                                            HorizontalAlignment="Left"
+                                            Click="BtnApplyBaseAbilityAdjustments_Click"/>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Background="{StaticResource BrushPanel}"
+                                    BorderBrush="{StaticResource BrushBorder2}"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    Padding="10"
+                                    Margin="0,0,0,8">
+                                <StackPanel>
+                                    <TextBlock Text="DM Sub-Ability / Exceptional Strength Adjustments"
+                                               Style="{StaticResource LabelText}"
+                                               Margin="0,0,0,4"/>
+                                    <TextBlock Text="Use this to edit sub-abilities and exceptional strength for any character, including Core Rules."
+                                               Style="{StaticResource SubtitleText}"
+                                               TextWrapping="Wrap"
+                                               Margin="0,0,0,8"/>
+
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="10"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="10"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="10"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="STR Stamina" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                            <TextBox x:Name="CharSubStrStaminaInput" Style="{StaticResource DarkTextBox}" Text="10"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="STR Muscle" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                            <TextBox x:Name="CharSubStrMuscleInput" Style="{StaticResource DarkTextBox}" Text="10"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="4">
+                                            <TextBlock Text="DEX Aim" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                            <TextBox x:Name="CharSubDexAimInput" Style="{StaticResource DarkTextBox}" Text="10"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="6">
+                                            <TextBlock Text="DEX Balance" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                            <TextBox x:Name="CharSubDexBalanceInput" Style="{StaticResource DarkTextBox}" Text="10"/>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="10"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="10"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="10"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="CON Health" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                            <TextBox x:Name="CharSubConHealthInput" Style="{StaticResource DarkTextBox}" Text="10"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="CON Fitness" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                            <TextBox x:Name="CharSubConFitnessInput" Style="{StaticResource DarkTextBox}" Text="10"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="4">
+                                            <TextBlock Text="INT Reason" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                            <TextBox x:Name="CharSubIntReasonInput" Style="{StaticResource DarkTextBox}" Text="10"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="6">
+                                            <TextBlock Text="INT Knowledge" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                            <TextBox x:Name="CharSubIntKnowledgeInput" Style="{StaticResource DarkTextBox}" Text="10"/>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="10"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="10"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="10"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="WIS Intuition" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                            <TextBox x:Name="CharSubWisIntuitionInput" Style="{StaticResource DarkTextBox}" Text="10"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="WIS Willpower" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                            <TextBox x:Name="CharSubWisWillpowerInput" Style="{StaticResource DarkTextBox}" Text="10"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="4">
+                                            <TextBlock Text="WIS Perception" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                            <TextBox x:Name="CharSubWisPerceptionInput" Style="{StaticResource DarkTextBox}" Text="10"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="6">
+                                            <TextBlock Text="CHA Leadership" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                            <TextBox x:Name="CharSubChaLeadershipInput" Style="{StaticResource DarkTextBox}" Text="10"/>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="10"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="CHA Appearance" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                            <TextBox x:Name="CharSubChaAppearanceInput" Style="{StaticResource DarkTextBox}" Text="10"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="Exceptional Strength (0, 1-100, or 00)" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                            <TextBox x:Name="CharExceptionalStrengthInput" Style="{StaticResource DarkTextBox}" Text="0"/>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <Button Content="⚙ APPLY SUB-ABILITY CHANGES"
+                                            Style="{StaticResource GoldButton}"
+                                            Width="240"
+                                            HorizontalAlignment="Left"
+                                            Click="BtnApplySubAbilityAdjustments_Click"/>
+                                </StackPanel>
+                            </Border>
 
                             <Expander Header="Money &amp; Gems" IsExpanded="True" Margin="0,10,0,8">
                                 <StackPanel Margin="8,6,8,4">
@@ -384,6 +672,7 @@
                                 Click="BtnSaveNotes_Click"/>
                     </StackPanel>
                 </Grid>
+                </ScrollViewer>
             </Grid>
 
             <!-- ═══ RACES TAB ═══ -->
@@ -429,6 +718,8 @@
                         <TextBox x:Name="RaceBaseId" Style="{StaticResource DarkTextBox}" Margin="0,0,0,10"/>
 
                         <TextBlock Text="Character Mode:" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Mode decides where this race can be used: All = Core and Player's Option, Core Rules Only = Core characters, Player's Option Only = PO characters."
+                                   Style="{StaticResource SubtitleText}" Margin="0,0,0,4" TextWrapping="Wrap"/>
                         <ComboBox x:Name="RaceMode" SelectedIndex="0" Margin="0,0,0,10">
                             <ComboBoxItem Content="All Characters" Tag="all"/>
                             <ComboBoxItem Content="Core Rules Only" Tag="core_rules"/>
@@ -483,19 +774,96 @@
                             <TextBox x:Name="RaceChaMax" Grid.Row="6" Grid.Column="2" Style="{StaticResource DarkTextBox}" Margin="0,0,0,0"/>
                         </Grid>
 
-                        <TextBlock Text="Racial Abilities (one per line):" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                        <Button Content="🧩  OPEN GUIDED RACIAL ABILITY EDITOR"
+                                Style="{StaticResource GoldButton}"
+                                HorizontalAlignment="Left"
+                                Margin="0,0,0,10"
+                                Click="BtnOpenRacialAbilityEditor_Click"/>
+
+                        <TextBlock Text="Racial Ability Text (one per line):" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Optional legacy display text. If Structured Abilities are empty, these lines are auto-converted into simple auto-granted structured abilities."
+                                   Style="{StaticResource SubtitleText}" Margin="0,0,0,4" TextWrapping="Wrap"/>
                         <TextBox x:Name="RaceAbilities" Style="{StaticResource DarkTextBox}"
                                  AcceptsReturn="True" TextWrapping="Wrap"
                                  Height="120" VerticalScrollBarVisibility="Auto"
                                  Margin="0,0,0,10"/>
 
-                        <TextBlock Text="Structured Abilities (id|cost|auto|description|mechanicsJson):" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
-                        <TextBlock Text="Example: helf_bow_atk|5|false|Bow bonus (5): +1 on attacks with long or short bows.|{&quot;weapon_attack_bonuses&quot;:{&quot;bows&quot;:1}}"
-                                   Style="{StaticResource SubtitleText}" Margin="0,0,0,4"/>
-                        <TextBox x:Name="RaceAbilityDefs" Style="{StaticResource DarkTextBox}"
-                                 AcceptsReturn="True" TextWrapping="Wrap"
-                                 Height="190" VerticalScrollBarVisibility="Auto"
-                                 Margin="0,0,0,10"/>
+                        <Expander Header="Advanced: Raw Structured Ability Lines" IsExpanded="False" Margin="0,0,0,10">
+                            <StackPanel>
+                                <TextBlock Text="Best practice: use the guided Racial Abilities editor above for one-field-at-a-time entry."
+                                           Style="{StaticResource SubtitleText}" Margin="0,0,0,4" TextWrapping="Wrap"/>
+                                <TextBlock Text="Raw format: id|cost|auto|description|mechanics"
+                                           Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                                <TextBlock Text="You can use either JSON or easy shorthand key=value pairs separated by semicolons."
+                                           Style="{StaticResource SubtitleText}" Margin="0,0,0,2" TextWrapping="Wrap"/>
+                                <TextBlock Text="Shorthand example: helf_bow_atk|5|false|Bow bonus (5): +1 attacks with bows.|weapon_attack.bows=1;save.magic=1"
+                                           Style="{StaticResource SubtitleText}" Margin="0,0,0,2" TextWrapping="Wrap"/>
+                                <TextBlock Text="Scaling example: veteran_edge|4|false|Veteran Edge.|attack_per_levels=3"
+                                           Style="{StaticResource SubtitleText}" Margin="0,0,0,2" TextWrapping="Wrap"/>
+                                <TextBlock Text="Targeted NWP example: rider_focus|3|false|Rider's Focus.|nwp_check.nwp_riding_land=2"
+                                           Style="{StaticResource SubtitleText}" Margin="0,0,0,2" TextWrapping="Wrap"/>
+                                <TextBlock Text="JSON example: helf_bow_atk|5|false|Bow bonus (5): +1 on attacks with long or short bows.|{&quot;weapon_attack_bonuses&quot;:{&quot;bows&quot;:1}}"
+                                           Style="{StaticResource SubtitleText}" Margin="0,0,0,4" TextWrapping="Wrap"/>
+                                <TextBox x:Name="RaceAbilityDefs" Style="{StaticResource DarkTextBox}"
+                                         AcceptsReturn="True" TextWrapping="Wrap"
+                                         Height="190" VerticalScrollBarVisibility="Auto"
+                                         Margin="0,0,0,0"/>
+                                <WrapPanel Margin="0,8,0,0">
+                                    <TextBlock Text="Insert snippet:" Style="{StaticResource SubtitleText}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <ComboBox x:Name="RaceAbilityDefsSnippet" Width="390" Margin="0,0,8,0">
+                                        <ComboBoxItem Content="Full line starter" Tag="new_id|0|true|New Ability|ac=1" IsSelected="True"/>
+                                        <ComboBoxItem Content="Mechanics: weapon attack bows" Tag="weapon_attack.bows=1"/>
+                                        <ComboBoxItem Content="Mechanics: attack +1 every 3 levels" Tag="attack_per_levels=3"/>
+                                        <ComboBoxItem Content="Mechanics: weapon damage swords" Tag="weapon_damage.swords=1"/>
+                                        <ComboBoxItem Content="Mechanics: save vs magic" Tag="save.magic=1"/>
+                                        <ComboBoxItem Content="Mechanics: save vs poison" Tag="save.poison=1"/>
+                                        <ComboBoxItem Content="Mechanics: enemy attack goblinoids" Tag="enemy_attack.goblinoids=1"/>
+                                        <ComboBoxItem Content="Mechanics: enemy damage undead" Tag="enemy_damage.undead=1"/>
+                                        <ComboBoxItem Content="Mechanics: infravision 60" Tag="infravision=60"/>
+                                        <ComboBoxItem Content="Mechanics: magic resistance 5%" Tag="magic_resist=5"/>
+                                        <ComboBoxItem Content="Mechanics: stealth on" Tag="stealth=true"/>
+                                        <ComboBoxItem Content="Mechanics: detect secret doors on" Tag="detect_secret_doors=true"/>
+                                        <ComboBoxItem Content="Mechanics: no armor required for AC bonus" Tag="no_armor_ac=true"/>
+                                        <ComboBoxItem Content="Mechanics: HP per level" Tag="hp_per_level=1"/>
+                                        <ComboBoxItem Content="Mechanics: NWP check bonus (global)" Tag="nwp_check=1"/>
+                                        <ComboBoxItem Content="Mechanics: NWP check bonus for specific NWP" Tag="nwp_check.nwp_riding_land=1"/>
+                                    </ComboBox>
+                                    <Button Content="Insert At Cursor" Style="{StaticResource GoldButton}" Width="140"
+                                            Click="BtnInsertRaceAbilitySnippet_Click"/>
+                                </WrapPanel>
+                                <WrapPanel Margin="0,6,0,0">
+                                    <TextBlock Text="Guided snippet:" Style="{StaticResource SubtitleText}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <ComboBox x:Name="RaceSnippetType" Width="220" Margin="0,0,8,0" SelectionChanged="RaceSnippetType_SelectionChanged">
+                                        <ComboBoxItem Content="Weapon Attack Bonus" Tag="weapon_attack" IsSelected="True"/>
+                                        <ComboBoxItem Content="Scaling Attack Bonus" Tag="attack_scaling"/>
+                                        <ComboBoxItem Content="Weapon Damage Bonus" Tag="weapon_damage"/>
+                                        <ComboBoxItem Content="NWP Check Bonus (Specific NWP)" Tag="nwp_check_targeted"/>
+                                        <ComboBoxItem Content="Save Bonus" Tag="save_bonus"/>
+                                        <ComboBoxItem Content="Enemy Attack Bonus" Tag="enemy_attack"/>
+                                        <ComboBoxItem Content="Enemy Damage Bonus" Tag="enemy_damage"/>
+                                    </ComboBox>
+                                    <TextBlock Text="Find" Style="{StaticResource SubtitleText}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <TextBox x:Name="RaceSnippetTargetSearch" Width="180" Style="{StaticResource DarkTextBox}" Margin="0,0,8,0"
+                                             TextChanged="RaceSnippetTargetSearch_TextChanged"
+                                             KeyDown="RaceSnippetTargetSearch_KeyDown"/>
+                                        <Button Content="Clear" Style="{StaticResource GoldButton}" Width="70" Margin="0,0,8,0"
+                                            Click="BtnClearRaceSnippetTargetSearch_Click"/>
+                                    <ComboBox x:Name="RaceSnippetTarget" Width="300" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Value" Style="{StaticResource SubtitleText}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBox x:Name="RaceSnippetValue" Width="60" Style="{StaticResource DarkTextBox}" Text="1" Margin="0,0,8,0"
+                                             KeyDown="RaceSnippetValue_KeyDown"/>
+                                    <Button Content="Build + Insert" Style="{StaticResource GoldButton}" Width="120"
+                                            Click="BtnBuildRaceAbilitySnippet_Click"
+                                            IsDefault="True"/>
+                                </WrapPanel>
+                                    <TextBlock Text="Tip: use Find to search by name or id (example: axe, spear, riding, nwp_riding_land). Press Enter in Find or Value to insert immediately."
+                                           Style="{StaticResource SubtitleText}" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                                <TextBlock Text="Tip: choose a mechanics snippet, place your cursor after the pipe in the mechanics section, and click Insert At Cursor."
+                                           Style="{StaticResource SubtitleText}" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                                <TextBlock Text="For specific NWP targeting use nwp_check.[nwp_id]=value. You can find NWP ids in Edit Information > Character Options > NWPs."
+                                           Style="{StaticResource SubtitleText}" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Expander>
                     </StackPanel>
                 </ScrollViewer>
             </Grid>
@@ -1040,7 +1408,9 @@
                     <Button Content="🧹  Cleanup Library" Style="{StaticResource GoldButton}"
                         Margin="0,0,8,0" Click="BtnCleanupEquipment_Click"/>
                     <Button Content="⟳  Refresh Library" Style="{StaticResource GoldButton}"
-                        Click="BtnRefreshEquipment_Click"/>
+                        Margin="0,0,8,0" Click="BtnRefreshEquipment_Click"/>
+                    <Button Content="📥  Import Magical XLSX" Style="{StaticResource GoldButton}"
+                        Click="BtnImportMagicalItems_Click"/>
                     </StackPanel>
                 </Grid>
 
@@ -1230,6 +1600,217 @@
                             </StackPanel>
                         </Border>
 
+                        <Expander Header="Magical Mechanics &amp; Metadata" IsExpanded="True" Margin="0,0,0,8">
+                            <StackPanel Margin="8,6,8,4">
+                                <TextBlock Text="Core Mechanical Modifiers" Style="{StaticResource LabelText}" Margin="0,0,0,6"/>
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="120"/>
+                                        <ColumnDefinition Width="12"/>
+                                        <ColumnDefinition Width="120"/>
+                                        <ColumnDefinition Width="12"/>
+                                        <ColumnDefinition Width="120"/>
+                                        <ColumnDefinition Width="12"/>
+                                        <ColumnDefinition Width="120"/>
+                                        <ColumnDefinition Width="12"/>
+                                        <ColumnDefinition Width="120"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="Enhancement" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                        <TextBox x:Name="EquipmentMagicEnhancementBonus" Style="{StaticResource DarkTextBox}" Text="0"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="Attack Bonus" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                        <TextBox x:Name="EquipmentMagicAttackBonus" Style="{StaticResource DarkTextBox}" Text="0"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="4">
+                                        <TextBlock Text="Damage Bonus" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                        <TextBox x:Name="EquipmentMagicDamageBonus" Style="{StaticResource DarkTextBox}" Text="0"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="6">
+                                        <TextBlock Text="THAC0 Mod" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                        <TextBox x:Name="EquipmentMagicThac0Modifier" Style="{StaticResource DarkTextBox}" Text="0"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="8">
+                                        <TextBlock Text="AC Mod" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                        <TextBox x:Name="EquipmentMagicArmorClassModifier" Style="{StaticResource DarkTextBox}" Text="0"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <Expander Header="Charge &amp; Activation" IsExpanded="False" Margin="0,0,0,8">
+                                    <StackPanel Margin="8,6,8,4">
+                                        <Grid Margin="0,0,0,8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="170"/>
+                                                <ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="160"/>
+                                                <ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="160"/>
+                                            </Grid.ColumnDefinitions>
+                                            <CheckBox x:Name="EquipmentMetaChargedItem" Grid.Column="0" Content="Charged Item" Foreground="{StaticResource BrushText}" VerticalAlignment="Center"/>
+                                            <StackPanel Grid.Column="2">
+                                                <TextBlock Text="Max Charges" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                                <TextBox x:Name="EquipmentMetaMaxCharges" Style="{StaticResource DarkTextBox}" Text="0"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="4">
+                                                <TextBlock Text="Charge Cost" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                                <TextBox x:Name="EquipmentMetaChargeCost" Style="{StaticResource DarkTextBox}" Text="0"/>
+                                            </StackPanel>
+                                        </Grid>
+                                        <Grid Margin="0,0,0,8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0">
+                                                <TextBlock Text="Charge Type" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                                <TextBox x:Name="EquipmentMetaChargeType" Style="{StaticResource DarkTextBox}"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="2">
+                                                <TextBlock Text="Recharge Method" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                                <TextBox x:Name="EquipmentMetaRechargeMethod" Style="{StaticResource DarkTextBox}"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="4">
+                                                <TextBlock Text="Activation Type" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                                <TextBox x:Name="EquipmentMetaActivationType" Style="{StaticResource DarkTextBox}"/>
+                                            </StackPanel>
+                                        </Grid>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0">
+                                                <TextBlock Text="Duration" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                                <TextBox x:Name="EquipmentMetaDuration" Style="{StaticResource DarkTextBox}"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="2">
+                                                <TextBlock Text="Duration Type" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                                <TextBox x:Name="EquipmentMetaDurationType" Style="{StaticResource DarkTextBox}"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="4">
+                                                <TextBlock Text="Duration Value" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                                <TextBox x:Name="EquipmentMetaDurationValue" Style="{StaticResource DarkTextBox}"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </StackPanel>
+                                </Expander>
+
+                                <Expander Header="Saving Throw Modifiers" IsExpanded="False" Margin="0,0,0,8">
+                                    <Grid Margin="8,6,8,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="120"/>
+                                            <ColumnDefinition Width="12"/>
+                                            <ColumnDefinition Width="120"/>
+                                            <ColumnDefinition Width="12"/>
+                                            <ColumnDefinition Width="120"/>
+                                            <ColumnDefinition Width="12"/>
+                                            <ColumnDefinition Width="120"/>
+                                            <ColumnDefinition Width="12"/>
+                                            <ColumnDefinition Width="120"/>
+                                            <ColumnDefinition Width="12"/>
+                                            <ColumnDefinition Width="120"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0"><TextBlock Text="Paralyz." Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/><TextBox x:Name="EquipmentMetaSaveParalyzationMod" Style="{StaticResource DarkTextBox}" Text="0"/></StackPanel>
+                                        <StackPanel Grid.Column="2"><TextBlock Text="RSW" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/><TextBox x:Name="EquipmentMetaSaveRswMod" Style="{StaticResource DarkTextBox}" Text="0"/></StackPanel>
+                                        <StackPanel Grid.Column="4"><TextBlock Text="Petrif." Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/><TextBox x:Name="EquipmentMetaSavePetrificationMod" Style="{StaticResource DarkTextBox}" Text="0"/></StackPanel>
+                                        <StackPanel Grid.Column="6"><TextBlock Text="Breath" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/><TextBox x:Name="EquipmentMetaSaveBreathMod" Style="{StaticResource DarkTextBox}" Text="0"/></StackPanel>
+                                        <StackPanel Grid.Column="8"><TextBlock Text="Spell" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/><TextBox x:Name="EquipmentMetaSaveSpellMod" Style="{StaticResource DarkTextBox}" Text="0"/></StackPanel>
+                                        <StackPanel Grid.Column="10"><TextBlock Text="All" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/><TextBox x:Name="EquipmentMetaSaveAllMod" Style="{StaticResource DarkTextBox}" Text="0"/></StackPanel>
+                                    </Grid>
+                                </Expander>
+
+                                <Expander Header="Thief Skill Modifiers" IsExpanded="False" Margin="0,0,0,8">
+                                    <Grid Margin="8,6,8,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="120"/>
+                                            <ColumnDefinition Width="12"/>
+                                            <ColumnDefinition Width="120"/>
+                                            <ColumnDefinition Width="12"/>
+                                            <ColumnDefinition Width="120"/>
+                                            <ColumnDefinition Width="12"/>
+                                            <ColumnDefinition Width="120"/>
+                                            <ColumnDefinition Width="12"/>
+                                            <ColumnDefinition Width="120"/>
+                                            <ColumnDefinition Width="12"/>
+                                            <ColumnDefinition Width="120"/>
+                                            <ColumnDefinition Width="12"/>
+                                            <ColumnDefinition Width="120"/>
+                                            <ColumnDefinition Width="12"/>
+                                            <ColumnDefinition Width="120"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0"><TextBlock Text="Pick Pockets" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/><TextBox x:Name="EquipmentMetaPickPocketsMod" Style="{StaticResource DarkTextBox}" Text="0"/></StackPanel>
+                                        <StackPanel Grid.Column="2"><TextBlock Text="Open Locks" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/><TextBox x:Name="EquipmentMetaOpenLocksMod" Style="{StaticResource DarkTextBox}" Text="0"/></StackPanel>
+                                        <StackPanel Grid.Column="4"><TextBlock Text="Find/Remove" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/><TextBox x:Name="EquipmentMetaFindRemoveTrapsMod" Style="{StaticResource DarkTextBox}" Text="0"/></StackPanel>
+                                        <StackPanel Grid.Column="6"><TextBlock Text="Move Silent" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/><TextBox x:Name="EquipmentMetaMoveSilentlyMod" Style="{StaticResource DarkTextBox}" Text="0"/></StackPanel>
+                                        <StackPanel Grid.Column="8"><TextBlock Text="Hide Shadows" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/><TextBox x:Name="EquipmentMetaHideInShadowsMod" Style="{StaticResource DarkTextBox}" Text="0"/></StackPanel>
+                                        <StackPanel Grid.Column="10"><TextBlock Text="Detect Noise" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/><TextBox x:Name="EquipmentMetaDetectNoiseMod" Style="{StaticResource DarkTextBox}" Text="0"/></StackPanel>
+                                        <StackPanel Grid.Column="12"><TextBlock Text="Climb Walls" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/><TextBox x:Name="EquipmentMetaClimbWallsMod" Style="{StaticResource DarkTextBox}" Text="0"/></StackPanel>
+                                        <StackPanel Grid.Column="14"><TextBlock Text="Read Lang" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/><TextBox x:Name="EquipmentMetaReadLanguagesMod" Style="{StaticResource DarkTextBox}" Text="0"/></StackPanel>
+                                    </Grid>
+                                </Expander>
+
+                                <Expander Header="Ability Modifiers &amp; Set Values" IsExpanded="False" Margin="0,0,0,8">
+                                    <StackPanel Margin="8,6,8,4">
+                                        <Grid Margin="0,0,0,8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="120"/><ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="120"/><ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="120"/><ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="120"/><ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="120"/><ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="120"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0"><TextBlock Text="STR Mod" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/><TextBox x:Name="EquipmentMetaStrMod" Style="{StaticResource DarkTextBox}" Text="0"/></StackPanel>
+                                            <StackPanel Grid.Column="2"><TextBlock Text="DEX Mod" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/><TextBox x:Name="EquipmentMetaDexMod" Style="{StaticResource DarkTextBox}" Text="0"/></StackPanel>
+                                            <StackPanel Grid.Column="4"><TextBlock Text="CON Mod" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/><TextBox x:Name="EquipmentMetaConMod" Style="{StaticResource DarkTextBox}" Text="0"/></StackPanel>
+                                            <StackPanel Grid.Column="6"><TextBlock Text="INT Mod" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/><TextBox x:Name="EquipmentMetaIntMod" Style="{StaticResource DarkTextBox}" Text="0"/></StackPanel>
+                                            <StackPanel Grid.Column="8"><TextBlock Text="WIS Mod" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/><TextBox x:Name="EquipmentMetaWisMod" Style="{StaticResource DarkTextBox}" Text="0"/></StackPanel>
+                                            <StackPanel Grid.Column="10"><TextBlock Text="CHA Mod" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/><TextBox x:Name="EquipmentMetaChaMod" Style="{StaticResource DarkTextBox}" Text="0"/></StackPanel>
+                                        </Grid>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="120"/><ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="120"/><ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="120"/><ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="120"/><ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="120"/><ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="120"/><ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="120"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0"><TextBlock Text="STR Set" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/><TextBox x:Name="EquipmentMetaStrSet" Style="{StaticResource DarkTextBox}"/></StackPanel>
+                                            <StackPanel Grid.Column="2"><TextBlock Text="STR Ex Set" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/><TextBox x:Name="EquipmentMetaStrExceptionalSet" Style="{StaticResource DarkTextBox}"/></StackPanel>
+                                            <StackPanel Grid.Column="4"><TextBlock Text="DEX Set" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/><TextBox x:Name="EquipmentMetaDexSet" Style="{StaticResource DarkTextBox}"/></StackPanel>
+                                            <StackPanel Grid.Column="6"><TextBlock Text="CON Set" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/><TextBox x:Name="EquipmentMetaConSet" Style="{StaticResource DarkTextBox}"/></StackPanel>
+                                            <StackPanel Grid.Column="8"><TextBlock Text="INT Set" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/><TextBox x:Name="EquipmentMetaIntSet" Style="{StaticResource DarkTextBox}"/></StackPanel>
+                                            <StackPanel Grid.Column="10"><TextBlock Text="WIS Set" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/><TextBox x:Name="EquipmentMetaWisSet" Style="{StaticResource DarkTextBox}"/></StackPanel>
+                                            <StackPanel Grid.Column="12"><TextBlock Text="CHA Set" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/><TextBox x:Name="EquipmentMetaChaSet" Style="{StaticResource DarkTextBox}"/></StackPanel>
+                                        </Grid>
+                                    </StackPanel>
+                                </Expander>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <Button Content="🔁  APPLY GROUPS TO METADATA" Style="{StaticResource GoldButton}" Margin="0,0,8,0" Click="BtnApplyGroupedMetadataToRaw_Click"/>
+                                    <Button Content="🔁  APPLY METADATA TO GROUPS" Style="{StaticResource GoldButton}" Margin="0,0,8,0" Click="BtnApplyRawMetadataToGrouped_Click"/>
+                                    <Button Content="✅  VALIDATE METADATA" Style="{StaticResource GoldButton}" Click="BtnValidateEquipmentMetadata_Click"/>
+                                </StackPanel>
+
+                                <TextBlock Text="Full Metadata (one entry per line: Key=Value). This preserves all workbook columns and lets you edit anything." Style="{StaticResource SubtitleText}" Margin="0,0,0,4" TextWrapping="Wrap"/>
+                                <TextBox x:Name="EquipmentMagicMetadataText"
+                                         Style="{StaticResource DarkTextBox}"
+                                         AcceptsReturn="True"
+                                         TextWrapping="Wrap"
+                                         VerticalScrollBarVisibility="Auto"
+                                         Height="180"/>
+                            </StackPanel>
+                        </Expander>
+
                         <TextBlock Text="Description" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
                         <TextBox x:Name="EquipmentEditDescription" Style="{StaticResource DarkTextBox}"
                                  AcceptsReturn="True" TextWrapping="Wrap"
@@ -1240,6 +1821,62 @@
                         <TextBlock x:Name="EquipmentEditorInfo" Style="{StaticResource SubtitleText}" Margin="0,8,0,0" TextWrapping="Wrap"/>
                     </StackPanel>
                 </ScrollViewer>
+            </Grid>
+
+            <!-- DEITIES TAB -->
+            <Grid x:Name="TabDeities" Grid.Row="1" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="12"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Border Background="{StaticResource BrushCard}" BorderBrush="{StaticResource BrushBorder2}"
+                        BorderThickness="1" CornerRadius="2" Padding="12">
+                    <DockPanel>
+                        <Button Content="SAVE SETTING" Style="{StaticResource GoldButton}" DockPanel.Dock="Right"
+                                Width="140" Click="BtnSaveDeitySetting_Click"/>
+                        <CheckBox x:Name="DeityRulesEnabledCheck" Content="Enable custom deity rules and specialty priests"
+                                  Foreground="{StaticResource BrushText}" VerticalAlignment="Center"/>
+                    </DockPanel>
+                </Border>
+                <Grid Grid.Row="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="280"/>
+                        <ColumnDefinition Width="16"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Deities" Style="{StaticResource LabelText}" Margin="0,0,0,6"/>
+                        <ListBox x:Name="DeityEditorList" Style="{StaticResource DarkListBox}"
+                                 ItemContainerStyle="{StaticResource DarkListBoxItem}" DisplayMemberPath="Name"
+                                 Height="360" SelectionChanged="DeityEditorList_SelectionChanged"/>
+                        <Button Content="NEW DEITY" Style="{StaticResource GoldButton}" Margin="0,8,0,0"
+                                Click="BtnNewDeity_Click"/>
+                    </StackPanel>
+                    <Rectangle Grid.Column="1" Width="1" Fill="{StaticResource BrushBorder2}"/>
+                    <ScrollViewer Grid.Column="2" Margin="16,0,0,0" VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Text="Deity ID" Style="{StaticResource SubtitleText}"/>
+                            <TextBox x:Name="DeityEditId" Style="{StaticResource DarkTextBox}" Margin="0,4,0,10"/>
+                            <TextBlock Text="Name" Style="{StaticResource SubtitleText}"/>
+                            <TextBox x:Name="DeityEditName" Style="{StaticResource DarkTextBox}" Margin="0,4,0,10"/>
+                            <TextBlock Text="Alignment (LG, NG, CG, LN, N, CN, LE, NE, CE)" Style="{StaticResource SubtitleText}"/>
+                            <TextBox x:Name="DeityEditAlignment" Style="{StaticResource DarkTextBox}" Margin="0,4,0,10"/>
+                            <TextBlock Text="Portfolio" Style="{StaticResource SubtitleText}"/>
+                            <TextBox x:Name="DeityEditPortfolio" Style="{StaticResource DarkTextBox}" Margin="0,4,0,10"/>
+                            <TextBlock Text="Accepted follower alignments (comma separated)" Style="{StaticResource SubtitleText}"/>
+                            <TextBox x:Name="DeityEditFollowerAlignments" Style="{StaticResource DarkTextBox}" Margin="0,4,0,10"/>
+                            <TextBlock Text="Universal follower benefit" Style="{StaticResource SubtitleText}"/>
+                            <TextBox x:Name="DeityEditFollowerBenefit" Style="{StaticResource DarkTextBox}"
+                                     AcceptsReturn="True" TextWrapping="Wrap" Height="120"
+                                     VerticalScrollBarVisibility="Auto" Margin="0,4,0,10"/>
+                            <Button Content="SAVE DEITY" Style="{StaticResource GoldButton}" Width="160"
+                                    HorizontalAlignment="Left" Click="BtnSaveDeity_Click"/>
+                            <TextBlock x:Name="DeityEditorInfo" Style="{StaticResource SubtitleText}"
+                                       Margin="0,8,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
             </Grid>
 
             <!-- ═══ CLASSES TAB ═══ -->
@@ -1281,6 +1918,8 @@
                         <TextBox x:Name="ClassDefBudgetEditor" Style="{StaticResource DarkTextBox}" Margin="0,0,0,8"/>
                         <TextBlock Text="Allowed Races (comma separated ids)" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
                         <TextBox x:Name="ClassDefAllowedRacesEditor" Style="{StaticResource DarkTextBox}" Margin="0,0,0,8"/>
+                        <TextBlock Text="Allowed Alignments (comma separated: LG, NG, CG, LN, N, CN, LE, NE, CE; blank = any)" Style="{StaticResource SubtitleText}" Margin="0,0,0,2" TextWrapping="Wrap"/>
+                        <TextBox x:Name="ClassDefAllowedAlignmentsEditor" Style="{StaticResource DarkTextBox}" Margin="0,0,0,8"/>
                         <TextBlock Text="Ability Minimums JSON ({&quot;str&quot;:9,...})" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
                         <TextBox x:Name="ClassDefMinsEditor" Style="{StaticResource DarkTextBox}" Margin="0,0,0,8"/>
                         <TextBlock Text="Class abilities are edited in the Class Abilities tab." Style="{StaticResource SubtitleText}" Margin="0,0,0,4"/>
@@ -1470,6 +2109,13 @@
                                 </StackPanel>
                             </Grid>
 
+                            <StackPanel Margin="0,0,0,8">
+                                <TextBlock Text="Attack Every X Levels" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                <TextBox x:Name="CaAttackPerLevels" Style="{StaticResource DarkTextBox}"/>
+                                <TextBlock Text="Enter 3 for +1 attack at levels 3, 6, 9, and so on. Leave blank for no scaling."
+                                           Style="{StaticResource SubtitleText}" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+
                             <WrapPanel Margin="0,0,0,8">
                                 <CheckBox x:Name="CaNoArmorForAc" Content="AC Bonus Only If Unarmored"
                                           Foreground="{StaticResource BrushText}" Margin="0,0,16,4"/>
@@ -1579,14 +2225,38 @@
                         </StackPanel>
                     </Grid>
 
-                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,4">
-                        <TextBlock Text="Abilities:" Style="{StaticResource LabelText}"
+                        <StackPanel Grid.Row="2" Margin="0,0,0,4">
+                        <WrapPanel>
+                            <TextBlock Text="Abilities:" Style="{StaticResource LabelText}"
                                    VerticalAlignment="Center" Margin="0,0,8,0"/>
-                        <Button Content="＋ Add" Style="{StaticResource GoldButton}" Width="70"
+                            <Button Content="＋ Add" Style="{StaticResource GoldButton}" Width="70"
                                 Click="BtnAddRacialAbility_Click" Margin="0,0,6,0"/>
-                        <Button Content="✕ Remove" Style="{StaticResource DangerButton}" Width="80"
+                            <Button Content="✕ Remove" Style="{StaticResource DangerButton}" Width="80"
                                 Click="BtnRemoveRacialAbility_Click"/>
-                    </StackPanel>
+                            <TextBlock Text="Template:" Style="{StaticResource SubtitleText}"
+                                   VerticalAlignment="Center" Margin="12,0,6,0"/>
+                            <ComboBox x:Name="RaTemplatePreset" Width="250" Margin="0,0,6,0">
+                            <ComboBoxItem Content="Custom Blank" Tag="blank" IsSelected="True"/>
+                            <ComboBoxItem Content="Darkvision" Tag="darkvision"/>
+                            <ComboBoxItem Content="Save Bonus" Tag="save_bonus"/>
+                            <ComboBoxItem Content="Weapon Attack Bonus" Tag="weapon_attack"/>
+                            <ComboBoxItem Content="Scaling Attack Bonus" Tag="scaling_attack"/>
+                            <ComboBoxItem Content="Weapon Damage Bonus" Tag="weapon_damage"/>
+                            <ComboBoxItem Content="Enemy Attack Bonus" Tag="enemy_attack"/>
+                            <ComboBoxItem Content="Enemy Damage Bonus" Tag="enemy_damage"/>
+                            <ComboBoxItem Content="Stealth" Tag="stealth"/>
+                            <ComboBoxItem Content="Detect Secret Doors" Tag="detect_secret_doors"/>
+                            <ComboBoxItem Content="Detect Stonework" Tag="detect_stonework"/>
+                            <ComboBoxItem Content="NWP Aptitude" Tag="nwp_aptitude"/>
+                            <ComboBoxItem Content="HP Bonus" Tag="hp_bonus"/>
+                            <ComboBoxItem Content="Magic Resistance" Tag="magic_resistance"/>
+                            </ComboBox>
+                            <Button Content="＋ Insert Template" Style="{StaticResource GoldButton}" Width="130"
+                                Click="BtnInsertRacialTemplate_Click"/>
+                        </WrapPanel>
+                        <TextBlock Style="{StaticResource SubtitleText}" Margin="0,4,0,0" TextWrapping="Wrap"
+                               Text="Use templates to start with a common ability shape, then fill each field below. Click APPLY CHANGES TO LIST, then SAVE RACIAL ABILITIES."/>
+                        </StackPanel>
 
                     <ListBox x:Name="RaAbilityList" Grid.Row="3" Style="{StaticResource DarkListBox}"
                              ItemContainerStyle="{StaticResource DarkListBoxItem}"
@@ -1692,6 +2362,13 @@
                                 </StackPanel>
                             </Grid>
 
+                            <StackPanel Margin="0,0,0,8">
+                                <TextBlock Text="Attack Every X Levels" Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                                <TextBox x:Name="RaAttackPerLevels" Style="{StaticResource DarkTextBox}"/>
+                                <TextBlock Text="Enter 3 for +1 attack at levels 3, 6, 9, and so on. Leave blank for no scaling."
+                                           Style="{StaticResource SubtitleText}" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+
                             <WrapPanel Margin="0,0,0,8">
                                 <CheckBox x:Name="RaNoArmorForAc" Content="AC Bonus Only If Unarmored"
                                           Foreground="{StaticResource BrushText}" Margin="0,0,16,4"/>
@@ -1703,22 +2380,34 @@
                                           Foreground="{StaticResource BrushText}" Margin="0,0,16,4"/>
                             </WrapPanel>
 
-                            <TextBlock Text="Save Bonuses  (e.g.  all:1, magic:2, poison:1)"
+                            <TextBlock Text="Save Bonuses  (format: key:value, comma-separated)"
+                                       Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                            <TextBlock Text="Common keys: all, magic, poison, spell, death, breath, polymorph, petrification. Example: all:1, poison:2"
                                        Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
                             <TextBox x:Name="RaSaveBonuses" Style="{StaticResource DarkTextBox}" Margin="0,0,0,8"/>
-                            <TextBlock Text="Sub-Ability Bonuses  (e.g.  fitness:1, balance:1)"
+                            <TextBlock Text="Sub-Ability Bonuses  (format: key:value, comma-separated)"
+                                       Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                            <TextBlock Text="Common keys: str_stamina, str_muscle, dex_aim, dex_balance, con_health, con_fitness, int_reason, int_knowledge, wis_intuition, wis_willpower, wis_perception, cha_leadership, cha_appearance"
                                        Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
                             <TextBox x:Name="RaSubAbility" Style="{StaticResource DarkTextBox}" Margin="0,0,0,8"/>
-                            <TextBlock Text="Enemy Attack Bonuses  (e.g.  goblinoids:1, giants:1)"
+                            <TextBlock Text="Enemy Attack Bonuses  (format: enemy_group:value)"
+                                       Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                            <TextBlock Text="Use your own enemy group names consistently across abilities. Example: goblinoids:1, undead:2"
                                        Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
                             <TextBox x:Name="RaEnemyAttack" Style="{StaticResource DarkTextBox}" Margin="0,0,0,8"/>
-                            <TextBlock Text="Enemy Damage Bonuses  (e.g.  orcs:1, undead:2)"
+                            <TextBlock Text="Enemy Damage Bonuses  (format: enemy_group:value)"
+                                       Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                            <TextBlock Text="Use the same enemy group key names as Enemy Attack for consistency."
                                        Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
                             <TextBox x:Name="RaEnemyDamage" Style="{StaticResource DarkTextBox}" Margin="0,0,0,8"/>
-                            <TextBlock Text="Weapon Attack Bonuses  (e.g.  sword:1, axe:1)"
+                            <TextBlock Text="Weapon Attack Bonuses  (format: weapon_group:value)"
+                                       Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                            <TextBlock Text="Common groups: bows, swords, axes, hammers, thrown, slings, missile. Example: bows:1"
                                        Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
                             <TextBox x:Name="RaWeaponAttack" Style="{StaticResource DarkTextBox}" Margin="0,0,0,8"/>
-                            <TextBlock Text="Weapon Damage Bonuses  (e.g.  hammer:1)"
+                            <TextBlock Text="Weapon Damage Bonuses  (format: weapon_group:value)"
+                                       Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
+                            <TextBlock Text="Use the same weapon group key names as Weapon Attack when possible."
                                        Style="{StaticResource SubtitleText}" Margin="0,0,0,2"/>
                             <TextBox x:Name="RaWeaponDamage" Style="{StaticResource DarkTextBox}" Margin="0,0,0,10"/>
 
@@ -1967,12 +2656,12 @@
                                           CanUserDeleteRows="False"
                                           IsReadOnly="False"
                                           GridLinesVisibility="Horizontal"
-                                          AlternatingRowBackground="#20FFFFFF"
+                                          AlternationCount="2"
+                                          RowStyle="{StaticResource AlternatingDataGridRow}"
                                           Background="{StaticResource BrushInputBg}"
                                           Foreground="{StaticResource BrushText}"
                                           BorderBrush="{StaticResource BrushBorder2}"
                                           BorderThickness="1"
-                                          RowBackground="{StaticResource BrushInputBg}"
                                           MinHeight="100"
                                           MaxHeight="300"
                                           ScrollViewer.HorizontalScrollBarVisibility="Disabled"

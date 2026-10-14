@@ -22,28 +22,42 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
     private List<AbilityListItem> _availableItems = new();
     private List<AbilityListItem> _selectedItems = new();
     private bool _showDisadvantagesTab;
+    private bool _warnedCoreAbilityEditing;
 
     private bool IsPlayersOptionMode
         => string.Equals(_app.CharGen.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase);
+
+    private bool IsCoreLevelTwoPlusAdjustmentMode
+        => !string.Equals(_app.CharGen.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase)
+            && (_app.CharGen.IsExistingCharacterMode || _app.CharGen.IsLevelUpMode);
+
+    private bool CanEditClassAbilities
+        => IsPlayersOptionMode || IsCoreLevelTwoPlusAdjustmentMode;
 
     // Forwarded from CharGenClassScreen (static so the two screens share it)
     internal static readonly Dictionary<string, (int minor, int major)> SphereCosts =
         CharGenClassScreen.SphereCosts;
     internal static int CalculateSphereCpCost(Dictionary<string, string> spheres)
         => CharGenClassScreen.CalculateSphereCpCost(spheres);
-    internal static int CalculateWizardSchoolCpCost(Dictionary<string, bool> schools)
-        => NormalizeWizardSchoolSelections(schools).Count(kv => kv.Value) * 5;
+    internal static int CalculateWizardSchoolCpCost(Dictionary<string, bool> schools, string? specializationId = null)
+        => string.IsNullOrWhiteSpace(specializationId)
+            ? NormalizeWizardSchoolSelections(schools).Count(kv => kv.Value) * 5
+            : 0;
 
-    private static int CalculateConfigurationCpCost(
+    internal static int CalculateConfigurationCpCost(
         ClassDefinition cls,
         Dictionary<string, string> spheres,
-        Dictionary<string, bool> schools)
+        Dictionary<string, bool> schools,
+        string? wizardSpecializationId = null)
     {
+        if (cls.IsSpecialtyPriest)
+            return 0;
+
         if (string.Equals(cls.Id, "cleric", StringComparison.OrdinalIgnoreCase))
             return CalculateSphereCpCost(spheres);
 
         if (string.Equals(cls.Id, "wizard", StringComparison.OrdinalIgnoreCase))
-            return CalculateWizardSchoolCpCost(schools);
+            return CalculateWizardSchoolCpCost(schools, wizardSpecializationId);
 
         if (string.Equals(cls.Id, "druid", StringComparison.OrdinalIgnoreCase))
         {
@@ -92,8 +106,18 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
         try
         {
             _app.CharGen.RecalculateLevelFromExistingExperience();
+            if (IsCoreLevelTwoPlusAdjustmentMode && !_warnedCoreAbilityEditing)
+            {
+                _warnedCoreAbilityEditing = true;
+                MessageBox.Show(
+                    "Class ability and disadvantage editing is enabled for this level 2+ character.\n\nDo not make these changes without DM approval.",
+                    "DM Approval Recommended",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
             _app.SetBanner("Character Blueprint  ›  Class Abilities");
             bool isPO = IsPlayersOptionMode;
+            bool isAdjustmentMode = CanEditClassAbilities;
             int totalSteps = isPO ? 9 : 8;
             _app.SetNavBar(6, totalSteps, "Class Abilities",
                 backAction: () => _app.GoTo("chargen_class"),
@@ -136,13 +160,18 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
             SelectClass(startClass);
             ClassBudgetCard.Visibility = isPO ? Visibility.Visible : Visibility.Collapsed;
 
-            if (!isPO)
+            if (!isPO && !IsCoreLevelTwoPlusAdjustmentMode)
             {
                 BtnAbilitiesTab.Visibility = Visibility.Collapsed;
                 BtnDisadvantagesTab.Visibility = Visibility.Collapsed;
                 AvailableListTitle.Text = "Fixed Core Package";
                 SelectedListTitle.Text = "Granted Core Package";
                 AvailableClassAbilitySummary.Text = "Core Rules has no optional class ability purchasing.";
+            }
+
+            if (isAdjustmentMode && !isPO)
+            {
+                AvailableClassAbilitySummary.Text = "Core update mode: class abilities and disadvantages are editable with DM approval.";
             }
         }
         catch (Exception ex)
@@ -236,7 +265,7 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
     private void BuildAbilityChoices(ClassDefinition cls)
     {
         List<AbilityDefinition> allOptionalAbilities;
-        if (IsPlayersOptionMode)
+        if (CanEditClassAbilities)
         {
             _autoAssignedAbilities = cls.StructuredAbilities
                 .Where(a => a.AutoGranted)
@@ -252,8 +281,9 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
                 .ToList();
 
             bool creationStage = Math.Max(1, _app.CharGen.CharacterLevel) <= 1;
+            bool allowUpdateAdjustments = _app.CharGen.IsExistingCharacterMode || _app.CharGen.IsLevelUpMode || IsCoreLevelTwoPlusAdjustmentMode;
             _optionalAbilities = allOptionalAbilities
-                .Where(a => creationStage || a.AllowPurchaseAfterLevelOne)
+                .Where(a => creationStage || allowUpdateAdjustments || a.AllowPurchaseAfterLevelOne)
                 .ToList();
         }
         else
@@ -307,7 +337,9 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
         ClassAbilityHint.Text = !IsPlayersOptionMode
             ? "Core Rules mode: all class abilities are granted automatically."
             : _optionalAbilities.Count == 0
-                ? (Math.Max(1, _app.CharGen.CharacterLevel) > 1
+                ? (IsCoreLevelTwoPlusAdjustmentMode
+                    ? "No optional abilities were found for this class in the current data set."
+                    : Math.Max(1, _app.CharGen.CharacterLevel) > 1
                     ? "No optional abilities can be purchased at this level. Some abilities are creation-only."
                     : "This class has no optional abilities to configure.")
                 : "Choose optional abilities on the left and move them into your package on the right.";
@@ -425,6 +457,15 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
             ? Visibility.Visible
             : Visibility.Collapsed;
 
+        if (cls.IsSpecialtyPriest)
+        {
+            _app.CharGen.SelectedSpheres = new Dictionary<string, string>(
+                cls.FixedSpheres ?? new Dictionary<string, string>(),
+                StringComparer.OrdinalIgnoreCase);
+            ClassConfigTitle.Text = "Specialty Priest Configuration";
+            ClassConfigHint.Text = "Sphere access is fixed by the selected deity.";
+        }
+
         if (cls.Id == "cleric")
         {
             ClassConfigTitle.Text = "Priest Configuration";
@@ -440,7 +481,7 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
         {
             AutoFillRangerDefaultSpheres();
         }
-        if (cls.Id != "cleric" && cls.Id != "druid" && !canConfigurePaladinSpheres && !canConfigureRangerSpheres)
+        if (cls.Id != "cleric" && cls.Id != "druid" && !cls.IsSpecialtyPriest && !canConfigurePaladinSpheres && !canConfigureRangerSpheres)
             _app.CharGen.SelectedSpheres.Clear();
         if (cls.Id == "druid")
         {
@@ -472,6 +513,7 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
         bool show = cls.Id == "wizard"
             || cls.Id == "cleric"
             || cls.Id == "druid"
+            || cls.IsSpecialtyPriest
             || ShouldConfigurePaladinSpheres(cls)
             || ShouldConfigureRangerSpheres(cls)
             || ClassSupportsRogueSkillConfiguration(cls);
@@ -600,12 +642,16 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
 
         var package = _app.Rules.BuildClassAbilityPackage(
             cls.Id, _selectedAbilityEntries.ToList(),
-            _app.CharGen.RacialCarryoverToClassPoints, wizSpec);
+            _app.CharGen.RacialCarryoverToClassPoints,
+            wizSpec,
+            int.MaxValue,
+            _app.CharGen.RaceId);
 
         int configurationCost = CalculateConfigurationCpCost(
             cls,
             _app.CharGen.SelectedSpheres,
-            _app.CharGen.SelectedWizardSchools);
+            _app.CharGen.SelectedWizardSchools,
+            wizSpec);
         int totalSpent = package.spent + configurationCost;
         int remaining = package.budget - totalSpent;
 
@@ -619,13 +665,23 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
 
     private void RefreshSphereSchoolSummary(ClassDefinition cls)
     {
-        if (!IsPlayersOptionMode)
+        if (!IsPlayersOptionMode && !ClassSupportsRogueSkillConfiguration(cls))
         {
             SphereSchoolSection.Visibility = Visibility.Collapsed;
             return;
         }
 
-        if (cls.Id == "cleric")
+        if (cls.IsSpecialtyPriest)
+        {
+            SphereSchoolSection.Visibility = Visibility.Visible;
+            SphereSchoolSectionLabel.Text = "PRIEST SPHERE ACCESS  (Fixed by Deity)";
+            var spheres = CharGenClassScreen.NormalizeSphereSelections(_app.CharGen.SelectedSpheres);
+            _app.CharGen.SelectedSpheres = new(spheres);
+            SphereSchoolSectionSummary.Text = spheres.Count == 0
+                ? "Standard priest sphere access (specialty details pending)."
+                : string.Join(", ", spheres.OrderBy(kv => kv.Key).Select(kv => $"{kv.Key} ({kv.Value})"));
+        }
+        else if (cls.Id == "cleric")
         {
             SphereSchoolSection.Visibility = Visibility.Visible;
             SphereSchoolSectionLabel.Text = "PRIEST SPHERE ACCESS";
@@ -684,7 +740,9 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
                 .Select(kv => kv.Key)
                 .OrderBy(x => x)
                 .ToList();
-            int schoolCost = CalculateWizardSchoolCpCost(_app.CharGen.SelectedWizardSchools);
+            int schoolCost = CalculateWizardSchoolCpCost(
+                _app.CharGen.SelectedWizardSchools,
+                _app.CharGen.WizardSpecializationId);
 
             if (string.IsNullOrEmpty(_app.CharGen.WizardSpecializationId))
             {
@@ -729,30 +787,40 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
         int level = Math.Max(1, _app.CharGen.CharacterLevel);
         int dex = GetCurrentDexterityScore();
         string raceId = GetCurrentBaseRaceId();
+        string classId = _activeClass?.Id ?? _app.CharGen.ClassId;
+        bool useAverageProgression = !IsRogueClass(classId);
         var breakdown = RulesEngine.BuildRogueSkillBreakdown(
             selectedSkillIds,
             raceId,
             dex,
             _app.CharGen.RogueSkillArmorProfile,
             _app.CharGen.SelectedRogueSkillPoints,
-            level);
+            level,
+            useAverageProgression);
 
-        int pool = RulesEngine.GetRogueSkillPointPoolForLevel(level);
-        int spent = breakdown.Sum(x => x.AllocatedPoints);
-        int remaining = pool - spent;
         string armorLabel = GetArmorProfileLabel(_app.CharGen.RogueSkillArmorProfile);
         string skillText = string.Join(", ", breakdown.Select(x => $"{x.SkillName} {x.FinalScore}%"));
+        if (useAverageProgression)
+            return $"Rogue skills â€” Automatic DMG average progression  |  Armor: {armorLabel}  |  {skillText}";
+
+        int pool = RulesEngine.GetRogueSkillPointPoolForLevel(level, classId);
+        int spent = breakdown.Sum(x => x.AllocatedPoints);
+        int remaining = pool - spent;
         return $"Rogue skills â€” Armor: {armorLabel}  |  Points: {spent}/{pool} (remaining {remaining})  |  {skillText}";
     }
 
     private List<string> GetSelectedRogueSkillIds()
     {
+        string classId = _activeClass?.Id ?? _app.CharGen.ClassId;
+        if (!IsPlayersOptionMode && IsRogueClass(classId))
+            return RulesEngine.GetStandardCoreRogueSkillIdsForClassProfile(classId);
+
         var selectedIds = _selectedAbilityEntries
             .Concat(_autoAssignedAbilities.Select(a => a.Id))
             .Distinct(System.StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        return RulesEngine.GetRogueSkillIdsForAbilitySelection(selectedIds);
+        return RulesEngine.GetRogueSkillIdsForClassProfile(classId, selectedIds);
     }
 
     private int GetCurrentDexterityScore()
@@ -776,12 +844,21 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
            || string.Equals(classId, "bard", StringComparison.OrdinalIgnoreCase);
 
     private bool ClassSupportsRogueSkillConfiguration(ClassDefinition cls)
+        => SupportsRogueSkillConfiguration(cls, _selectedAbilityEntries);
+
+    internal static bool SupportsRogueSkillConfiguration(
+        ClassDefinition cls,
+        IEnumerable<string> selectedAbilityEntries)
     {
         if (IsRogueClass(cls.Id))
             return true;
 
-        return cls.StructuredAbilities.Any(a => string.Equals(a.Id, "cleric_thief_ability", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(a.Id, "wizard_thief_ability", StringComparison.OrdinalIgnoreCase));
+        return selectedAbilityEntries.Any(entry =>
+        {
+            string abilityId = RulesEngine.ExtractClassAbilityBaseId(entry);
+            return string.Equals(abilityId, "cleric_thief_ability", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(abilityId, "wizard_thief_ability", StringComparison.OrdinalIgnoreCase);
+        });
     }
 
     private static string GetArmorProfileLabel(string? armorProfile)
@@ -1120,6 +1197,28 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
                 "Miscellaneous Magic",
                 "Weapons and Armor",
             },
+            ["wizard_restriction_environmental_condition"] = new[]
+            {
+                "Occasional condition (-5 CP)",
+                "Regular condition (-10 CP)",
+                "Frequent condition (-15 CP)",
+                "Daily condition (-20 CP)",
+            },
+            ["wizard_armored_wizard"] = new[]
+            {
+                "Leather Armor",
+                "Studded Leather Armor",
+                "Padded Armor",
+                "Hide Armor",
+                "Scale Mail",
+                "Chain Mail",
+                "Elven Chain",
+                "Splint Mail",
+                "Banded Mail",
+                "Plate Mail",
+                "Field Plate",
+                "Full Plate",
+            },
             ["wizard_no_components_cp5"] = new[] { "Use spell picker" },
             ["wizard_no_components_cp8"] = new[] { "Use spell picker" },
             ["wizard_persistent_spell_effect"] = new[] { "Use spell picker" },
@@ -1215,13 +1314,14 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
             "wizard_restriction_supernatural_constraint",
             "wizard_restriction_talisman",
             "wizard_restriction_weapons_restriction_cp3",
+            "wizard_armored_wizard",
         };
 
     // â”€â”€ Button handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private void BtnAddClassAbility_Click(object sender, RoutedEventArgs e)
     {
-        if (!IsPlayersOptionMode)
+        if (!CanEditClassAbilities)
             return;
 
         if (_activeClass is null || AvailableClassAbilityList.SelectedItem is not AbilityListItem item) return;
@@ -1229,7 +1329,9 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
         if (toAdd is null)
             return;
 
-        if (Math.Max(1, _app.CharGen.CharacterLevel) > 1 && !toAdd.AllowPurchaseAfterLevelOne)
+        bool isLevelTwoPlus = Math.Max(1, _app.CharGen.CharacterLevel) > 1;
+        bool isUpdateFlow = _app.CharGen.IsExistingCharacterMode || _app.CharGen.IsLevelUpMode || isLevelTwoPlus;
+        if (isLevelTwoPlus && !toAdd.AllowPurchaseAfterLevelOne && !isUpdateFlow)
         {
             MessageBox.Show(
                 $"{toAdd.Description} can only be purchased during character creation.",
@@ -1237,6 +1339,17 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
             return;
+        }
+
+        if (isLevelTwoPlus && !toAdd.AllowPurchaseAfterLevelOne)
+        {
+            var proceed = MessageBox.Show(
+                $"{toAdd.Description} is normally creation-only. Add it anyway?\n\nDo not proceed without DM approval.",
+                "DM Approval Required",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+            if (proceed != MessageBoxResult.Yes)
+                return;
         }
 
         bool alreadySelected = _selectedAbilityEntries.Any(entry =>
@@ -1284,14 +1397,21 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
         }
 
         string playerText = string.Empty;
-        if (toAdd.RequiresPlayerText)
+        bool requiresSelectionInput = toAdd.RequiresPlayerText
+            || SelectionOptionsByAbilityId.ContainsKey(toAdd.Id ?? string.Empty)
+            || string.Equals(toAdd.Id, "cleric_spell_like_granted_power", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(toAdd.Id, "wizard_signature_spell_levels_1_3", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(toAdd.Id, "wizard_signature_spell_levels_4_6", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(toAdd.Id, "wizard_signature_spell_levels_7_9", StringComparison.OrdinalIgnoreCase);
+
+        if (requiresSelectionInput)
         {
-            string? entered = PromptForClassAbilitySelectionText(toAdd.Id, toAdd.Description, string.Empty);
+            string? entered = PromptForClassAbilitySelectionText(toAdd.Id ?? string.Empty, toAdd.Description, string.Empty);
             if (entered is null)
                 return;
             playerText = entered;
 
-            if (UniqueSelectionTextAbilityIds.Contains(toAdd.Id))
+            if (UniqueSelectionTextAbilityIds.Contains(toAdd.Id ?? string.Empty))
             {
                 bool duplicateSelection = _selectedAbilityEntries.Any(entry =>
                     string.Equals(RulesEngine.ExtractClassAbilityBaseId(entry), toAdd.Id, StringComparison.OrdinalIgnoreCase)
@@ -1307,11 +1427,11 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
                 }
             }
 
-            if (!ValidateWizardSignatureSelection(toAdd.Id, playerText))
+            if (!ValidateWizardSignatureSelection(toAdd.Id ?? string.Empty, playerText))
                 return;
         }
 
-        string selectionEntry = RulesEngine.BuildClassAbilitySelectionEntry(toAdd.Id, playerText);
+        string selectionEntry = RulesEngine.BuildClassAbilitySelectionEntry(toAdd.Id ?? string.Empty, playerText);
         if (string.IsNullOrWhiteSpace(selectionEntry))
             return;
 
@@ -1349,10 +1469,10 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
     private void PersistCurrentSelections()
     {
         if (_activeClass == null) return;
-        if (_app.CharGen.ClassMode == "multiclass")
-            _app.CharGen.SelectedAbilitiesByClass[_activeClass.Id] = _selectedAbilityEntries.ToList();
-        else
-            _app.CharGen.SelectedClassAbilityIds = _selectedAbilityEntries.ToList();
+        var selections = _selectedAbilityEntries.ToList();
+        _app.CharGen.SelectedAbilitiesByClass[_activeClass.Id] = selections;
+        if (_app.CharGen.ClassMode != "multiclass")
+            _app.CharGen.SelectedClassAbilityIds = new List<string>(selections);
     }
 
     private void AvailableClassAbilityList_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -1908,9 +2028,12 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
             return;
 
         if (_activeClass?.Id != "wizard") return;
+        var eligibleSpecializations = _activeClass.Specializations?
+            .Where(spec => _app.Rules.IsWizardSpecializationAllowedForRace(spec, _app.CharGen.RaceId))
+            .ToList();
         var dialog = new WizardSchoolsDialog(
             _app.CharGen.SelectedWizardSchools,
-            _activeClass.Specializations,
+            eligibleSpecializations,
             _app.CharGen.WizardSpecializationId);
 
         if (dialog.ShowDialog() == true)
@@ -1937,16 +2060,15 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
 
     private void BtnAllocateRogueSkills_Click(object sender, RoutedEventArgs e)
     {
-        if (!IsPlayersOptionMode)
-            return;
-
         if (_activeClass is null || !ClassSupportsRogueSkillConfiguration(_activeClass)) return;
 
         var selectedSkillIds = GetSelectedRogueSkillIds();
         if (selectedSkillIds.Count == 0)
         {
             MessageBox.Show(
-                "Select one or more scored rogue abilities first (for example Pick Pockets or Open Locks).",
+                IsPlayersOptionMode
+                    ? "Select one or more scored rogue abilities first (for example Pick Pockets or Open Locks)."
+                    : "No rogue skills are available for this class.",
                 "No Rogue Skills Selected",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
@@ -1963,7 +2085,8 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
             _app.CharGen.RogueSkillArmorProfile,
             raceId,
             dex,
-            level)
+            level,
+            _activeClass.Id)
         {
             Owner = Window.GetWindow(this)
         };
@@ -2084,14 +2207,20 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
                 var wizSpec = _app.CharGen.ClassMode == "multiclass"
                     ? (_app.CharGen.WizardSpecializationById.TryGetValue(cls.Id, out var ws) ? ws : "")
                     : _app.CharGen.WizardSpecializationId;
-                var pkg = _app.Rules.BuildClassAbilityPackage(cls.Id, abils, _app.CharGen.RacialCarryoverToClassPoints, wizSpec);
+                var pkg = _app.Rules.BuildClassAbilityPackage(
+                    cls.Id,
+                    abils,
+                    _app.CharGen.RacialCarryoverToClassPoints,
+                    wizSpec,
+                    int.MaxValue,
+                    _app.CharGen.RaceId);
                 var spheres = _app.CharGen.ClassMode == "multiclass"
                     ? (_app.CharGen.SpheresByClass.TryGetValue(cls.Id, out var sp) ? sp : new())
                     : _app.CharGen.SelectedSpheres;
                 var schools = _app.CharGen.ClassMode == "multiclass"
                     ? (_app.CharGen.SchoolsByClass.TryGetValue(cls.Id, out var sc) ? sc : new())
                     : _app.CharGen.SelectedWizardSchools;
-                int configurationCost = CalculateConfigurationCpCost(cls, spheres, schools);
+                int configurationCost = CalculateConfigurationCpCost(cls, spheres, schools, wizSpec);
                 if (pkg.remaining - configurationCost < 0)
                     allIssues.Add($"{cls.Name}: abilities exceed budget by {-(pkg.remaining - configurationCost)} CP.");
             }

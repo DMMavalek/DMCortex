@@ -7286,7 +7286,7 @@
                                                            },
                                                            {
                                                                "id":  "ranger_tracking_proficiency",
-                                                               "description":  "Tracking proficiency (5): Gain tracking with automatic improvement by level.",
+                                                               "description":  "Tracking proficiency (5): Gain Tracking; the tracking rating improves by +1 for every three Ranger levels.",
                                                                "mechanics":  {
 
                                                                              },

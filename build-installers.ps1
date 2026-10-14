@@ -210,6 +210,149 @@ function Reset-Directory([string]$path)
 	New-Item -ItemType Directory -Path $path | Out-Null
 }
 
+function Assert-NoCustomRulesInFile([string]$path)
+{
+	if (-not (Test-Path $path)) {
+		return
+	}
+
+	$text = Get-Content -Raw -Path $path
+	if ([regex]::IsMatch($text, '"source"\s*:\s*"custom"', 'IgnoreCase') -or
+		[regex]::IsMatch($text, '"is_custom"\s*:\s*true', 'IgnoreCase')) {
+		throw "Custom classes/races detected in release payload file: $path"
+	}
+}
+
+function Remove-CustomRulesFromFile([string]$path)
+{
+	if (-not (Test-Path $path)) {
+		return @{ Races = 0; Classes = 0 }
+	}
+
+	$raw = Get-Content -Raw -Path $path
+	$doc = $raw | ConvertFrom-Json
+	$removedRaces = 0
+	$removedClasses = 0
+
+	if ($null -ne $doc.races) {
+		foreach ($raceId in @($doc.races.PSObject.Properties.Name)) {
+			$race = $doc.races.$raceId
+			$isCustom = $false
+			if ($null -ne $race) {
+				if (($race.PSObject.Properties.Name -contains 'source') -and [string]::Equals([string]$race.source, 'custom', [System.StringComparison]::OrdinalIgnoreCase)) {
+					$isCustom = $true
+				}
+				if (($race.PSObject.Properties.Name -contains 'is_custom') -and ($race.is_custom -eq $true)) {
+					$isCustom = $true
+				}
+			}
+
+			if ($isCustom) {
+				$doc.races.PSObject.Properties.Remove($raceId)
+				$removedRaces++
+			}
+		}
+	}
+
+	if ($null -ne $doc.classes) {
+		foreach ($classId in @($doc.classes.PSObject.Properties.Name)) {
+			$classDef = $doc.classes.$classId
+			$isCustom = $false
+			if ($null -ne $classDef) {
+				if (($classDef.PSObject.Properties.Name -contains 'source') -and [string]::Equals([string]$classDef.source, 'custom', [System.StringComparison]::OrdinalIgnoreCase)) {
+					$isCustom = $true
+				}
+				if (($classDef.PSObject.Properties.Name -contains 'is_custom') -and ($classDef.is_custom -eq $true)) {
+					$isCustom = $true
+				}
+			}
+
+			if ($isCustom) {
+				$doc.classes.PSObject.Properties.Remove($classId)
+				$removedClasses++
+			}
+		}
+	}
+
+	if (($removedRaces + $removedClasses) -gt 0) {
+		$updatedJson = $doc | ConvertTo-Json -Depth 100
+		Set-Content -Path $path -Value $updatedJson -Encoding utf8
+	}
+
+	return @{ Races = $removedRaces; Classes = $removedClasses }
+}
+
+function Remove-CustomRulesFromPayload([string]$publishDir)
+{
+	$corePath = Join-Path $publishDir 'data\rulesets\core_2e.json'
+	$overlayPath = Join-Path $publishDir 'data\rulesets\overlays\players_option.json'
+
+	$coreRemoved = Remove-CustomRulesFromFile -path $corePath
+	$overlayRemoved = Remove-CustomRulesFromFile -path $overlayPath
+
+	$totalRaces = [int]$coreRemoved.Races + [int]$overlayRemoved.Races
+	$totalClasses = [int]$coreRemoved.Classes + [int]$overlayRemoved.Classes
+
+	if (($totalRaces + $totalClasses) -gt 0) {
+		Write-Host ("Removed custom rules from payload {0}: races={1}, classes={2}" -f $publishDir, $totalRaces, $totalClasses)
+	}
+}
+
+function Assert-PublishPayloadCompliance([string]$publishDir)
+{
+	Remove-CustomRulesFromPayload -publishDir $publishDir
+
+	$spellsRuleset = Join-Path $publishDir 'data\rulesets\spells.json'
+	if (-not (Test-Path $spellsRuleset)) {
+		throw "Missing required spells ruleset in publish payload: $spellsRuleset"
+	}
+
+	$equipmentList = Join-Path $publishDir 'Assets\Equipment\Equipment_List.txt'
+	if (-not (Test-Path $equipmentList)) {
+		throw "Missing required equipment file in publish payload: $equipmentList"
+	}
+
+	$magicalItemsDir = Join-Path $publishDir 'Assets\Magical Items'
+	if (-not (Test-Path $magicalItemsDir)) {
+		throw "Missing required magical items directory in publish payload: $magicalItemsDir"
+	}
+
+	$magicalItemFileCount = @(Get-ChildItem -Path $magicalItemsDir -Recurse -File -ErrorAction SilentlyContinue).Count
+	if ($magicalItemFileCount -eq 0) {
+		throw "Magical items payload directory is empty: $magicalItemsDir"
+	}
+
+	$classAbilitiesDir = Join-Path $publishDir 'Assets\Class Abilities'
+	if (-not (Test-Path $classAbilitiesDir)) {
+		throw "Missing required class abilities directory in publish payload: $classAbilitiesDir"
+	}
+
+	$classAbilityFileCount = @(Get-ChildItem -Path $classAbilitiesDir -Recurse -File -ErrorAction SilentlyContinue).Count
+	if ($classAbilityFileCount -eq 0) {
+		throw "Class abilities payload directory is empty: $classAbilitiesDir"
+	}
+
+	$coreRulesPath = Join-Path $publishDir 'data\rulesets\core_2e.json'
+	if (-not (Test-Path $coreRulesPath)) {
+		throw "Missing required core ruleset file in publish payload: $coreRulesPath"
+	}
+
+	$coreDoc = Get-Content -Raw -Path $coreRulesPath | ConvertFrom-Json
+	$raceCount = @($coreDoc.races.PSObject.Properties).Count
+	$classCount = @($coreDoc.classes.PSObject.Properties).Count
+	if ($raceCount -eq 0 -or $classCount -eq 0) {
+		throw "Core ruleset payload must include race/class abilities data. Found races=$raceCount classes=$classCount in $coreRulesPath"
+	}
+
+	$customInfoDir = Join-Path $publishDir 'Assets\Custom Info'
+	if (Test-Path $customInfoDir) {
+		throw "Custom content directory must not be shipped in installer payload: $customInfoDir"
+	}
+
+	Assert-NoCustomRulesInFile (Join-Path $publishDir 'data\rulesets\core_2e.json')
+	Assert-NoCustomRulesInFile (Join-Path $publishDir 'data\rulesets\overlays\players_option.json')
+}
+
 function Publish-SingleFile([string]$editionConstants, [string]$assemblyName, [string]$outputPath)
 {
 	& $dotnet publish $project `
@@ -299,8 +442,14 @@ Reset-Directory $playerStage
 Write-Host 'Publishing single-file DM build...'
 Publish-SingleFile -editionConstants 'APP_EDITION_DM' -assemblyName 'DungeonMasterCortex' -outputPath $dmStage
 
+Write-Host 'Auditing DM publish payload...'
+Assert-PublishPayloadCompliance -publishDir $dmStage
+
 Write-Host 'Publishing single-file Player build...'
 Publish-SingleFile -editionConstants 'APP_EDITION_PLAYER' -assemblyName 'PlayerCortex' -outputPath $playerStage
+
+Write-Host 'Auditing Player publish payload...'
+Assert-PublishPayloadCompliance -publishDir $playerStage
 
 if (-not (Test-Path (Join-Path $dmStage 'DungeonMasterCortex.exe'))) {
 	throw 'DM publish did not produce DungeonMasterCortex.exe'

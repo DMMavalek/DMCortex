@@ -1,6 +1,19 @@
 Dungeon Master Cortex - Running Changelog
 ========================================
 
+v1.4.24 (2026-10-13)
+- Added multi-select character export to save several selected roster entries in one native Codex JSON file.
+- Preserved complete character-specific data in exports, including custom notes, structured abilities, proficiencies, equipment, spells, and saved layout/settings data.
+- Hardened character roster persistence with atomic saves, timestamped backups, protection against unexpected empty overwrites, and an option to restore a non-empty backup.
+- Added Combat & Tactics special talents and clearer armor, shield, fighting-style, and talent filters during proficiency selection.
+- Added level-gated Master, High Master, and Grand Master weapon mastery progression with cost accounting and combat effects.
+- Allowed individual weapon specialization after purchasing an applicable weapon group, charging only the upgrade cost.
+- Corrected Player's Option character calculations and displays for proficiency costs, saving throws, shield AC, magic resistance, and equipment/weapon classification.
+- Fixed custom class abilities and disadvantages not loading consistently after restart.
+- Corrected Half-Elf wizard specialist-school selection and hid rogue-skill allocation controls from wizard-only character creation.
+- Added a persisted High Contrast Dark appearance option; parchment remains the default.
+- Verified the character-creation dice roller against expected score distributions.
+
 v1.4.23 (2026-09-21)
 - Added a searchable, filterable spell-selection dialog before character export, with remembered stable-ID selections and automatic inclusion of prepared, cast, and spellbook spells.
 - Separated sphere-accessible divine spells from character-owned/exported spells so priest characters no longer export hundreds of unselected catalog entries.

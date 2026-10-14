@@ -23,6 +23,26 @@ public sealed class LevelAdvancementResult
     public string NewAttackRate { get; set; } = "1/round";
 }
 
+public sealed class LevelDrainResult
+{
+    public bool LevelLost { get; set; }
+    public int OldLevel { get; set; }
+    public int NewLevel { get; set; }
+    public int LevelsLost { get; set; }
+    public int OldExperience { get; set; }
+    public int NewExperience { get; set; }
+    public int HitPointsLost { get; set; }
+}
+
+public sealed class ExperienceAdjustmentResult
+{
+    public int OldExperience { get; set; }
+    public int NewExperience { get; set; }
+    public int OldLevel { get; set; }
+    public int NewLevel { get; set; }
+    public Dictionary<string, int> ClassLevels { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+}
+
 public static class CharacterProgressionService
 {
     private static readonly int[] FighterXp =
@@ -237,6 +257,116 @@ public static class CharacterProgressionService
         return result;
     }
 
+    public static LevelDrainResult ApplyLevelDrain(CharacterSheet character, int levelsToDrain, int manualHitPointLoss = 0)
+    {
+        if (character is null)
+            throw new ArgumentNullException(nameof(character));
+
+        int oldLevel = Math.Clamp(character.Level, 1, 20);
+        int newLevel = Math.Max(1, oldLevel - Math.Max(0, levelsToDrain));
+        var result = new LevelDrainResult
+        {
+            OldLevel = oldLevel,
+            NewLevel = oldLevel,
+            OldExperience = Math.Max(0, character.ExperiencePoints),
+            NewExperience = Math.Max(0, character.ExperiencePoints),
+        };
+
+        if (newLevel >= oldLevel)
+            return result;
+
+        var classIds = character.ClassMode == "multiclass" && character.ClassIds.Count > 0
+            ? character.ClassIds.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct(StringComparer.OrdinalIgnoreCase).ToList()
+            : new List<string> { character.ClassId };
+        if (classIds.Count == 0)
+            classIds.Add(character.ClassId);
+
+        int drainedExperience = classIds
+            .Select(classId => GetMidpointExperienceForLevel(classId, newLevel))
+            .Min();
+
+        int recordedHitPointLoss = character.HitPointGainByLevel
+            .Where(entry => entry.Key > newLevel && entry.Key <= oldLevel)
+            .Sum(entry => Math.Max(0, entry.Value));
+        int hitPointLoss = manualHitPointLoss > 0 ? manualHitPointLoss : recordedHitPointLoss;
+
+        foreach (int lostLevel in character.HitPointGainByLevel.Keys.Where(level => level > newLevel).ToList())
+            character.HitPointGainByLevel.Remove(lostLevel);
+
+        character.Level = newLevel;
+        character.ExperiencePoints = drainedExperience;
+        character.HitPoints = Math.Max(1, character.HitPoints - hitPointLoss);
+        character.CurrentHitPoints = Math.Clamp(character.CurrentHitPoints, 0, character.HitPoints);
+
+        string classToken = ResolvePrimaryClassToken(character.ClassId);
+        character.Thac0 = GetBaseThac0(character, classToken, newLevel);
+        character.AttackRate = GetWarriorAttackRate(classToken, newLevel);
+        ApplySpellSlotProgression(character, classToken, newLevel);
+        ApplyExperienceAdjustment(character, 0);
+
+        result.LevelLost = true;
+        result.NewLevel = character.Level;
+        result.LevelsLost = oldLevel - character.Level;
+        result.NewExperience = character.ExperiencePoints;
+        result.HitPointsLost = hitPointLoss;
+        return result;
+    }
+
+    public static ExperienceAdjustmentResult ApplyExperienceAdjustment(CharacterSheet character, int adjustment)
+    {
+        if (character is null)
+            throw new ArgumentNullException(nameof(character));
+
+        int oldExperience = Math.Max(0, character.ExperiencePoints);
+        int oldLevel = Math.Clamp(character.Level, 1, 20);
+        character.ExperiencePoints = (int)Math.Clamp((long)oldExperience + adjustment, 0L, int.MaxValue);
+
+        var classIds = character.ClassMode == "multiclass" && character.ClassIds.Count > 0
+            ? character.ClassIds.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct(StringComparer.OrdinalIgnoreCase).ToList()
+            : new List<string> { character.ClassId };
+        if (classIds.Count == 0 || classIds.All(string.IsNullOrWhiteSpace))
+            classIds = new List<string> { character.ClassId };
+
+        character.ClassLevels = classIds
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .ToDictionary(
+                id => id,
+                id => GetLevelForExperience(id, character.ExperiencePoints),
+                StringComparer.OrdinalIgnoreCase);
+
+        int newLevel = character.ClassLevels.Count > 0 ? character.ClassLevels.Values.Min() : 1;
+        character.Level = Math.Clamp(newLevel, 1, 20);
+
+        if (newLevel < oldLevel)
+        {
+            foreach (int lostLevel in character.HitPointGainByLevel.Keys.Where(level => level > newLevel).ToList())
+                character.HitPointGainByLevel.Remove(lostLevel);
+        }
+
+        string classToken = ResolvePrimaryClassToken(character.ClassId);
+        int primaryLevel = character.ClassLevels.GetValueOrDefault(character.ClassId, character.Level);
+        character.Thac0 = GetBaseThac0(character, classToken, primaryLevel);
+        character.AttackRate = GetWarriorAttackRate(classToken, primaryLevel);
+        ApplySpellSlotProgression(character, classToken, primaryLevel);
+
+        return new ExperienceAdjustmentResult
+        {
+            OldExperience = oldExperience,
+            NewExperience = character.ExperiencePoints,
+            OldLevel = oldLevel,
+            NewLevel = character.Level,
+            ClassLevels = new Dictionary<string, int>(character.ClassLevels, StringComparer.OrdinalIgnoreCase),
+        };
+    }
+
+    private static int GetMidpointExperienceForLevel(string classId, int level)
+    {
+        int clampedLevel = Math.Clamp(level, 1, 19);
+        int minimum = GetMinimumExperienceForLevel(classId, clampedLevel);
+        int nextMinimum = GetMinimumExperienceForLevel(classId, clampedLevel + 1);
+        return minimum + ((nextMinimum - minimum) / 2);
+    }
+
     public static void RecordHitPointGainAtLevel(CharacterSheet character, int level, int hitPointGain)
     {
         if (character is null)
@@ -282,7 +412,7 @@ public static class CharacterProgressionService
         bool withinRange = false;
         foreach (var id in classIds)
         {
-            var p = GetHitPointProfile(ResolvePrimaryClassToken(id));
+            var p = GetHitPointProfile(character, id);
             totalDie += p.HitDie;
             if (level <= p.HitDieLevels) withinRange = true;
         }
@@ -296,7 +426,7 @@ public static class CharacterProgressionService
     public static int GetConAndClassHpBonus(CharacterSheet character)
     {
         int conMod = GetConHitPointBonus(character, character.ClassId);
-        return conMod + character.Bonuses.HpPerLevel;
+        return conMod + GetPerLevelHpBonus(character);
     }
 
     public static int GetConHitPointBonus(CharacterSheet character, string classId)
@@ -348,16 +478,17 @@ public static class CharacterProgressionService
 
         int con = character.Abilities.GetValueOrDefault("con", 10);
         int totalRoll = 0;
+        int perLevelBonus = GetPerLevelHpBonus(character);
         foreach (var id in classIds)
         {
             string token = ResolvePrimaryClassToken(id);
-            var p = GetHitPointProfile(ResolvePrimaryClassToken(id));
+            var p = GetHitPointProfile(character, id);
             if (level <= p.HitDieLevels)
                 totalRoll += Random.Shared.Next(1, p.HitDie + 1);
             else
                 totalRoll += p.PostCapGain;
 
-            totalRoll += GetConHitPointBonus(character, token) + character.Bonuses.HpPerLevel;
+            totalRoll += GetConHitPointBonus(character, token) + perLevelBonus;
         }
 
         // Multiclass gains are additive: roll/apply each class once per level.
@@ -460,12 +591,13 @@ public static class CharacterProgressionService
             : new List<string> { ResolvePrimaryClassToken(character.ClassId) };
 
         int total = 0;
+        int perLevelBonus = GetPerLevelHpBonus(character);
         foreach (string token in classTokens)
         {
-            var profile = GetHitPointProfile(token);
+            var profile = GetHitPointProfile(character, token);
             int conMod = GetConHitPointBonus(character, token);
             int baseGain = level <= profile.HitDieLevels ? ((profile.HitDie + 1) / 2) : profile.PostCapGain;
-            total += baseGain + conMod + character.Bonuses.HpPerLevel;
+            total += baseGain + conMod + perLevelBonus;
         }
 
         return Math.Max(1, total);
@@ -483,6 +615,24 @@ public static class CharacterProgressionService
         };
     }
 
+    public static (int HitDie, int HitDieLevels, int PostCapGain) GetHitPointProfile(
+        CharacterSheet character,
+        string classId)
+    {
+        string token = ResolvePrimaryClassToken(classId);
+        var profile = GetHitPointProfile(token);
+        if (token is not ("wizard" or "mage" or "illusionist"))
+            return profile;
+
+        if (HasSelectedClassAbility(character, "wizard_improved_hit_die_d8"))
+            return (8, profile.HitDieLevels, profile.PostCapGain);
+
+        if (HasSelectedClassAbility(character, "wizard_hit_point_bonus"))
+            return (6, profile.HitDieLevels, profile.PostCapGain);
+
+        return profile;
+    }
+
     private static int GetConModifier(int con) => con switch
     {
         <= 6 => -2,
@@ -491,6 +641,15 @@ public static class CharacterProgressionService
         <= 16 => 1,
         _ => 2,
     };
+
+    private static int GetPerLevelHpBonus(CharacterSheet character)
+    {
+        if (character is null)
+            return 0;
+
+        bool isPlayersOption = string.Equals(character.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase);
+        return isPlayersOption ? character.Bonuses?.HpPerLevel ?? 0 : 0;
+    }
 
     private static int GetBaseThac0(CharacterSheet character, string classId, int level)
     {
@@ -714,6 +873,9 @@ public static class CharacterProgressionService
     {
         if (string.IsNullOrWhiteSpace(classId))
             return "fighter";
+
+        if (classId.Trim().StartsWith("specialty_priest_", StringComparison.OrdinalIgnoreCase))
+            return "druid";
 
         var parts = classId
             .Split(new[] { '/', '+', ',', ';', '|' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);

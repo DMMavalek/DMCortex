@@ -32,6 +32,14 @@
                              Foreground="{StaticResource BrushText}" VerticalAlignment="Center"/>
             </StackPanel>
 
+            <TextBlock Text="Class Source" Style="{StaticResource LabelText}" Margin="0,0,0,6"/>
+            <ComboBox x:Name="ClassSourceFilter" Style="{StaticResource DarkComboBox}"
+                      Margin="0,0,0,12" SelectionChanged="ClassSourceFilter_SelectionChanged">
+                <ComboBoxItem Content="All Classes" Tag="all" IsSelected="True"/>
+                <ComboBoxItem Content="Standard Classes" Tag="standard"/>
+                <ComboBoxItem Content="Custom Classes" Tag="custom"/>
+            </ComboBox>
+
             <!-- Single Class Mode -->
             <StackPanel x:Name="SingleClassPanel" Visibility="Visible">
                 <TextBlock x:Name="SingleClassLabel" Text="Classes available for your race:"
@@ -44,23 +52,37 @@
                          Height="220">
                     <ListBox.ItemContainerStyle>
                         <Style TargetType="ListBoxItem" BasedOn="{StaticResource DarkListBoxItem}">
-                            <Setter Property="IsEnabled" Value="{Binding IsEnabled}"/>
+                            <Setter Property="ToolTip" Value="{Binding AvailabilityHint}"/>
                         </Style>
                     </ListBox.ItemContainerStyle>
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding Name}" ToolTip="{Binding AvailabilityHint}" TextWrapping="Wrap">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Foreground" Value="{StaticResource BrushText}"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsEnabled}" Value="False">
-                                                <Setter Property="Foreground" Value="#C05050"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
+                            <StackPanel>
+                                <TextBlock Text="{Binding Name}" TextWrapping="Wrap">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="{StaticResource BrushText}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsEnabled}" Value="False">
+                                                    <Setter Property="Foreground" Value="#E07070"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <TextBlock Text="{Binding AvailabilityHint}" FontSize="10" TextWrapping="Wrap">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="{StaticResource BrushDim}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsEnabled}" Value="False">
+                                                    <Setter Property="Foreground" Value="#E07070"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>

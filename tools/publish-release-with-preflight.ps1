@@ -6,7 +6,8 @@ param(
     [string]$Token = '',
     [switch]$Draft,
     [switch]$Prerelease,
-    [switch]$RemoveOldInstallerVersions
+    [switch]$RemoveOldInstallerVersions,
+    [switch]$ForceInstallerBuild
 )
 
 $ErrorActionPreference = 'Stop'
@@ -24,53 +25,57 @@ if ([string]::IsNullOrWhiteSpace($resolvedToken)) {
 }
 
 Write-Host '[Release] Running preflight checks (version/changelog/offline defaults)...'
-& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $preflightScript -SkipBuild
-if ($LASTEXITCODE -ne 0) {
-    throw "Preflight failed with exit code $LASTEXITCODE"
+try {
+    & $preflightScript -SkipBuild
+}
+catch {
+    throw "Preflight failed: $($_.Exception.Message)"
 }
 
 Write-Host '[Release] Publishing release to GitHub...'
-$publishArgs = @(
-    '-NoProfile',
-    '-ExecutionPolicy', 'Bypass',
-    '-File', $publishScript
-)
+$publishArgs = @{}
 
 if (-not [string]::IsNullOrWhiteSpace($Tag)) {
-    $publishArgs += @('-Tag', $Tag)
+    $publishArgs['Tag'] = $Tag
 }
 
 if (-not [string]::IsNullOrWhiteSpace($Title)) {
-    $publishArgs += @('-Title', $Title)
+    $publishArgs['Title'] = $Title
 }
 
 if (-not [string]::IsNullOrWhiteSpace($Notes)) {
-    $publishArgs += @('-Notes', $Notes)
+    $publishArgs['Notes'] = $Notes
 }
 
 if (-not [string]::IsNullOrWhiteSpace($NotesFile)) {
-    $publishArgs += @('-NotesFile', $NotesFile)
+    $publishArgs['NotesFile'] = $NotesFile
 }
 
 if (-not [string]::IsNullOrWhiteSpace($resolvedToken)) {
-    $publishArgs += @('-Token', $resolvedToken)
+    $publishArgs['Token'] = $resolvedToken
 }
 
 if ($Draft) {
-    $publishArgs += '-Draft'
+    $publishArgs['Draft'] = $true
 }
 
 if ($Prerelease) {
-    $publishArgs += '-Prerelease'
+    $publishArgs['Prerelease'] = $true
 }
 
 if ($RemoveOldInstallerVersions) {
-    $publishArgs += '-RemoveOldInstallerVersions'
+    $publishArgs['RemoveOldInstallerVersions'] = $true
 }
 
-& powershell.exe @publishArgs
-if ($LASTEXITCODE -ne 0) {
-    throw "GitHub release publish failed with exit code $LASTEXITCODE"
+if ($ForceInstallerBuild) {
+    $publishArgs['ForceInstallerBuild'] = $true
+}
+
+try {
+    & $publishScript @publishArgs
+}
+catch {
+    throw "GitHub release publish failed: $($_.Exception.Message)"
 }
 
 Write-Host '[Release] GitHub publish complete.'

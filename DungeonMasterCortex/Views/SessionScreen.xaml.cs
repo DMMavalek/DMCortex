@@ -11,6 +11,7 @@ namespace DungeonMasterCortex.Views;
 
 public partial class SessionScreen : UserControl, IScreen
 {
+    private const int DefaultAutoSyncSeconds = 20;
     private readonly MainWindow _app;
     private readonly DispatcherTimer _autoSyncTimer;
     private bool _autoSyncInFlight;
@@ -60,6 +61,20 @@ public partial class SessionScreen : UserControl, IScreen
         if (string.IsNullOrWhiteSpace(TxtHostName.Text))
             TxtHostName.Text = "Dungeon Master";
 
+        if (string.IsNullOrWhiteSpace(TxtHostPort.Text))
+            TxtHostPort.Text = SessionService.DefaultHostPortValue.ToString();
+
+        if (string.IsNullOrWhiteSpace(TxtDirectPort.Text))
+            TxtDirectPort.Text = SessionService.DefaultHostPortValue.ToString();
+
+        if (string.IsNullOrWhiteSpace(TxtDiscoveryTimeoutMs.Text))
+            TxtDiscoveryTimeoutMs.Text = SessionService.DefaultDiscoveryTimeoutMsValue.ToString();
+
+        if (string.IsNullOrWhiteSpace(TxtAutoSyncSeconds.Text))
+            TxtAutoSyncSeconds.Text = DefaultAutoSyncSeconds.ToString();
+
+        ApplyAutoSyncIntervalFromUi();
+
         LoadCharacterChoices();
         if (_app.Sessions.ConnectedSession is not null)
             EnsureAutoSyncStarted();
@@ -77,12 +92,16 @@ public partial class SessionScreen : UserControl, IScreen
     {
         string sessionName = string.IsNullOrWhiteSpace(TxtSessionName.Text) ? "Saturday Table" : TxtSessionName.Text.Trim();
         string hostName = string.IsNullOrWhiteSpace(TxtHostName.Text) ? "Dungeon Master" : TxtHostName.Text.Trim();
+        int hostPort = ParsePortOrDefault(TxtHostPort.Text, SessionService.DefaultHostPortValue);
         var trustMode = CmbTrustMode.SelectedItem is SessionTrustMode selected
             ? selected
             : SessionTrustMode.FullPlayerTrust;
 
-        _app.Sessions.StartHosting(sessionName, _app.ActiveCampaignId, _app.Campaign.CampaignName, hostName, trustMode);
-        TxtDiscoveryStatus.Text = $"Hosting '{sessionName}'. Local discovery cache updated.";
+        bool lanVisible = ChkLanVisible.IsChecked != false;
+        _app.Sessions.StartHosting(sessionName, _app.ActiveCampaignId, _app.Campaign.CampaignName, hostName, trustMode, hostPort, lanVisible);
+        TxtDiscoveryStatus.Text = lanVisible
+            ? $"Hosting '{sessionName}' on port {hostPort}. LAN discovery is active."
+            : $"Hosting '{sessionName}' on port {hostPort}. LAN discovery is disabled; use direct join.";
         RefreshUi();
     }
 
@@ -97,19 +116,24 @@ public partial class SessionScreen : UserControl, IScreen
     {
         await RunBusyActionAsync(async () =>
         {
-            var sessions = (await _app.Sessions.DiscoverLanSessionsAsync()).ToList();
+            int timeoutMs = ParsePositiveIntOrDefault(TxtDiscoveryTimeoutMs.Text, SessionService.DefaultDiscoveryTimeoutMsValue);
+            var sessions = (await _app.Sessions.DiscoverLanSessionsAsync(timeoutMs)).ToList();
             LstSessions.ItemsSource = sessions;
             TxtDiscoveryStatus.Text = sessions.Count == 0
-                ? "No sessions discovered on LAN."
-                : $"Found {sessions.Count} session(s) on LAN.";
+                ? $"No sessions discovered on LAN in {timeoutMs} ms."
+                : $"Found {sessions.Count} session(s) on LAN in {timeoutMs} ms.";
         });
     }
 
     private async void BtnJoinSession_Click(object sender, RoutedEventArgs e)
     {
-        if (LstSessions.SelectedItem is not SessionInfo session)
+        SessionInfo? session = LstSessions.SelectedItem as SessionInfo;
+        if (session is null)
+            session = BuildManualSessionTarget();
+
+        if (session is null)
         {
-            MessageBox.Show("Select a session to join.", "Session Manager", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("Select a discovered session or enter a direct host and port.", "Session Manager", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
@@ -127,6 +151,7 @@ public partial class SessionScreen : UserControl, IScreen
 
         string version = AppUpdateService.GetCurrentVersion().ToString(3);
         var request = _app.Sessions.CreateJoinRequest(session.SessionId, playerName, character, version);
+        ApplyAutoSyncIntervalFromUi();
 
         await RunBusyActionAsync(async () =>
         {
@@ -268,8 +293,51 @@ public partial class SessionScreen : UserControl, IScreen
 
     private void EnsureAutoSyncStarted()
     {
+        ApplyAutoSyncIntervalFromUi();
         if (!_autoSyncTimer.IsEnabled)
             _autoSyncTimer.Start();
+    }
+
+    private void ApplyAutoSyncIntervalFromUi()
+    {
+        int seconds = ParsePositiveIntOrDefault(TxtAutoSyncSeconds.Text, DefaultAutoSyncSeconds);
+        _autoSyncTimer.Interval = TimeSpan.FromSeconds(Math.Clamp(seconds, 5, 600));
+    }
+
+    private SessionInfo? BuildManualSessionTarget()
+    {
+        string host = (TxtDirectHost.Text ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(host))
+            return null;
+
+        int port = ParsePortOrDefault(TxtDirectPort.Text, SessionService.DefaultHostPortValue);
+        return new SessionInfo
+        {
+            SessionId = $"direct-{host}-{port}",
+            SessionName = $"Direct {host}:{port}",
+            CampaignId = _app.ActiveCampaignId,
+            CampaignName = _app.Campaign.CampaignName,
+            HostDisplayName = host,
+            HostAddress = host,
+            HostPort = port,
+            TrustMode = SessionTrustMode.FullPlayerTrust,
+            IsLanVisible = false,
+            HostEdition = string.Empty,
+        };
+    }
+
+    private static int ParsePortOrDefault(string? text, int fallback)
+    {
+        if (!int.TryParse((text ?? string.Empty).Trim(), out int value))
+            return fallback;
+        return Math.Clamp(value, 1, 65535);
+    }
+
+    private static int ParsePositiveIntOrDefault(string? text, int fallback)
+    {
+        if (!int.TryParse((text ?? string.Empty).Trim(), out int value) || value <= 0)
+            return fallback;
+        return value;
     }
 
     private async Task SyncSelectedCharacterAsync(string source, bool forceSync)

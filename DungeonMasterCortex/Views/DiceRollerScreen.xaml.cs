@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using DungeonMasterCortex.Models;
 
 namespace DungeonMasterCortex.Views;
 
@@ -57,6 +58,9 @@ public partial class DiceRollerScreen : UserControl, IScreen
     {
         _app.SetBanner("Character Blueprint  ›  Dice Roller");
 
+        _app.CharGen.CharacterMode = CharGenState.NormalizeCharacterModeToken(_app.CharGen.CharacterMode);
+        bool isPlayersOption = string.Equals(_app.CharGen.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase);
+
         if (string.IsNullOrWhiteSpace(_app.CharGen.Method))
             _app.CharGen.Method = "method_v_4d6_drop_lowest";
 
@@ -64,9 +68,16 @@ public partial class DiceRollerScreen : UserControl, IScreen
         if (CmbMethod.SelectedIndex < 0) CmbMethod.SelectedIndex = 0;
         MethodDesc.Text = ((RollMethodOption)CmbMethod.SelectedItem).Description;
         MethodDesc.ToolTip = GetMethodTooltip(CmbMethod.SelectedValue?.ToString() ?? string.Empty);
-        RbCoreRules.IsChecked = _app.CharGen.CharacterMode != "players_option";
-        RbPlayersOption.IsChecked = _app.CharGen.CharacterMode == "players_option";
+        RbCoreRules.IsChecked = !isPlayersOption;
+        RbPlayersOption.IsChecked = isPlayersOption;
         UpdateManualEntryMode();
+
+        if (_app.CharGen.PendingDiceRoll && CmbMethod.SelectedItem is RollMethodOption pendingOption)
+        {
+            _app.CharGen.PendingDiceRoll = false;
+            RollSelectedMethod(pendingOption);
+            return;
+        }
 
         if (_app.CharGen.Abilities.Count > 0)
             LoadAssignedFromAbilities(_app.CharGen.Abilities);
@@ -101,6 +112,11 @@ public partial class DiceRollerScreen : UserControl, IScreen
             return;
         }
 
+        RollSelectedMethod(option);
+    }
+
+    private void RollSelectedMethod(RollMethodOption option)
+    {
         var scores = _app.Rules.GenerateDicePool(option.Id);
 
         _app.CharGen.Method = option.Id;
@@ -137,6 +153,7 @@ public partial class DiceRollerScreen : UserControl, IScreen
 
         if (CmbMethod.SelectedItem is not RollMethodOption option) return;
         _app.CharGen.CharacterMode = RbPlayersOption.IsChecked == true ? "players_option" : "core_rules";
+        _app.CharGen.CharacterMode = CharGenState.NormalizeCharacterModeToken(_app.CharGen.CharacterMode);
         _app.CharGen.Method = option.Id;
         _app.CharGen.Abilities = abilities;
         _app.GoTo("chargen_race");
@@ -145,6 +162,7 @@ public partial class DiceRollerScreen : UserControl, IScreen
     private void RulesetRadio_Checked(object sender, RoutedEventArgs e)
     {
         _app.CharGen.CharacterMode = RbPlayersOption.IsChecked == true ? "players_option" : "core_rules";
+        _app.CharGen.CharacterMode = CharGenState.NormalizeCharacterModeToken(_app.CharGen.CharacterMode);
     }
 
     private void BtnClear_Click(object sender, RoutedEventArgs e)

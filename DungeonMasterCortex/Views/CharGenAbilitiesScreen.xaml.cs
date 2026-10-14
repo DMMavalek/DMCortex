@@ -38,8 +38,9 @@ public partial class CharGenAbilitiesScreen : UserControl, IScreen
 
     private void BtnReroll_Click(object sender, RoutedEventArgs e)
     {
-        _app.CharGen.Abilities = _app.Rules.GenerateAbilities(_app.CharGen.Method);
-        RefreshScores();
+        _app.CharGen.Abilities.Clear();
+        _app.CharGen.PendingDiceRoll = true;
+        _app.GoTo("dice_roller");
     }
 
     private void RefreshScores()

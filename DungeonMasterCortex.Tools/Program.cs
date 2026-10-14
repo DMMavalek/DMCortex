@@ -17,6 +17,8 @@ using System.Windows.Threading;
 using ClosedXML.Excel;
 using DungeonMasterCortex.Models;
 using DungeonMasterCortex.Services;
+using PdfSharp.Pdf;
+using PdfSharp.Pdf.IO;
 
 if (args.Length == 0)
 {
@@ -42,7 +44,120 @@ if (args.Length > 0 && string.Equals(args[0], "import-wizard-spells", StringComp
     return;
 }
 
+if (args.Length > 0 && string.Equals(args[0], "xpx-audit", StringComparison.OrdinalIgnoreCase))
+{
+    string folderPath = args.Length > 1
+        ? args[1]
+        : Path.Combine("Assets", "XPX Files");
+
+    int exitCode = RunXpxAudit(folderPath);
+    Environment.ExitCode = exitCode;
+    return;
+}
+
+if (args.Length > 0 && string.Equals(args[0], "blank-sheet-pdf", StringComparison.OrdinalIgnoreCase))
+{
+    string outputPath = args.Length > 1
+        ? Path.GetFullPath(args[1])
+        : Path.GetFullPath("blank-color-character-sheet.pdf");
+
+    BlankCharacterSheetPdfService.Create(outputPath);
+    Console.WriteLine($"Created fillable character sheet: {outputPath}");
+    return;
+}
+
+if (args.Length > 0 && string.Equals(args[0], "mapped-sheet-roundtrip", StringComparison.OrdinalIgnoreCase))
+{
+    string outputPath = args.Length > 1
+        ? Path.GetFullPath(args[1])
+        : Path.GetFullPath(Path.Combine("artifacts", "audit", "mapped-sheet-roundtrip.pdf"));
+
+    Environment.ExitCode = RunMappedSheetRoundTrip(outputPath);
+    return;
+}
+
 RunEquipmentDescriptionImport();
+
+static int RunMappedSheetRoundTrip(string outputPath)
+{
+    Directory.CreateDirectory(Path.GetDirectoryName(outputPath) ?? ".");
+    string blankPath = Path.Combine(
+        Path.GetDirectoryName(outputPath) ?? ".",
+        Path.GetFileNameWithoutExtension(outputPath) + "-blank.pdf");
+
+    BlankCharacterSheetPdfService.Create(blankPath);
+    using (PdfDocument document = PdfReader.Open(blankPath, PdfDocumentOpenMode.Modify))
+    {
+        PdfDictionary acroForm = document.Internals.Catalog.Elements.GetDictionary("/AcroForm")
+            ?? throw new InvalidDataException("Generated PDF does not contain an AcroForm.");
+        PdfArray fields = acroForm.Elements.GetArray("/Fields")
+            ?? throw new InvalidDataException("Generated PDF does not contain form fields.");
+        var testValues = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["identity.name"] = "Mapped Test Character",
+            ["identity.player"] = "PDF Round Trip",
+            ["identity.race"] = "Human",
+            ["identity.class"] = "Fighter",
+            ["identity.level"] = "3",
+            ["identity.experience"] = "4000",
+            ["abilities.strength"] = "17",
+            ["abilities.dexterity"] = "14",
+            ["subabilities.strength.stamina"] = "16",
+            ["inventory.00.quantity"] = "2",
+            ["inventory.00.item"] = "Rope",
+            ["spells.slots.level_1"] = "2",
+        };
+
+        for (int index = 0; index < fields.Elements.Count; index++)
+        {
+            PdfDictionary? field = fields.Elements.GetDictionary(index);
+            if (field is null)
+                continue;
+            string fieldName = field.Elements.GetString("/T");
+            if (testValues.TryGetValue(fieldName, out string? value))
+                field.Elements.SetString("/V", value);
+        }
+
+        document.Save(outputPath);
+    }
+
+    var importer = new MappedCharacterSheetPdfImportService();
+    MappedCharacterSheetPdfImportService.ImportResult result = importer.Import(
+        outputPath,
+        new RulesEngine(),
+        new CharacterOptionCatalogService().GetCatalog());
+    CharacterSheet character = result.Character;
+
+    var failures = new List<string>();
+    Check(character.Name == "Mapped Test Character", "identity.name", failures);
+    Check(character.PlayerName == "PDF Round Trip", "identity.player", failures);
+    Check(character.RaceId == "human", "identity.race", failures);
+    Check(character.ClassIds.Contains("fighter", StringComparer.OrdinalIgnoreCase), "identity.class", failures);
+    Check(character.Level == 3, "identity.level", failures);
+    Check(character.ExperiencePoints == 4000, "identity.experience", failures);
+    Check(character.Abilities.GetValueOrDefault("str") == 17, "abilities.strength", failures);
+    Check(character.Abilities.GetValueOrDefault("dex") == 14, "abilities.dexterity", failures);
+    Check(character.SubAbilities.GetValueOrDefault("str_stamina") == 16, "subabilities.strength.stamina", failures);
+    Check(character.Equipment.Contains("Rope x2", StringComparer.OrdinalIgnoreCase), "inventory.00", failures);
+    Check(character.ArcaneSpellSlots.GetValueOrDefault(1) == 2, "spells.slots.level_1", failures);
+
+    File.Delete(blankPath);
+    if (failures.Count > 0)
+    {
+        Console.Error.WriteLine("Mapped PDF round trip failed: " + string.Join(", ", failures));
+        return 1;
+    }
+
+    Console.WriteLine($"Mapped PDF round trip passed: {outputPath}");
+    Console.WriteLine($"Imported {result.PopulatedFieldCount} populated fields with {result.Warnings.Count} warning(s).");
+    return 0;
+}
+
+static void Check(bool condition, string fieldName, List<string> failures)
+{
+    if (!condition)
+        failures.Add(fieldName);
+}
 
 static int RunActivationToolUi()
 {
@@ -1379,6 +1494,396 @@ static int RunActivationResponseGenerator(string[] args)
     Console.WriteLine(responseCode);
 
     return 0;
+}
+
+static int RunXpxAudit(string folderPath)
+{
+    if (!Directory.Exists(folderPath))
+    {
+        Console.Error.WriteLine($"XPX folder not found: {folderPath}");
+        return 2;
+    }
+
+    string[] files = Directory
+        .GetFiles(folderPath, "*.xpx", SearchOption.TopDirectoryOnly)
+        .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+        .ToArray();
+
+    if (files.Length == 0)
+    {
+        Console.Error.WriteLine($"No .xpx files found in: {folderPath}");
+        return 3;
+    }
+
+    var rules = new RulesEngine();
+    var classLookup = BuildClassLookup(rules);
+    var raceLookup = BuildRaceLookup(rules);
+    var spellLookup = BuildSpellLookup(rules);
+    var nwpLookup = BuildNwpLookup();
+    var playersOptionNwpIds = BuildPlayersOptionNwpIdSet();
+    var traitLookup = BuildTraitLookup();
+    var disadvantageLookup = BuildDisadvantageLookup();
+    var weaponLookup = BuildWeaponLookup(rules);
+    var racialAbilityLookup = BuildRacialAbilityLookup(rules);
+    var classAbilityLookup = BuildClassAbilityLookup(rules);
+    var equipmentLookup = BuildEquipmentLookup();
+    var knownTerms = BuildKnownTerms(rules, spellLookup, nwpLookup, equipmentLookup);
+
+    var importer = new XpxImportService();
+    var catalogs = new XpxImportService.XpxImportCatalogs(
+        spellLookup,
+        nwpLookup,
+        equipmentLookup,
+        playersOptionNwpIds,
+        traitLookup,
+        disadvantageLookup,
+        weaponLookup,
+        racialAbilityLookup,
+        classAbilityLookup);
+
+    var rows = new List<object>();
+
+    foreach (string file in files)
+    {
+        try
+        {
+            var result = importer.ImportCharacter(file, knownTerms, classLookup, raceLookup, catalogs);
+            CharacterSheet c = result.Character;
+            ApplyImportedDerivedState(c, rules, equipmentLookup.Values.ToList());
+
+            rows.Add(new
+            {
+                file = Path.GetFileName(file),
+                imported = true,
+                name = c.Name,
+                player = c.PlayerName,
+                party = c.Party,
+                race = c.RaceName,
+                className = c.ClassName,
+                classMode = c.ClassMode,
+                characterMode = c.CharacterMode,
+                level = c.Level,
+                xp = c.ExperiencePoints,
+                hp = c.HitPoints,
+                ac = c.ArmorClass,
+                thac0 = c.Thac0,
+                movement = c.Movement,
+                str = c.Abilities.TryGetValue("str", out int str) ? str : 0,
+                dex = c.Abilities.TryGetValue("dex", out int dex) ? dex : 0,
+                con = c.Abilities.TryGetValue("con", out int con) ? con : 0,
+                @int = c.Abilities.TryGetValue("int", out int intel) ? intel : 0,
+                wis = c.Abilities.TryGetValue("wis", out int wis) ? wis : 0,
+                cha = c.Abilities.TryGetValue("cha", out int cha) ? cha : 0,
+                pp = c.PlatinumPieces,
+                gp = c.GoldPieces,
+                sp = c.SilverPieces,
+                cp = c.CopperPieces,
+                equipmentCount = c.EquipmentSelections.Count,
+                equipmentListCount = c.Equipment.Count,
+                spellCount = c.TrackedSpellIds.Count,
+                nwpCount = c.NonweaponProficiencyIds.Count,
+                weaponProfCount = c.WeaponProficiencies.Count,
+                weaponProficiencies = c.WeaponProficiencies.Select(wp => wp.DisplayName).ToArray(),
+                traitCount = c.Traits.Count,
+                disadvantageCount = c.Disadvantages.Count,
+                racialAbilityCount = c.SelectedRacialAbilityIds.Count,
+                classAbilityCount = c.SelectedClassAbilityIds.Count,
+                racialAbilities = c.RacialAbilities.ToArray(),
+                subAbilityCount = c.SubAbilities.Count,
+                conHealth = c.SubAbilities.TryGetValue("con_health", out int conHealth) ? conHealth : 0,
+                conFitness = c.SubAbilities.TryGetValue("con_fitness", out int conFitness) ? conFitness : 0,
+                exceptionalStrength = c.ExceptionalStrength,
+                equipment = c.EquipmentSelections.Select(eq => eq.ItemName).ToArray(),
+                unresolvedCount = result.UnresolvedReferences.Count,
+                unresolved = result.UnresolvedReferences,
+                notes = c.Notes.Take(8).ToArray(),
+            });
+        }
+        catch (Exception ex)
+        {
+            rows.Add(new
+            {
+                file = Path.GetFileName(file),
+                imported = false,
+                error = ex.Message,
+            });
+        }
+    }
+
+    string outputDir = Path.Combine("artifacts", "audit");
+    Directory.CreateDirectory(outputDir);
+    string outputPath = Path.Combine(outputDir, "xpx-audit-report.json");
+    var payload = new
+    {
+        generatedAtUtc = DateTime.UtcNow,
+        folderPath,
+        fileCount = files.Length,
+        rows,
+    };
+
+    File.WriteAllText(outputPath, JsonSerializer.Serialize(payload, new JsonSerializerOptions { WriteIndented = true }));
+
+    Console.WriteLine($"XPX audit complete: {files.Length} file(s)");
+    Console.WriteLine($"Report: {outputPath}");
+    return 0;
+}
+
+static Dictionary<string, string> BuildClassLookup(RulesEngine rules)
+{
+    var lookup = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    foreach (var cls in rules.Classes.Values)
+    {
+        if (!string.IsNullOrWhiteSpace(cls.Id))
+            lookup[cls.Id] = cls.Id;
+        if (!string.IsNullOrWhiteSpace(cls.Name))
+            lookup[cls.Name] = cls.Id;
+    }
+
+    return lookup;
+}
+
+static Dictionary<string, string> BuildRaceLookup(RulesEngine rules)
+{
+    var lookup = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    foreach (var race in rules.Races.Values)
+    {
+        if (!string.IsNullOrWhiteSpace(race.Id))
+            lookup[race.Id] = race.Id;
+        if (!string.IsNullOrWhiteSpace(race.Name))
+            lookup[race.Name] = race.Id;
+        if (!string.IsNullOrWhiteSpace(race.BaseRaceId))
+            lookup[race.BaseRaceId] = race.Id;
+    }
+
+    return lookup;
+}
+
+static Dictionary<string, string> BuildSpellLookup(RulesEngine rules)
+{
+    var lookup = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    foreach (var spell in rules.Spells)
+    {
+        if (!string.IsNullOrWhiteSpace(spell.Id))
+            lookup[spell.Id] = spell.Id;
+        if (!string.IsNullOrWhiteSpace(spell.Name))
+            lookup[spell.Name] = spell.Id;
+    }
+
+    return lookup;
+}
+
+static Dictionary<string, string> BuildNwpLookup()
+{
+    var lookup = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    var catalog = new CharacterOptionCatalogService().GetCatalog().NonweaponProficiencies;
+    foreach (var nwp in catalog)
+    {
+        if (!string.IsNullOrWhiteSpace(nwp.Id))
+            lookup[nwp.Id] = nwp.Id;
+        if (!string.IsNullOrWhiteSpace(nwp.Name))
+            lookup[nwp.Name] = nwp.Id;
+    }
+
+    return lookup;
+}
+
+static HashSet<string> BuildPlayersOptionNwpIdSet()
+{
+    var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    var catalog = new CharacterOptionCatalogService().GetCatalog().NonweaponProficiencies;
+    foreach (var nwp in catalog)
+    {
+        if (string.IsNullOrWhiteSpace(nwp.Id) || string.IsNullOrWhiteSpace(nwp.Source))
+            continue;
+
+        if (nwp.Source.Contains("Player's Option", StringComparison.OrdinalIgnoreCase))
+            ids.Add(nwp.Id);
+    }
+
+    return ids;
+}
+
+static Dictionary<string, string> BuildTraitLookup()
+{
+    var lookup = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    var catalog = new CharacterOptionCatalogService().GetCatalog().Traits;
+    foreach (var trait in catalog)
+    {
+        if (!string.IsNullOrWhiteSpace(trait.Id))
+            lookup[trait.Id] = trait.Id;
+        if (!string.IsNullOrWhiteSpace(trait.Name))
+            lookup[trait.Name] = trait.Id;
+    }
+
+    return lookup;
+}
+
+static Dictionary<string, string> BuildDisadvantageLookup()
+{
+    var lookup = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    var catalog = new CharacterOptionCatalogService().GetCatalog().Disadvantages;
+    foreach (var disadvantage in catalog)
+    {
+        if (!string.IsNullOrWhiteSpace(disadvantage.Id))
+            lookup[disadvantage.Id] = disadvantage.Id;
+        if (!string.IsNullOrWhiteSpace(disadvantage.Name))
+            lookup[disadvantage.Name] = disadvantage.Id;
+    }
+
+    return lookup;
+}
+
+static Dictionary<string, string> BuildWeaponLookup(RulesEngine rules)
+{
+    var lookup = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    foreach (var weapon in rules.Weapons)
+    {
+        if (!string.IsNullOrWhiteSpace(weapon.Id))
+            lookup[weapon.Id] = weapon.Id;
+        if (!string.IsNullOrWhiteSpace(weapon.Name))
+            lookup[weapon.Name] = weapon.Id;
+
+        if (weapon.Name?.Contains(',', StringComparison.Ordinal) == true
+            || weapon.Name?.Contains('/', StringComparison.Ordinal) == true)
+        {
+            continue;
+        }
+
+        string[] words = (weapon.Name ?? string.Empty)
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (words.Length == 2)
+            lookup[$"{words[1]}, {words[0]}"] = weapon.Id;
+        if (words.Length == 3)
+            lookup[$"{words[2]}, {words[0]}/{words[1]}"] = weapon.Id;
+    }
+
+    return lookup;
+}
+
+static void ApplyImportedDerivedState(CharacterSheet character, RulesEngine rules, IReadOnlyList<CustomEquipmentData> equipmentLibrary)
+{
+    var rebuilt = rules.BuildCharacter(
+        character.Name,
+        character.RaceId,
+        character.ClassId,
+        new Dictionary<string, int>(character.Abilities, StringComparer.OrdinalIgnoreCase),
+        character.SelectedRacialAbilityIds,
+        character.SelectedClassAbilityIds,
+        character.ClassAbilityCarryoverPoints,
+        character.WizardSpecializationId,
+        new Dictionary<string, int>(character.SubAbilities, StringComparer.OrdinalIgnoreCase),
+        character.ExceptionalStrength,
+        character.RogueSkillArmorProfile,
+        Math.Max(1, character.Level),
+        character.CharacterMode);
+
+    character.StructuredAbilities = rebuilt.StructuredAbilities.ToList();
+    character.RacialAbilities = rebuilt.RacialAbilities.ToList();
+    character.Bonuses = rebuilt.Bonuses;
+    character.DerivedStats = new Dictionary<string, int>(rebuilt.DerivedStats, StringComparer.OrdinalIgnoreCase);
+    character.SubAbilityEffects = new Dictionary<string, string>(rebuilt.SubAbilityEffects, StringComparer.OrdinalIgnoreCase);
+    character.RacialPointBudget = rebuilt.RacialPointBudget;
+    character.RacialPointSpent = rebuilt.RacialPointSpent;
+    character.RacialPointRemaining = rebuilt.RacialPointRemaining;
+    character.ClassPointBudget = rebuilt.ClassPointBudget;
+    character.ClassPointSpent = rebuilt.ClassPointSpent;
+    character.ClassPointRemaining = rebuilt.ClassPointRemaining;
+
+    CharacterProgressionService.InitializeCharacterProgression(character, seedLevelRewards: false);
+    CharacterArmorService.RecalculateArmorForCharacter(character, equipmentLibrary);
+}
+
+static Dictionary<string, string> BuildRacialAbilityLookup(RulesEngine rules)
+{
+    var lookup = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    foreach (var race in rules.Races.Values)
+    {
+        foreach (var ability in race.StructuredAbilities)
+        {
+            if (!string.IsNullOrWhiteSpace(ability.Id))
+                lookup[ability.Id] = ability.Id;
+            if (!string.IsNullOrWhiteSpace(ability.Description))
+                lookup[ability.Description] = ability.Id;
+        }
+    }
+
+    return lookup;
+}
+
+static Dictionary<string, string> BuildClassAbilityLookup(RulesEngine rules)
+{
+    var lookup = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    foreach (var cls in rules.Classes.Values)
+    {
+        foreach (var ability in cls.StructuredAbilities)
+        {
+            if (!string.IsNullOrWhiteSpace(ability.Id))
+                lookup[ability.Id] = ability.Id;
+            if (!string.IsNullOrWhiteSpace(ability.Description))
+                lookup[ability.Description] = ability.Id;
+        }
+    }
+
+    return lookup;
+}
+
+static Dictionary<string, CustomEquipmentData> BuildEquipmentLookup()
+{
+    var lookup = new Dictionary<string, CustomEquipmentData>(StringComparer.OrdinalIgnoreCase);
+    var library = new EquipmentLibraryService().GetEquipmentLibrary();
+    foreach (var item in library)
+    {
+        if (!string.IsNullOrWhiteSpace(item.Id))
+            lookup[item.Id] = item;
+        if (!string.IsNullOrWhiteSpace(item.Name))
+            lookup[item.Name] = item;
+
+        string[] words = (item.Name ?? string.Empty)
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (words.Length == 2)
+            lookup[$"{words[1]}, {words[0]}"] = item;
+        if (words.Length == 3)
+            lookup[$"{words[2]}, {words[0]}/{words[1]}"] = item;
+    }
+
+    return lookup;
+}
+
+static HashSet<string> BuildKnownTerms(
+    RulesEngine rules,
+    IReadOnlyDictionary<string, string> spellLookup,
+    IReadOnlyDictionary<string, string> nwpLookup,
+    IReadOnlyDictionary<string, CustomEquipmentData> equipmentLookup)
+{
+    var known = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+    void Add(string? value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+            known.Add(value);
+    }
+
+    foreach (var cls in rules.Classes.Values)
+    {
+        Add(cls.Id);
+        Add(cls.Name);
+    }
+
+    foreach (var race in rules.Races.Values)
+    {
+        Add(race.Id);
+        Add(race.Name);
+        Add(race.BaseRaceId);
+    }
+
+    foreach (string key in spellLookup.Keys)
+        Add(key);
+    foreach (string key in nwpLookup.Keys)
+        Add(key);
+    foreach (string key in equipmentLookup.Keys)
+        Add(key);
+
+    return known;
 }
 
 static bool TryParseActivationRequest(string requestCode, out ActivationRequestPayload request, out string error)

@@ -451,6 +451,60 @@
                         </Grid>
                     </Grid>
                 </TabItem>
+
+                <TabItem x:Name="FaithTab" Header="Alignment &amp; Faith">
+                    <Grid Margin="16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="220"/>
+                            <ColumnDefinition Width="20"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <StackPanel x:Name="UpdateAlignmentPanel">
+                                <TextBlock Text="Alignment" Style="{StaticResource SubtitleText}"/>
+                                <ComboBox x:Name="UpdateAlignmentCombo" Margin="0,8,0,14"
+                                          Style="{StaticResource DarkComboBox}"
+                                          SelectionChanged="UpdateAlignmentCombo_SelectionChanged">
+                                    <ComboBoxItem Content="Lawful Good" Tag="LG"/>
+                                    <ComboBoxItem Content="Neutral Good" Tag="NG"/>
+                                    <ComboBoxItem Content="Chaotic Good" Tag="CG"/>
+                                    <ComboBoxItem Content="Lawful Neutral" Tag="LN"/>
+                                    <ComboBoxItem Content="True Neutral" Tag="N"/>
+                                    <ComboBoxItem Content="Chaotic Neutral" Tag="CN"/>
+                                    <ComboBoxItem Content="Lawful Evil" Tag="LE"/>
+                                    <ComboBoxItem Content="Neutral Evil" Tag="NE"/>
+                                    <ComboBoxItem Content="Chaotic Evil" Tag="CE"/>
+                                </ComboBox>
+                                <TextBlock x:Name="AlignmentRequirementText" Margin="0,0,0,14"
+                                           Style="{StaticResource BodyText}" Foreground="{StaticResource BrushDim}"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <CheckBox x:Name="EnableDeityRulesCheck" Content="Enable deity choices on this copy"
+                                      Margin="0,0,0,14" Foreground="{StaticResource BrushText}"
+                                      Checked="EnableDeityRulesCheck_Changed"
+                                      Unchecked="EnableDeityRulesCheck_Changed"/>
+                            <StackPanel x:Name="DeitySelectionPanel">
+                            <TextBlock Text="Deity" Style="{StaticResource SubtitleText}"/>
+                            <ComboBox x:Name="DeityCombo" Margin="0,8,0,0"
+                                      Style="{StaticResource DarkComboBox}"
+                                      DisplayMemberPath="Name"
+                                      SelectionChanged="DeityCombo_SelectionChanged"/>
+                            <TextBlock x:Name="FaithRequirementText" Margin="0,10,0,0"
+                                       Style="{StaticResource BodyText}" Foreground="{StaticResource BrushDim}"
+                                       TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </StackPanel>
+                        <StackPanel x:Name="DeityDetailsPanel" Grid.Column="2">
+                            <TextBlock x:Name="DeityNameText" Style="{StaticResource TitleText}" FontSize="18"/>
+                            <TextBlock x:Name="DeityProfileText" Margin="0,8,0,0"
+                                       Style="{StaticResource BodyText}" TextWrapping="Wrap"/>
+                            <TextBlock Text="FOLLOWER BENEFIT" Margin="0,18,0,0"
+                                       Style="{StaticResource SubtitleText}"/>
+                            <TextBlock x:Name="FollowerBenefitText" Margin="0,6,0,0"
+                                       Style="{StaticResource BodyText}" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Grid>
+                </TabItem>
             </TabControl>
         </Border>
     </Grid>

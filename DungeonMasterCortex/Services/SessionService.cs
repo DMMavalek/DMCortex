@@ -19,6 +19,7 @@ public class SessionService
 {
     private const int DefaultHostPort = 45731;
     private const int DiscoveryPort = 45732;
+    private const int DefaultDiscoveryTimeoutMs = 1200;
     private const string DiscoveryToken = "DMC_DISCOVER_V1";
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -58,6 +59,9 @@ public class SessionService
     public static bool NetworkingEnabled => true;
 #endif
 
+    public static int DefaultHostPortValue => DefaultHostPort;
+    public static int DefaultDiscoveryTimeoutMsValue => DefaultDiscoveryTimeoutMs;
+
     public AppEdition LocalEdition { get; }
     public string LocalPeerId { get; } = Guid.NewGuid().ToString("N");
     public SessionRuntimeState RuntimeState { get; private set; } = SessionRuntimeState.Idle;
@@ -79,7 +83,7 @@ public class SessionService
         }
     }
 
-    public HostedSessionState StartHosting(string sessionName, string campaignId, string campaignName, string hostDisplayName, SessionTrustMode trustMode, int port = DefaultHostPort)
+    public HostedSessionState StartHosting(string sessionName, string campaignId, string campaignName, string hostDisplayName, SessionTrustMode trustMode, int port = DefaultHostPort, bool isLanVisible = true)
     {
         StopHosting();
 
@@ -94,7 +98,7 @@ public class SessionService
             HostAddress = hostAddress,
             HostPort = port,
             TrustMode = trustMode,
-            IsLanVisible = true,
+            IsLanVisible = isLanVisible,
             StartedUtc = DateTime.UtcNow,
             HostEdition = LocalEdition.ToString(),
         };
@@ -212,7 +216,7 @@ public class SessionService
         }
     }
 
-    public async Task<IReadOnlyList<SessionInfo>> DiscoverLanSessionsAsync(int timeoutMs = 1200)
+    public async Task<IReadOnlyList<SessionInfo>> DiscoverLanSessionsAsync(int timeoutMs = DefaultDiscoveryTimeoutMs)
     {
         var found = new List<SessionInfo>();
 
@@ -502,7 +506,7 @@ public class SessionService
                     continue;
 
                 var session = HostedSession?.Session;
-                if (session is null)
+                if (session is null || !session.IsLanVisible)
                     continue;
 
                 string payload = JsonSerializer.Serialize(session, JsonOptions);

@@ -46,8 +46,11 @@
 
         <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
             <Button x:Name="BtnBack" Content="◀ CLOSE SHEET" Style="{StaticResource GoldButton}" Margin="0,0,16,0" Click="BtnBack_Click"/>
+            <Button x:Name="BtnResetLayout" Content="RESET LAYOUT" Style="{StaticResource DarkButton}" Margin="0,0,8,0" Click="BtnResetLayout_Click"/>
             <Button x:Name="BtnToggleExpandCollapse" Content="EXPAND ALL" Style="{StaticResource DarkButton}" Margin="0,0,8,0" Click="BtnToggleExpandCollapse_Click"/>
             <Button x:Name="BtnCopySummary" Content="COPY SHEET" Style="{StaticResource GoldButton}" Margin="0,0,8,0" Click="BtnCopySummary_Click"/>
+            <Button x:Name="BtnExportHtml" Content="EXPORT HTML" Style="{StaticResource GoldButton}" Margin="0,0,8,0" Click="BtnExportHtml_Click"/>
+            <Button x:Name="BtnExportBlankPdf" Content="MAPPED FILLABLE PDF" Style="{StaticResource GoldButton}" Margin="0,0,8,0" Click="BtnExportBlankPdf_Click"/>
             <Button x:Name="BtnPrintSummary" Content="PRINT SHEET" Style="{StaticResource GoldButton}" Click="BtnPrintSummary_Click"/>
         </StackPanel>
     </Grid>

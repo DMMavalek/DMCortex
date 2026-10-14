@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -16,11 +18,80 @@ public partial class CharGenEquipmentScreen : UserControl, IScreen
 {
     private const string AllCategories = "(All Categories)";
     private const string EquippedGroupKey = "__equipped__";
+    private const string EquipmentTypeAll = "All Items";
+    private const string EquipmentTypeRegular = "Regular Only";
+    private const string EquipmentTypeMagical = "Magical Only";
+    private const string ComponentFilterAll = "All Spell Components";
+    private const string ComponentFilterNeededOnly = "Needed Only";
+    private const string ComponentFilterNotNeededOnly = "Not Needed Only";
 
     private readonly MainWindow _app;
     private EquipmentCatalog _catalog = new(Array.Empty<EquipmentCategory>(), "");
     private Dictionary<string, CustomEquipmentData> _libraryById = new(StringComparer.OrdinalIgnoreCase);
+    private Dictionary<string, string> _componentUsageFullByNormalized = new(StringComparer.OrdinalIgnoreCase);
+    private Dictionary<string, string> _componentUsageConciseByNormalized = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly Dictionary<int, int[]> WizardSpellLimitsByCharacterLevel = new()
+    {
+        [1] = new[] { 1, 0, 0, 0, 0, 0, 0, 0, 0 },
+        [2] = new[] { 2, 0, 0, 0, 0, 0, 0, 0, 0 },
+        [3] = new[] { 2, 1, 0, 0, 0, 0, 0, 0, 0 },
+        [4] = new[] { 3, 2, 0, 0, 0, 0, 0, 0, 0 },
+        [5] = new[] { 4, 2, 1, 0, 0, 0, 0, 0, 0 },
+        [6] = new[] { 4, 2, 2, 0, 0, 0, 0, 0, 0 },
+        [7] = new[] { 4, 3, 2, 1, 0, 0, 0, 0, 0 },
+        [8] = new[] { 4, 3, 3, 2, 0, 0, 0, 0, 0 },
+        [9] = new[] { 4, 3, 3, 2, 1, 0, 0, 0, 0 },
+        [10] = new[] { 4, 4, 3, 2, 2, 0, 0, 0, 0 },
+        [11] = new[] { 4, 4, 4, 3, 3, 0, 0, 0, 0 },
+        [12] = new[] { 4, 4, 4, 4, 4, 1, 0, 0, 0 },
+        [13] = new[] { 5, 5, 5, 4, 4, 2, 0, 0, 0 },
+        [14] = new[] { 5, 5, 5, 4, 4, 2, 1, 0, 0 },
+        [15] = new[] { 5, 5, 5, 5, 5, 2, 1, 0, 0 },
+        [16] = new[] { 5, 5, 5, 5, 5, 3, 2, 1, 0 },
+        [17] = new[] { 5, 5, 5, 5, 5, 3, 3, 2, 0 },
+        [18] = new[] { 5, 5, 5, 5, 5, 3, 3, 2, 1 },
+        [19] = new[] { 5, 5, 5, 5, 5, 3, 3, 3, 1 },
+        [20] = new[] { 5, 5, 5, 5, 5, 4, 3, 3, 2 },
+    };
+
+    private static readonly Dictionary<string, string> WizardSchoolAccessByAbilityId = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["wizard_school_abjuration"] = "Abjuration",
+        ["wizard_school_alchemy"] = "Alchemy",
+        ["wizard_school_alteration"] = "Alteration",
+        ["wizard_school_artifice"] = "Artifice",
+        ["wizard_school_conjuration_summoning"] = "Conjuration/Summoning",
+        ["wizard_school_dimensional"] = "Dimensional",
+        ["wizard_school_divination"] = "Divination",
+        ["wizard_school_elemental_air"] = "Elemental (Air)",
+        ["wizard_school_elemental_earth"] = "Elemental (Earth)",
+        ["wizard_school_elemental_fire"] = "Elemental (Fire)",
+        ["wizard_school_elemental_water"] = "Elemental (Water)",
+        ["wizard_school_enchantment_charm"] = "Enchantment/Charm",
+        ["wizard_school_force"] = "Force",
+        ["wizard_school_geometry"] = "Geometry",
+        ["wizard_school_illusion"] = "Illusion",
+        ["wizard_school_invocation_evocation"] = "Invocation/Evocation",
+        ["wizard_school_necromancy"] = "Necromancy",
+        ["wizard_school_shadow"] = "Shadow",
+        ["wizard_school_song"] = "Song",
+        ["wizard_school_wild"] = "Wild Magic",
+    };
     private static readonly Dictionary<string, Dictionary<string, bool>> ExpansionStateByContext = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly Dictionary<string, int> MagicalSlotLimits = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["ring"] = 2,
+        ["armor"] = 1,
+        ["helmet"] = 1,
+        ["cloak"] = 1,
+        ["belt"] = 1,
+        ["boots"] = 1,
+        ["bracers"] = 1,
+        ["amulet"] = 1,
+        ["gloves"] = 1,
+        ["robe"] = 1,
+        ["other"] = 1,
+    };
     private bool _suppressExpansionStateEvents;
 
     private enum ArmorTier
@@ -33,8 +104,8 @@ public partial class CharGenEquipmentScreen : UserControl, IScreen
 
     private sealed record ArmorUsageRules(ArmorTier MaxArmorTier, bool CanUseShield, string Source);
 
-    private record AvailableRow(EquipmentCatalogItem Item, string Label, string CostText, string Description);
-    private record SelectedRow(EquipmentSelection? Selection, string Label, string QuantityText, string CostText, string Description, string SlotIcon, bool IsGem, string GroupName);
+    private record AvailableRow(EquipmentCatalogItem Item, string Label, string CostText, string Description, string TooltipDescription, Brush LabelBrush, bool IsSpellComponentItem, bool IsRequiredSpellComponent);
+    private record SelectedRow(EquipmentSelection? Selection, string Label, string QuantityText, string CostText, string Description, string TooltipDescription, string SlotIcon, bool IsGem, string GroupName);
 
     public UIElement View => this;
 
@@ -65,17 +136,86 @@ public partial class CharGenEquipmentScreen : UserControl, IScreen
             nextAction: () => _app.GoTo(hasWizardStep ? "chargen_wizard_spells" : "chargen_review"));
 
         _catalog = new EquipmentCatalogService().GetCatalog();
-        _libraryById = new EquipmentLibraryService().GetEquipmentLibrary()
-            .GroupBy(x => EquipmentLibraryService.CanonicalizeId(x.Id), StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(g => g.Key, g => g.Last(), StringComparer.OrdinalIgnoreCase);
+        string? magicalImportNote = LoadEquipmentLibraryWithMagicalFallback();
+        if (string.IsNullOrWhiteSpace(_app.CharGen.EquippedMainWeaponId) && !string.IsNullOrWhiteSpace(_app.CharGen.EquippedWeaponId))
+            _app.CharGen.EquippedMainWeaponId = _app.CharGen.EquippedWeaponId;
+        if (string.IsNullOrWhiteSpace(_app.CharGen.EquippedWeaponId) && !string.IsNullOrWhiteSpace(_app.CharGen.EquippedMainWeaponId))
+            _app.CharGen.EquippedWeaponId = _app.CharGen.EquippedMainWeaponId;
         EnsureStartingFundsForCharGen();
         PopulateCategoryFilter();
+        PopulateEquipmentTypeFilter();
+        PopulateSpellComponentFilter();
+        SyncSpellComponentToggleForCurrentClass();
         RefreshLists();
         SetTransactionStatus("Last transaction: none yet.", Brushes.Gray);
 
-        ImportStatusText.Text = string.IsNullOrWhiteSpace(_catalog.LoadMessage)
+        string importStatus = string.IsNullOrWhiteSpace(_catalog.LoadMessage)
             ? "Tables XXXI (Weapons) and XXXII (Armor) are intentionally excluded for dedicated mechanics."
             : _catalog.LoadMessage;
+
+        if (!string.IsNullOrWhiteSpace(magicalImportNote))
+            importStatus = $"{importStatus}\n{magicalImportNote}";
+
+        ImportStatusText.Text = importStatus;
+    }
+
+    private string? LoadEquipmentLibraryWithMagicalFallback()
+    {
+        var libraryService = new EquipmentLibraryService();
+        var library = libraryService.GetEquipmentLibrary().ToList();
+
+        if (library.Any(x => x.IsMagical))
+        {
+            SetLibraryLookup(library);
+            return null;
+        }
+
+        string? workbookPath = FindMagicItemsWorkbookPath();
+        if (string.IsNullOrWhiteSpace(workbookPath))
+        {
+            SetLibraryLookup(library);
+            return "Magical workbook not found; magical items were not auto-imported.";
+        }
+
+        try
+        {
+            var importResult = new MagicalItemImportService().ImportFromWorkbook(workbookPath);
+            library = libraryService.GetEquipmentLibrary().ToList();
+            SetLibraryLookup(library);
+            return $"Auto-imported magical items from {Path.GetFileName(workbookPath)} (imported {importResult.ImportedRows}, created {importResult.CreatedRows}, updated {importResult.UpdatedRows}).";
+        }
+        catch (Exception ex)
+        {
+            SetLibraryLookup(library);
+            return $"Magical auto-import failed: {ex.Message}";
+        }
+    }
+
+    private void SetLibraryLookup(IEnumerable<CustomEquipmentData> library)
+    {
+        _libraryById = library
+            .GroupBy(x => EquipmentLibraryService.CanonicalizeId(x.Id), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.Last(), StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static string? FindMagicItemsWorkbookPath()
+    {
+        foreach (var startPath in new[] { AppContext.BaseDirectory, Directory.GetCurrentDirectory() }
+                     .Where(p => !string.IsNullOrWhiteSpace(p))
+                     .Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            var dir = new DirectoryInfo(startPath);
+            while (dir is not null)
+            {
+                string candidate = Path.Combine(dir.FullName, "Assets", "Magical Items", "Magic Items.xlsx");
+                if (File.Exists(candidate))
+                    return candidate;
+
+                dir = dir.Parent;
+            }
+        }
+
+        return null;
     }
 
     private void SetTransactionStatus(string message, Brush? color = null)
@@ -194,12 +334,83 @@ public partial class CharGenEquipmentScreen : UserControl, IScreen
     private void PopulateCategoryFilter()
     {
         var categories = new List<string> { AllCategories };
-        categories.AddRange(_catalog.Categories
-            .OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase)
-            .Select(GetCategoryDisplayName));
+        categories.AddRange(_libraryById.Values
+            .SelectMany(x => x.Categories)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(EquipmentLibraryService.NormalizeCategoryLabel)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase));
 
         CategoryFilter.ItemsSource = categories;
         CategoryFilter.SelectedIndex = 0;
+    }
+
+    private void PopulateEquipmentTypeFilter()
+    {
+        EquipmentTypeFilter.ItemsSource = new[]
+        {
+            EquipmentTypeAll,
+            EquipmentTypeRegular,
+            EquipmentTypeMagical,
+        };
+        EquipmentTypeFilter.SelectedItem = EquipmentTypeAll;
+    }
+
+    private void PopulateSpellComponentFilter()
+    {
+        SpellComponentNeedFilter.ItemsSource = new[]
+        {
+            ComponentFilterAll,
+            ComponentFilterNeededOnly,
+            ComponentFilterNotNeededOnly,
+        };
+        SpellComponentNeedFilter.SelectedItem = ComponentFilterAll;
+    }
+
+    private void SyncSpellComponentToggleForCurrentClass()
+    {
+        bool canUse = SupportsSpellComponentsForCurrentClass();
+        if (!canUse)
+            _app.CharGen.UseSpellComponents = false;
+
+        if (UseSpellComponentsToggle is not null)
+        {
+            UseSpellComponentsToggle.Visibility = canUse ? Visibility.Visible : Visibility.Collapsed;
+            UseSpellComponentsToggle.IsChecked = canUse && _app.CharGen.UseSpellComponents;
+        }
+
+        if (SpellComponentNeedFilter is not null)
+        {
+            SpellComponentNeedFilter.Visibility = canUse && _app.CharGen.UseSpellComponents
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+        }
+    }
+
+    private bool SupportsSpellComponentsForCurrentClass()
+    {
+        var classIds = _app.CharGen.SelectedClassIds.Count > 0
+            ? _app.CharGen.SelectedClassIds
+            : string.IsNullOrWhiteSpace(_app.CharGen.ClassId)
+                ? new List<string>()
+                : new List<string> { _app.CharGen.ClassId };
+
+        return classIds.Any(IsSpellComponentClassId);
+    }
+
+    private static bool IsSpellComponentClassId(string classId)
+    {
+        string token = (classId ?? string.Empty).Trim();
+        return token.Equals("wizard", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("mage", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("illusionist", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("priest", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("cleric", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("druid", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("paladin", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("ranger", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("bard", StringComparison.OrdinalIgnoreCase)
+            || RulesEngine.IsPriestClassId(token);
     }
 
     private void RefreshLists()
@@ -208,25 +419,72 @@ public partial class CharGenEquipmentScreen : UserControl, IScreen
 
         string category = CategoryFilter.SelectedItem as string ?? AllCategories;
         string search = EquipmentSearchBox?.Text.Trim() ?? string.Empty;
+        string equipmentType = EquipmentTypeFilter?.SelectedItem as string ?? EquipmentTypeAll;
+        string componentFilter = SpellComponentNeedFilter?.SelectedItem as string ?? ComponentFilterAll;
+        bool usingSpellComponents = _app.CharGen.UseSpellComponents && SupportsSpellComponentsForCurrentClass();
+        RebuildSpellComponentUsageCaches(usingSpellComponents);
+        // "Needed" = only the character's actually chosen/known spells (drives filter + highlight)
+        var neededComponents = BuildNeededMaterialComponentNames(knownSpellsOnly: true);
+        int neededCount = neededComponents.Count;
+        var availableSource = BuildAvailableItemsFromLibrary();
+        if (usingSpellComponents)
+        {
+            // For catalog injection also include all accessible-by-school spells so components
+            // that could be needed are available to browse, but the "needed" set stays tight.
+            var catalogComponents = BuildNeededMaterialComponentNames(knownSpellsOnly: false);
+            EnsureNeededSpellComponentsInAvailableList(availableSource, catalogComponents);
+        }
         var selectedById = _app.CharGen.SelectedEquipment
             .GroupBy(x => EquipmentLibraryService.CanonicalizeId(x.ItemId), StringComparer.OrdinalIgnoreCase)
             .ToDictionary(g => g.Key, g => g.Sum(s => Math.Max(1, s.Quantity)), StringComparer.OrdinalIgnoreCase);
 
-        var available = _catalog.Categories
-            .Where(c => category == AllCategories || category.Equals(GetCategoryDisplayName(c), StringComparison.OrdinalIgnoreCase))
-            .SelectMany(c => c.Items)
+        var available = availableSource
+            .Where(i => category == AllCategories || category.Equals(i.Category, StringComparison.OrdinalIgnoreCase))
+            .Where(i =>
+            {
+                if (string.Equals(equipmentType, EquipmentTypeAll, StringComparison.OrdinalIgnoreCase))
+                    return true;
+
+                _libraryById.TryGetValue(EquipmentLibraryService.CanonicalizeId(i.ItemId), out var detail);
+                bool isMagical = detail?.IsMagical == true;
+                if (string.Equals(equipmentType, EquipmentTypeMagical, StringComparison.OrdinalIgnoreCase))
+                    return isMagical;
+                return !isMagical;
+            })
             .Where(i => string.IsNullOrWhiteSpace(search)
                 || i.ItemName.Contains(search, StringComparison.OrdinalIgnoreCase)
                 || i.Category.Contains(search, StringComparison.OrdinalIgnoreCase)
                 || i.CostText.Contains(search, StringComparison.OrdinalIgnoreCase)
                 || BuildCatalogItemDescription(i).Contains(search, StringComparison.OrdinalIgnoreCase))
+            .Where(i =>
+            {
+                if (!usingSpellComponents)
+                    return true;
+
+                bool isSpellComponent = IsSpellComponentsCategory(i.Category);
+                if (!isSpellComponent)
+                    return true;
+
+                bool required = IsRequiredSpellComponentItem(i, neededComponents);
+                return componentFilter switch
+                {
+                    ComponentFilterNeededOnly => required,
+                    ComponentFilterNotNeededOnly => !required,
+                    _ => true,
+                };
+            })
             .Where(i => CanUseCatalogItem(i, out _))
             .OrderBy(i => i.Category)
             .ThenBy(i => NormalizeSwordName(i.ItemName), StringComparer.OrdinalIgnoreCase)
             .Select(i =>
             {
                 string qtySuffix = selectedById.TryGetValue(EquipmentLibraryService.CanonicalizeId(i.ItemId), out int qty) ? $"  (owned x{qty})" : string.Empty;
-                return new AvailableRow(i, $"{NormalizeSwordName(i.ItemName)}{qtySuffix}", i.CostText, BuildCatalogItemDescription(i));
+                bool isSpellComponent = IsSpellComponentsCategory(i.Category);
+                bool required = usingSpellComponents && isSpellComponent && IsRequiredSpellComponentItem(i, neededComponents);
+                Brush labelBrush = usingSpellComponents && isSpellComponent
+                    ? (required ? Brushes.Black : Brushes.IndianRed)
+                    : (Brush)FindResource("BrushText");
+                return new AvailableRow(i, $"{NormalizeSwordName(i.ItemName)}{qtySuffix}", i.CostText, BuildCatalogItemDescription(i), BuildCatalogItemTooltipDescription(i), labelBrush, isSpellComponent, required);
             })
             .ToList();
 
@@ -241,17 +499,35 @@ public partial class CharGenEquipmentScreen : UserControl, IScreen
                     slotIcon = "[A]";
                 else if (string.Equals(EquipmentLibraryService.CanonicalizeId(_app.CharGen.EquippedShieldId), canonId, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(_app.CharGen.EquippedShieldId))
                     slotIcon = "[S]";
-                else if (string.Equals(EquipmentLibraryService.CanonicalizeId(_app.CharGen.EquippedWeaponId), canonId, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(_app.CharGen.EquippedWeaponId))
-                    slotIcon = "[W]";
+                else
+                {
+                    bool isMain = string.Equals(EquipmentLibraryService.CanonicalizeId(_app.CharGen.EquippedMainWeaponId), canonId, StringComparison.OrdinalIgnoreCase)
+                        && !string.IsNullOrWhiteSpace(_app.CharGen.EquippedMainWeaponId);
+                    bool isOff = string.Equals(EquipmentLibraryService.CanonicalizeId(_app.CharGen.EquippedOffHandWeaponId), canonId, StringComparison.OrdinalIgnoreCase)
+                        && !string.IsNullOrWhiteSpace(_app.CharGen.EquippedOffHandWeaponId);
+                    if (isMain || isOff)
+                    {
+                        slotIcon = isMain && isOff ? "[M/O]" : isMain ? "[M]" : "[O]";
+                    }
+                    else
+                    {
+                        _libraryById.TryGetValue(canonId, out var detail);
+                        string magicalSlot = ResolveMagicalSlotKey(detail, x);
+                        bool magicalEquipped = !string.IsNullOrWhiteSpace(magicalSlot) && IsMagicalItemEquipped(canonId);
+                        if (magicalEquipped)
+                            slotIcon = $"[{magicalSlot.ToUpperInvariant()}]";
+                    }
+                }
                 return new SelectedRow(
                     x,
                     NormalizeSwordName(x.ItemName),
                     $"x{Math.Max(1, x.Quantity)}",
                     x.CostText,
                     BuildSelectedItemDescription(x),
+                    BuildSelectedItemTooltipDescription(x),
                     slotIcon,
                     false,
-                    string.IsNullOrWhiteSpace(x.Category) ? "Other" : x.Category);
+                        string.IsNullOrWhiteSpace(x.Category) ? "Other" : EquipmentLibraryService.NormalizeCategoryLabel(x.Category));
             })
             .ToList();
 
@@ -266,6 +542,7 @@ public partial class CharGenEquipmentScreen : UserControl, IScreen
                     name,
                     string.Empty,
                     $"{value} gp",
+                    "Gem item",
                     "Gem item",
                     "[G]",
                     true,
@@ -292,6 +569,846 @@ public partial class CharGenEquipmentScreen : UserControl, IScreen
         }
         RefreshFundsSummary();
         RefreshEquippedDisplay();
+        RefreshSpellComponentStatus(neededCount);
+    }
+
+    private void RefreshSpellComponentStatus(int neededCount)
+    {
+        bool canUse = SupportsSpellComponentsForCurrentClass();
+        bool usingSpellComponents = canUse && _app.CharGen.UseSpellComponents;
+
+        if (SpellComponentStatusText is not null)
+        {
+            SpellComponentStatusText.Visibility = canUse ? Visibility.Visible : Visibility.Collapsed;
+            if (!canUse)
+            {
+                SpellComponentStatusText.Text = string.Empty;
+            }
+            else if (!usingSpellComponents)
+            {
+                SpellComponentStatusText.Text = "Spell components are OFF for this character.";
+                SpellComponentStatusText.Foreground = (Brush)FindResource("BrushDim");
+            }
+            else if (neededCount == 0)
+            {
+                SpellComponentStatusText.Text = "Spell components are ON. No learned/material spell requirements found yet.";
+                SpellComponentStatusText.Foreground = (Brush)FindResource("BrushDim");
+            }
+            else
+            {
+                SpellComponentStatusText.Text = $"Spell components are ON. Needed materials identified: {neededCount}. Black = needed, red = not currently needed.";
+                SpellComponentStatusText.Foreground = (Brush)FindResource("BrushText");
+            }
+        }
+
+        if (SpellComponentNeedFilter is not null)
+            SpellComponentNeedFilter.Visibility = usingSpellComponents ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private HashSet<string> BuildNeededMaterialComponentNames(bool knownSpellsOnly = false)
+    {
+        var spellIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (string id in _app.CharGen.WizardSpellbookIds)
+        {
+            if (!string.IsNullOrWhiteSpace(id))
+                spellIds.Add(id.Trim());
+        }
+
+        foreach (var list in _app.CharGen.WizardSpellLists)
+        {
+            foreach (string id in list?.SpellIds ?? new List<string>())
+            {
+                if (!string.IsNullOrWhiteSpace(id))
+                    spellIds.Add(id.Trim());
+            }
+        }
+
+        // When knownSpellsOnly=true, skip school-based expansion so the "needed" filter
+        // only highlights components for spells the character has actually chosen.
+        // For priest/bard who have no pre-selected spell list, always include accessible spells
+        // so they still see relevant components.
+        if (!knownSpellsOnly)
+        {
+            AddClassAccessibleSpellIdsForComponents(spellIds);
+        }
+        else
+        {
+            // Still include priest/bard spells (they choose at cast time, not in advance)
+            AddPriestAndBardSpellIdsForComponents(spellIds);
+        }
+
+        var materials = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (string id in spellIds)
+        {
+            var spell = _app.Rules.Spells.FirstOrDefault(s => string.Equals(s.Id, id, StringComparison.OrdinalIgnoreCase));
+            if (spell is null)
+                continue;
+
+            foreach (var material in ExtractMaterialComponents(spell.Materials))
+            {
+                string normalized = NormalizeComponentName(material);
+                if (!string.IsNullOrWhiteSpace(normalized))
+                    materials.Add(normalized);
+            }
+
+            foreach (var component in ExtractComponentColumnItems(spell.Components))
+            {
+                string normalized = NormalizeComponentName(component);
+                if (!string.IsNullOrWhiteSpace(normalized))
+                    materials.Add(normalized);
+            }
+        }
+
+        return materials;
+    }
+
+    private void EnsureNeededSpellComponentsInAvailableList(List<EquipmentCatalogItem> availableSource, HashSet<string> neededComponents)
+    {
+        if (neededComponents.Count == 0)
+            return;
+
+        var knownSpellComponents = availableSource
+            .Where(item => IsSpellComponentsCategory(item.Category))
+            .Select(item => NormalizeComponentName(item.ItemName))
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (string needed in neededComponents)
+        {
+            if (string.IsNullOrWhiteSpace(needed) || knownSpellComponents.Contains(needed))
+                continue;
+
+            string baseId = "component_auto_" + Regex.Replace(needed.ToLowerInvariant(), @"[^a-z0-9]+", "_").Trim('_');
+            if (string.IsNullOrWhiteSpace(baseId) || baseId == "component_auto_")
+                baseId = "component_auto_misc";
+
+            string id = baseId;
+            int suffix = 2;
+            while (availableSource.Any(item => string.Equals(item.ItemId, id, StringComparison.OrdinalIgnoreCase)))
+            {
+                id = $"{baseId}_{suffix}";
+                suffix++;
+            }
+
+            availableSource.Add(new EquipmentCatalogItem(
+                id,
+                "Spell Components",
+                "AUTO",
+                ToDisplayNameFromComponent(needed),
+                "0 gp"));
+
+            knownSpellComponents.Add(needed);
+        }
+    }
+
+    private static string ToDisplayNameFromComponent(string normalizedComponent)
+    {
+        string text = (normalizedComponent ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(text))
+            return "Unknown Component";
+
+        return CultureInfo.InvariantCulture.TextInfo.ToTitleCase(text.Replace('-', ' '));
+    }
+
+    private void AddClassAccessibleSpellIdsForComponents(HashSet<string> spellIds)
+    {
+        var classIds = _app.CharGen.SelectedClassIds.Count > 0
+            ? _app.CharGen.SelectedClassIds
+            : string.IsNullOrWhiteSpace(_app.CharGen.ClassId)
+                ? new List<string>()
+                : new List<string> { _app.CharGen.ClassId };
+
+        bool hasDivineCaster = classIds.Any(IsPriestLikeClassId);
+        bool hasBard = classIds.Any(id => string.Equals((id ?? string.Empty).Trim(), "bard", StringComparison.OrdinalIgnoreCase));
+        bool hasWizardCaster = classIds.Any(IsWizardClassId);
+
+        if (hasWizardCaster)
+            AddWizardAccessibleSpellIdsForComponents(spellIds);
+
+        if (hasDivineCaster)
+        {
+            var sphereAccess = GatherCharGenSphereAccess();
+            foreach (var spell in _app.Rules.Spells.Where(IsDivineSpell))
+            {
+                if (!IsDivineSpellAllowedForCharGen(spell, sphereAccess))
+                    continue;
+
+                if (!string.IsNullOrWhiteSpace(spell.Id))
+                    spellIds.Add(spell.Id.Trim());
+            }
+        }
+
+        if (hasBard)
+        {
+            int maxBardSpellLevel = GetEstimatedBardArcaneMaxSpellLevel(Math.Max(1, _app.CharGen.CharacterLevel));
+            if (maxBardSpellLevel > 0)
+            {
+                foreach (var spell in _app.Rules.Spells.Where(IsArcaneSpell))
+                {
+                    if (ParseSpellLevelSafe(spell.Level) <= maxBardSpellLevel
+                        && !string.IsNullOrWhiteSpace(spell.Id))
+                    {
+                        spellIds.Add(spell.Id.Trim());
+                    }
+                }
+            }
+        }
+    }
+
+    private void AddPriestAndBardSpellIdsForComponents(HashSet<string> spellIds)
+    {
+        var classIds = _app.CharGen.SelectedClassIds.Count > 0
+            ? _app.CharGen.SelectedClassIds
+            : string.IsNullOrWhiteSpace(_app.CharGen.ClassId)
+                ? new List<string>()
+                : new List<string> { _app.CharGen.ClassId };
+
+        bool hasDivineCaster = classIds.Any(IsPriestLikeClassId);
+        bool hasBard = classIds.Any(id => string.Equals((id ?? string.Empty).Trim(), "bard", StringComparison.OrdinalIgnoreCase));
+
+        if (hasDivineCaster)
+        {
+            var sphereAccess = GatherCharGenSphereAccess();
+            foreach (var spell in _app.Rules.Spells.Where(IsDivineSpell))
+            {
+                if (!IsDivineSpellAllowedForCharGen(spell, sphereAccess))
+                    continue;
+                if (!string.IsNullOrWhiteSpace(spell.Id))
+                    spellIds.Add(spell.Id.Trim());
+            }
+        }
+
+        if (hasBard)
+        {
+            int maxBardSpellLevel = GetEstimatedBardArcaneMaxSpellLevel(Math.Max(1, _app.CharGen.CharacterLevel));
+            if (maxBardSpellLevel > 0)
+            {
+                foreach (var spell in _app.Rules.Spells.Where(IsArcaneSpell))
+                {
+                    if (ParseSpellLevelSafe(spell.Level) <= maxBardSpellLevel
+                        && !string.IsNullOrWhiteSpace(spell.Id))
+                    {
+                        spellIds.Add(spell.Id.Trim());
+                    }
+                }
+            }
+        }
+    }
+
+    private void AddWizardAccessibleSpellIdsForComponents(HashSet<string> spellIds)
+    {
+        var allowedSchools = GatherCharGenWizardAllowedSchools();
+        var blockedSchools = GatherCharGenWizardBlockedSchools();
+        int maxCastableLevel = GetHighestWizardCastableSpellLevel();
+        if (maxCastableLevel <= 0)
+            return;
+
+        foreach (var spell in _app.Rules.Spells.Where(IsArcaneSpell))
+        {
+            if (ParseSpellLevelSafe(spell.Level) > maxCastableLevel)
+                continue;
+
+            if (!IsWizardSpellAllowedForComponents(spell, allowedSchools, blockedSchools))
+                continue;
+
+            if (!string.IsNullOrWhiteSpace(spell.Id))
+                spellIds.Add(spell.Id.Trim());
+        }
+    }
+
+    private HashSet<string> GatherCharGenWizardAllowedSchools()
+    {
+        var selected = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var (school, isSelected) in _app.CharGen.SelectedWizardSchools)
+        {
+            if (!isSelected)
+                continue;
+
+            string normalized = NormalizeWizardSchoolName(school);
+            if (!string.IsNullOrWhiteSpace(normalized))
+                selected.Add(normalized);
+        }
+
+        foreach (string classId in GetWizardClassIdsInCharGen())
+        {
+            if (!_app.CharGen.SchoolsByClass.TryGetValue(classId, out var classSchools))
+                continue;
+
+            foreach (var (school, isSelected) in classSchools)
+            {
+                if (!isSelected)
+                    continue;
+
+                string normalized = NormalizeWizardSchoolName(school);
+                if (!string.IsNullOrWhiteSpace(normalized))
+                    selected.Add(normalized);
+            }
+        }
+
+        AddWizardSchoolsFromClassAbilities(selected);
+        return selected;
+    }
+
+    private void AddWizardSchoolsFromClassAbilities(HashSet<string> selected)
+    {
+        void CollectFromSelections(IEnumerable<string> entries)
+        {
+            foreach (string selectionEntry in entries)
+            {
+                string baseId = RulesEngine.ExtractClassAbilityBaseId(selectionEntry ?? string.Empty);
+                if (!WizardSchoolAccessByAbilityId.TryGetValue(baseId, out string? school)
+                    || string.IsNullOrWhiteSpace(school))
+                {
+                    continue;
+                }
+
+                string normalized = NormalizeWizardSchoolName(school);
+                if (!string.IsNullOrWhiteSpace(normalized))
+                    selected.Add(normalized);
+            }
+        }
+
+        CollectFromSelections(_app.CharGen.SelectedClassAbilityIds);
+        foreach (var selectionsByClass in _app.CharGen.SelectedAbilitiesByClass.Values)
+            CollectFromSelections(selectionsByClass);
+    }
+
+    private HashSet<string> GatherCharGenWizardBlockedSchools()
+    {
+        var blocked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (!_app.Rules.Classes.TryGetValue("wizard", out var wizardClass) || wizardClass.Specializations is null)
+            return blocked;
+
+        var specializationIds = new List<string>();
+        if (!string.IsNullOrWhiteSpace(_app.CharGen.WizardSpecializationId))
+            specializationIds.Add(_app.CharGen.WizardSpecializationId);
+
+        foreach (string classId in GetWizardClassIdsInCharGen())
+        {
+            if (_app.CharGen.WizardSpecializationById.TryGetValue(classId, out var id)
+                && !string.IsNullOrWhiteSpace(id))
+            {
+                specializationIds.Add(id);
+            }
+        }
+
+        foreach (string specId in specializationIds.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            var spec = wizardClass.Specializations.FirstOrDefault(s =>
+                string.Equals(s.Id, specId, StringComparison.OrdinalIgnoreCase));
+            if (spec is null)
+                continue;
+
+            foreach (string school in spec.OppositionSchools)
+            {
+                string normalized = NormalizeWizardSchoolName(school);
+                if (!string.IsNullOrWhiteSpace(normalized))
+                    blocked.Add(normalized);
+            }
+        }
+
+        return blocked;
+    }
+
+    private IEnumerable<string> GetWizardClassIdsInCharGen()
+    {
+        var classIds = _app.CharGen.SelectedClassIds.Count > 0
+            ? _app.CharGen.SelectedClassIds
+            : string.IsNullOrWhiteSpace(_app.CharGen.ClassId)
+                ? new List<string>()
+                : new List<string> { _app.CharGen.ClassId };
+
+        return classIds
+            .Where(IsWizardClassId)
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private int GetHighestWizardCastableSpellLevel()
+    {
+        int characterLevel = Math.Clamp(_app.CharGen.CharacterLevel, 1, 20);
+        if (!WizardSpellLimitsByCharacterLevel.TryGetValue(characterLevel, out int[]? slots))
+            return 0;
+
+        for (int i = slots.Length - 1; i >= 0; i--)
+        {
+            if (slots[i] > 0)
+                return i + 1;
+        }
+
+        return 0;
+    }
+
+    private static bool IsWizardSpellAllowedForComponents(
+        SpellDefinition spell,
+        HashSet<string> allowedSchools,
+        HashSet<string> blockedSchools)
+    {
+        var spellSchools = ParseWizardSchoolTokens(spell.Schools);
+        if (spellSchools.Count == 0)
+            return true;
+
+        var permittedSchools = spellSchools
+            .Where(school => !blockedSchools.Contains(school))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        if (permittedSchools.Count == 0)
+            return false;
+
+        if (allowedSchools.Count == 0)
+            return true;
+
+        return permittedSchools.Any(allowedSchools.Contains);
+    }
+
+    private static HashSet<string> ParseWizardSchoolTokens(string schoolsText)
+    {
+        var tokens = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (string.IsNullOrWhiteSpace(schoolsText))
+            return tokens;
+
+        foreach (string raw in Regex.Split(schoolsText, @"\s*(,|;|\||&|\band\b)\s*", RegexOptions.IgnoreCase))
+        {
+            if (string.IsNullOrWhiteSpace(raw)
+                || raw == ","
+                || raw == ";"
+                || raw == "|"
+                || raw == "&"
+                || string.Equals(raw, "and", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            string normalized = NormalizeWizardSchoolName(raw);
+            if (!string.IsNullOrWhiteSpace(normalized))
+                tokens.Add(normalized);
+        }
+
+        return tokens;
+    }
+
+    private static string NormalizeWizardSchoolName(string school)
+    {
+        string token = Regex.Replace((school ?? string.Empty).Trim(), @"\s+", " ");
+        if (string.IsNullOrWhiteSpace(token))
+            return string.Empty;
+
+        if (token.Equals("Greater Divination", StringComparison.OrdinalIgnoreCase))
+            return "Divination";
+
+        if (token.Equals("Invocation", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Evocation", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Invocation/Evocation", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Evocation/Invocation", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Invocation/Evocation";
+        }
+
+        if (token.Equals("Conjuration", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Summon", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Summoning", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Conjuration/Summon", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Summon/Conjuration", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Conjuration/Summoning", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Summoning/Conjuration", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Conjuration/Summoning";
+        }
+
+        if (token.Equals("Enchantment", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Charm", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Enchantment/Charm", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Charm/Enchantment", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Enchantment/Charm";
+        }
+
+        if (token.Equals("Dimension", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Dimensional", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Dimensional";
+        }
+
+        if (token.Equals("Wild", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Wild Magic", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Wild Magic";
+        }
+
+        if (token.Equals("Air", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Elemental Air", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Elemental (Air)", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Elemental (Air)";
+        }
+
+        if (token.Equals("Earth", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Elemental Earth", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Elemental (Earth)", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Elemental (Earth)";
+        }
+
+        if (token.Equals("Fire", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Elemental Fire", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Elemental (Fire)", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Elemental (Fire)";
+        }
+
+        if (token.Equals("Water", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Elemental Water", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("Elemental (Water)", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Elemental (Water)";
+        }
+
+        return token;
+    }
+
+    private Dictionary<string, string> GatherCharGenSphereAccess()
+    {
+        var access = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        void MergeSphereSelections(Dictionary<string, string>? selections)
+        {
+            if (selections is null)
+                return;
+
+            foreach (var (sphere, tier) in selections)
+            {
+                if (string.IsNullOrWhiteSpace(sphere))
+                    continue;
+
+                string normalizedTier = string.Equals(tier, "major", StringComparison.OrdinalIgnoreCase)
+                    ? "major"
+                    : "minor";
+
+                if (!access.TryGetValue(sphere, out var existing))
+                {
+                    access[sphere] = normalizedTier;
+                    continue;
+                }
+
+                if (string.Equals(existing, "major", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(normalizedTier, "major", StringComparison.OrdinalIgnoreCase))
+                {
+                    access[sphere] = "major";
+                }
+            }
+        }
+
+        MergeSphereSelections(_app.CharGen.SelectedSpheres);
+        foreach (var byClass in _app.CharGen.SpheresByClass.Values)
+            MergeSphereSelections(byClass);
+
+        bool rangerHasConfiguredClassSpheres = _app.CharGen.SpheresByClass.TryGetValue("ranger", out var rangerSpheres)
+            && rangerSpheres.Count > 0;
+        if (CharacterHasClass("ranger")
+            && !rangerHasConfiguredClassSpheres
+            && HasSelectedClassAbility("ranger_priest_spells", "ranger_increased_spell_progression_cp7", "ranger_increased_spell_progression_cp12"))
+        {
+            if (!access.ContainsKey("Animal"))
+                access["Animal"] = "minor";
+            if (!access.ContainsKey("Plant"))
+                access["Plant"] = "minor";
+        }
+
+        bool paladinHasConfiguredClassSpheres = _app.CharGen.SpheresByClass.TryGetValue("paladin", out var paladinSpheres)
+            && paladinSpheres.Count > 0;
+        if (CharacterHasClass("paladin")
+            && !paladinHasConfiguredClassSpheres
+            && HasSelectedClassAbility("paladin_priest_spells"))
+        {
+            if (!access.ContainsKey("Combat"))
+                access["Combat"] = "minor";
+            if (!access.ContainsKey("Divination"))
+                access["Divination"] = "minor";
+            if (!access.ContainsKey("Healing"))
+                access["Healing"] = "minor";
+            if (!access.ContainsKey("Protection"))
+                access["Protection"] = "minor";
+        }
+
+        return access;
+    }
+
+    private bool CharacterHasClass(string classId)
+    {
+        var classIds = _app.CharGen.SelectedClassIds.Count > 0
+            ? _app.CharGen.SelectedClassIds
+            : string.IsNullOrWhiteSpace(_app.CharGen.ClassId)
+                ? new List<string>()
+                : new List<string> { _app.CharGen.ClassId };
+
+        return classIds.Any(id => string.Equals((id ?? string.Empty).Trim(), classId, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private bool HasSelectedClassAbility(params string[] abilityBaseIds)
+    {
+        if (abilityBaseIds is null || abilityBaseIds.Length == 0)
+            return false;
+
+        var wanted = abilityBaseIds
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Select(id => id.Trim())
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (wanted.Count == 0)
+            return false;
+
+        foreach (string id in _app.CharGen.SelectedClassAbilityIds)
+        {
+            string baseId = RulesEngine.ExtractClassAbilityBaseId(id ?? string.Empty);
+            if (wanted.Contains(baseId))
+                return true;
+        }
+
+        foreach (var byClass in _app.CharGen.SelectedAbilitiesByClass.Values)
+        {
+            foreach (string id in byClass)
+            {
+                string baseId = RulesEngine.ExtractClassAbilityBaseId(id ?? string.Empty);
+                if (wanted.Contains(baseId))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsPriestLikeClassId(string classId)
+    {
+        string token = (classId ?? string.Empty).Trim();
+        return token.Equals("priest", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("cleric", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("druid", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("paladin", StringComparison.OrdinalIgnoreCase)
+            || token.Equals("ranger", StringComparison.OrdinalIgnoreCase)
+            || RulesEngine.IsPriestClassId(token);
+    }
+
+    private static bool IsDivineSpell(SpellDefinition spell)
+    {
+        string category = (spell.Category ?? string.Empty).Trim();
+        return category.Equals("divine", StringComparison.OrdinalIgnoreCase)
+            || category.Equals("priest", StringComparison.OrdinalIgnoreCase)
+            || category.Contains("sphere", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsArcaneSpell(SpellDefinition spell)
+        => string.Equals((spell.Category ?? string.Empty).Trim(), "arcane", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsDivineSpellAllowedForCharGen(SpellDefinition spell, Dictionary<string, string> sphereAccess)
+    {
+        if (sphereAccess.Count == 0)
+            return true;
+
+        var spellSpheres = ParseSpellSchoolTokens(spell.Schools);
+        if (spellSpheres.Count == 0)
+            return true;
+
+        int spellLevel = ParseSpellLevelSafe(spell.Level);
+        string requiredAccess = spellLevel <= 3 ? "minor" : "major";
+        return spellSpheres.Any(sphere => RulesEngine.PriestHasSphereAccess(sphere, sphereAccess, requiredAccess));
+    }
+
+    private static HashSet<string> ParseSpellSchoolTokens(string schoolsText)
+    {
+        var tokens = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (string.IsNullOrWhiteSpace(schoolsText))
+            return tokens;
+
+        foreach (string raw in Regex.Split(schoolsText, @"\s*(,|;|/|\||&|\band\b)\s*", RegexOptions.IgnoreCase))
+        {
+            if (string.IsNullOrWhiteSpace(raw)
+                || raw == ","
+                || raw == ";"
+                || raw == "/"
+                || raw == "|"
+                || raw == "&"
+                || string.Equals(raw, "and", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            string normalized = raw.Trim();
+            if (!string.IsNullOrWhiteSpace(normalized))
+                tokens.Add(normalized);
+        }
+
+        return tokens;
+    }
+
+    private static int ParseSpellLevelSafe(string? levelText)
+    {
+        if (string.IsNullOrWhiteSpace(levelText))
+            return 1;
+        if (levelText.Equals("Cantrip", StringComparison.OrdinalIgnoreCase))
+            return 0;
+
+        string digits = Regex.Replace(levelText, @"[^\d]", string.Empty);
+        return int.TryParse(digits, out int level) ? Math.Max(0, level) : 1;
+    }
+
+    private static int GetEstimatedBardArcaneMaxSpellLevel(int level)
+    {
+        int clamped = Math.Max(1, level);
+        if (clamped < 2) return 0;
+        if (clamped < 5) return 1;
+        if (clamped < 10) return 2;
+        if (clamped < 15) return 3;
+        if (clamped < 20) return 4;
+        if (clamped < 23) return 5;
+        return 6;
+    }
+
+    private static bool IsSpellComponentsCategory(string? category)
+        => !string.IsNullOrWhiteSpace(category)
+            && category.Contains("spell component", StringComparison.OrdinalIgnoreCase);
+
+    private bool IsRequiredSpellComponentItem(EquipmentCatalogItem item, HashSet<string> neededComponents)
+    {
+        if (neededComponents.Count == 0)
+            return false;
+
+        string id = EquipmentLibraryService.CanonicalizeId(item.ItemId);
+        string normalizedName = NormalizeComponentName(item.ItemName);
+        if (neededComponents.Contains(normalizedName))
+            return true;
+
+        if (_libraryById.TryGetValue(id, out var detail))
+        {
+            string normalizedDetailName = NormalizeComponentName(detail.Name);
+            if (neededComponents.Contains(normalizedDetailName))
+                return true;
+        }
+
+        return neededComponents.Any(needed =>
+            normalizedName.Contains(needed, StringComparison.OrdinalIgnoreCase)
+            || needed.Contains(normalizedName, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string NormalizeComponentName(string? value)
+    {
+        string normalized = Regex.Replace((value ?? string.Empty).Trim().ToLowerInvariant(), @"\s+", " ");
+        normalized = Regex.Replace(normalized, @"[^a-z0-9\s'-]", string.Empty).Trim();
+        normalized = Regex.Replace(normalized, @"^(a|an|the)\s+", string.Empty, RegexOptions.IgnoreCase).Trim();
+
+        if (Regex.IsMatch(normalized, @"\bholy symbol\b", RegexOptions.IgnoreCase))
+            return "holy symbol";
+        if (Regex.IsMatch(normalized, @"\b(prayer beads?|rosary)\b", RegexOptions.IgnoreCase))
+            return "prayer beads";
+        if (Regex.IsMatch(normalized, @"\bmistletoe\b", RegexOptions.IgnoreCase))
+            return "mistletoe";
+        if (Regex.IsMatch(normalized, @"\bpowdered silver\b|\bsilver powder\b", RegexOptions.IgnoreCase))
+            return "powdered silver";
+        if (Regex.IsMatch(normalized, @"\bdiamond dust\b", RegexOptions.IgnoreCase))
+            return "diamond dust";
+
+        return normalized;
+    }
+
+    private static IEnumerable<string> ExtractMaterialComponents(string? materialsText)
+    {
+        if (string.IsNullOrWhiteSpace(materialsText))
+            yield break;
+
+        string cleaned = Regex.Replace(materialsText, @"\([^)]*\)", string.Empty);
+        cleaned = Regex.Replace(cleaned, @"\b(material component(?:s)?|requires?|needed|must have|must be|consumes?)\b", string.Empty, RegexOptions.IgnoreCase);
+        cleaned = Regex.Replace(cleaned, @"\bworth\s+\d+\s*(gp|sp|cp|pp)\b", string.Empty, RegexOptions.IgnoreCase);
+        cleaned = cleaned.Trim();
+        if (string.IsNullOrWhiteSpace(cleaned))
+            yield break;
+
+        foreach (string part in Regex.Split(cleaned, @"\s*(,|;|\bor\b|\band\b|\bplus\b|/)\s*", RegexOptions.IgnoreCase))
+        {
+            string token = (part ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(token)
+                || token == ","
+                || token == ";"
+                || token == "/"
+                || string.Equals(token, "or", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(token, "and", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(token, "plus", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            string normalized = token.Trim(' ', '.', ':', '-');
+            normalized = Regex.Replace(normalized, @"\b(the caster|caster|priest|wizard|mage)('s)?\b", string.Empty, RegexOptions.IgnoreCase);
+            normalized = Regex.Replace(normalized, @"\bthat is consumed\b|\bwhich is consumed\b|\bif available\b", string.Empty, RegexOptions.IgnoreCase);
+            normalized = Regex.Replace(normalized, @"\s+", " ").Trim();
+            if (!string.IsNullOrWhiteSpace(normalized))
+                yield return normalized;
+        }
+    }
+
+    private static IEnumerable<string> ExtractComponentColumnItems(string? componentsText)
+    {
+        if (string.IsNullOrWhiteSpace(componentsText))
+            yield break;
+
+        foreach (Match match in Regex.Matches(componentsText, @"\(([^)]*)\)"))
+        {
+            string inside = match.Groups[1].Value;
+            foreach (string token in ExtractMaterialComponents(inside))
+            {
+                if (!string.IsNullOrWhiteSpace(token))
+                    yield return token;
+            }
+        }
+
+        string cleaned = Regex.Replace(componentsText, @"\([^)]*\)", string.Empty);
+        foreach (string part in Regex.Split(cleaned, @"\s*(,|;|\bor\b|\band\b|\bplus\b|/|\|)\s*", RegexOptions.IgnoreCase))
+        {
+            string token = (part ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(token)
+                || token == ","
+                || token == ";"
+                || token == "/"
+                || token == "|"
+                || string.Equals(token, "or", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(token, "and", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(token, "plus", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            string lowered = token.ToLowerInvariant();
+            if (lowered is "v" or "s" or "m" or "f" or "df"
+                or "vs" or "vm" or "sm" or "vsm"
+                or "verbal" or "somatic" or "material" or "focus" or "divine focus"
+                or "none" or "special" or "n/a")
+            {
+                continue;
+            }
+
+            string normalized = Regex.Replace(token, @"\b(verbal|somatic|material|focus|divine focus)\b", string.Empty, RegexOptions.IgnoreCase);
+            normalized = Regex.Replace(normalized, @"^[vsmf/|,\s]+$", string.Empty, RegexOptions.IgnoreCase);
+            normalized = Regex.Replace(normalized, @"\s+", " ").Trim(' ', '.', ':', '-');
+            if (!string.IsNullOrWhiteSpace(normalized))
+                yield return normalized;
+        }
+    }
+
+    private List<EquipmentCatalogItem> BuildAvailableItemsFromLibrary()
+    {
+        return _libraryById.Values
+            .Select(detail =>
+            {
+                string category = detail.Categories.FirstOrDefault(c => !string.IsNullOrWhiteSpace(c)) ?? "Equipment";
+                category = EquipmentLibraryService.NormalizeCategoryLabel(category);
+                string costText = FormatCoinCost(detail.CostGold, detail.CostSilver, detail.CostCopper);
+                return new EquipmentCatalogItem(
+                    detail.Id,
+                    category,
+                    "LIB",
+                    detail.Name,
+                    costText);
+            })
+            .OrderBy(x => x.Category, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(x => NormalizeSwordName(x.ItemName), StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     private IEnumerable<GemEntry> GetCurrentGemEntries()
@@ -463,6 +1580,8 @@ public partial class CharGenEquipmentScreen : UserControl, IScreen
         if (AvailableList.SelectedItem is not AvailableRow row)
             return;
 
+        bool addAsFreeFind = FreePurchaseToggle?.IsChecked == true;
+
         if (!CanUseCatalogItem(row.Item, out string restrictionReason))
         {
             MessageBox.Show(
@@ -474,11 +1593,13 @@ public partial class CharGenEquipmentScreen : UserControl, IScreen
         }
 
         _libraryById.TryGetValue(EquipmentLibraryService.CanonicalizeId(row.Item.ItemId), out var detailForCost);
-        int itemCostCopper = detailForCost is not null
-            ? CharacterWealthService.ToCopper(detailForCost.CostGold, detailForCost.CostSilver, detailForCost.CostCopper)
-            : ParseCostTextCopper(row.Item.CostText);
+        int itemCostCopper = addAsFreeFind
+            ? 0
+            : (detailForCost is not null
+                ? CharacterWealthService.ToCopper(detailForCost.CostGold, detailForCost.CostSilver, detailForCost.CostCopper)
+                : ParseCostTextCopper(row.Item.CostText));
 
-        if (!CanAffordAdditionalCopper(itemCostCopper))
+        if (!addAsFreeFind && !CanAffordAdditionalCopper(itemCostCopper))
         {
             int remaining;
             if (_app.CharGen.IsLevelUpMode
@@ -520,9 +1641,9 @@ public partial class CharGenEquipmentScreen : UserControl, IScreen
             _app.CharGen.SelectedEquipment.Add(new EquipmentSelection
             {
                 ItemId = row.Item.ItemId,
-                Category = row.Item.Category,
+                Category = EquipmentLibraryService.NormalizeCategoryLabel(row.Item.Category),
                 ItemName = NormalizeSwordName(row.Item.ItemName),
-                CostText = row.Item.CostText,
+                CostText = addAsFreeFind ? "FREE" : row.Item.CostText,
                 Quantity = 1,
                 IsArmor = detail?.IsArmor == true,
                 ArmorClassValue = detail?.ArmorClassValue ?? 10,
@@ -534,9 +1655,12 @@ public partial class CharGenEquipmentScreen : UserControl, IScreen
                 WeaponDamageLarge = detail?.WeaponDamageLarge ?? string.Empty,
                 WeaponType = detail?.WeaponType ?? string.Empty,
                 WeaponSize = detail?.WeaponSize ?? string.Empty,
-                CostGoldEach = detail?.CostGold ?? 0,
-                CostSilverEach = detail?.CostSilver ?? 0,
-                CostCopperEach = detail?.CostCopper ?? ParseCostTextCopper(row.Item.CostText),
+                WeaponAttackBonus = detail?.WeaponAttackBonus ?? 0,
+                WeaponDamageBonus = detail?.WeaponDamageBonus ?? 0,
+                WeaponThac0Modifier = detail?.WeaponThac0Modifier ?? 0,
+                CostGoldEach = addAsFreeFind ? 0 : (detail?.CostGold ?? 0),
+                CostSilverEach = addAsFreeFind ? 0 : (detail?.CostSilver ?? 0),
+                CostCopperEach = addAsFreeFind ? 0 : (detail?.CostCopper ?? ParseCostTextCopper(row.Item.CostText)),
                 SizeClassEach = detail?.SizeClass ?? "Medium",
                 WeightEach = detail?.Weight ?? 0,
             });
@@ -544,10 +1668,19 @@ public partial class CharGenEquipmentScreen : UserControl, IScreen
         else
         {
             existing.Quantity = Math.Max(1, existing.Quantity + 1);
+            if (addAsFreeFind)
+            {
+                existing.CostText = "FREE";
+                existing.CostGoldEach = 0;
+                existing.CostSilverEach = 0;
+                existing.CostCopperEach = 0;
+            }
         }
 
         SetTransactionStatus(
-            $"Purchased {NormalizeSwordName(row.Item.ItemName)} for {CharacterWealthService.FormatCoins(itemCostCopper)}.",
+            addAsFreeFind
+                ? $"Added found item {NormalizeSwordName(row.Item.ItemName)} at no coin cost."
+                : $"Purchased {NormalizeSwordName(row.Item.ItemName)} for {CharacterWealthService.FormatCoins(itemCostCopper)}.",
             Brushes.LightGreen);
 
         RefreshLists();
@@ -574,6 +1707,11 @@ public partial class CharGenEquipmentScreen : UserControl, IScreen
                 _app.CharGen.EquippedShieldId = string.Empty;
             if (string.Equals(EquipmentLibraryService.CanonicalizeId(_app.CharGen.EquippedWeaponId), removedKey, StringComparison.OrdinalIgnoreCase))
                 _app.CharGen.EquippedWeaponId = string.Empty;
+            if (string.Equals(EquipmentLibraryService.CanonicalizeId(_app.CharGen.EquippedMainWeaponId), removedKey, StringComparison.OrdinalIgnoreCase))
+                _app.CharGen.EquippedMainWeaponId = string.Empty;
+            if (string.Equals(EquipmentLibraryService.CanonicalizeId(_app.CharGen.EquippedOffHandWeaponId), removedKey, StringComparison.OrdinalIgnoreCase))
+                _app.CharGen.EquippedOffHandWeaponId = string.Empty;
+            _app.CharGen.EquippedMagicalItemIds.RemoveAll(x => string.Equals(EquipmentLibraryService.CanonicalizeId(x), removedKey, StringComparison.OrdinalIgnoreCase));
             _app.CharGen.SelectedEquipment.Remove(row.Selection);
         }
 
@@ -587,6 +1725,38 @@ public partial class CharGenEquipmentScreen : UserControl, IScreen
 
     private void CategoryFilter_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshLists();
     private void EquipmentSearchBox_TextChanged(object sender, TextChangedEventArgs e) => RefreshLists();
+    private void EquipmentTypeFilter_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshLists();
+    private void SpellComponentNeedFilter_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshLists();
+
+    private void UseSpellComponentsToggle_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!SupportsSpellComponentsForCurrentClass())
+        {
+            _app.CharGen.UseSpellComponents = false;
+            if (UseSpellComponentsToggle is not null)
+                UseSpellComponentsToggle.IsChecked = false;
+            RefreshLists();
+            return;
+        }
+
+        _app.CharGen.UseSpellComponents = UseSpellComponentsToggle?.IsChecked == true;
+        RefreshLists();
+    }
+
+    private void BtnRefreshEquipment_Click(object sender, RoutedEventArgs e)
+    {
+        RefreshLists();
+        SetTransactionStatus("Equipment list refreshed from current character and spell selections.", Brushes.LightSkyBlue);
+    }
+
+    private void FreePurchaseToggle_Changed(object sender, RoutedEventArgs e)
+    {
+        SetTransactionStatus(
+            FreePurchaseToggle?.IsChecked == true
+                ? "Purchase mode: FREE FIND (adds items without coin cost)."
+                : "Purchase mode: PAY NORMAL COST.",
+            Brushes.LightSkyBlue);
+    }
 
     private void AvailableList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -598,6 +1768,7 @@ public partial class CharGenEquipmentScreen : UserControl, IScreen
         bool hasSelection = SelectedList.SelectedItem is SelectedRow { Selection: not null };
         BtnRemove.IsEnabled = hasSelection;
         BtnSetQuantity.IsEnabled = hasSelection;
+        BtnEquipOffHand.IsEnabled = false;
 
         if (SelectedList.SelectedItem is SelectedRow { Selection: not null } sel)
         {
@@ -605,12 +1776,16 @@ public partial class CharGenEquipmentScreen : UserControl, IScreen
             string canonId = EquipmentLibraryService.CanonicalizeId(sel.Selection!.ItemId);
             _libraryById.TryGetValue(canonId, out var detail);
             bool isEquippable = detail?.IsArmor == true || detail?.IsShield == true || detail?.IsWeapon == true
-                || sel.Selection.IsArmor || sel.Selection.IsShield || sel.Selection.IsWeapon;
+                || sel.Selection.IsArmor || sel.Selection.IsShield || sel.Selection.IsWeapon
+                || !string.IsNullOrWhiteSpace(ResolveMagicalSlotKey(detail, sel.Selection));
             BtnEquip.IsEnabled = isEquippable;
+            bool isWeapon = detail?.IsWeapon == true || sel.Selection.IsWeapon;
+            BtnEquipOffHand.IsEnabled = isWeapon;
         }
         else
         {
             BtnEquip.IsEnabled = false;
+            BtnEquipOffHand.IsEnabled = false;
         }
     }
 
@@ -790,7 +1965,6 @@ public partial class CharGenEquipmentScreen : UserControl, IScreen
             Margin = new Thickness(0, 0, 0, 10),
         };
         panel.Children.Add(quantityBox);
-
         var buttonRow = new StackPanel
         {
             Orientation = Orientation.Horizontal,
@@ -881,12 +2055,65 @@ public partial class CharGenEquipmentScreen : UserControl, IScreen
         }
         else if (isWeapon)
         {
-            string currentKey = EquipmentLibraryService.CanonicalizeId(_app.CharGen.EquippedWeaponId);
-            _app.CharGen.EquippedWeaponId = string.Equals(currentKey, canonId, StringComparison.OrdinalIgnoreCase)
+            string currentKey = EquipmentLibraryService.CanonicalizeId(_app.CharGen.EquippedMainWeaponId);
+            _app.CharGen.EquippedMainWeaponId = string.Equals(currentKey, canonId, StringComparison.OrdinalIgnoreCase)
                 ? ""
                 : itemId;
+            _app.CharGen.EquippedWeaponId = _app.CharGen.EquippedMainWeaponId;
+        }
+        else
+        {
+            string magicalSlot = ResolveMagicalSlotKey(detail, row.Selection);
+            if (!string.IsNullOrWhiteSpace(magicalSlot))
+                ToggleMagicalEquip(itemId, magicalSlot);
         }
 
+        RefreshLists();
+    }
+
+    private void BtnEquipOffHand_Click(object sender, RoutedEventArgs e)
+    {
+        if (SelectedList.SelectedItem is not SelectedRow { Selection: not null } row)
+            return;
+
+        if (!CanUseSelectedItem(row.Selection!, out string restrictionReason))
+        {
+            MessageBox.Show(
+                $"{NormalizeSwordName(row.Selection!.ItemName)} cannot be equipped right now.\n\n{restrictionReason}",
+                "Equipment Restriction",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        string itemId = row.Selection!.ItemId;
+        string canonId = EquipmentLibraryService.CanonicalizeId(itemId);
+        _libraryById.TryGetValue(canonId, out var detail);
+        bool isWeapon = detail?.IsWeapon == true || row.Selection.IsWeapon;
+        if (!isWeapon)
+            return;
+
+        string mainKey = EquipmentLibraryService.CanonicalizeId(_app.CharGen.EquippedMainWeaponId);
+        string offKey = EquipmentLibraryService.CanonicalizeId(_app.CharGen.EquippedOffHandWeaponId);
+
+        if (string.Equals(offKey, canonId, StringComparison.OrdinalIgnoreCase))
+        {
+            _app.CharGen.EquippedOffHandWeaponId = string.Empty;
+            RefreshLists();
+            return;
+        }
+
+        if (string.Equals(mainKey, canonId, StringComparison.OrdinalIgnoreCase) && Math.Max(1, row.Selection.Quantity) < 2)
+        {
+            MessageBox.Show(
+                "To use the same weapon as both main and off-hand, quantity must be at least 2.",
+                "Off-Hand Assignment",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        _app.CharGen.EquippedOffHandWeaponId = itemId;
         RefreshLists();
     }
 
@@ -905,8 +2132,187 @@ public partial class CharGenEquipmentScreen : UserControl, IScreen
         if (EquippedShieldText != null)
             EquippedShieldText.Text = $"Shield: {ArmorName(_app.CharGen.EquippedShieldId)}";
         if (EquippedWeaponText != null)
-            EquippedWeaponText.Text = $"Weapon: {ArmorName(_app.CharGen.EquippedWeaponId)}";
+            EquippedWeaponText.Text = $"Main Weapon: {ArmorName(_app.CharGen.EquippedMainWeaponId)}";
+        if (EquippedOffHandWeaponText != null)
+            EquippedOffHandWeaponText.Text = $"Off-Hand Weapon: {ArmorName(_app.CharGen.EquippedOffHandWeaponId)}";
+        var magicalBySlot = GetEquippedMagicalBySlot();
+        List<string> SlotItems(string slot)
+            => magicalBySlot.TryGetValue(slot, out var items) ? items : new List<string>();
+        if (EquippedRing1Text != null)
+            EquippedRing1Text.Text = $"Ring 1: {SlotItems("ring").ElementAtOrDefault(0) ?? "—"}";
+        if (EquippedRing2Text != null)
+            EquippedRing2Text.Text = $"Ring 2: {SlotItems("ring").ElementAtOrDefault(1) ?? "—"}";
+        if (EquippedHelmetText != null)
+            EquippedHelmetText.Text = $"Helmet: {SlotItems("helmet").FirstOrDefault() ?? "—"}";
+        if (EquippedCloakText != null)
+            EquippedCloakText.Text = $"Cloak: {SlotItems("cloak").FirstOrDefault() ?? "—"}";
+        if (EquippedBeltText != null)
+            EquippedBeltText.Text = $"Belt: {SlotItems("belt").FirstOrDefault() ?? "—"}";
+        if (EquippedBootsText != null)
+            EquippedBootsText.Text = $"Boots: {SlotItems("boots").FirstOrDefault() ?? "—"}";
+        if (EquippedBracersText != null)
+            EquippedBracersText.Text = $"Bracers: {SlotItems("bracers").FirstOrDefault() ?? "—"}";
+        if (EquippedAmuletText != null)
+            EquippedAmuletText.Text = $"Amulet: {SlotItems("amulet").FirstOrDefault() ?? "—"}";
+        if (EquippedGlovesText != null)
+            EquippedGlovesText.Text = $"Gloves: {SlotItems("gloves").FirstOrDefault() ?? "—"}";
+        if (EquippedRobeText != null)
+            EquippedRobeText.Text = $"Robe: {SlotItems("robe").FirstOrDefault() ?? "—"}";
+        if (EquippedOtherMagicText != null)
+            EquippedOtherMagicText.Text = $"Other Magic: {string.Join(", ", SlotItems("other").DefaultIfEmpty("—"))}";
     }
+
+    private bool IsMagicalItemEquipped(string canonicalItemId)
+        => _app.CharGen.EquippedMagicalItemIds.Any(x => string.Equals(EquipmentLibraryService.CanonicalizeId(x), canonicalItemId, StringComparison.OrdinalIgnoreCase));
+
+    private string ResolveMagicalSlotKey(CustomEquipmentData? detail, EquipmentSelection selection)
+    {
+        if (detail?.IsArmor == true || detail?.IsShield == true || detail?.IsWeapon == true
+            || selection.IsArmor || selection.IsShield || selection.IsWeapon)
+        {
+            return string.Empty;
+        }
+
+        bool isMagical = detail?.IsMagical == true
+            || selection.Category.Contains("Magical", StringComparison.OrdinalIgnoreCase)
+            || selection.ItemName.Contains("+", StringComparison.OrdinalIgnoreCase);
+        if (!isMagical)
+            return string.Empty;
+
+        var terms = new List<string>();
+        if (detail?.Categories is { Count: > 0 }) terms.AddRange(detail.Categories);
+        if (detail?.ItemTags is { Count: > 0 }) terms.AddRange(detail.ItemTags);
+        terms.Add(detail?.Name ?? selection.ItemName);
+        terms.Add(selection.Category);
+        terms.Add(selection.ItemName);
+        string haystack = string.Join(" ", terms.Where(x => !string.IsNullOrWhiteSpace(x))).ToLowerInvariant();
+
+        if (haystack.Contains("ring")) return "ring";
+        if (haystack.Contains("helmet") || haystack.Contains("helm")) return "helmet";
+        if (haystack.Contains("cloak")) return "cloak";
+        if (haystack.Contains("belt") || haystack.Contains("girdle")) return "belt";
+        if (haystack.Contains("boot")) return "boots";
+        if (haystack.Contains("bracer")) return "bracers";
+        if (haystack.Contains("amulet") || haystack.Contains("necklace")) return "amulet";
+        if (haystack.Contains("gauntlet") || haystack.Contains("glove")) return "gloves";
+        if (haystack.Contains("robe")) return "robe";
+        return "other";
+    }
+
+    private void ToggleMagicalEquip(string itemId, string slotKey)
+    {
+        string canonId = EquipmentLibraryService.CanonicalizeId(itemId);
+        if (IsMagicalItemEquipped(canonId))
+        {
+            _app.CharGen.EquippedMagicalItemIds.RemoveAll(x => string.Equals(EquipmentLibraryService.CanonicalizeId(x), canonId, StringComparison.OrdinalIgnoreCase));
+            return;
+        }
+
+        int limit = MagicalSlotLimits.GetValueOrDefault(slotKey, 1);
+        int slotCount = _app.CharGen.EquippedMagicalItemIds.Count(id =>
+        {
+            string currentCanon = EquipmentLibraryService.CanonicalizeId(id);
+            var currentSelection = _app.CharGen.SelectedEquipment.FirstOrDefault(x => string.Equals(EquipmentLibraryService.CanonicalizeId(x.ItemId), currentCanon, StringComparison.OrdinalIgnoreCase));
+            if (currentSelection is null)
+                return false;
+            _libraryById.TryGetValue(currentCanon, out var currentDetail);
+            return string.Equals(ResolveMagicalSlotKey(currentDetail, currentSelection), slotKey, StringComparison.OrdinalIgnoreCase);
+        });
+
+        if (slotCount >= limit)
+        {
+            MessageBox.Show(
+                slotKey == "ring"
+                    ? "Only two magical rings can be equipped at once."
+                    : $"Only {limit} magical item can be equipped in the {slotKey} slot.",
+                "Magical Slot Limit",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        _app.CharGen.EquippedMagicalItemIds.Add(itemId);
+    }
+
+    private Dictionary<string, List<string>> GetEquippedMagicalBySlot()
+    {
+        var bySlot = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (string id in _app.CharGen.EquippedMagicalItemIds)
+        {
+            string canon = EquipmentLibraryService.CanonicalizeId(id);
+            var selection = _app.CharGen.SelectedEquipment.FirstOrDefault(x => string.Equals(EquipmentLibraryService.CanonicalizeId(x.ItemId), canon, StringComparison.OrdinalIgnoreCase));
+            if (selection is null)
+                continue;
+
+            _libraryById.TryGetValue(canon, out var detail);
+            string slot = ResolveMagicalSlotKey(detail, selection);
+            if (string.IsNullOrWhiteSpace(slot))
+                continue;
+
+            if (!bySlot.TryGetValue(slot, out var list))
+            {
+                list = new List<string>();
+                bySlot[slot] = list;
+            }
+
+            list.Add(NormalizeSwordName(selection.ItemName));
+        }
+
+        return bySlot;
+    }
+
+    private bool TryUnequipMagicalSlot(string slotKey, int index = 0, bool removeAll = false)
+    {
+        var slotItems = new List<string>();
+
+        foreach (string id in _app.CharGen.EquippedMagicalItemIds)
+        {
+            string canon = EquipmentLibraryService.CanonicalizeId(id);
+            var selection = _app.CharGen.SelectedEquipment.FirstOrDefault(x => string.Equals(EquipmentLibraryService.CanonicalizeId(x.ItemId), canon, StringComparison.OrdinalIgnoreCase));
+            if (selection is null)
+                continue;
+
+            _libraryById.TryGetValue(canon, out var detail);
+            string currentSlot = ResolveMagicalSlotKey(detail, selection);
+            if (string.Equals(currentSlot, slotKey, StringComparison.OrdinalIgnoreCase))
+                slotItems.Add(id);
+        }
+
+        if (slotItems.Count == 0)
+            return false;
+
+        if (removeAll)
+        {
+            foreach (string id in slotItems)
+                _app.CharGen.EquippedMagicalItemIds.Remove(id);
+            return true;
+        }
+
+        if (index < 0 || index >= slotItems.Count)
+            return false;
+
+        _app.CharGen.EquippedMagicalItemIds.Remove(slotItems[index]);
+        return true;
+    }
+
+    private void UnequipMagicalSlotAndRefresh(string slotKey, int index = 0, bool removeAll = false)
+    {
+        if (TryUnequipMagicalSlot(slotKey, index, removeAll))
+            RefreshLists();
+    }
+
+    private void BtnUnequipRing1_Click(object sender, RoutedEventArgs e) => UnequipMagicalSlotAndRefresh("ring", 0);
+    private void BtnUnequipRing2_Click(object sender, RoutedEventArgs e) => UnequipMagicalSlotAndRefresh("ring", 1);
+    private void BtnUnequipHelmet_Click(object sender, RoutedEventArgs e) => UnequipMagicalSlotAndRefresh("helmet");
+    private void BtnUnequipCloak_Click(object sender, RoutedEventArgs e) => UnequipMagicalSlotAndRefresh("cloak");
+    private void BtnUnequipBelt_Click(object sender, RoutedEventArgs e) => UnequipMagicalSlotAndRefresh("belt");
+    private void BtnUnequipBoots_Click(object sender, RoutedEventArgs e) => UnequipMagicalSlotAndRefresh("boots");
+    private void BtnUnequipBracers_Click(object sender, RoutedEventArgs e) => UnequipMagicalSlotAndRefresh("bracers");
+    private void BtnUnequipAmulet_Click(object sender, RoutedEventArgs e) => UnequipMagicalSlotAndRefresh("amulet");
+    private void BtnUnequipGloves_Click(object sender, RoutedEventArgs e) => UnequipMagicalSlotAndRefresh("gloves");
+    private void BtnUnequipRobe_Click(object sender, RoutedEventArgs e) => UnequipMagicalSlotAndRefresh("robe");
+    private void BtnUnequipOtherMagic_Click(object sender, RoutedEventArgs e) => UnequipMagicalSlotAndRefresh("other", removeAll: true);
 
     private void BtnAdd_Click(object sender, RoutedEventArgs e) => AddSelected();
     private void BtnRemove_Click(object sender, RoutedEventArgs e) => RemoveSelected();
@@ -1186,6 +2592,9 @@ public partial class CharGenEquipmentScreen : UserControl, IScreen
         _app.CharGen.EquippedArmorId = string.Empty;
         _app.CharGen.EquippedShieldId = string.Empty;
         _app.CharGen.EquippedWeaponId = string.Empty;
+        _app.CharGen.EquippedMainWeaponId = string.Empty;
+        _app.CharGen.EquippedOffHandWeaponId = string.Empty;
+        _app.CharGen.EquippedMagicalItemIds.Clear();
         RefreshLists();
     }
 
@@ -1216,28 +2625,208 @@ public partial class CharGenEquipmentScreen : UserControl, IScreen
 
     private string BuildCatalogItemDescription(EquipmentCatalogItem item)
     {
+        string baseDescription;
         string id = EquipmentLibraryService.CanonicalizeId(item.ItemId);
         if (_libraryById.TryGetValue(id, out var detail))
         {
             string rich = BuildDetailDescription(detail);
             if (!string.IsNullOrWhiteSpace(rich))
-                return rich;
+            {
+                baseDescription = rich;
+                return AppendSpellComponentUsageIfEnabled(baseDescription, item.ItemName, item.Category);
+            }
         }
 
-        return BuildFallbackDescription(item.ItemName, item.Category, item.CostText);
+        baseDescription = BuildFallbackDescription(item.ItemName, item.Category, item.CostText);
+        return AppendSpellComponentUsageIfEnabled(baseDescription, item.ItemName, item.Category);
+    }
+
+    private string BuildCatalogItemTooltipDescription(EquipmentCatalogItem item)
+    {
+        string baseDescription;
+        string id = EquipmentLibraryService.CanonicalizeId(item.ItemId);
+        if (_libraryById.TryGetValue(id, out var detail))
+        {
+            string rich = BuildDetailDescription(detail);
+            baseDescription = string.IsNullOrWhiteSpace(rich)
+                ? BuildFallbackDescription(item.ItemName, item.Category, item.CostText)
+                : rich;
+        }
+        else
+        {
+            baseDescription = BuildFallbackDescription(item.ItemName, item.Category, item.CostText);
+        }
+
+        return AppendSpellComponentUsageIfEnabled(baseDescription, item.ItemName, item.Category, concise: true);
     }
 
     private string BuildSelectedItemDescription(EquipmentSelection selection)
     {
+        string baseDescription;
         string id = EquipmentLibraryService.CanonicalizeId(selection.ItemId);
         if (_libraryById.TryGetValue(id, out var detail))
         {
             string rich = BuildDetailDescription(detail);
             if (!string.IsNullOrWhiteSpace(rich))
-                return rich;
+            {
+                baseDescription = rich;
+                return AppendSpellComponentUsageIfEnabled(baseDescription, selection.ItemName, selection.Category);
+            }
         }
 
-        return BuildFallbackDescription(selection.ItemName, selection.Category, selection.CostText);
+        baseDescription = BuildFallbackDescription(selection.ItemName, selection.Category, selection.CostText);
+        return AppendSpellComponentUsageIfEnabled(baseDescription, selection.ItemName, selection.Category);
+    }
+
+    private string BuildSelectedItemTooltipDescription(EquipmentSelection selection)
+    {
+        string baseDescription;
+        string id = EquipmentLibraryService.CanonicalizeId(selection.ItemId);
+        if (_libraryById.TryGetValue(id, out var detail))
+        {
+            string rich = BuildDetailDescription(detail);
+            baseDescription = string.IsNullOrWhiteSpace(rich)
+                ? BuildFallbackDescription(selection.ItemName, selection.Category, selection.CostText)
+                : rich;
+        }
+        else
+        {
+            baseDescription = BuildFallbackDescription(selection.ItemName, selection.Category, selection.CostText);
+        }
+
+        return AppendSpellComponentUsageIfEnabled(baseDescription, selection.ItemName, selection.Category, concise: true);
+    }
+
+    private string AppendSpellComponentUsageIfEnabled(string baseDescription, string itemName, string category, bool concise = false)
+    {
+        bool usingSpellComponents = _app.CharGen.UseSpellComponents && SupportsSpellComponentsForCurrentClass();
+        if (!usingSpellComponents || !IsSpellComponentsCategory(category))
+            return baseDescription;
+
+        string usage = BuildSpellComponentUsageDescription(itemName, concise);
+        if (string.IsNullOrWhiteSpace(usage))
+            return baseDescription;
+
+        if (string.IsNullOrWhiteSpace(baseDescription))
+            return usage;
+
+        return $"{baseDescription}\n\n{usage}";
+    }
+
+    private string BuildSpellComponentUsageDescription(string itemName, bool concise = false)
+    {
+        string normalizedItem = NormalizeComponentName(itemName);
+        if (string.IsNullOrWhiteSpace(normalizedItem))
+            return string.Empty;
+
+        var usageLookup = concise ? _componentUsageConciseByNormalized : _componentUsageFullByNormalized;
+        if (usageLookup.TryGetValue(normalizedItem, out string? cached))
+            return cached;
+
+        return concise
+            ? "Spell Component Usage: no current matches."
+            : "Spell Component Usage: no matching spells found from current class/spell access.";
+    }
+
+    private void RebuildSpellComponentUsageCaches(bool usingSpellComponents)
+    {
+        _componentUsageFullByNormalized = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        _componentUsageConciseByNormalized = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        if (!usingSpellComponents)
+            return;
+
+        var spellIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (string id in _app.CharGen.WizardSpellbookIds)
+        {
+            if (!string.IsNullOrWhiteSpace(id))
+                spellIds.Add(id.Trim());
+        }
+
+        foreach (var list in _app.CharGen.WizardSpellLists)
+        {
+            foreach (string id in list?.SpellIds ?? new List<string>())
+            {
+                if (!string.IsNullOrWhiteSpace(id))
+                    spellIds.Add(id.Trim());
+            }
+        }
+
+        AddClassAccessibleSpellIdsForComponents(spellIds);
+
+        var usageByComponent = new Dictionary<string, List<(int Level, string Name, string Type)>>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (string id in spellIds)
+        {
+            var spell = _app.Rules.Spells.FirstOrDefault(s => string.Equals(s.Id, id, StringComparison.OrdinalIgnoreCase));
+            if (spell is null)
+                continue;
+
+            int level = ParseSpellLevelSafe(spell.Level);
+            string name = string.IsNullOrWhiteSpace(spell.Name) ? spell.Id : spell.Name.Trim();
+            string type = IsDivineSpell(spell) ? "Divine" : "Arcane";
+
+            var normalizedComponents = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var material in ExtractMaterialComponents(spell.Materials))
+            {
+                string normalized = NormalizeComponentName(material);
+                if (!string.IsNullOrWhiteSpace(normalized))
+                    normalizedComponents.Add(normalized);
+            }
+
+            foreach (var component in ExtractComponentColumnItems(spell.Components))
+            {
+                string normalized = NormalizeComponentName(component);
+                if (!string.IsNullOrWhiteSpace(normalized))
+                    normalizedComponents.Add(normalized);
+            }
+
+            foreach (string component in normalizedComponents)
+            {
+                if (!usageByComponent.TryGetValue(component, out var list))
+                {
+                    list = new List<(int Level, string Name, string Type)>();
+                    usageByComponent[component] = list;
+                }
+
+                list.Add((level, name, type));
+            }
+        }
+
+        foreach (var (component, usageList) in usageByComponent)
+        {
+            var ordered = usageList
+                .Distinct()
+                .OrderBy(entry => entry.Level)
+                .ThenBy(entry => entry.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (ordered.Count == 0)
+                continue;
+
+            const int fullPreviewLimit = 12;
+            var fullLines = ordered
+                .Take(fullPreviewLimit)
+                .Select(entry => $"- L{entry.Level} {entry.Name} [{entry.Type}]")
+                .ToList();
+
+            if (ordered.Count > fullPreviewLimit)
+                fullLines.Add($"- +{ordered.Count - fullPreviewLimit} more");
+
+            _componentUsageFullByNormalized[component] =
+                $"Spell Component Usage ({ordered.Count} spell{(ordered.Count == 1 ? string.Empty : "s")}):\n{string.Join("\n", fullLines)}";
+
+            var conciseSample = ordered
+                .Take(2)
+                .Select(entry => $"L{entry.Level} {entry.Name}")
+                .ToList();
+            string conciseSummary = string.Join(", ", conciseSample);
+            if (ordered.Count > 2)
+                conciseSummary += $", +{ordered.Count - 2} more";
+
+            _componentUsageConciseByNormalized[component] =
+                $"Spell Component Usage: {ordered.Count} spell{(ordered.Count == 1 ? string.Empty : "s")} ({conciseSummary}). Right-click for full list.";
+        }
     }
 
     private static string BuildDetailDescription(CustomEquipmentData detail)
@@ -1375,11 +2964,16 @@ public partial class CharGenEquipmentScreen : UserControl, IScreen
     {
         string canonId = EquipmentLibraryService.CanonicalizeId(item.ItemId);
         _libraryById.TryGetValue(canonId, out var detail);
-        return CanUseArmorOrShield(detail?.IsArmor == true, detail?.IsShield == true, detail?.ArmorClassValue ?? 10, out reason);
+        return CanUseArmorOrShield(
+            detail?.IsArmor == true,
+            detail?.IsShield == true,
+            detail?.ArmorClassValue ?? 10,
+            detail?.Name ?? item.ItemName,
+            out reason);
     }
 
     private bool CanUseSelectedItem(EquipmentSelection selection, out string reason)
-        => CanUseArmorOrShield(selection.IsArmor, selection.IsShield, selection.ArmorClassValue, out reason);
+        => CanUseArmorOrShield(selection.IsArmor, selection.IsShield, selection.ArmorClassValue, selection.ItemName, out reason);
 
     private void EnforceEquippedRestrictions()
     {
@@ -1409,11 +3003,56 @@ public partial class CharGenEquipmentScreen : UserControl, IScreen
             }
         }
 
+        if (!string.IsNullOrWhiteSpace(_app.CharGen.EquippedMainWeaponId))
+        {
+            var equippedMain = _app.CharGen.SelectedEquipment.FirstOrDefault(x =>
+                string.Equals(EquipmentLibraryService.CanonicalizeId(x.ItemId), EquipmentLibraryService.CanonicalizeId(_app.CharGen.EquippedMainWeaponId), StringComparison.OrdinalIgnoreCase));
+
+            if (equippedMain is null)
+            {
+                _app.CharGen.EquippedMainWeaponId = string.Empty;
+                _app.CharGen.EquippedWeaponId = string.Empty;
+                changed = true;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(_app.CharGen.EquippedOffHandWeaponId))
+        {
+            var equippedOff = _app.CharGen.SelectedEquipment.FirstOrDefault(x =>
+                string.Equals(EquipmentLibraryService.CanonicalizeId(x.ItemId), EquipmentLibraryService.CanonicalizeId(_app.CharGen.EquippedOffHandWeaponId), StringComparison.OrdinalIgnoreCase));
+
+            if (equippedOff is null)
+            {
+                _app.CharGen.EquippedOffHandWeaponId = string.Empty;
+                changed = true;
+            }
+            else if (string.Equals(
+                    EquipmentLibraryService.CanonicalizeId(_app.CharGen.EquippedMainWeaponId),
+                    EquipmentLibraryService.CanonicalizeId(_app.CharGen.EquippedOffHandWeaponId),
+                    StringComparison.OrdinalIgnoreCase)
+                && Math.Max(1, equippedOff.Quantity) < 2)
+            {
+                _app.CharGen.EquippedOffHandWeaponId = string.Empty;
+                changed = true;
+            }
+        }
+
+        _app.CharGen.EquippedWeaponId = _app.CharGen.EquippedMainWeaponId;
+
+        _app.CharGen.EquippedMagicalItemIds ??= new List<string>();
+        int removedMagical = _app.CharGen.EquippedMagicalItemIds.RemoveAll(id =>
+            !_app.CharGen.SelectedEquipment.Any(x => string.Equals(
+                EquipmentLibraryService.CanonicalizeId(x.ItemId),
+                EquipmentLibraryService.CanonicalizeId(id),
+                StringComparison.OrdinalIgnoreCase)));
+        if (removedMagical > 0)
+            changed = true;
+
         if (changed)
-            SetTransactionStatus("Equipped armor/shield was cleared due to current class restrictions.", Brushes.Orange);
+            SetTransactionStatus("Equipped slots were adjusted due to inventory or class restrictions.", Brushes.Orange);
     }
 
-    private bool CanUseArmorOrShield(bool isArmor, bool isShield, int armorClassValue, out string reason)
+    private bool CanUseArmorOrShield(bool isArmor, bool isShield, int armorClassValue, string? armorName, out string reason)
     {
         reason = string.Empty;
         if (!isArmor && !isShield)
@@ -1433,6 +3072,17 @@ public partial class CharGenEquipmentScreen : UserControl, IScreen
             {
                 reason = $"{TierLabel(tier)} armor is not allowed ({rules.Source}).";
                 return false;
+            }
+
+            var selectedArmors = GetClassAbilitySelectionValues("wizard_armored_wizard");
+            if (selectedArmors.Count > 0 && IsWizardOnlyCurrentCharacter() && string.Equals(_app.CharGen.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase))
+            {
+                bool matchesSelectedArmor = selectedArmors.Any(choice => ArmorMatchesSelection(choice, armorName, armorClassValue));
+                if (!matchesSelectedArmor)
+                {
+                    reason = $"Armor is not in armored wizard selection ({string.Join(", ", selectedArmors)}).";
+                    return false;
+                }
             }
         }
 
@@ -1493,6 +3143,16 @@ public partial class CharGenEquipmentScreen : UserControl, IScreen
                 {
                     maxTier = ArmorTier.Light;
                     source = "PO armor proficiency (light)";
+                }
+
+                var selectedArmors = GetClassAbilitySelectionValues("wizard_armored_wizard");
+                if (selectedArmors.Count > 0)
+                {
+                    maxTier = selectedArmors
+                        .Select(GetSelectedArmorTier)
+                        .DefaultIfEmpty(ArmorTier.Light)
+                        .Max();
+                    source = "PO armored wizard selection";
                 }
 
                 if (selectedWeaponOptions.Contains("shield_proficiency"))
@@ -1556,8 +3216,115 @@ public partial class CharGenEquipmentScreen : UserControl, IScreen
         return ids;
     }
 
+    private HashSet<string> GetClassAbilitySelectionValues(params string[] abilityIds)
+    {
+        var wanted = new HashSet<string>(abilityIds.Where(id => !string.IsNullOrWhiteSpace(id)), StringComparer.OrdinalIgnoreCase);
+        var values = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (wanted.Count == 0)
+            return values;
+
+        foreach (string entry in _app.CharGen.SelectedClassAbilityIds)
+            TryAddSelectionValue(entry, wanted, values);
+
+        foreach (var byClass in _app.CharGen.SelectedAbilitiesByClass.Values)
+        {
+            foreach (string entry in byClass)
+                TryAddSelectionValue(entry, wanted, values);
+        }
+
+        return values;
+    }
+
+    private static void TryAddSelectionValue(string? selectionEntry, HashSet<string> wantedIds, HashSet<string> values)
+    {
+        string baseId = RulesEngine.ExtractClassAbilityBaseId(selectionEntry);
+        if (!wantedIds.Contains(baseId))
+            return;
+
+        string playerText = RulesEngine.ExtractClassAbilityPlayerText(selectionEntry);
+        if (string.IsNullOrWhiteSpace(playerText))
+            return;
+
+        string formatted = RulesEngine.FormatClassAbilitySelectionText(baseId, playerText);
+        if (!string.IsNullOrWhiteSpace(formatted))
+            values.Add(formatted);
+    }
+
+    private static ArmorTier GetSelectedArmorTier(string selection)
+        => NormalizeArmorSelection(selection) switch
+        {
+            "leather" or "studded leather" or "padded" or "hide" => ArmorTier.Light,
+            "scale" or "chain" or "elven chain" => ArmorTier.Medium,
+            "splint" or "banded" or "plate" or "field plate" or "full plate" => ArmorTier.Heavy,
+            _ => ArmorTier.Light,
+        };
+
+    private static bool ArmorMatchesSelection(string selection, string? armorName, int armorClassValue)
+    {
+        string normalizedSelection = NormalizeArmorSelection(selection);
+        if (string.IsNullOrWhiteSpace(normalizedSelection))
+            return false;
+
+        string normalizedArmorName = NormalizeArmorName(armorName);
+        if (string.IsNullOrWhiteSpace(normalizedArmorName))
+            return ClassifyArmorTier(armorClassValue) <= GetSelectedArmorTier(selection);
+
+        return normalizedSelection switch
+        {
+            "leather" => normalizedArmorName.Contains("leather", StringComparison.OrdinalIgnoreCase)
+                && !normalizedArmorName.Contains("studded", StringComparison.OrdinalIgnoreCase),
+            "studded leather" => normalizedArmorName.Contains("studded", StringComparison.OrdinalIgnoreCase)
+                && normalizedArmorName.Contains("leather", StringComparison.OrdinalIgnoreCase),
+            "padded" => normalizedArmorName.Contains("padded", StringComparison.OrdinalIgnoreCase),
+            "hide" => normalizedArmorName.Contains("hide", StringComparison.OrdinalIgnoreCase),
+            "scale" => normalizedArmorName.Contains("scale", StringComparison.OrdinalIgnoreCase),
+            "chain" => normalizedArmorName.Contains("chain", StringComparison.OrdinalIgnoreCase)
+                && !normalizedArmorName.Contains("elven", StringComparison.OrdinalIgnoreCase),
+            "elven chain" => normalizedArmorName.Contains("elven", StringComparison.OrdinalIgnoreCase)
+                && normalizedArmorName.Contains("chain", StringComparison.OrdinalIgnoreCase),
+            "splint" => normalizedArmorName.Contains("splint", StringComparison.OrdinalIgnoreCase),
+            "banded" => normalizedArmorName.Contains("banded", StringComparison.OrdinalIgnoreCase),
+            "plate" => normalizedArmorName.Contains("plate", StringComparison.OrdinalIgnoreCase)
+                && !normalizedArmorName.Contains("field", StringComparison.OrdinalIgnoreCase)
+                && !normalizedArmorName.Contains("full", StringComparison.OrdinalIgnoreCase),
+            "field plate" => normalizedArmorName.Contains("field", StringComparison.OrdinalIgnoreCase)
+                && normalizedArmorName.Contains("plate", StringComparison.OrdinalIgnoreCase),
+            "full plate" => normalizedArmorName.Contains("full", StringComparison.OrdinalIgnoreCase)
+                && normalizedArmorName.Contains("plate", StringComparison.OrdinalIgnoreCase),
+            _ => normalizedArmorName.Contains(normalizedSelection, StringComparison.OrdinalIgnoreCase),
+        };
+    }
+
+    private static string NormalizeArmorSelection(string value)
+    {
+        string normalized = (value ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(normalized))
+            return string.Empty;
+
+        normalized = normalized
+            .Replace("armor", string.Empty, StringComparison.OrdinalIgnoreCase)
+            .Replace("mail", string.Empty, StringComparison.OrdinalIgnoreCase)
+            .Trim();
+
+        return normalized.ToLowerInvariant();
+    }
+
+    private static string NormalizeArmorName(string? value)
+        => (value ?? string.Empty).Trim().ToLowerInvariant();
+
     private static bool HasAnyIdContaining(IEnumerable<string> ids, string token)
         => ids.Any(x => x.Contains(token, StringComparison.OrdinalIgnoreCase));
+
+    private bool IsWizardOnlyCurrentCharacter()
+    {
+        var classIds = _app.CharGen.SelectedClassIds.Count > 0
+            ? _app.CharGen.SelectedClassIds
+            : string.IsNullOrWhiteSpace(_app.CharGen.ClassId)
+                ? new List<string>()
+                : new List<string> { _app.CharGen.ClassId };
+
+        return classIds.Any(IsWizardClassId) && !classIds.Any(IsWarriorClassId);
+    }
 
     private static bool IsWizardClassId(string classId)
         => string.Equals(classId, "wizard", StringComparison.OrdinalIgnoreCase)

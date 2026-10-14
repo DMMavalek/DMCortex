@@ -2,8 +2,8 @@
   "weapon_groups": [
     {
       "id": "axes",
-      "name": "Axes",
-      "description": "All axe-type weapons, from handaxes to great axes.",
+      "name": "Axes, Picks & Hammers",
+      "description": "Broad group covering all axes, picks, and war hammers (Skills & Powers Table 49).",
       "tight_groups": [
         {
           "id": "light_axes",
@@ -14,6 +14,21 @@
           "id": "heavy_axes",
           "name": "Heavy Axes",
           "weapon_ids": [ "battle_axe", "great_axe" ]
+        },
+        {
+          "id": "light_picks",
+          "name": "Light Picks",
+          "weapon_ids": [ "horsemans_pick_light", "horsemans_pick_heavy" ]
+        },
+        {
+          "id": "heavy_picks",
+          "name": "Heavy Picks",
+          "weapon_ids": [ "footmans_pick_light", "footmans_pick_heavy" ]
+        },
+        {
+          "id": "war_hammers",
+          "name": "War Hammers",
+          "weapon_ids": [ "warhammer", "maul" ]
         }
       ]
     },

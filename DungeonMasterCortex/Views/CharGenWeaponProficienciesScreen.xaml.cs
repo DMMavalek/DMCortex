@@ -15,20 +15,103 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
     private const string CombatOptionType = "combat_option";
     private const string WeaponOfChoiceId = "weapon_of_choice";
     private const string WeaponExpertiseId = "weapon_expertise";
+    private const string WeaponMasteryId = "weapon_mastery";
 
-    private static readonly (string Id, string Name, string Description)[] CombatOptions =
+    public record CombatOptionDefinition(
+        string Id,
+        string Name,
+        string Category, // "Armor", "Shield", "Style", "Talent"
+        int SlotCost,
+        int CpCost,
+        string Description,
+        string RelevantAbility = "",
+        int InitialRating = 0,
+        string AllowedGroups = "All");
+
+    private static readonly CombatOptionDefinition[] CombatOptions =
     {
-        ("weapon_mastery", "Weapon Mastery", "Advanced training beyond specialization. This option is intended for high-level campaigns and should be DM-approved."),
-        ("armor_proficiency_light", "Armor Proficiency (Light)", "Use light armor without proficiency penalties."),
-        ("armor_proficiency_medium", "Armor Proficiency (Medium)", "Use medium armor without proficiency penalties."),
-        ("armor_proficiency_heavy", "Armor Proficiency (Heavy)", "Use heavy armor without proficiency penalties."),
-        ("shield_proficiency", "Shield Proficiency", "Use shields without proficiency penalties."),
-        ("fighting_style_single", "Single-Weapon Style", "When fighting with one one-handed weapon and an empty off-hand, gain style benefits focused on precision and defense."),
-        ("fighting_style_two_weapon", "Two-Weapon Style", "Improves dual-wield fighting by reducing off-hand penalties and improving attack flow."),
-        ("fighting_style_two_handed", "Two-Handed Style", "Focuses on power strikes with two-handed weapons, trading flexibility for harder hits."),
-        ("fighting_style_missile", "Missile Style", "Specialized ranged training that improves accuracy with bows, crossbows, slings, and similar missile weapons."),
-        ("fighting_style_sword_shield", "Sword and Shield Style", "Defensive style built around shield use and close-in melee control.")
+        // ── Armor & Shields ──────────────────────────────────────────────────
+        new("armor_proficiency_light", "Armor Proficiency (Light)", "Armor", 1, 2,
+            "A character who spends a proficiency slot on light armor learns to move efficiently in it, suffering only one-half the normal encumbrance of light armor. Under Player's Option rules, this also allows non-armor classes (such as wizards) to wear light armor without penalty.",
+            AllowedGroups: "All"),
+        new("armor_proficiency_medium", "Armor Proficiency (Medium)", "Armor", 1, 2,
+            "A character who spends a proficiency slot on medium armor learns to move efficiently in it, suffering only one-half the normal encumbrance of medium armor. Under Player's Option rules, this also allows non-armor classes (such as wizards) to wear medium armor without penalty.",
+            AllowedGroups: "All"),
+        new("armor_proficiency_heavy", "Armor Proficiency (Heavy)", "Armor", 1, 2,
+            "A character who spends a proficiency slot on heavy armor learns to move efficiently in it, suffering only one-half the normal encumbrance of heavy armor. Under Player's Option rules, this also allows non-armor classes (such as wizards) to wear heavy armor without penalty.",
+            AllowedGroups: "All"),
+        new("shield_proficiency", "Shield Proficiency", "Shield", 1, 2,
+            "Increases the protective value of shields when held: Buckler +1 AC (1 attacker), Small Shield +2 AC (2 attackers), Medium Shield +3 AC (3 attackers), Body Shield +3 AC (+4 vs missiles, 4 attackers). Also allows shield use for classes normally restricted.",
+            AllowedGroups: "All"),
+
+        // ── Fighting Styles ──────────────────────────────────────────────────
+        new("fighting_style_single", "Single-Weapon Style", "Style", 1, 2,
+            "When fighting with a one-handed weapon and an empty off-hand, gain a +1 bonus to Armor Class (+2 if a second slot is invested). Off-hand remains free to punch, grab, or switch to two-handed if the weapon allows.",
+            AllowedGroups: "All"),
+        new("fighting_style_two_weapon", "Two-Weapon Style", "Style", 1, 2,
+            "Reduces penalties for fighting with a weapon in each hand from -2/-4 down to 0/-2 (or 0/0 for ambidextrous characters). Rangers receive the first slot free. A second slot allows using two weapons of equal size.",
+            AllowedGroups: "Warrior, Rogue"),
+        new("fighting_style_two_handed", "Two-Handed Style", "Style", 1, 2,
+            "Increases the speed of two-handed weapons by one category (slow to average, average to fast; or -3 speed factor). Also grants +1 damage when wielding versatile one-handed weapons in two hands.",
+            AllowedGroups: "Warrior, Priest, Rogue"),
+        new("fighting_style_missile", "Missile Style", "Style", 1, 2,
+            "Move up to half movement with full rate of fire, or full move at half rate of fire. Grants -1 AC bonus against enemy missile fire while attacking with ranged weapons.",
+            AllowedGroups: "All"),
+        new("fighting_style_sword_shield", "Sword and Shield Style", "Style", 1, 2,
+            "Allows making a secondary shield attack (rush, punch, block, trap) every round without forfeiting the shield's Armor Class protection.",
+            AllowedGroups: "Warrior, Priest, Rogue"),
+
+        // ── Special Talents (Player's Option: Combat & Tactics, pp. 80–82) ──
+        new("talent_alertness", "Alertness", "Talent", 1, 6,
+            "Unnaturally alert and instinctively notes signs of trouble that others miss. Reduces chance of being surprised by 1 in 10 on a successful proficiency check. In situations where surprise is automatic, a successful check allows being surprised only normally.",
+            RelevantAbility: "Wisdom / Intuition (+1)", AllowedGroups: "All"),
+        new("talent_ambidexterity", "Ambidexterity", "Talent", 1, 4,
+            "Equally skilled with either hand; neither right-handed nor left-handed. When fighting in two-weapon style, has two primary hands and suffers only -2 to hit with either weapon (-2/-2 instead of -2/-4), and no penalty at all (0/0) if specialized in two-weapon style.",
+            RelevantAbility: "Dexterity / Aim", AllowedGroups: "Warrior, Rogue"),
+        new("talent_ambush", "Ambush", "Talent", 1, 4,
+            "Skilled at laying ambushes and setting up surprise attacks even where terrain does not normally favor it. Unless victims spot the ambushers beforehand, surprise is guaranteed.",
+            RelevantAbility: "Intelligence / Reason", InitialRating: 5, AllowedGroups: "Warrior, Rogue"),
+        new("talent_camouflage", "Camouflage", "Talent", 1, 4,
+            "Stay out of sight in natural surroundings using cover and preparation. On a successful check, considered effectively invisible as long as stationary (-1 bonus to surprise enemies). Grants Rangers and Thieves +40% to Hide in Shadows when combined.",
+            RelevantAbility: "Intelligence / Knowledge", InitialRating: 5, AllowedGroups: "Warrior, Rogue"),
+        new("talent_dirty_fighting", "Dirty Fighting", "Talent", 1, 3,
+            "Repertoire of feints, ruses, and unsportsmanlike tactics. Can attempt once per fight; on a success, gains +1 bonus (+2 if enemy believes character fights honorably) to the next attack roll.",
+            RelevantAbility: "Intelligence / Knowledge", InitialRating: 5, AllowedGroups: "Warrior, Rogue"),
+        new("talent_endurance", "Endurance", "Talent", 2, 4,
+            "Perform strenuous physical activity twice as long before fatigue sets in. If fatigue rules are in play, increases fatigue points by 50%.",
+            RelevantAbility: "Constitution / Fitness", InitialRating: 3, AllowedGroups: "Warrior"),
+        new("talent_fine_balance", "Fine Balance", "Talent", 2, 5,
+            "Innate sense of balance and uncanny knack for staying on feet. With a successful check, gains +2 on climbing checks, saving throws, or ability checks to avoid slipping or falling, and reduces off-balance fighting penalties by 2 points (+2 on d20 / +10% on d100 for balance-related feats).",
+            RelevantAbility: "Dexterity / Balance", InitialRating: 7, AllowedGroups: "Warrior, Rogue"),
+        new("talent_iron_will", "Iron Will", "Talent", 2, 6,
+            "Amazing drive to push through injury and exhaustion. Grants +1 bonus to saving throws vs mind-affecting spells and effects (charms, holds, hypnotism, suggestion). Also allows rolling a save vs death each round to remain conscious and fighting at negative HP.",
+            RelevantAbility: "Wisdom / Willpower (-2)", InitialRating: 3, AllowedGroups: "Warrior, Priest"),
+        new("talent_leadership", "Leadership", "Talent", 1, 3,
+            "Motivate troops and inspire men. Military units led by the hero gain +2 to morale checks. In mass combat, commands troops as if 3 levels higher.",
+            RelevantAbility: "Charisma / Leadership (-1)", InitialRating: 5, AllowedGroups: "Warrior"),
+        new("talent_quickness", "Quickness", "Talent", 2, 6,
+            "Unusually fast hand-eye coordination. In combat, gains a -2 bonus to initiative rolls on a successful proficiency check when moving or attacking with weapons of average speed or faster. Does not apply to slow weapons, guarding, or parrying.",
+            RelevantAbility: "Dexterity / Aim", InitialRating: 3, AllowedGroups: "Warrior, Rogue"),
+        new("talent_steady_hand", "Steady Hand", "Talent", 1, 5,
+            "Excellent distance judgment and smooth aim with bows and crossbows. Taking a full round to aim eliminates the medium-range penalty and reduces the long-range penalty to -2 (forfeits multiple attacks to make one careful shot).",
+            RelevantAbility: "Dexterity / Aim", AllowedGroups: "Warrior, Rogue"),
+        new("talent_trouble_sense", "Trouble Sense", "Talent", 1, 4,
+            "Instinctive danger sense for detecting unnoticed threats. On a successful secret DM check, only surprised on a 1 by sneak attacks, and treats rear attacks as flank attacks instead.",
+            RelevantAbility: "Wisdom / Intuition", InitialRating: 3, AllowedGroups: "All")
     };
+
+    private static CombatOptionDefinition? FindCombatOption(string id)
+    {
+        if (string.IsNullOrWhiteSpace(id)) return null;
+        var direct = CombatOptions.FirstOrDefault(x => string.Equals(x.Id, id, StringComparison.OrdinalIgnoreCase));
+        if (direct is not null) return direct;
+
+        string alt = id.StartsWith("talent_", StringComparison.OrdinalIgnoreCase)
+            ? id["talent_".Length..]
+            : $"talent_{id}";
+
+        return CombatOptions.FirstOrDefault(x => string.Equals(x.Id, alt, StringComparison.OrdinalIgnoreCase));
+    }
 
     private static readonly HashSet<string> ClericRestrictedWeaponIds =
         new(StringComparer.OrdinalIgnoreCase)
@@ -114,7 +197,9 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
     private int GetSlotBudget()
     {
         if (IsPlayersOptionMode())
-            return GetWeaponCpBudget() + GetCarryoverFromNwpStage();
+            return _app.CharGen.IsLevelUpMode
+                ? GetCarryoverFromNwpStage()
+                : GetWeaponCpBudget() + GetCarryoverFromNwpStage();
 
         var classIds = GetEffectiveClassIds();
         int level = Math.Max(1, _app.CharGen.CharacterLevel);
@@ -128,7 +213,17 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
     }
 
     private int GetSlotsUsed()
-        => _app.CharGen.SelectedWeaponProficiencies.Sum(GetSelectionTotalCost);
+    {
+        int currentCost = _app.CharGen.SelectedWeaponProficiencies.Sum(GetSelectionTotalCost);
+
+        if (_app.CharGen.IsLevelUpMode)
+        {
+            int baselineCost = _app.CharGen.BaselineWeaponProficiencies.Sum(GetSelectionTotalCost);
+            return Math.Max(0, currentCost - baselineCost);
+        }
+
+        return currentCost;
+    }
 
     private int GetCharacterLevel() => Math.Max(1, _app.CharGen.CharacterLevel);
 
@@ -514,18 +609,16 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
                 classId,
                 selectedAbilityIds,
                 _app.CharGen.RacialCarryoverToClassPoints,
-                specializationId);
-
-            int extraCost = 0;
-            if (string.Equals(classId, "cleric", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(classId, "druid", StringComparison.OrdinalIgnoreCase))
-            {
-                extraCost += CharGenClassAbilitiesScreen.CalculateSphereCpCost(GetSpheresForClass(classId));
-            }
-            if (string.Equals(classId, "wizard", StringComparison.OrdinalIgnoreCase))
-            {
-                extraCost += CharGenClassAbilitiesScreen.CalculateWizardSchoolCpCost(GetWizardSchoolsForClass(classId));
-            }
+                specializationId,
+                Math.Max(1, _app.CharGen.CharacterLevel),
+                _app.CharGen.RaceId);
+            int extraCost = _app.Rules.Classes.TryGetValue(classId, out var classDefinition)
+                ? CharGenClassAbilitiesScreen.CalculateConfigurationCpCost(
+                    classDefinition,
+                    GetSpheresForClass(classId),
+                    GetWizardSchoolsForClass(classId),
+                    specializationId)
+                : 0;
 
             totalRemaining += Math.Max(0, classPackage.remaining - extraCost);
         }
@@ -538,14 +631,125 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
         if (!IsPlayersOptionMode())
             return 0;
 
+        if (_app.CharGen.IsLevelUpMode || _app.CharGen.IsExistingCharacterMode)
+        {
+            int startingPoolCp = _app.CharGen.IsLevelUpMode
+                && _app.CharGen.LevelUpCharacterIndex >= 0
+                && _app.CharGen.LevelUpCharacterIndex < _app.Characters.Count
+                    ? Math.Max(0, _app.Characters[_app.CharGen.LevelUpCharacterIndex].UnspentCharacterPoints)
+                    : _app.CharGen.GetExistingCharacterPointPool();
+            int pendingGain = Math.Max(0, _app.CharGen.LevelUpPendingCharacterPointGain);
+            int availablePool = Math.Max(0, startingPoolCp + pendingGain);
+
+            int baselineTraitCost = GetTraitCost(_app.CharGen.BaselineTraitIds);
+            int currentTraitCost = GetSelectedTraitCost();
+            int deltaTraitCost = currentTraitCost - baselineTraitCost;
+
+            int baselineDisadvantageBonus = GetDisadvantageBonus(_app.CharGen.BaselineDisadvantageSeverities);
+            int currentDisadvantageBonus = GetSelectedDisadvantageBonus();
+            int deltaDisadvantageBonus = currentDisadvantageBonus - baselineDisadvantageBonus;
+
+            int baselineNwpPurchaseCp = GetNwpPurchaseCpForIds(_app.CharGen.BaselineNonweaponProficiencyIds);
+            int currentNwpPurchaseCp = GetSelectedNwpPurchaseCp();
+            int deltaNwpPurchaseCp = currentNwpPurchaseCp - baselineNwpPurchaseCp;
+
+            int baselineNwpImprovementCp = GetNwpImprovementCpForState(
+                _app.CharGen.BaselineNonweaponProficiencyIds,
+                _app.CharGen.BaselineNonweaponProficiencyImprovements);
+            int currentNwpImprovementCp = GetTotalNwpImprovementCp();
+            int deltaNwpImprovementCp = currentNwpImprovementCp - baselineNwpImprovementCp;
+
+            int spentThisUpdate = deltaTraitCost + deltaNwpPurchaseCp + deltaNwpImprovementCp - deltaDisadvantageBonus;
+            return Math.Max(0, availablePool - spentThisUpdate);
+        }
+
         int nwpBudget = GetCharacterOptionsCpBudget();
+        int cpPool = GetCarryoverCharacterPointPool();
         int disadvantageBonus = GetSelectedDisadvantageBonus();
         int traitCost = GetSelectedTraitCost();
         int nwpPurchaseCp = GetSelectedNwpPurchaseCp();
         int nwpImprovementCp = GetTotalNwpImprovementCp();
 
-        int remaining = nwpBudget + disadvantageBonus - traitCost - nwpPurchaseCp - nwpImprovementCp;
+        int remaining = nwpBudget + disadvantageBonus + cpPool - traitCost - nwpPurchaseCp - nwpImprovementCp;
         return Math.Max(0, remaining);
+    }
+
+    private int GetTraitCost(IEnumerable<string> traitIds)
+    {
+        var selectedIds = traitIds
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return _catalog.Traits
+            .Where(x => selectedIds.Contains(x.Id))
+            .Sum(x => x.Cost);
+    }
+
+    private int GetDisadvantageBonus(IReadOnlyDictionary<string, string> severities)
+    {
+        if (severities == null || severities.Count == 0)
+            return 0;
+
+        return _catalog.Disadvantages
+            .Where(x => severities.ContainsKey(x.Id))
+            .Sum(x =>
+            {
+                string severity = severities[x.Id];
+                bool isSevere = string.Equals(severity, "severe", StringComparison.OrdinalIgnoreCase);
+                return isSevere && x.SevereBonus.HasValue ? x.SevereBonus.Value : x.ModerateBonus;
+            });
+    }
+
+    private int GetNwpPurchaseCpForIds(IEnumerable<string> proficiencyIds)
+    {
+        if (!IsPlayersOptionMode())
+            return 0;
+
+        var proficiencyById = _catalog.NonweaponProficiencies
+            .GroupBy(x => x.Id, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+
+        int total = 0;
+        foreach (string id in proficiencyIds)
+        {
+            if (!proficiencyById.TryGetValue(id, out var proficiency))
+                continue;
+            total += proficiency.CpCost > 0 ? proficiency.CpCost : Math.Max(1, proficiency.Slots);
+        }
+
+        return total;
+    }
+
+    private static int GetNwpImprovementCpForState(IEnumerable<string> proficiencyIds, IReadOnlyDictionary<string, int> improvementById)
+    {
+        var selectedDistinct = proficiencyIds
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        return improvementById
+            .Where(kv => selectedDistinct.Contains(kv.Key))
+            .Sum(kv => Math.Max(0, kv.Value));
+    }
+
+    private int GetCarryoverCharacterPointPool()
+    {
+        if (!IsPlayersOptionMode())
+            return 0;
+
+        int existingPool = 0;
+        if (_app.CharGen.IsLevelUpMode
+            && _app.CharGen.LevelUpCharacterIndex >= 0
+            && _app.CharGen.LevelUpCharacterIndex < _app.Characters.Count)
+        {
+            existingPool = Math.Max(0, _app.Characters[_app.CharGen.LevelUpCharacterIndex].UnspentCharacterPoints);
+        }
+        else if (_app.CharGen.IsExistingCharacterMode)
+        {
+            existingPool = _app.CharGen.GetExistingCharacterPointPool();
+        }
+
+        int pendingGain = Math.Max(0, _app.CharGen.LevelUpPendingCharacterPointGain);
+        return Math.Max(0, existingPool + pendingGain);
     }
 
     private IEnumerable<string> GetSelectedAbilityIdsForClass(string classId)
@@ -615,6 +819,21 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
         return false;
     }
 
+    private bool HasMultipleWeaponSpecializationAbility()
+    {
+        if (!IsPlayersOptionMode())
+            return false;
+
+        foreach (var classId in GetEffectiveClassIds())
+        {
+            var selected = GetSelectedAbilityIdsForClass(classId);
+            if (selected.Any(id => RulesEngine.ExtractClassAbilityBaseId(id).EndsWith("_multiple_specialization", StringComparison.OrdinalIgnoreCase)))
+                return true;
+        }
+
+        return false;
+    }
+
     private bool HasPaladinSingleSpecializationCap()
     {
         if (!IsPlayersOptionMode())
@@ -656,7 +875,7 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
         int remaining = budget - used;
 
         BudgetUsedHeaderText.Text = isPO ? "CP USED" : "SLOTS USED";
-        RemainingBudgetHeaderText.Text = isPO ? "REMAINING CP" : "SLOTS REMAINING";
+        RemainingBudgetHeaderText.Text = isPO ? "GLOBAL CP REMAINING" : "SLOTS REMAINING";
 
         BudgetUsedSummaryText.Text = $"{used} / {budget}";
         BudgetUsedSummaryText.Foreground = over
@@ -669,10 +888,16 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
             : (System.Windows.Media.Brush)FindResource("BrushText");
 
         CostInfoText.Text = isPO
-            ? "Individual weapon: 2/3/4/5/6 CP by class and crossover  |  Tight: 4 CP warriors only  |  Broad: 6 CP warriors only  |  Fighting styles/combat options: 2 CP"
-            : "Individual weapon: 1 slot  |  Tight group: 1 slot  |  Broad group: 2 slots";
+            ? "Weapon: 2-6 CP by class | Styles & Armor: 2 CP | Talents: 3-6 CP | Tight: 4 CP | Broad: 6 CP"
+            : "Weapon: 1 slot | Tight: 1 slot | Broad: 2 slots | Styles & Armor: 1 slot | Talents: 1-2 slots";
 
         SelectedCountText.Text = $"{_app.CharGen.SelectedWeaponProficiencies.Count} proficiencies";
+
+        if (isPO)
+        {
+            int cpPool = GetCarryoverCharacterPointPool();
+            SelectedCountText.Text = $"{_app.CharGen.SelectedWeaponProficiencies.Count} proficiencies • Global CP pool {cpPool}";
+        }
 
         bool canSpec = CanSpecialize();
         SpecializationInfoText.Text = canSpec
@@ -702,7 +927,9 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
         bool showIndividual = showType == "all" || showType == "individual";
         bool showTight      = showType == "all" || showType == "tight";
         bool showBroad      = showType == "all" || showType == "broad";
-        bool showTraining   = showType == "all" || showType == "training";
+        bool showArmor      = showType == "all" || showType == "armor";
+        bool showStyles     = showType == "all" || showType == "styles";
+        bool showTalents    = showType == "all" || showType == "talents";
         bool noWeapons      = HasNoWeaponProficiencyRestriction();
         bool limitedWeapons = HasLimitedPriestWeaponRestriction();
         bool canBuyGroups   = !IsPlayersOptionMode() || _app.Rules.CanBuyWeaponGroups(GetEffectiveClassIds());
@@ -769,21 +996,46 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
                 }
                 if (!MatchesSearch(w.Name, search)) continue;
                 if (selectedIds.Contains(w.Id)) continue;
-                // Skip if a tight group or broad group already covers this weapon
-                if (IsCoveredBySelection(w, selectedIds)) continue;
 
-                int cost = GetProficiencyCost("individual", w.Id);
-                if (cost < 0) continue;
+                bool isCoveredByGroup = _app.Rules.IsWeaponCoveredByGroupSelections(w.Id, _app.CharGen.SelectedWeaponProficiencies);
+
+                // If covered by a group but character cannot specialize, skip redundant listing
+                if (isCoveredByGroup && !CanSpecialize())
+                    continue;
+
+                int cost;
+                string badge;
+                string label;
+
+                if (isCoveredByGroup)
+                {
+                    cost = IsPlayersOptionMode()
+                        ? _app.Rules.GetWeaponSpecializationOnlyCpCost(GetEffectiveClassIds())
+                        : 1;
+
+                    if (HasFighterProficiencyEase())
+                        cost = Math.Max(1, (cost + 1) / 2);
+
+                    badge = $"{FormatBudgetUnits(cost)} (Spec)";
+                    label = $"    {w.Name}  ★ [In Group]";
+                }
+                else
+                {
+                    cost = GetProficiencyCost("individual", w.Id);
+                    if (cost < 0) continue;
+                    badge = FormatBudgetUnits(cost);
+                    label = $"    {w.Name}";
+                }
 
                 items.Add(new AvailableItem(w.Id, "individual",
-                    $"    {w.Name}", FormatBudgetUnits(cost), w, null, null));
+                    label, badge, w, null, null));
             }
         }
 
-        // Additional combat training picks that share the weapon proficiency budget.
-        if (showTraining && !noWeapons && !limitedWeapons)
+        // Armor & Shield Proficiencies
+        if (showArmor && !noWeapons)
         {
-            foreach (var option in CombatOptions.OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase))
+            foreach (var option in CombatOptions.Where(o => o.Category == "Armor" || o.Category == "Shield").OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase))
             {
                 if (!MatchesSearch(option.Name, search)) continue;
                 if (selectedIds.Contains(option.Id)) continue;
@@ -791,8 +1043,43 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
                 int cost = GetProficiencyCost(CombatOptionType, option.Id);
                 if (cost < 0) continue;
 
+                string prefix = showType == "all" ? $"[{option.Category}] " : "    ";
                 items.Add(new AvailableItem(option.Id, CombatOptionType,
-                    $"    {option.Name}", FormatBudgetUnits(cost), null, null, null));
+                    $"{prefix}{option.Name}", FormatBudgetUnits(cost), null, null, null));
+            }
+        }
+
+        // Fighting Styles
+        if (showStyles && !noWeapons)
+        {
+            foreach (var option in CombatOptions.Where(o => o.Category == "Style").OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase))
+            {
+                if (!MatchesSearch(option.Name, search)) continue;
+                if (selectedIds.Contains(option.Id)) continue;
+
+                int cost = GetProficiencyCost(CombatOptionType, option.Id);
+                if (cost < 0) continue;
+
+                string prefix = showType == "all" ? "[Style] " : "    ";
+                items.Add(new AvailableItem(option.Id, CombatOptionType,
+                    $"{prefix}{option.Name}", FormatBudgetUnits(cost), null, null, null));
+            }
+        }
+
+        // Special Talents (Player's Option: Combat & Tactics)
+        if (showTalents && !noWeapons)
+        {
+            foreach (var option in CombatOptions.Where(o => o.Category == "Talent").OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase))
+            {
+                if (!MatchesSearch(option.Name, search)) continue;
+                if (selectedIds.Contains(option.Id)) continue;
+
+                int cost = GetProficiencyCost(CombatOptionType, option.Id);
+                if (cost < 0) continue;
+
+                string prefix = showType == "all" ? "[Talent] " : "    ";
+                items.Add(new AvailableItem(option.Id, CombatOptionType,
+                    $"{prefix}{option.Name}", FormatBudgetUnits(cost), null, null, null));
             }
         }
 
@@ -809,7 +1096,7 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
         var items = _app.CharGen.SelectedWeaponProficiencies
             .Select(sel =>
             {
-                int cost = GetProficiencyCost(sel.ProficiencyType, sel.ProficiencyId, sel.Specialized);
+                int cost = GetSelectionTotalCost(sel);
                 string costLabel = FormatBudgetUnits(cost);
                 string specBadge = BuildSelectionBadge(sel);
                 return new SelectedItem(sel.ProficiencyId, sel.ProficiencyType,
@@ -828,13 +1115,7 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
 
     private bool IsCoveredBySelection(WeaponDefinition weapon, HashSet<string> selectedIds)
     {
-        // Covered by broad group?
-        if (!string.IsNullOrWhiteSpace(weapon.GroupId) && selectedIds.Contains(weapon.GroupId))
-            return true;
-        // Covered by tight group?
-        if (!string.IsNullOrWhiteSpace(weapon.TightGroupId) && selectedIds.Contains(weapon.TightGroupId))
-            return true;
-        return false;
+        return _app.Rules.IsWeaponCoveredByGroupSelections(weapon.Id, _app.CharGen.SelectedWeaponProficiencies);
     }
 
     private static bool MatchesSearch(string name, string search)
@@ -845,7 +1126,9 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
 
     private string GetShowType()
     {
-        if (ShowTraining?.IsChecked  == true) return "training";
+        if (ShowArmor?.IsChecked      == true) return "armor";
+        if (ShowStyles?.IsChecked     == true) return "styles";
+        if (ShowTalents?.IsChecked    == true) return "talents";
         if (ShowIndividual?.IsChecked == true) return "individual";
         if (ShowTight?.IsChecked      == true) return "tight";
         if (ShowBroad?.IsChecked      == true) return "broad";
@@ -855,7 +1138,11 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
     private static string BuildSelectionBadge(WeaponProficiencySelection selection)
     {
         var parts = new List<string>();
-        if (selection.Specialized) parts.Add("SPEC");
+        if (selection.GrandMastery) parts.Add("G-MASTER");
+        else if (selection.HighMastery) parts.Add("H-MASTER");
+        else if (selection.WeaponMastery) parts.Add("MASTER");
+        else if (selection.Specialized) parts.Add("SPEC");
+
         if (selection.WeaponOfChoice) parts.Add("CHOICE");
         if (selection.WeaponExpertise) parts.Add("EXPERT");
         return parts.Count > 0 ? $"★ {string.Join("/", parts)}" : string.Empty;
@@ -866,14 +1153,39 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
 
     private int GetSelectionTotalCost(WeaponProficiencySelection selection)
     {
-        int cost = GetProficiencyCost(selection.ProficiencyType, selection.ProficiencyId, selection.Specialized);
-        if (cost < 0)
-            cost = RulesEngine.GetWeaponProficiencySlotCost(selection.ProficiencyType) + (selection.Specialized ? 1 : 0);
+        bool covered = string.Equals(selection.ProficiencyType, "individual", StringComparison.OrdinalIgnoreCase)
+            && _app.Rules.IsWeaponCoveredByGroupSelections(selection.ProficiencyId, _app.CharGen.SelectedWeaponProficiencies);
+
+        int cost;
+        if (covered)
+        {
+            if (IsPlayersOptionMode())
+            {
+                cost = selection.Specialized ? _app.Rules.GetWeaponSpecializationOnlyCpCost(GetEffectiveClassIds()) : 0;
+                if (HasFighterProficiencyEase()) cost = Math.Max(1, (cost + 1) / 2);
+            }
+            else
+            {
+                cost = selection.Specialized ? 1 : 0;
+            }
+        }
+        else
+        {
+            cost = GetProficiencyCost(selection.ProficiencyType, selection.ProficiencyId, selection.Specialized);
+            if (cost < 0)
+                cost = RulesEngine.GetWeaponProficiencySlotCost(selection.ProficiencyType, selection.ProficiencyId) + (selection.Specialized ? 1 : 0);
+        }
 
         if (selection.WeaponOfChoice)
             cost += GetPerWeaponOptionCost(WeaponOfChoiceId);
         if (selection.WeaponExpertise)
             cost += GetPerWeaponOptionCost(WeaponExpertiseId);
+        if (selection.WeaponMastery)
+            cost += IsPlayersOptionMode() ? Math.Max(0, GetWeaponMasteryCost()) : 1;
+        if (selection.HighMastery)
+            cost += IsPlayersOptionMode() ? Math.Max(0, GetHighMasteryCost()) : 1;
+        if (selection.GrandMastery)
+            cost += IsPlayersOptionMode() ? Math.Max(0, GetGrandMasteryCost()) : 1;
 
         return Math.Max(0, cost);
     }
@@ -1034,7 +1346,21 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
         StatSize.Text     = ExpandSizeCode(w.Size);
         StatApr.Text      = FormatApr(w.AttacksPerRound);
 
-        DetailNotes.Text = w.Notes;
+        bool inGroup = _app.Rules.IsWeaponCoveredByGroupSelections(w.Id, _app.CharGen.SelectedWeaponProficiencies);
+        if (inGroup)
+        {
+            int specCost = IsPlayersOptionMode()
+                ? _app.Rules.GetWeaponSpecializationOnlyCpCost(GetEffectiveClassIds())
+                : 1;
+            if (HasFighterProficiencyEase()) specCost = Math.Max(1, (specCost + 1) / 2);
+            string groupNote = $"\n\n★ Group Covered: Base proficiency is already granted by your group proficiency. Adding this weapon purchases Specialization directly for {FormatBudgetUnits(specCost)}.";
+            DetailNotes.Text = (w.Notes ?? string.Empty) + groupNote;
+        }
+        else
+        {
+            DetailNotes.Text = w.Notes;
+        }
+
         GroupMembersPanel.Visibility = Visibility.Collapsed;
         SpecializationStatsPanel.Visibility = CanSpecialize() ? Visibility.Visible : Visibility.Collapsed;
     }
@@ -1078,8 +1404,8 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
 
     private void ShowCombatOptionDetail(string optionId)
     {
-        var option = CombatOptions.FirstOrDefault(x => string.Equals(x.Id, optionId, StringComparison.OrdinalIgnoreCase));
-        if (string.IsNullOrWhiteSpace(option.Id))
+        var option = FindCombatOption(optionId);
+        if (option is null)
         {
             DetailTitle.Text = optionId;
             DetailType.Text = $"Combat Option  ({FormatBudgetUnits(GetProficiencyCost(CombatOptionType, optionId))})";
@@ -1088,8 +1414,30 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
         else
         {
             DetailTitle.Text = option.Name;
-            DetailType.Text = $"Combat Option  ({FormatBudgetUnits(GetProficiencyCost(CombatOptionType, option.Id))})";
-            DetailNotes.Text = option.Description;
+            string categoryLabel = option.Category switch
+            {
+                "Armor" => "Armor Proficiency",
+                "Shield" => "Shield Proficiency",
+                "Style" => "Fighting Style",
+                "Talent" => "Special Talent",
+                _ => "Combat Option"
+            };
+            int cost = GetProficiencyCost(CombatOptionType, option.Id);
+            DetailType.Text = $"{categoryLabel}  ({FormatBudgetUnits(cost)})";
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine(option.Description);
+            sb.AppendLine();
+            sb.AppendLine($"• Category: {categoryLabel}");
+            sb.AppendLine($"• Cost: {option.SlotCost} {(option.SlotCost == 1 ? "slot" : "slots")} (Core) / {option.CpCost} CP (Player's Option)");
+            if (!string.IsNullOrWhiteSpace(option.AllowedGroups))
+                sb.AppendLine($"• Allowed Groups: {option.AllowedGroups}");
+            if (!string.IsNullOrWhiteSpace(option.RelevantAbility))
+                sb.AppendLine($"• Relevant Ability: {option.RelevantAbility}");
+            if (option.InitialRating > 0)
+                sb.AppendLine($"• Initial Rating: {option.InitialRating}");
+
+            DetailNotes.Text = sb.ToString().TrimEnd();
         }
 
         WeaponStatsPanel.Visibility = Visibility.Collapsed;
@@ -1181,7 +1529,50 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
             .FirstOrDefault(s => string.Equals(s.ProficiencyId, item.Id, StringComparison.OrdinalIgnoreCase));
         if (existing is not null) return; // already added
 
-        int addCost = GetProficiencyCost(item.ProfType, item.Id);
+        bool isCovered = string.Equals(item.ProfType, "individual", StringComparison.OrdinalIgnoreCase)
+            && _app.Rules.IsWeaponCoveredByGroupSelections(item.Id, _app.CharGen.SelectedWeaponProficiencies);
+
+        if (isCovered)
+        {
+            if (!CanSpecialize())
+            {
+                MessageBox.Show(
+                    $"{BuildDisplayName(item)} is already covered by your selected group proficiency.",
+                    "Weapon Proficiency",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            if (_app.CharGen.SelectedWeaponProficiencies.Any(s => s.Specialized)
+                && !HasMultipleWeaponSpecializationAbility())
+            {
+                MessageBox.Show(
+                    "Weapon Specialization allows only one specialized weapon unless Multiple Specializations was selected during character creation.",
+                    "Weapon Specialization",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            if (HasPaladinSingleSpecializationCap() && _app.CharGen.SelectedWeaponProficiencies.Count(s => s.Specialized) >= 1)
+            {
+                MessageBox.Show(
+                    "Paladin weapon specialization allows specialization in only one weapon.",
+                    "Weapon Specialization",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+        }
+
+        int addCost = isCovered
+            ? (IsPlayersOptionMode() ? _app.Rules.GetWeaponSpecializationOnlyCpCost(GetEffectiveClassIds()) : 1)
+            : GetProficiencyCost(item.ProfType, item.Id);
+
+        if (isCovered && HasFighterProficiencyEase())
+            addCost = Math.Max(1, (addCost + 1) / 2);
+
         if (addCost < 0)
         {
             MessageBox.Show(
@@ -1210,7 +1601,7 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
             ProficiencyId   = item.Id,
             ProficiencyType = item.ProfType,
             DisplayName     = BuildDisplayName(item),
-            Specialized     = false,
+            Specialized     = isCovered && CanSpecialize(),
         };
         _app.CharGen.SelectedWeaponProficiencies.Add(sel);
         Refresh();
@@ -1219,6 +1610,207 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
         var addedItem = SelectedList.Items.Cast<SelectedItem>()
             .FirstOrDefault(x => x.Id == item.Id);
         if (addedItem is not null) SelectedList.SelectedItem = addedItem;
+    }
+
+    private void PromptSpecializeInGroupWeapon(SelectedItem groupItem)
+    {
+        if (!CanSpecialize())
+        {
+            MessageBox.Show(
+                "Your character's class is not eligible for weapon specialization.",
+                "Weapon Specialization",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        if (_app.CharGen.SelectedWeaponProficiencies.Any(s => s.Specialized) && !HasMultipleWeaponSpecializationAbility())
+        {
+            MessageBox.Show(
+                "Weapon Specialization allows only one specialized weapon unless Multiple Specializations was selected during character creation.",
+                "Weapon Specialization",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        if (HasPaladinSingleSpecializationCap() && _app.CharGen.SelectedWeaponProficiencies.Count(s => s.Specialized) >= 1)
+        {
+            MessageBox.Show(
+                "Paladin weapon specialization allows specialization in only one weapon.",
+                "Weapon Specialization",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        var candidateWeapons = new List<WeaponDefinition>();
+        if (string.Equals(groupItem.ProfType, "tight_group", StringComparison.OrdinalIgnoreCase))
+        {
+            if (_app.Rules.TightGroups.TryGetValue(groupItem.Id, out var tg))
+            {
+                candidateWeapons = tg.WeaponIds
+                    .Select(id => _app.Rules.WeaponById.TryGetValue(id, out var w) ? w : null)
+                    .Where(w => w is not null && IsWeaponAllowedForClassRestriction(w.Id))
+                    .Select(w => w!)
+                    .ToList();
+            }
+        }
+        else if (string.Equals(groupItem.ProfType, "broad_group", StringComparison.OrdinalIgnoreCase))
+        {
+            var bg = _app.Rules.WeaponGroups
+                .FirstOrDefault(g => string.Equals(g.Id, groupItem.Id, StringComparison.OrdinalIgnoreCase));
+            if (bg is not null)
+            {
+                var ids = bg.TightGroups.SelectMany(t => t.WeaponIds)
+                    .Concat(_app.Rules.Weapons.Where(w => string.Equals(w.GroupId, bg.Id, StringComparison.OrdinalIgnoreCase)).Select(w => w.Id))
+                    .Distinct(StringComparer.OrdinalIgnoreCase);
+
+                candidateWeapons = ids
+                    .Select(id => _app.Rules.WeaponById.TryGetValue(id, out var w) ? w : null)
+                    .Where(w => w is not null && IsWeaponAllowedForClassRestriction(w.Id))
+                    .Select(w => w!)
+                    .ToList();
+            }
+        }
+
+        candidateWeapons = candidateWeapons
+            .OrderBy(w => GetWeaponSortKey(w.Name), StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (candidateWeapons.Count == 0)
+        {
+            MessageBox.Show(
+                "No eligible weapons were found in this weapon group.",
+                "Weapon Specialization",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        int addCost = IsPlayersOptionMode()
+            ? _app.Rules.GetWeaponSpecializationOnlyCpCost(GetEffectiveClassIds())
+            : 1;
+        if (HasFighterProficiencyEase())
+            addCost = Math.Max(1, (addCost + 1) / 2);
+
+        int budget = GetSlotBudget();
+        int used = GetSlotsUsed();
+        if (used + addCost > budget)
+        {
+            string budgetType = IsPlayersOptionMode() ? "Weapon Proficiency CP" : "Weapon Proficiency Slots";
+            MessageBox.Show(
+                $"Specializing in a weapon from this group requires {FormatBudgetUnits(addCost)}, which would exceed your {budgetType.ToLowerInvariant()} budget.\n\nUsed: {used}/{budget}",
+                budgetType,
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        var dialog = new Window
+        {
+            Title = $"Specialize in Weapon — {groupItem.Label.Trim()}",
+            Width = 440,
+            Height = 250,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Owner = Window.GetWindow(this),
+            Background = (System.Windows.Media.Brush)Application.Current.FindResource("BrushCard"),
+            ResizeMode = ResizeMode.NoResize,
+            WindowStyle = WindowStyle.SingleBorderWindow,
+        };
+
+        var root = new StackPanel { Margin = new Thickness(18) };
+
+        root.Children.Add(new TextBlock
+        {
+            Text = $"Select a weapon from {groupItem.Label.Trim()} to specialize in:",
+            Style = (Style)Application.Current.FindResource("TitleText"),
+            FontSize = 14,
+            Margin = new Thickness(0, 0, 0, 6),
+            TextWrapping = TextWrapping.Wrap,
+        });
+
+        root.Children.Add(new TextBlock
+        {
+            Text = $"Group proficiency covers basic training. Specialization cost: {FormatBudgetUnits(addCost)}.",
+            Style = (Style)Application.Current.FindResource("SubtitleText"),
+            Margin = new Thickness(0, 0, 0, 12),
+            TextWrapping = TextWrapping.Wrap,
+        });
+
+        var combo = new ComboBox
+        {
+            Style = (Style)Application.Current.FindResource("DarkComboBox"),
+            Height = 32,
+            Margin = new Thickness(0, 0, 0, 18),
+            ItemsSource = candidateWeapons.Select(w => $"{w.Name}  (Spd {w.Speed}, {w.DamageSm}/{w.DamageL}, {ExpandTypeCode(w.Type)})").ToList(),
+            SelectedIndex = 0,
+        };
+        root.Children.Add(combo);
+
+        var btnRow = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+        };
+
+        var okBtn = new Button
+        {
+            Content = "★  SPECIALIZE",
+            Style = (Style)Application.Current.FindResource("GoldButton"),
+            Width = 130,
+            Height = 32,
+            Margin = new Thickness(0, 0, 10, 0),
+        };
+        var cancelBtn = new Button
+        {
+            Content = "CANCEL",
+            Style = (Style)Application.Current.FindResource("DarkButton"),
+            Width = 90,
+            Height = 32,
+        };
+
+        okBtn.Click += (_, _) =>
+        {
+            int idx = combo.SelectedIndex;
+            if (idx >= 0 && idx < candidateWeapons.Count)
+            {
+                var chosenWeapon = candidateWeapons[idx];
+                var existingSel = _app.CharGen.SelectedWeaponProficiencies
+                    .FirstOrDefault(s => string.Equals(s.ProficiencyId, chosenWeapon.Id, StringComparison.OrdinalIgnoreCase));
+
+                if (existingSel is not null)
+                {
+                    existingSel.Specialized = true;
+                }
+                else
+                {
+                    _app.CharGen.SelectedWeaponProficiencies.Add(new WeaponProficiencySelection
+                    {
+                        ProficiencyId = chosenWeapon.Id,
+                        ProficiencyType = "individual",
+                        DisplayName = GetWeaponSortKey(chosenWeapon.Name),
+                        Specialized = true,
+                    });
+                }
+
+                Refresh();
+
+                var addedItem = SelectedList.Items.Cast<SelectedItem>()
+                    .FirstOrDefault(x => x.Id == chosenWeapon.Id);
+                if (addedItem is not null) SelectedList.SelectedItem = addedItem;
+            }
+            dialog.Close();
+        };
+
+        cancelBtn.Click += (_, _) => dialog.Close();
+
+        btnRow.Children.Add(okBtn);
+        btnRow.Children.Add(cancelBtn);
+        root.Children.Add(btnRow);
+
+        dialog.Content = root;
+        dialog.ShowDialog();
     }
 
     private void BtnSpecialize_Click(object sender, RoutedEventArgs e)
@@ -1233,10 +1825,17 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
             return;
         }
 
+        if (string.Equals(selItem.ProfType, "broad_group", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(selItem.ProfType, "tight_group", StringComparison.OrdinalIgnoreCase))
+        {
+            PromptSpecializeInGroupWeapon(selItem);
+            return;
+        }
+
         if (selItem.ProfType != "individual")
         {
             MessageBox.Show(
-                "Only individual weapon proficiencies can be specialized.",
+                "Only individual weapon proficiencies or weapon groups can be specialized.",
                 "Weapon Specialization",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
@@ -1257,6 +1856,17 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
             .FirstOrDefault(s => string.Equals(s.ProficiencyId, selItem.Id, StringComparison.OrdinalIgnoreCase));
         if (match is not null)
         {
+            if (!match.Specialized && _app.CharGen.SelectedWeaponProficiencies.Any(s => s.Specialized)
+                && !HasMultipleWeaponSpecializationAbility())
+            {
+                MessageBox.Show(
+                    "Weapon Specialization allows only one specialized weapon unless Multiple Specializations was selected during character creation.",
+                    "Weapon Specialization",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
             if (!match.Specialized && HasPaladinSingleSpecializationCap())
             {
                 int specializedCount = _app.CharGen.SelectedWeaponProficiencies.Count(s => s.Specialized);
@@ -1273,17 +1883,31 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
 
             int budget = GetSlotBudget();
             int used = GetSlotsUsed();
-            int specializedCost = GetProficiencyCost(match.ProficiencyType, match.ProficiencyId, specialized: true);
-            int currentCost = GetProficiencyCost(match.ProficiencyType, match.ProficiencyId, specialized: false);
-            int additionalCost = specializedCost - currentCost;
-            if (specializedCost < 0)
+            bool isCovered = _app.Rules.IsWeaponCoveredByGroupSelections(match.ProficiencyId, _app.CharGen.SelectedWeaponProficiencies);
+            int additionalCost;
+
+            if (isCovered)
             {
-                MessageBox.Show(
-                    "Specialization is not available for this class or weapon under Players Option rules.",
-                    "Weapon Specialization",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                return;
+                int specCost = IsPlayersOptionMode()
+                    ? _app.Rules.GetWeaponSpecializationOnlyCpCost(GetEffectiveClassIds())
+                    : 1;
+                if (HasFighterProficiencyEase()) specCost = Math.Max(1, (specCost + 1) / 2);
+                additionalCost = specCost;
+            }
+            else
+            {
+                int specializedCost = GetProficiencyCost(match.ProficiencyType, match.ProficiencyId, specialized: true);
+                int currentCost = GetProficiencyCost(match.ProficiencyType, match.ProficiencyId, specialized: false);
+                additionalCost = specializedCost - currentCost;
+                if (specializedCost < 0)
+                {
+                    MessageBox.Show(
+                        "Specialization is not available for this class or weapon under Players Option rules.",
+                        "Weapon Specialization",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return;
+                }
             }
 
             if (!match.Specialized && used + additionalCost > budget)
@@ -1298,6 +1922,12 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
             }
 
             match.Specialized = !match.Specialized;
+            if (!match.Specialized)
+            {
+                match.WeaponMastery = false;
+                match.HighMastery = false;
+                match.GrandMastery = false;
+            }
             Refresh();
         }
     }
@@ -1329,9 +1959,7 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
     {
         "broad_group" => $"[Broad] {item.BroadGroup?.Name ?? item.Id}",
         "tight_group" => $"[Tight] {item.TightGroup?.Name ?? item.Id}",
-        CombatOptionType => CombatOptions.FirstOrDefault(x => string.Equals(x.Id, item.Id, StringComparison.OrdinalIgnoreCase)).Name is string n && !string.IsNullOrWhiteSpace(n)
-            ? n
-            : item.Id,
+        CombatOptionType => FindCombatOption(item.Id)?.Name ?? item.Id,
         _             => GetWeaponSortKey(item.Weapon?.Name ?? item.Id),
     };
 
@@ -1374,6 +2002,234 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
             "Weapon Expertise");
     }
 
+    private int GetWeaponMasteryMinLevel(out string classLabel)
+    {
+        var classIds = GetEffectiveClassIds();
+        bool hasFighter = classIds.Any(id => string.Equals(id, "fighter", StringComparison.OrdinalIgnoreCase));
+        bool hasRangerOrPaladin = classIds.Any(id =>
+            string.Equals(id, "ranger", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(id, "paladin", StringComparison.OrdinalIgnoreCase));
+
+        if (hasFighter && classIds.Count == 1)
+        {
+            classLabel = "Fighter";
+            return 5;
+        }
+        if (hasFighter)
+        {
+            classLabel = "Multi-class Fighter";
+            return 6;
+        }
+        if (hasRangerOrPaladin)
+        {
+            classLabel = "Ranger/Paladin";
+            return 7;
+        }
+
+        classLabel = "Warrior";
+        return -1;
+    }
+
+    private int GetHighMasteryMinLevel(out string classLabel)
+    {
+        var classIds = GetEffectiveClassIds();
+        bool hasFighter = classIds.Any(id => string.Equals(id, "fighter", StringComparison.OrdinalIgnoreCase));
+        bool hasRangerOrPaladin = classIds.Any(id =>
+            string.Equals(id, "ranger", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(id, "paladin", StringComparison.OrdinalIgnoreCase));
+
+        if (hasFighter && classIds.Count == 1)
+        {
+            classLabel = "Fighter";
+            return 6;
+        }
+        if (hasFighter)
+        {
+            classLabel = "Multi-class Fighter";
+            return 8;
+        }
+        if (hasRangerOrPaladin)
+        {
+            classLabel = "Ranger/Paladin";
+            return 9;
+        }
+
+        classLabel = "Warrior";
+        return -1;
+    }
+
+    private int GetGrandMasteryMinLevel(out string classLabel)
+    {
+        var classIds = GetEffectiveClassIds();
+        bool hasFighter = classIds.Any(id => string.Equals(id, "fighter", StringComparison.OrdinalIgnoreCase));
+        if (hasFighter && classIds.Count == 1)
+        {
+            classLabel = "Single-class Fighter";
+            return 9;
+        }
+
+        classLabel = "Single-class Fighter only";
+        return -1;
+    }
+
+    private int GetWeaponMasteryCost()
+    {
+        int minLevel = GetWeaponMasteryMinLevel(out _);
+        if (minLevel < 0 || GetCharacterLevel() < minLevel)
+            return -1;
+
+        if (!IsPlayersOptionMode())
+            return 1;
+
+        var classIds = GetEffectiveClassIds();
+        bool isSingleFighter = classIds.Count == 1 && classIds.Any(id => string.Equals(id, "fighter", StringComparison.OrdinalIgnoreCase));
+        return isSingleFighter ? 2 : 8;
+    }
+
+    private int GetHighMasteryCost()
+    {
+        int minLevel = GetHighMasteryMinLevel(out _);
+        if (minLevel < 0 || GetCharacterLevel() < minLevel)
+            return -1;
+
+        if (!IsPlayersOptionMode())
+            return 1;
+
+        var classIds = GetEffectiveClassIds();
+        bool isSingleFighter = classIds.Count == 1 && classIds.Any(id => string.Equals(id, "fighter", StringComparison.OrdinalIgnoreCase));
+        return isSingleFighter ? 2 : 8;
+    }
+
+    private int GetGrandMasteryCost()
+    {
+        int minLevel = GetGrandMasteryMinLevel(out _);
+        if (minLevel < 0 || GetCharacterLevel() < minLevel)
+            return -1;
+
+        if (!IsPlayersOptionMode())
+            return 1;
+
+        return 2;
+    }
+
+    private void BtnWeaponMastery_Click(object sender, RoutedEventArgs e)
+    {
+        if (!TryGetSelectedIndividualWeapon(out var selection))
+            return;
+        if (!selection.Specialized)
+        {
+            MessageBox.Show("Weapon Mastery requires specialization in the selected weapon.", "Weapon Mastery", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        int minLevel = GetWeaponMasteryMinLevel(out string classLabel);
+        if (minLevel < 0 || GetCharacterLevel() < minLevel)
+        {
+            MessageBox.Show($"Weapon Mastery requires {classLabel} Level {minLevel}+. Current character level is {GetCharacterLevel()}.", "Weapon Mastery", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        int cost = GetWeaponMasteryCost();
+        if (selection.WeaponMastery)
+        {
+            selection.WeaponMastery = false;
+            selection.HighMastery = false;
+            selection.GrandMastery = false;
+        }
+        else
+        {
+            if (GetSlotsUsed() + cost > GetSlotBudget())
+            {
+                string unit = IsPlayersOptionMode() ? "CP" : "slot(s)";
+                MessageBox.Show($"Weapon Mastery requires {cost} additional {unit}.", "Weapon Mastery", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            selection.WeaponMastery = true;
+        }
+        Refresh();
+    }
+
+    private void BtnHighMastery_Click(object sender, RoutedEventArgs e)
+    {
+        if (!TryGetSelectedIndividualWeapon(out var selection))
+            return;
+        if (!selection.Specialized)
+        {
+            MessageBox.Show("High Mastery requires specialization and Weapon Mastery first.", "High Mastery", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        int minLevel = GetHighMasteryMinLevel(out string classLabel);
+        if (minLevel < 0 || GetCharacterLevel() < minLevel)
+        {
+            MessageBox.Show($"High Mastery requires {classLabel} Level {minLevel}+. Current character level is {GetCharacterLevel()}.", "High Mastery", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        int highCost = GetHighMasteryCost();
+        int baseMasteryCost = selection.WeaponMastery ? 0 : GetWeaponMasteryCost();
+
+        if (selection.HighMastery)
+        {
+            selection.HighMastery = false;
+            selection.GrandMastery = false;
+        }
+        else
+        {
+            int totalNeeded = highCost + baseMasteryCost;
+            if (GetSlotsUsed() + totalNeeded > GetSlotBudget())
+            {
+                string unit = IsPlayersOptionMode() ? "CP" : "slot(s)";
+                MessageBox.Show($"High Mastery requires {totalNeeded} additional {unit}.", "High Mastery", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            selection.WeaponMastery = true;
+            selection.HighMastery = true;
+        }
+        Refresh();
+    }
+
+    private void BtnGrandMastery_Click(object sender, RoutedEventArgs e)
+    {
+        if (!TryGetSelectedIndividualWeapon(out var selection))
+            return;
+        if (!selection.Specialized)
+        {
+            MessageBox.Show("Grand Mastery requires specialization, Weapon Mastery, and High Mastery first.", "Grand Mastery", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        int minLevel = GetGrandMasteryMinLevel(out string classLabel);
+        if (minLevel < 0 || GetCharacterLevel() < minLevel)
+        {
+            MessageBox.Show($"Grand Mastery requires {classLabel} Level {minLevel}+. Current character level is {GetCharacterLevel()}.", "Grand Mastery", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        int grandCost = GetGrandMasteryCost();
+        int highCost = selection.HighMastery ? 0 : GetHighMasteryCost();
+        int baseMasteryCost = selection.WeaponMastery ? 0 : GetWeaponMasteryCost();
+
+        if (selection.GrandMastery)
+        {
+            selection.GrandMastery = false;
+        }
+        else
+        {
+            int totalNeeded = grandCost + highCost + baseMasteryCost;
+            if (GetSlotsUsed() + totalNeeded > GetSlotBudget())
+            {
+                string unit = IsPlayersOptionMode() ? "CP" : "slot(s)";
+                MessageBox.Show($"Grand Mastery requires {totalNeeded} additional {unit}.", "Grand Mastery", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            selection.WeaponMastery = true;
+            selection.HighMastery = true;
+            selection.GrandMastery = true;
+        }
+        Refresh();
+    }
+
     private void WeaponOptionButton_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
     {
         if (sender is not Button button)
@@ -1383,6 +2239,12 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
             ? "Weapon of Choice"
             : button == BtnWeaponExpertise
                 ? "Weapon Expertise"
+                : button == BtnWeaponMastery
+                    ? "Weapon Mastery"
+                : button == BtnHighMastery
+                    ? "High Mastery"
+                : button == BtnGrandMastery
+                    ? "Grand Mastery"
                 : "Weapon Option";
         string description = button.ToolTip as string ?? string.Empty;
         if (string.IsNullOrWhiteSpace(description))
@@ -1413,6 +2275,9 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
         BtnSpecialize.IsEnabled = CanSpecialize() && isIndividual;
         BtnWeaponChoice.IsEnabled = false;
         BtnWeaponExpertise.IsEnabled = false;
+        BtnWeaponMastery.IsEnabled = false;
+        BtnHighMastery.IsEnabled = false;
+        BtnGrandMastery.IsEnabled = false;
     }
 
     private void SelectedList_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -1424,14 +2289,45 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
         {
             UpdateDetailFromSelected(item);
             bool isIndividual = item.ProfType == "individual";
-            BtnSpecialize.IsEnabled = CanSpecialize() && isIndividual;
+            bool isGroup = item.ProfType is "broad_group" or "tight_group";
+            bool hasWeapon = TryGetSelectedIndividualWeapon(out var selectedWeapon);
+            bool isSpec = hasWeapon && selectedWeapon.Specialized;
+            bool isMaster = hasWeapon && selectedWeapon.WeaponMastery;
+            bool isHighMaster = hasWeapon && selectedWeapon.HighMastery;
+            bool isGrandMaster = hasWeapon && selectedWeapon.GrandMastery;
+
+            BtnSpecialize.IsEnabled = CanSpecialize() && (isIndividual || isGroup);
             BtnWeaponChoice.IsEnabled = IsPlayersOptionMode() && isIndividual;
             BtnWeaponExpertise.IsEnabled = IsPlayersOptionMode() && isIndividual;
+
+            int masteryCost = GetWeaponMasteryCost();
+            int highMasteryCost = GetHighMasteryCost();
+            int grandMasteryCost = GetGrandMasteryCost();
+
+            BtnWeaponMastery.IsEnabled = isIndividual && isSpec && masteryCost >= 0;
+            BtnHighMastery.IsEnabled = isIndividual && isSpec && isMaster && highMasteryCost >= 0;
+            BtnGrandMastery.IsEnabled = isIndividual && isSpec && isHighMaster && grandMasteryCost >= 0;
+
+            BtnSpecialize.Content = isGroup
+                ? "★ SPEC IN GROUP..."
+                : (isSpec ? "★ SPECIALIZED" : "★ SPECIALIZE");
+            BtnWeaponMastery.Content = isMaster ? "★ MASTER" : "WEAPON MASTERY";
+            BtnHighMastery.Content = isHighMaster ? "★★ HIGH MASTER" : "HIGH MASTERY";
+            BtnGrandMastery.Content = isGrandMaster ? "★★★ GRAND MASTER" : "GRAND MASTERY";
         }
         else
         {
+            BtnSpecialize.IsEnabled = false;
             BtnWeaponChoice.IsEnabled = false;
             BtnWeaponExpertise.IsEnabled = false;
+            BtnWeaponMastery.IsEnabled = false;
+            BtnHighMastery.IsEnabled = false;
+            BtnGrandMastery.IsEnabled = false;
+
+            BtnSpecialize.Content = "★ SPECIALIZE";
+            BtnWeaponMastery.Content = "WEAPON MASTERY";
+            BtnHighMastery.Content = "HIGH MASTERY";
+            BtnGrandMastery.Content = "GRAND MASTERY";
         }
     }
 

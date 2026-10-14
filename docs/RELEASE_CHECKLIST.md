@@ -48,6 +48,28 @@ Treat this as a hard release check when activation work changed.
 - Open the updated app and spot-check the changed screen or workflow.
 - Confirm the release notes and version number match the built installers.
 
+## 7. Release Asset Verification (Required)
+
+- Run:
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\verify-release-assets.ps1`
+- Confirm both DM and Player installer assets are present on the GitHub release.
+- Confirm both size and hash checks report `YES`.
+- If verification fails, rerun:
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\upload-release-assets.ps1`
+  and then rerun the verifier.
+
+## 8. Updater Smoke Test (Required)
+
+- Start from the previous installed version (do not launch from VS Code output).
+- Trigger in-app update and let installer complete.
+- Launch from the installed shortcut and confirm file version matches release.
+- Character creation smoke checks:
+  - Core Rules and Player's Option show different race behavior where expected.
+  - Player's Option race/subrace abilities are selectable (not core-only automatic fallback).
+  - Class ability option counts look complete for known PO-heavy classes.
+- If behavior regresses, collect and attach:
+  - `%LOCALAPPDATA%\\DMCortex\\logs\\rules-load.log`
+
 ## Recommended Release Order
 
 1. Finish the code change.
@@ -55,4 +77,5 @@ Treat this as a hard release check when activation work changed.
 3. Update version and changelog.
 4. Build installers.
 5. Push to GitHub.
-6. Verify the release page.
+6. Verify release assets (scripted hash check).
+7. Run updater smoke test on installed build.

@@ -192,6 +192,10 @@ public static class FoundryCharacterExchangeService
             Level = GetInt(root, "Level", 1),
             ExperiencePoints = GetPerClassExperience(root, extensions),
             UnspentCharacterPoints = GetInt(root, "UnspentCharacterPoints"),
+            SpentNwpCharacterPoints = GetInt(root, "SpentNwpCharacterPoints"),
+            SpentWeaponCharacterPoints = GetInt(root, "SpentWeaponCharacterPoints"),
+            SpentHpRerollCharacterPoints = GetInt(root, "SpentHpRerollCharacterPoints"),
+            HpRerollsByLevel = DeserializeProperty(root, "HpRerollsByLevel", options, new Dictionary<int, int>()),
             BaseHitPoints = GetInt(root, "BaseHitPoints", 8),
             HitPoints = GetInt(root, "HitPoints", 8),
             CurrentHitPoints = GetInt(root, "CurrentHitPoints", 8),
@@ -600,7 +604,9 @@ public static class FoundryCharacterExchangeService
             bool hasImprovementHistory = character.SelectedNonweaponProficiencyImprovements.ContainsKey(id);
             int improvementCp = character.SelectedNonweaponProficiencyImprovements.GetValueOrDefault(id);
             int initialCost = definition?.CpCost > 0 ? definition.CpCost : Math.Max(0, definition?.Slots ?? 0);
-            int improvementPoints = improvementCp / Math.Max(1, definition?.CpCost ?? 1);
+            int improvementPoints = string.Equals(character.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase)
+                ? improvementCp
+                : (definition?.Slots > 0 ? improvementCp / definition.Slots : improvementCp);
             record.Id = id;
             record.ProficiencyId = id;
             record.DisplayName = definition?.Name ?? record.DisplayName;
@@ -614,7 +620,9 @@ public static class FoundryCharacterExchangeService
             {
                 int playersOptionBase = string.Equals(id, "nwp_animal_lore", StringComparison.OrdinalIgnoreCase)
                     ? 8
-                    : Math.Max(5, definition?.PlayersOptionBaseRating ?? record.TargetNumber);
+                    : (definition?.PlayersOptionBaseRating > 0
+                        ? definition.PlayersOptionBaseRating
+                        : (record.TargetNumber > 0 ? record.TargetNumber : 5));
                 record.TargetNumber = string.Equals(character.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase)
                     ? playersOptionBase + GetTable44Modifier(abilityScore) + improvementPoints + rangerBonus
                     : abilityScore + (definition?.CheckModifier ?? record.CheckModifier) + improvementPoints + rangerBonus;

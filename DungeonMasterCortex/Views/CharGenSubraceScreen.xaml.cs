@@ -24,7 +24,7 @@ public partial class CharGenSubraceScreen : UserControl, IScreen
     private List<AbilityListItem> _selectedItems = new();
 
     private bool IsPlayersOptionMode
-        => string.Equals(_app.CharGen.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase);
+        => string.Equals(CharGenState.NormalizeCharacterModeToken(_app.CharGen.CharacterMode), "players_option", StringComparison.OrdinalIgnoreCase);
 
     public CharGenSubraceScreen(MainWindow app)
     {
@@ -34,6 +34,7 @@ public partial class CharGenSubraceScreen : UserControl, IScreen
 
     public void OnEnter()
     {
+        _app.CharGen.CharacterMode = CharGenState.NormalizeCharacterModeToken(_app.CharGen.CharacterMode);
         _app.SetBanner("Character Blueprint  ›  Subrace");
         bool isPO_s = IsPlayersOptionMode;
         _app.SetNavBar(4, isPO_s ? 7 : 5, "Subrace",
@@ -423,10 +424,11 @@ public partial class CharGenSubraceScreen : UserControl, IScreen
                     MessageBoxImage.Warning);
                 return;
             }
-            if (package.remaining > 5)
+            bool isHuman = string.Equals(selectedRace.Id, "human", StringComparison.OrdinalIgnoreCase);
+            if (!isHuman && package.remaining > 5)
             {
                 MessageBox.Show(
-                    $"You can carry over at most 5 racial CP into class abilities.\n\n" +
+                    $"Non-human races can carry over at most 5 racial CP into class abilities.\n\n" +
                     $"Current unspent racial CP: {package.remaining}.\n" +
                     "Spend more racial points before continuing.",
                     "Racial CP Carryover Limit",

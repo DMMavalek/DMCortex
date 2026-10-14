@@ -4,6 +4,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using DungeonMasterCortex.Models;
 using DungeonMasterCortex.Services;
 
 namespace DungeonMasterCortex.Views;
@@ -76,15 +77,13 @@ public partial class CharGenSubAbilitiesScreen : UserControl, IScreen
             backAction: () => _app.GoTo("chargen_class_abilities", -1),
             nextAction: Advance);
 
-        // Ensure ModifiedAbilities is calculated (in case user came back from another screen)
-        if ((_app.CharGen.ModifiedAbilities == null || _app.CharGen.ModifiedAbilities.Count == 0)
-            && _app.CharGen.Abilities.Count > 0
-            && !string.IsNullOrEmpty(_app.CharGen.RaceId))
-        {
-            _app.CharGen.ModifiedAbilities = _app.Rules.ApplyRacialModifiers(
-                _app.CharGen.RaceId,
-                _app.CharGen.Abilities);
-        }
+        bool hadSubAbilityValues = _app.CharGen.SubAbilities.Count > 0;
+        var previousModified = _app.CharGen.ModifiedAbilities is { Count: > 0 }
+            ? new Dictionary<string, int>(_app.CharGen.ModifiedAbilities, StringComparer.OrdinalIgnoreCase)
+            : _app.Rules.ApplyRacialModifiers(_app.CharGen.RaceId, _app.CharGen.Abilities);
+
+        var (effectiveAbilities, bonuses) = BuildPreSplitAbilityState();
+        _app.CharGen.ModifiedAbilities = effectiveAbilities;
 
         // Seed defaults if not yet set (default = modified base score incorporating racial modifiers)
         foreach (var g in Groups)
@@ -94,13 +93,30 @@ public partial class CharGenSubAbilitiesScreen : UserControl, IScreen
             int modifiedBase = mods is { Count: > 0 }
                 ? mods.GetValueOrDefault(g.AbilityKey, 10)
                 : _app.CharGen.Abilities.GetValueOrDefault(g.AbilityKey, 10);
+            int previousBase = previousModified.GetValueOrDefault(
+                g.AbilityKey,
+                _app.CharGen.Abilities.GetValueOrDefault(g.AbilityKey, 10));
+            int baseDelta = modifiedBase - previousBase;
             
             foreach (var s in g.Subs)
             {
                 if (!_app.CharGen.SubAbilities.ContainsKey(s.Key))
+                {
                     _app.CharGen.SubAbilities[s.Key] = modifiedBase;
+                    continue;
+                }
+
+                if (baseDelta != 0)
+                {
+                    int adjusted = _app.CharGen.SubAbilities.GetValueOrDefault(s.Key, modifiedBase) + baseDelta;
+                    _app.CharGen.SubAbilities[s.Key] = ClampSubAbility(adjusted, s.Key);
+                }
             }
         }
+
+        // Apply race/class sub-ability bonuses before first split presentation.
+        if (!hadSubAbilityValues)
+            ApplySubAbilityBonusesToCurrentState(bonuses);
 
         SyncExceptionalStrengthEligibility();
 
@@ -109,6 +125,83 @@ public partial class CharGenSubAbilitiesScreen : UserControl, IScreen
             : "";
 
         Refresh();
+    }
+
+    private (Dictionary<string, int> effectiveAbilities, AbilityBonuses bonuses) BuildPreSplitAbilityState()
+    {
+        var effective = _app.Rules.ApplyRacialModifiers(_app.CharGen.RaceId, _app.CharGen.Abilities);
+        var racialPackage = _app.Rules.BuildRacialAbilityPackage(_app.CharGen.RaceId, _app.CharGen.SelectedRacialAbilityIds);
+        var allStructured = new List<AbilityDefinition>(racialPackage.selectedAbilities);
+        int level = Math.Max(1, _app.CharGen.CharacterLevel);
+
+        var classIds = _app.CharGen.SelectedClassIds
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (classIds.Count == 0 && !string.IsNullOrWhiteSpace(_app.CharGen.ClassId))
+            classIds.Add(_app.CharGen.ClassId);
+
+        foreach (string classId in classIds)
+        {
+            var selectedAbilityIds = _app.CharGen.SelectedAbilitiesByClass.TryGetValue(classId, out var ids) && ids.Count > 0
+                ? ids
+                : string.Equals(classId, _app.CharGen.ClassId, StringComparison.OrdinalIgnoreCase)
+                    ? _app.CharGen.SelectedClassAbilityIds
+                    : new List<string>();
+
+            string? specializationId = _app.CharGen.WizardSpecializationById.TryGetValue(classId, out var spec)
+                ? spec
+                : string.Equals(classId, _app.CharGen.ClassId, StringComparison.OrdinalIgnoreCase)
+                    ? _app.CharGen.WizardSpecializationId
+                    : string.Empty;
+
+            var classPackage = _app.Rules.BuildClassAbilityPackage(
+                classId,
+                selectedAbilityIds,
+                _app.CharGen.RacialCarryoverToClassPoints,
+                specializationId,
+                level,
+                _app.CharGen.RaceId);
+
+            allStructured.AddRange(classPackage.selectedAbilities);
+        }
+
+        bool isUnarmored = string.IsNullOrWhiteSpace(_app.CharGen.RogueSkillArmorProfile)
+            || string.Equals(_app.CharGen.RogueSkillArmorProfile, "no_armor", StringComparison.OrdinalIgnoreCase);
+        var bonuses = RulesEngine.AggregateEffects(allStructured, isUnarmored, Math.Max(1, _app.CharGen.CharacterLevel));
+
+        return (effective, bonuses);
+    }
+
+    private void ApplySubAbilityBonusesToCurrentState(AbilityBonuses bonuses)
+    {
+        foreach (var (key, mod) in bonuses.SubAbilityBonuses)
+        {
+            if (string.IsNullOrWhiteSpace(key) || mod == 0)
+                continue;
+
+            if (_app.CharGen.SubAbilities.ContainsKey(key))
+            {
+                int updated = _app.CharGen.SubAbilities[key] + mod;
+                _app.CharGen.SubAbilities[key] = ClampSubAbility(updated, key);
+                continue;
+            }
+
+            string? matchKey = _app.CharGen.SubAbilities.Keys
+                .FirstOrDefault(k => k.EndsWith($"_{key}", StringComparison.OrdinalIgnoreCase));
+            if (matchKey is null)
+                continue;
+
+            int suffixUpdated = _app.CharGen.SubAbilities[matchKey] + mod;
+            _app.CharGen.SubAbilities[matchKey] = ClampSubAbility(suffixUpdated, matchKey);
+        }
+    }
+
+    private static int ClampSubAbility(int value, string subKey)
+    {
+        int min = 1;
+        int max = subKey.StartsWith("str_", StringComparison.OrdinalIgnoreCase) ? 20 : 18;
+        return Math.Clamp(value, min, max);
     }
 
     private void Advance()
@@ -371,29 +464,14 @@ public partial class CharGenSubAbilitiesScreen : UserControl, IScreen
 
     private void SyncExceptionalStrengthEligibility()
     {
-        var effectiveClassIds = _app.CharGen.SelectedClassIds.Count > 0
-            ? _app.CharGen.SelectedClassIds
-                .Where(id => !string.IsNullOrWhiteSpace(id))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList()
-            : string.IsNullOrWhiteSpace(_app.CharGen.ClassId)
-                ? new List<string>()
-                : new List<string> { _app.CharGen.ClassId };
-
-        bool isWarrior = effectiveClassIds.Any(classId =>
-            WarriorClasses.Contains(classId, StringComparer.OrdinalIgnoreCase));
-
-        var selectedAbilityEntries = _app.CharGen.SelectedClassAbilityIds
-            .Concat(_app.CharGen.SelectedAbilitiesByClass.Values.SelectMany(entries => entries ?? Enumerable.Empty<string>()));
-        bool hasWarriorPriests = selectedAbilityEntries.Any(entry =>
-            string.Equals(RulesEngine.ExtractClassAbilityBaseId(entry),
-                "cleric_warrior_priests", StringComparison.OrdinalIgnoreCase));
+        bool isWarrior = GetEffectiveClassIdsForExceptionalStrength().Any(IsWarriorClassId);
 
         // Warrior Priests: clerics with this ability qualify for exceptional strength
-        if (!isWarrior
-            && effectiveClassIds.Any(classId => string.Equals(classId, "cleric", StringComparison.OrdinalIgnoreCase)))
+        if (!isWarrior && string.Equals(_app.CharGen.ClassId, "cleric", StringComparison.OrdinalIgnoreCase))
         {
-            isWarrior = hasWarriorPriests;
+            isWarrior = _app.CharGen.SelectedClassAbilityIds.Any(entry =>
+                string.Equals(RulesEngine.ExtractClassAbilityBaseId(entry),
+                    "cleric_warrior_priests", StringComparison.OrdinalIgnoreCase));
         }
 
         // Use ModifiedAbilities if available (with racial modifiers), otherwise fall back to base
@@ -404,8 +482,10 @@ public partial class CharGenSubAbilitiesScreen : UserControl, IScreen
         int muscle = _app.CharGen.SubAbilities.GetValueOrDefault("str_muscle", strBase);
         int stamina = _app.CharGen.SubAbilities.GetValueOrDefault("str_stamina", strBase);
         bool hasStr18Sub = muscle == 18 || stamina == 18;
+        bool hasStr18Core = strBase == 18;
+        bool isCoreRules = string.Equals(_app.CharGen.CharacterMode, "core_rules", StringComparison.OrdinalIgnoreCase);
 
-        bool eligible = isWarrior && hasStr18Sub;
+        bool eligible = isWarrior && (isCoreRules ? hasStr18Core : hasStr18Sub);
         ExStrPanel.Visibility = eligible ? Visibility.Visible : Visibility.Collapsed;
 
         if (!eligible)
@@ -417,6 +497,33 @@ public partial class CharGenSubAbilitiesScreen : UserControl, IScreen
 
         if (_app.CharGen.ExceptionalStrength <= 0)
             _app.CharGen.ExceptionalStrength = 50;
+    }
+
+    private IEnumerable<string> GetEffectiveClassIdsForExceptionalStrength()
+    {
+        if (_app.CharGen.SelectedClassIds.Count > 0)
+        {
+            return _app.CharGen.SelectedClassIds
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+        }
+
+        if (!string.IsNullOrWhiteSpace(_app.CharGen.ClassId))
+            return new[] { _app.CharGen.ClassId };
+
+        return Array.Empty<string>();
+    }
+
+    private static bool IsWarriorClassId(string? classId)
+    {
+        if (string.IsNullOrWhiteSpace(classId))
+            return false;
+
+        string token = classId.Trim();
+        if (WarriorClasses.Contains(token, StringComparer.OrdinalIgnoreCase))
+            return true;
+
+        return string.Equals(token, "warrior", StringComparison.OrdinalIgnoreCase);
     }
 
     private void ExStrLock_Checked(object sender, RoutedEventArgs e)

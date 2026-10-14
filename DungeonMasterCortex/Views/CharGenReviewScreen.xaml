@@ -28,18 +28,42 @@
                             <RowDefinition/>
                             <RowDefinition/>
                             <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
                         </Grid.RowDefinitions>
                         <TextBlock Grid.Row="0" Grid.Column="0" Text="Name:"
                                    Style="{StaticResource LabelText}" Margin="0,4"/>
                         <TextBox Grid.Row="0" Grid.Column="1" x:Name="SumName"
                                  Style="{StaticResource DarkTextBox}" Margin="0,4"/>
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Race:"
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Player Name:"
                                    Style="{StaticResource LabelText}" Margin="0,4"/>
-                        <TextBlock Grid.Row="1" Grid.Column="1" x:Name="SumRace"
+                        <TextBox Grid.Row="1" Grid.Column="1" x:Name="SumPlayerName"
+                                 Style="{StaticResource DarkTextBox}" Margin="0,4"/>
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Gender:"
+                                   Style="{StaticResource LabelText}" Margin="0,4"/>
+                        <ComboBox Grid.Row="2" Grid.Column="1" x:Name="SumGender"
+                                  Style="{StaticResource DarkComboBox}" Margin="0,4" MinHeight="32">
+                            <ComboBoxItem Content="Male" Tag="male"/>
+                            <ComboBoxItem Content="Female" Tag="female"/>
+                            <ComboBoxItem Content="Other" Tag="other"/>
+                        </ComboBox>
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Race:"
+                                   Style="{StaticResource LabelText}" Margin="0,4"/>
+                        <TextBlock Grid.Row="3" Grid.Column="1" x:Name="SumRace"
                                    Style="{StaticResource BodyText}" Margin="0,4"/>
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Class:"
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Class:"
                                    Style="{StaticResource LabelText}" Margin="0,4"/>
-                        <TextBlock Grid.Row="2" Grid.Column="1" x:Name="SumClass"
+                        <TextBlock Grid.Row="4" Grid.Column="1" x:Name="SumClass"
+                                   Style="{StaticResource BodyText}" Margin="0,4"/>
+                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Alignment:"
+                                   Style="{StaticResource LabelText}" Margin="0,4"/>
+                        <TextBlock Grid.Row="5" Grid.Column="1" x:Name="SumAlignment"
+                                   Style="{StaticResource BodyText}" Margin="0,4"/>
+                        <TextBlock Grid.Row="6" Grid.Column="0" Text="Deity:"
+                                   Style="{StaticResource LabelText}" Margin="0,4"/>
+                        <TextBlock Grid.Row="6" Grid.Column="1" x:Name="SumDeity"
                                    Style="{StaticResource BodyText}" Margin="0,4"/>
                     </Grid>
 
