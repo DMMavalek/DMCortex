@@ -3288,6 +3288,7 @@ public class RulesEngine
                 NwpSlotBonus = a.Effect.NwpSlotBonus,
                 NwpCostReduction = a.Effect.NwpCostReduction,
                 NwpCheckBonus = a.Effect.NwpCheckBonus,
+                NwpCheckBonusesById = new Dictionary<string, int>(a.Effect.NwpCheckBonusesById, a.Effect.NwpCheckBonusesById.Comparer),
                 SurpriseBonus = a.Effect.SurpriseBonus,
                 SubAbilityBonuses = new Dictionary<string, int>(a.Effect.SubAbilityBonuses),
                 InfravisionFeet = a.Effect.InfravisionFeet,
@@ -3309,6 +3310,21 @@ public class RulesEngine
         ExpandImportedSubraces();
         NormalizeClassVisibility();
         ExpandClassAbilityCatalogs();
+        RequireSpecialEnemySelectionText();
+    }
+
+    private void RequireSpecialEnemySelectionText()
+    {
+        // Workbook imports replace JSON ability lists, so apply input metadata after all loaders.
+        if (Classes.TryGetValue("ranger", out var ranger))
+        {
+            foreach (var ability in ranger.StructuredAbilities.Where(a =>
+                string.Equals(a.Id, "ranger_special_enemy", StringComparison.OrdinalIgnoreCase)))
+                ability.RequiresPlayerText = true;
+        }
+
+        if (ClassAbilityLibrary.TryGetValue("ranger_special_enemy", out var sharedAbility))
+            sharedAbility.RequiresPlayerText = true;
     }
 
     private void ExpandImportedSubraces()
@@ -3912,6 +3928,14 @@ public class RulesEngine
             Effect = new AbilityEffect { NwpCheckBonus = 1 }
         });
 
+        AddAbilityIfMissing("druid", new AbilityDefinition
+        {
+            Id = "druid_identify",
+            Description = "Identify (5): May correctly identify plants, animals, and clean water at 3rd level.",
+            Category = "Player's Option: Skills & Powers",
+            PointCost = 5,
+            AutoGranted = false,
+        });
         AddAbilityIfMissing("druid", new AbilityDefinition
         {
             Id = "druid_woodland_stride",
@@ -5203,7 +5227,14 @@ public class RulesEngine
 
             string playerText = ExtractClassAbilityPlayerText(entry);
             if (!string.IsNullOrWhiteSpace(playerText) && ability.RequiresPlayerText)
+            {
                 cloned.Description = $"{ability.Description} [Selection: {FormatClassAbilitySelectionText(ability.Id, playerText)}]";
+                if (string.Equals(ability.Id, "ranger_special_enemy", StringComparison.OrdinalIgnoreCase)
+                    && cloned.Effect.EnemyAttackBonuses.Remove("special_enemy", out int enemyBonus))
+                {
+                    cloned.Effect.EnemyAttackBonuses[playerText.Trim()] = enemyBonus;
+                }
+            }
 
             selected.Add(cloned);
         }

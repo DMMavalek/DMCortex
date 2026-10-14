@@ -602,35 +602,57 @@ public static class FoundryCharacterExchangeService
                 item.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
             CharacterNonweaponProficiencyRecord record = retainedById.GetValueOrDefault(id) ?? new CharacterNonweaponProficiencyRecord();
             bool hasImprovementHistory = character.SelectedNonweaponProficiencyImprovements.ContainsKey(id);
-            int improvementCp = character.SelectedNonweaponProficiencyImprovements.GetValueOrDefault(id);
+            int improvementCp = Math.Max(0, character.SelectedNonweaponProficiencyImprovements.GetValueOrDefault(id));
             int initialCost = definition?.CpCost > 0 ? definition.CpCost : Math.Max(0, definition?.Slots ?? 0);
+            bool classGrantedTracking = definition is not null
+                && RangerTrackingRules.IsTracking(definition.Id, definition.Name)
+                && RangerTrackingRules.HasTrackingGrant(character);
+            bool kitGranted = character.KitFreeNwpIds.Contains(id, StringComparer.OrdinalIgnoreCase);
+            if (classGrantedTracking || kitGranted)
+                initialCost = 0;
             int improvementPoints = string.Equals(character.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase)
                 ? improvementCp
                 : (definition?.Slots > 0 ? improvementCp / definition.Slots : improvementCp);
             record.Id = id;
             record.ProficiencyId = id;
             record.DisplayName = definition?.Name ?? record.DisplayName;
-            record.Ability = ResolveNwpAbilityKey(definition, record.Ability, character.CharacterMode);
+            record.Ability = ResolveNwpAbilityKey(definition, record.Ability, character.CharacterMode, hasImprovementHistory);
             record.CheckModifier = definition?.CheckModifier ?? record.CheckModifier;
             int abilityScore = GetNwpAbilityScore(character, record.Ability);
             int rangerBonus = definition is not null && RangerTrackingRules.IsTracking(definition.Id, definition.Name)
                 ? RangerTrackingRules.GetBonus(character)
                 : 0;
-            if (record.TargetNumber <= 0 || hasImprovementHistory)
+            bool isPlayersOption = string.Equals(character.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase);
+            var synergyRules = isPlayersOption && definition is not null
+                ? NwpSynergyRules.GetContributions(character, definition)
+                : Array.Empty<NwpSynergyRule>();
+            int synergyBonus = synergyRules.Where(rule => !rule.Situational).Sum(rule => rule.Modifier);
+            bool recalculateTarget = definition is not null && (record.TargetNumber <= 0 || hasImprovementHistory);
+            if (recalculateTarget)
             {
-                int playersOptionBase = string.Equals(id, "nwp_animal_lore", StringComparison.OrdinalIgnoreCase)
-                    ? 8
-                    : (definition?.PlayersOptionBaseRating > 0
-                        ? definition.PlayersOptionBaseRating
-                        : (record.TargetNumber > 0 ? record.TargetNumber : 5));
+                // A zero initial rating is valid (e.g. Blind-fighting). Never use an already
+                // modified target as the base: repeated syncs must not compound bonuses.
+                int playersOptionBase = Math.Max(0, definition!.PlayersOptionBaseRating);
                 record.TargetNumber = string.Equals(character.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase)
-                    ? playersOptionBase + GetTable44Modifier(abilityScore) + improvementPoints + rangerBonus
+                        ? playersOptionBase + GetTable44Modifier(abilityScore) + improvementPoints + rangerBonus + synergyBonus
                     : abilityScore + (definition?.CheckModifier ?? record.CheckModifier) + improvementPoints + rangerBonus;
             }
+            record.SynergiesIncludedInTarget = recalculateTarget && isPlayersOption ? true : null;
+                    record.BonusContributions = synergyRules.Select(rule => new NwpBonusContributionRecord
+                    {
+                    RuleId = rule.Id,
+                    Modifier = rule.Modifier,
+                    Situational = rule.Situational,
+                    Condition = rule.Condition,
+                    SourceReference = rule.SourceReference,
+                    StackingGroup = rule.StackingGroup,
+                    CharacterPointCost = 0,
+                    }).ToList();
             record.InitialCost = initialCost;
             record.ImprovementCharacterPoints = improvementCp;
             record.TotalCharacterPoints = initialCost + improvementCp;
-            record.GrantedByClass = initialCost == 0;
+            record.GrantedByClass = classGrantedTracking || (initialCost == 0 && !kitGranted);
+            record.GrantedByKit = kitGranted;
             record.Notes = definition?.Description ?? record.Notes;
             ordered.Add(record);
         }
@@ -640,9 +662,10 @@ public static class FoundryCharacterExchangeService
     private static string ResolveNwpAbilityKey(
         NonweaponProficiencyDefinition? definition,
         string fallback,
-        string characterMode)
+        string characterMode,
+        bool hasImprovementHistory = false)
     {
-        if (string.Equals(definition?.Id, "nwp_animal_lore", StringComparison.OrdinalIgnoreCase))
+        if (!hasImprovementHistory && string.Equals(definition?.Id, "nwp_animal_lore", StringComparison.OrdinalIgnoreCase))
             return "wis_intuition";
 
         string value = string.Equals(characterMode, "players_option", StringComparison.OrdinalIgnoreCase)

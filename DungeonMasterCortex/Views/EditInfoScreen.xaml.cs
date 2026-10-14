@@ -3664,10 +3664,10 @@ public partial class EditInfoScreen : UserControl, IScreen
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
         string levelDisplay = classIds.Count > 1
-            ? string.Join("/", classIds.Select(id => CharacterProgressionService.GetLevelForExperience(id, c.ExperiencePoints)))
+            ? string.Join("/", classIds.Select(id => CharacterProgressionService.GetLevelForExperience(id, CharacterProgressionService.GetExperienceForClass(c, id))))
             : Math.Max(1, c.Level).ToString();
         string xpDisplay = classIds.Count > 1
-            ? string.Join("/", Enumerable.Repeat(Math.Max(0, c.ExperiencePoints).ToString("N0"), classIds.Count))
+            ? string.Join("/", classIds.Select(id => CharacterProgressionService.GetExperienceForClass(c, id).ToString("N0")))
             : Math.Max(0, c.ExperiencePoints).ToString("N0");
 
         string hpAudit = c.HitPointGainByLevel.Count > 0

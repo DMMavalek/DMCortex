@@ -293,9 +293,8 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         if (classIds.Count <= 1)
             return level.ToString();
 
-        int experience = Math.Max(0, character.ExperiencePoints);
         return string.Join(" / ", classIds.Select(classId =>
-            $"{FormatClassLabel(classId)} {CharacterProgressionService.GetLevelForExperience(classId, experience)}"));
+            $"{FormatClassLabel(classId)} {CharacterProgressionService.GetLevelForExperience(classId, CharacterProgressionService.GetExperienceForClass(character, classId))}"));
     }
 
     private static string FormatExperienceDisplay(CharacterSheet character)
@@ -306,7 +305,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             return $"{experience:n0} XP";
 
         return string.Join(" / ", classIds.Select(classId =>
-            $"{FormatClassLabel(classId)}: {experience:n0} XP"));
+            $"{FormatClassLabel(classId)}: {CharacterProgressionService.GetExperienceForClass(character, classId):n0} XP"));
     }
 
     private static string FormatExperienceNeededDisplay(CharacterSheet character)
@@ -317,12 +316,13 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         {
             return string.Join(" / ", classIds.Select(classId =>
             {
-                int classLevel = CharacterProgressionService.GetLevelForExperience(classId, experience);
+                int classExperience = CharacterProgressionService.GetExperienceForClass(character, classId);
+                int classLevel = CharacterProgressionService.GetLevelForExperience(classId, classExperience);
                 if (classLevel >= 20)
                     return $"{FormatClassLabel(classId)}: 0 XP (Max level)";
 
                 int nextLevelXp = CharacterProgressionService.GetMinimumExperienceForLevel(classId, classLevel + 1);
-                return $"{FormatClassLabel(classId)}: {Math.Max(0, nextLevelXp - experience):n0} XP";
+                return $"{FormatClassLabel(classId)}: {Math.Max(0, nextLevelXp - classExperience):n0} XP";
             }));
         }
 
@@ -467,6 +467,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             || normalized.Equals("Free Spoken Language", StringComparison.OrdinalIgnoreCase)
             || normalized.Equals("Modern Languages", StringComparison.OrdinalIgnoreCase)
             || normalized.Equals("Animal Languages", StringComparison.OrdinalIgnoreCase)
+            || normalized.Equals("Creature Languages (Druid)", StringComparison.OrdinalIgnoreCase)
             || normalized.Equals("Priest Secret Language", StringComparison.OrdinalIgnoreCase))
         {
             return true;
@@ -612,7 +613,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             $"Armor Class: {c.ArmorClass}",
             $"Armor Profile: {c.ArmorProfile}    Rogue Armor Profile: {c.RogueSkillArmorProfile}",
             $"Movement: {c.Movement} (base {c.BaseMovement})",
-            $"THAC0: {c.Thac0}",
+            $"THAC0: {CharacterProgressionService.GetCombatBaseThac0(c)}",
             $"Unspent Proficiency Choices: {c.UnspentProficiencyChoices}    Unspent Rogue Skill Points: {c.UnspentRogueSkillPoints}",
             string.Empty,
             "=== ABILITIES ===",
@@ -706,7 +707,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         if (c.NonweaponProficiencies.Count > 0)
         {
             foreach (string nwp in c.NonweaponProficiencies.OrderBy(x => x, StringComparer.OrdinalIgnoreCase))
-                lines.Add(AppendTrackingConditionalModifiers(c, nwp));
+                lines.Add(AppendNwpConditionalModifiers(c, nwp));
         }
         else
         {
@@ -2337,7 +2338,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             int specializationAttackBonus = hasMastery ? (isMissileWeapon ? 2 : 3) : specialized ? 1 : 0;
             int specializationDamageBonus = hasMastery ? (isMissileWeapon ? 0 : 3) : specialized ? 2 : 0;
             int totalAttackBonus = statAttackBonus + miscAttackBonus + intrinsicAttackBonus + trainingAtkBonus + specializationAttackBonus + enemyAttackBonus;
-            int effectiveAtk = c.Thac0 - totalAttackBonus + nonProfPenalty + offHandPenalty;
+            int effectiveAtk = CharacterProgressionService.GetCombatBaseThac0(c) - totalAttackBonus + nonProfPenalty + offHandPenalty;
             int totalDamageBonus = dmgBonus + intrinsicDamageBonus + trainingDmgBonus + specializationDamageBonus + enemyDamageBonus;
 
             if (isGrandMaster)
@@ -4656,7 +4657,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             AddKV(p, "Armor Class",   acDisplay);
             AddKV(p, "AC Breakdown",  BuildArmorClassBreakdown(c));
             AddKV(p, "Armor Profile", c.ArmorProfile.Replace("_", " "));
-            AddKV(p, "THAC0",         c.Thac0.ToString());
+            AddKV(p, "THAC0",         CharacterProgressionService.GetCombatBaseThac0(c).ToString());
             AddKV(p, "THAC0 Breakdown", BuildThac0Breakdown(c));
             AddKV(p, "Attack Rate",   c.AttackRate);
             AddKV(p, "Movement",      $"{c.Movement}  (base {c.BaseMovement})");
@@ -4865,7 +4866,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
                 .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
                 .ToList();
             foreach (string line in profLines)
-                AddItem(p, AppendTrackingConditionalModifiers(c, line));
+                AddItem(p, AppendNwpConditionalModifiers(c, line));
         });
 
         // 7b. ROGUE ABILITIES
@@ -5069,7 +5070,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
 
     private static string BuildThac0Breakdown(CharacterSheet character)
     {
-        int baseThac0 = character.Thac0;
+        int baseThac0 = CharacterProgressionService.GetCombatBaseThac0(character);
         bool isPlayersOption = string.Equals(character.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase);
 
         int meleeAttackBonus = 0;
@@ -5265,7 +5266,7 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         int specializationAttackBonus = hasMastery ? (isMissileWeapon ? 2 : 3) : specialized ? 1 : 0;
         int specializationDamageBonus = hasMastery ? (isMissileWeapon ? 0 : 3) : specialized ? 2 : 0;
         int totalAttackBonus = statAttackBonus + miscAttackBonus + intrinsicAttackBonus + trainingAtkBonus + specializationAttackBonus + enemyAttackBonus;
-        int effectiveAtk   = c.Thac0 - totalAttackBonus + nonProfPenalty + offHandPenalty;
+        int effectiveAtk   = CharacterProgressionService.GetCombatBaseThac0(c) - totalAttackBonus + nonProfPenalty + offHandPenalty;
         int totalDamageBonus = dmgBonus + intrinsicDamageBonus + trainingDmgBonus + specializationDamageBonus + enemyDamageBonus;
 
         if (isGrandMaster)
@@ -5452,8 +5453,8 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
             int baseHalves;
             if (isWarrior)
             {
-                // Warrior level progression already computed and stored in AttackRate
-                baseHalves = c.AttackRate switch
+                // Derive from the warrior class's own level, not a stale primary-class snapshot.
+                baseHalves = CharacterProgressionService.GetBaseAttackRate(c) switch
                 {
                     "2/round"    => 4,
                     "3/2 rounds" => 3,
@@ -6840,17 +6841,57 @@ public partial class CharacterSheetsScreen : UserControl, IScreen
         return 6;
     }
 
-    private static string AppendTrackingConditionalModifiers(CharacterSheet character, string proficiencyText)
+    private string AppendNwpConditionalModifiers(CharacterSheet character, string proficiencyText)
     {
-        if (!proficiencyText.StartsWith("Tracking", StringComparison.OrdinalIgnoreCase)
-            || proficiencyText.Contains("animal target", StringComparison.OrdinalIgnoreCase)
-            || proficiencyText.Contains("Animal Lore", StringComparison.OrdinalIgnoreCase)
-            || proficiencyText.Contains("Animal Empathy", StringComparison.OrdinalIgnoreCase))
-        {
+        if (!string.Equals(CharGenState.NormalizeCharacterModeToken(character.CharacterMode),
+            "players_option", StringComparison.OrdinalIgnoreCase))
             return proficiencyText;
+
+        // Match the whole catalog name, not a substring in notes or another proficiency name.
+        var proficiency = _app.CharacterOptions.GetCatalog().NonweaponProficiencies
+            .OrderByDescending(definition => definition.Name.Length)
+            .FirstOrDefault(definition => Regex.IsMatch(proficiencyText,
+                @"^\s*" + Regex.Escape(definition.Name) + @"(?=\s+[+-]?\d+(?:\s|$|[,;])|\s*\(|\s*$)",
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant));
+        if (proficiency is null)
+            return proficiencyText;
+
+        if (RangerTrackingRules.IsTracking(proficiency.Id, proficiency.Name))
+        {
+            if (proficiencyText.Contains("animal target", StringComparison.OrdinalIgnoreCase)
+                || proficiencyText.Contains("Animal Lore", StringComparison.OrdinalIgnoreCase)
+                || proficiencyText.Contains("Animal Empathy", StringComparison.OrdinalIgnoreCase)
+                || proficiencyText.Contains("animal_lore_tracking", StringComparison.OrdinalIgnoreCase)
+                || proficiencyText.Contains("animal_empathy_tracking", StringComparison.OrdinalIgnoreCase))
+                return proficiencyText;
+
+            return proficiencyText + RangerTrackingRules.GetConditionalModifierSummary(character);
         }
 
-        return proficiencyText + RangerTrackingRules.GetConditionalModifierSummary(character);
+        // Use only the saved target. Never recalculate permanent bonuses on legacy strings.
+        var targetMatch = Regex.Match(proficiencyText,
+            @"^\s*" + Regex.Escape(proficiency.Name) + @"\s+(?<target>[+-]?\d+)(?=\s|$|[,;])",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        bool hasTarget = int.TryParse(targetMatch.Groups["target"].Value,
+            NumberStyles.Integer, CultureInfo.InvariantCulture, out int savedTarget);
+        string conditional = NwpSynergyRules.GetConditionalSummary(character, proficiency, savedTarget);
+        var additions = conditional.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries)
+            .Where(line =>
+            {
+                string condition = line.Split(':', 2)[0];
+                int sourceIndex = line.IndexOf("; source: ", StringComparison.Ordinal);
+                string source = sourceIndex >= 0 ? line[(sourceIndex + 10)..] : string.Empty;
+                var ruleId = Regex.Match(line, @"\((?<id>[^)]+)\)");
+                return !proficiencyText.Contains(ruleId.Value, StringComparison.OrdinalIgnoreCase)
+                    && !(proficiencyText.Contains(condition + ":", StringComparison.OrdinalIgnoreCase)
+                        && source.Length > 0 && proficiencyText.Contains(source, StringComparison.OrdinalIgnoreCase));
+            })
+            // No saved numeric target (e.g. a name-only import): show modifiers, not an invented target.
+            .Select(line => hasTarget ? line : Regex.Replace(line, @", target [+-]?\d+", string.Empty))
+            .ToList();
+        return additions.Count == 0
+            ? proficiencyText
+            : proficiencyText + "; conditional alternatives: " + string.Join("; ", additions);
     }
 
     private static int GetPsionicPowerPointModifierPerLevel(CharacterSheet character)

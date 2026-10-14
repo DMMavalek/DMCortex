@@ -343,6 +343,8 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
                     ? "No optional abilities can be purchased at this level. Some abilities are creation-only."
                     : "This class has no optional abilities to configure.")
                 : "Choose optional abilities on the left and move them into your package on the right.";
+        if (IsPlayersOptionMode && string.Equals(cls.Id, "ranger", StringComparison.OrdinalIgnoreCase))
+            ClassAbilityHint.Text += " Right-click a selected Special Enemy to edit the enemy type.";
     }
 
     internal static bool IsSelectorManagedAbility(AbilityDefinition ability)
@@ -471,7 +473,7 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
             ClassConfigTitle.Text = "Priest Configuration";
             ClassConfigHint.Text = "Choose major and minor sphere access, then review the CP total below.";
         }
-        if (cls.Id == "druid" && _app.CharGen.SelectedSpheres.Count == 0)
+        if (cls.Id == "druid" && !cls.IsSpecialtyPriest)
         {
             AutoFillDruidSpheres();
             RefreshAbilityLists();
@@ -679,7 +681,7 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
             _app.CharGen.SelectedSpheres = new(spheres);
             SphereSchoolSectionSummary.Text = spheres.Count == 0
                 ? "Standard priest sphere access (specialty details pending)."
-                : string.Join(", ", spheres.OrderBy(kv => kv.Key).Select(kv => $"{kv.Key} ({kv.Value})"));
+                : FormatSphereAccessSummary(spheres);
         }
         else if (cls.Id == "cleric")
         {
@@ -688,8 +690,8 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
             var spheres = CharGenClassScreen.NormalizeSphereSelections(_app.CharGen.SelectedSpheres);
             _app.CharGen.SelectedSpheres = new(spheres);
             string sphereSummary = spheres.Count == 0
-                ? "No spheres configured â€” click the button to select minor and/or major access."
-                : $"{spheres.Count} sphere(s) â€” {CalculateSphereCpCost(spheres)} CP  Â·  {string.Join(", ", spheres.OrderBy(kv => kv.Key).Select(kv => $"{kv.Key} ({kv.Value})"))}";
+                ? "No spheres configured - click the button to select minor and/or major access."
+                : $"{FormatSphereAccessSummary(spheres)}\nCost: {CalculateSphereCpCost(spheres)} CP";
             var selectedSkillIds = GetSelectedRogueSkillIds();
             if (selectedSkillIds.Count == 0)
             {
@@ -703,9 +705,9 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
         else if (cls.Id == "druid")
         {
             SphereSchoolSection.Visibility = Visibility.Visible;
-            SphereSchoolSectionLabel.Text = "PRIEST SPHERE ACCESS  (Fixed â€” Druid)";
+            SphereSchoolSectionLabel.Text = "PRIEST SPHERE ACCESS (Fixed Druid)";
             int fixedCost = CalculateConfigurationCpCost(cls, _app.CharGen.SelectedSpheres, _app.CharGen.SelectedWizardSchools);
-            SphereSchoolSectionSummary.Text = $"Auto-assigned: All, Elemental, Healing, Plant, Weather (minor access)  Â·  {fixedCost} CP";
+            SphereSchoolSectionSummary.Text = $"{FormatSphereAccessSummary(_app.CharGen.SelectedSpheres)}\nCost: {fixedCost} CP";
         }
         else if (ShouldConfigurePaladinSpheres(cls))
         {
@@ -715,8 +717,8 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
             _app.CharGen.SelectedSpheres = new(spheres);
             int cost = CalculateSphereCpCost(spheres);
             SphereSchoolSectionSummary.Text = spheres.Count == 0
-                ? "No alternate spheres configured â€” click the button to select minor and/or major access."
-                : $"{spheres.Count} sphere(s) â€” {cost} CP  Â·  {string.Join(", ", spheres.OrderBy(kv => kv.Key).Select(kv => $"{kv.Key} ({kv.Value})"))}";
+                ? "No alternate spheres configured - click the button to select minor and/or major access."
+                : $"{FormatSphereAccessSummary(spheres)}\nCost: {cost} CP";
         }
         else if (ShouldConfigureRangerSpheres(cls))
         {
@@ -725,10 +727,10 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
             var spheres = NormalizeRangerAlternateSpheres(_app.CharGen.SelectedSpheres);
             _app.CharGen.SelectedSpheres = new(spheres);
             var defaults = GetRangerDefaultSpheres();
-            string details = string.Join(", ", spheres.OrderBy(kv => kv.Key).Select(kv => $"{kv.Key} ({kv.Value})"));
+            string details = FormatSphereAccessSummary(spheres);
             SphereSchoolSectionSummary.Text = !IsValidRangerSphereSwap(spheres)
                 ? "Select exactly two minor spheres with exactly one default (Animal or Plant) and one replacement sphere."
-                : $"Configured: {details}  Â·  default minor spheres are Animal + Plant (swap one).";
+                : $"{details}\nDefault minor spheres: Animal, Plant (swap one).";
         }
         else if (cls.Id == "wizard")
         {
@@ -782,12 +784,27 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
         }
     }
 
+    internal static string FormatSphereAccessSummary(IReadOnlyDictionary<string, string> spheres)
+    {
+        string ListFor(string access)
+        {
+            var names = spheres.Where(pair => string.Equals(pair.Value, access, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(pair.Value, "both", StringComparison.OrdinalIgnoreCase))
+                .Select(pair => pair.Key)
+                .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            return names.Count > 0 ? string.Join(", ", names) : "None";
+        }
+
+        return $"Major: {ListFor("major")}\nMinor: {ListFor("minor")}";
+    }
+
     private string BuildRogueSkillSummary(List<string> selectedSkillIds)
     {
-        int level = Math.Max(1, _app.CharGen.CharacterLevel);
         int dex = GetCurrentDexterityScore();
         string raceId = GetCurrentBaseRaceId();
         string classId = _activeClass?.Id ?? _app.CharGen.ClassId;
+        int level = _app.CharGen.GetConfiguredClassLevel(classId);
         bool useAverageProgression = !IsRogueClass(classId);
         var breakdown = RulesEngine.BuildRogueSkillBreakdown(
             selectedSkillIds,
@@ -874,14 +891,21 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
 
     private void AutoFillDruidSpheres()
     {
-        _app.CharGen.SelectedSpheres.Clear();
-        _app.CharGen.SelectedSpheres["All"] = "minor";
-        _app.CharGen.SelectedSpheres["Elemental"] = "minor";
-        _app.CharGen.SelectedSpheres["Healing"] = "minor";
-        _app.CharGen.SelectedSpheres["Plant"] = "minor";
-        _app.CharGen.SelectedSpheres["Weather"] = "minor";
+        _app.CharGen.SelectedSpheres = GetDruidDefaultSpheres();
         RemoveSphereAccessAbilitiesFromSelection();
     }
+
+    internal static Dictionary<string, string> GetDruidDefaultSpheres()
+        => new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["All"] = "major",
+            ["Animal"] = "major",
+            ["Elemental"] = "major",
+            ["Healing"] = "major",
+            ["Plant"] = "major",
+            ["Weather"] = "major",
+            ["Divination"] = "minor",
+        };
 
     private void RemoveSphereAccessAbilitiesFromSelection()
     {
@@ -1501,6 +1525,24 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
             var listItem = ItemsControl.ContainerFromElement(SelectedClassAbilityList, dep) as ListBoxItem;
             if (listItem?.DataContext is AbilityListItem item)
             {
+                if (IsPlayersOptionMode && !item.IsAutoAssigned
+                    && string.Equals(item.BaseAbilityId, "ranger_special_enemy", StringComparison.OrdinalIgnoreCase))
+                {
+                    string existing = RulesEngine.ExtractClassAbilityPlayerText(item.SelectionEntry);
+                    string? enemy = PromptForClassAbilitySelectionText(item.BaseAbilityId, item.Description, existing);
+                    if (enemy is not null)
+                    {
+                        int index = _selectedAbilityEntries.IndexOf(item.SelectionEntry);
+                        if (index >= 0)
+                            _selectedAbilityEntries[index] = RulesEngine.BuildClassAbilitySelectionEntry(item.BaseAbilityId, enemy);
+                        PersistCurrentSelections();
+                        RefreshAbilityLists();
+                        if (_activeClass is not null)
+                            RefreshBudgetSummary(_activeClass);
+                    }
+                    e.Handled = true;
+                    return;
+                }
                 ShowAbilityDescription(item);
                 e.Handled = true;
             }
@@ -1576,7 +1618,9 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
         var panel = new StackPanel { Margin = new Thickness(14) };
         panel.Children.Add(new TextBlock
         {
-            Text = "Enter selection text (for example the exact spell):",
+            Text = string.Equals(abilityId, "ranger_special_enemy", StringComparison.OrdinalIgnoreCase)
+                ? "Enter the special-enemy type (for example orcs or giants):"
+                : "Enter selection text (for example the exact spell):",
             Margin = new Thickness(0, 0, 0, 8),
         });
 
@@ -1596,7 +1640,18 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
         };
         var ok = new Button { Content = "OK", Width = 80, Margin = new Thickness(0, 0, 8, 0), IsDefault = true };
         var cancel = new Button { Content = "Cancel", Width = 80, IsCancel = true };
-        ok.Click += (_, _) => window.DialogResult = true;
+        ok.Click += (_, _) =>
+        {
+            if (string.Equals(abilityId, "ranger_special_enemy", StringComparison.OrdinalIgnoreCase)
+                && string.IsNullOrWhiteSpace(input.Text))
+            {
+                MessageBox.Show(window, "Enter a special-enemy type.", "Special Enemy",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                input.Focus();
+                return;
+            }
+            window.DialogResult = true;
+        };
         cancel.Click += (_, _) => window.DialogResult = false;
         buttons.Children.Add(ok);
         buttons.Children.Add(cancel);
@@ -2077,7 +2132,7 @@ public partial class CharGenClassAbilitiesScreen : UserControl, IScreen
 
         int dex = GetCurrentDexterityScore();
         string raceId = GetCurrentBaseRaceId();
-        int level = Math.Max(1, _app.CharGen.CharacterLevel);
+        int level = _app.CharGen.GetConfiguredClassLevel(_activeClass.Id);
 
         var dialog = new RogueSkillsDialog(
             selectedSkillIds,

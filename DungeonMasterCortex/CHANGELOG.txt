@@ -1,6 +1,23 @@
 Dungeon Master Cortex - Running Changelog
 ========================================
 
+v1.4.25 (2026-10-14)
+- Excluded machine-local activation SMTP configuration and ruleset/spell backup files from release publish payloads.
+- Corrected multiclass weapon attack rates to use the warrior class's own level rather than the primary class's stored rate; a Ranger 8's specialized melee weapon now attacks twice per round (3/2 base plus 1/2 specialization).
+- Corrected multiclass base THAC0 to use the best class progression at each class's own level (e.g. Ranger 8 gives 13), including review, progression updates and character-sheet attacks; kept attack bonuses separate and did not migrate saved rosters.
+- Corrected the fixed Druid sphere package to major All, Animal, Elemental, Healing, Plant, and Weather, with minor Divination; the class configuration step refreshes this package without changing its 60-CP cost or rewriting saved rosters.
+- Audited Player's Option proficiency relationships and added 37 source-attributed free synergy rules, keeping conditional targets separate from permanent ratings and paid CP improvements.
+- Corrected weapon/review free class-and-kit proficiency acquisition accounting, duplicate/stale improvement counting, and preservation of targeted racial NWP effects.
+- Added structured free-bonus provenance and conservative legacy-target handling so repeated synchronization does not inflate zero-base proficiencies or guess missing imported improvement histories; no roster or CP-balance migration is performed.
+- Cleaned priest sphere summaries into separate Major and Minor lists with a separate CP cost line, removing garbled punctuation and replacing the hard-coded Druid summary with configured sphere data.
+- Clarified the Languages tab's Creature Languages (Druid) option for Communicate with Creatures: one free named creature language per Druid level, including level 1, using the Druid's own level in existing/multiclass updates.
+- Added the missing 5-CP Druid Identify ability (plants, animals, and clean water from 3rd level) after workbook/catalog loading.
+- Ranger Special Enemy now prompts for an enemy type, retains the choice in the ability summary, and applies its enemy-specific attack bonus to that choice; right-click the selected ability to edit it.
+- Fixed Player's Option NWP review and new/update saved summaries to grant +1 per improvement CP rather than dividing by initial purchase cost; preserved spent/unspent CP and matched low base ratings to the selection page.
+- Automatically listed Ranger class-granted Tracking among selected NWPs at no purchase CP/slot cost, with the level bonus based on Ranger level and free-grant information preserved in structured exports.
+- Added an ADD EXISTING-only option to enter separate XP totals after multiclass selection, including prime-requisite bonuses already earned, with independent class levels and historical CP reconstruction.
+- Saved separate class XP balances and displayed them in the roster and character identity; retained the existing XP-award and prime-requisite bonus formulas.
+
 v1.4.24 (2026-10-13)
 - Added multi-select character export to save several selected roster entries in one native Codex JSON file.
 - Preserved complete character-specific data in exports, including custom notes, structured abilities, proficiencies, equipment, spells, and saved layout/settings data.

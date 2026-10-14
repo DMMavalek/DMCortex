@@ -660,6 +660,8 @@ public class CharacterSheet
     public string ClassMode { get; set; } = "";
     public List<string> ClassIds { get; set; } = new();
     public Dictionary<string, int> ClassLevels { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    // Optional balances entered through Add Existing. ExperiencePoints remains the primary class balance.
+    public Dictionary<string, int> ClassExperiencePoints { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     // Structured selected options for later editing/level-up.
     public List<string> NonweaponProficiencyIds { get; set; } = new();
@@ -819,11 +821,27 @@ public class CharacterNonweaponProficiencyRecord
     public int ImprovementCharacterPoints { get; set; }
     public int TotalCharacterPoints { get; set; }
     public bool GrantedByClass { get; set; }
+    public bool GrantedByKit { get; set; }
     public string Notes { get; set; } = "";
     public Dictionary<string, int> SpecialTargets { get; set; } = new();
+    // Free rule contributions stay separate from purchase and paid-improvement history.
+    public List<NwpBonusContributionRecord> BonusContributions { get; set; } = new();
+    // Null: retained/imported target has unknown composition; contributions are advisory only.
+    public bool? SynergiesIncludedInTarget { get; set; }
 
     [JsonExtensionData]
     public Dictionary<string, JsonElement> ExtensionData { get; set; } = new();
+}
+
+public class NwpBonusContributionRecord
+{
+    public string RuleId { get; set; } = "";
+    public int Modifier { get; set; }
+    public bool Situational { get; set; }
+    public string Condition { get; set; } = "";
+    public string SourceReference { get; set; } = "";
+    public string StackingGroup { get; set; } = "";
+    public int CharacterPointCost { get; set; }
 }
 
 public class CharacterSheetLayoutPreference

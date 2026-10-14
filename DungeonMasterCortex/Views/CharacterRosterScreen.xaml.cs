@@ -62,16 +62,15 @@ public class CharacterRosterScreen : UserControl, IScreen
             return Math.Max(1, character.Level).ToString();
 
         return string.Join("/", classIds.Select(classId =>
-            CharacterProgressionService.GetLevelForExperience(classId, character.ExperiencePoints)));
+            CharacterProgressionService.GetLevelForExperience(classId, CharacterProgressionService.GetExperienceForClass(character, classId))));
     }
 
     private static string FormatExperienceDisplay(CharacterSheet character)
     {
-        string experience = Math.Max(0, character.ExperiencePoints).ToString("N0");
-        int classCount = Math.Max(1, GetDisplayedClassIds(character).Count);
-        return classCount == 1
-            ? experience
-            : string.Join("/", Enumerable.Repeat(experience, classCount));
+        var classIds = GetDisplayedClassIds(character);
+        return classIds.Count <= 1
+            ? Math.Max(0, character.ExperiencePoints).ToString("N0")
+            : string.Join("/", classIds.Select(id => CharacterProgressionService.GetExperienceForClass(character, id).ToString("N0")));
     }
 
     private static int GetCalculatedOverallLevel(CharacterSheet character, int experiencePoints)
@@ -81,7 +80,7 @@ public class CharacterRosterScreen : UserControl, IScreen
             classIds.Add(character.ClassId);
         return classIds
             .Where(id => !string.IsNullOrWhiteSpace(id))
-            .Select(id => CharacterProgressionService.GetLevelForExperience(id, experiencePoints))
+            .Select(id => CharacterProgressionService.GetLevelForExperience(id, GetProjectedClassExperience(character, id, experiencePoints)))
             .DefaultIfEmpty(1)
             .Min();
     }
@@ -99,10 +98,14 @@ public class CharacterRosterScreen : UserControl, IScreen
                 int currentLevel = character.ClassLevels.TryGetValue(id, out int savedLevel)
                     ? savedLevel
                     : CharacterProgressionService.GetLevelForExperience(id, character.ExperiencePoints);
-                int projectedLevel = CharacterProgressionService.GetLevelForExperience(id, experiencePoints);
+                int projectedLevel = CharacterProgressionService.GetLevelForExperience(id, GetProjectedClassExperience(character, id, experiencePoints));
                 return Math.Max(0, projectedLevel - Math.Max(1, currentLevel));
             });
     }
+
+    private static int GetProjectedClassExperience(CharacterSheet character, string classId, int experiencePoints)
+        => (int)Math.Clamp((long)CharacterProgressionService.GetExperienceForClass(character, classId)
+            + experiencePoints - Math.Max(0, character.ExperiencePoints), 0L, int.MaxValue);
 
     private static string FormatRulesetDisplay(CharacterSheet character)
     {
@@ -573,13 +576,15 @@ public class CharacterRosterScreen : UserControl, IScreen
                 out int startingExperience,
                 out int cpPerLevel,
                 out int startingUnspentCp,
-                out bool experienceIsGrandTotalForMulticlass))
+                out bool experienceIsGrandTotalForMulticlass,
+                out bool useSeparateClassExperience))
             return;
 
         _app.CharGen.Clear();
         _app.CharGen.IsExistingCharacterMode = true;
         _app.CharGen.ExistingStartingExperience = startingExperience;
         _app.CharGen.ExistingExperienceIsGrandTotalForMulticlass = experienceIsGrandTotalForMulticlass;
+        _app.CharGen.ExistingUsesSeparateClassExperience = useSeparateClassExperience;
         _app.CharGen.ExistingCpPerLevel = cpPerLevel;
         _app.CharGen.ExistingStartingUnspentCharacterPoints = startingUnspentCp;
         _app.CharGen.Method = "manual_entry";
@@ -1307,7 +1312,7 @@ public class CharacterRosterScreen : UserControl, IScreen
                 Experience = FormatExperienceDisplay(c),
                 HitPoints = c.HitPoints,
                 ArmorClass = c.ArmorClass,
-                Thac0 = c.Thac0,
+                Thac0 = CharacterProgressionService.GetCombatBaseThac0(c),
                 Revision = c.Revision,
                 LastModified = c.LastModifiedDisplay,
             });
@@ -1363,22 +1368,25 @@ public class CharacterRosterScreen : UserControl, IScreen
         out int startingExperience,
         out int cpPerLevel,
         out int startingUnspentCp,
-        out bool experienceIsGrandTotalForMulticlass)
+        out bool experienceIsGrandTotalForMulticlass,
+        out bool useSeparateClassExperience)
     {
         startingExperience = 0;
         cpPerLevel = 0;
         startingUnspentCp = 0;
         experienceIsGrandTotalForMulticlass = true;
+        useSeparateClassExperience = false;
 
         int selectedExperience = 0;
         int selectedCpPerLevel = 0;
         int selectedUnspentCp = 0;
         bool selectedExperienceIsGrandTotalForMulticlass = true;
+        bool selectedSeparateClassExperience = false;
         var window = new Window
         {
             Title = "Add Existing Character",
-            Width = 420,
-            Height = 430,
+            Width = 520,
+            SizeToContent = SizeToContent.Height,
             WindowStartupLocation = WindowStartupLocation.CenterScreen,
             ResizeMode = ResizeMode.NoResize,
             WindowStyle = WindowStyle.SingleBorderWindow,
@@ -1425,14 +1433,18 @@ public class CharacterRosterScreen : UserControl, IScreen
         });
         multiclassXpMode.Items.Add(new ComboBoxItem
         {
-            Content = "Per-class XP entered (no split)",
+            Content = "Same XP for every class (no split)",
             Tag = false,
+        });
+        multiclassXpMode.Items.Add(new ComboBoxItem
+        {
+            Content = "Separate XP totals for each class (enter after class selection)",
         });
         panel.Children.Add(multiclassXpMode);
 
         panel.Children.Add(new TextBlock
         {
-            Text = "Single-class characters ignore this setting.",
+            Text = "For unequal totals, including prime-requisite bonuses already earned, choose separate XP; Starting Experience is then ignored for multiclass. Single-class characters still use Starting Experience.",
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(0, 0, 0, 8),
             Foreground = new SolidColorBrush(Color.FromRgb(0xC4, 0xA4, 0x68)),
@@ -1488,6 +1500,7 @@ public class CharacterRosterScreen : UserControl, IScreen
             }
 
             selectedExperience = parsedXp;
+            selectedSeparateClassExperience = multiclassXpMode.SelectedIndex == 2;
             selectedExperienceIsGrandTotalForMulticlass =
                 (multiclassXpMode.SelectedItem as ComboBoxItem)?.Tag as bool? ?? true;
             selectedCpPerLevel = parsedCpPerLevel;
@@ -1505,6 +1518,7 @@ public class CharacterRosterScreen : UserControl, IScreen
 
         startingExperience = selectedExperience;
         experienceIsGrandTotalForMulticlass = selectedExperienceIsGrandTotalForMulticlass;
+        useSeparateClassExperience = selectedSeparateClassExperience;
         cpPerLevel = selectedCpPerLevel;
         startingUnspentCp = selectedUnspentCp;
         return true;

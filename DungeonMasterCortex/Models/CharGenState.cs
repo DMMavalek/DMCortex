@@ -43,6 +43,8 @@ namespace DungeonMasterCortex.Models
         public bool IsExistingCharacterMode { get; set; } = false;
         public int ExistingStartingExperience { get; set; } = 0;
         public bool ExistingExperienceIsGrandTotalForMulticlass { get; set; } = false;
+        public bool ExistingUsesSeparateClassExperience { get; set; } = false;
+        public Dictionary<string, int> ExistingClassExperiencePoints { get; set; } = new(StringComparer.OrdinalIgnoreCase);
         public int ExistingCpPerLevel { get; set; } = 0;
         public string Name         { get; set; } = "";
         public string PlayerName    { get; set; } = "";
@@ -168,6 +170,8 @@ namespace DungeonMasterCortex.Models
             IsExistingCharacterMode = false;
             ExistingStartingExperience = 0;
             ExistingExperienceIsGrandTotalForMulticlass = false;
+            ExistingUsesSeparateClassExperience = false;
+            ExistingClassExperiencePoints.Clear();
             ExistingCpPerLevel = 0;
             ExistingStartingUnspentCharacterPoints = 0;
             IsLevelUpMode = false;
@@ -209,16 +213,36 @@ namespace DungeonMasterCortex.Models
 
             if (IsExistingCharacterMode)
             {
-                int experience = Math.Max(0, ExistingStartingExperience);
-                int classCount = SelectedClassIds
-                    .Where(id => !string.IsNullOrWhiteSpace(id))
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .Count();
-                if (ExistingExperienceIsGrandTotalForMulticlass && classCount > 1)
-                    experience /= classCount;
+                int experience = GetExistingExperienceForClass(ClassId);
                 CharacterLevel = Math.Max(1, CharacterProgressionService.GetLevelForExperience(ClassId, experience));
             }
         }
+
+        public bool UsesSeparateExistingClassExperience => IsExistingCharacterMode
+            && !IsLevelUpMode
+            && ClassMode == "multiclass"
+            && ExistingUsesSeparateClassExperience;
+
+        public int GetExistingExperienceForClass(string classId)
+        {
+            if (UsesSeparateExistingClassExperience
+                && ExistingClassExperiencePoints.TryGetValue(classId, out int classExperience))
+                return Math.Max(0, classExperience);
+
+            int experience = Math.Max(0, ExistingStartingExperience);
+            int classCount = SelectedClassIds
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Count();
+            if (ExistingExperienceIsGrandTotalForMulticlass && classCount > 1)
+                experience /= classCount;
+            return experience;
+        }
+
+        public int GetConfiguredClassLevel(string classId)
+            => UsesSeparateExistingClassExperience
+                ? CharacterProgressionService.GetLevelForExperience(classId, GetExistingExperienceForClass(classId))
+                : Math.Max(1, CharacterLevel);
 
         public int GetExistingCharacterPointPool()
         {
@@ -237,13 +261,9 @@ namespace DungeonMasterCortex.Models
             if (classIds.Count == 0)
                 return Math.Max(0, CharacterLevel - 1);
 
-            int experience = Math.Max(0, ExistingStartingExperience);
-            if (ExistingExperienceIsGrandTotalForMulticlass && classIds.Count > 1)
-                experience /= classIds.Count;
-
             return classIds.Sum(id => Math.Max(
                 0,
-                CharacterProgressionService.GetLevelForExperience(id, experience) - 1));
+                CharacterProgressionService.GetLevelForExperience(id, GetExistingExperienceForClass(id)) - 1));
         }
 
         public void SyncLegacyFieldsFromNew() { /* Implement as needed */ }

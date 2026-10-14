@@ -177,8 +177,8 @@ public static class CharacterProgressionService
             character.ExperiencePoints = minXpForCurrentLevel;
 
         // THAC0 should remain the class/level baseline. Attack bonuses are applied at attack resolution time.
-        character.Thac0 = GetBaseThac0(character, classToken, clampedLevel);
-        character.AttackRate = GetWarriorAttackRate(classToken, clampedLevel);
+        character.Thac0 = GetBaseThac0(character);
+        character.AttackRate = GetBaseAttackRate(character);
 
         ApplySpellSlotProgression(character, classToken, clampedLevel);
 
@@ -232,8 +232,8 @@ public static class CharacterProgressionService
         int levelsGained = targetLevel - oldLevel;
         character.Level = targetLevel;
         // THAC0 should remain the class/level baseline. Attack bonuses are applied at attack resolution time.
-        character.Thac0 = GetBaseThac0(character, classToken, targetLevel);
-        character.AttackRate = GetWarriorAttackRate(classToken, targetLevel);
+        character.Thac0 = GetBaseThac0(character);
+        character.AttackRate = GetBaseAttackRate(character);
         ApplySpellSlotProgression(character, classToken, targetLevel);
 
         int proficiencyGain = levelsGained;
@@ -312,6 +312,13 @@ public static class CharacterProgressionService
         return result;
     }
 
+    public static int GetExperienceForClass(CharacterSheet character, string classId)
+    {
+        return character.ClassMode == "multiclass" && character.ClassExperiencePoints.TryGetValue(classId, out int experience)
+            ? Math.Max(0, experience)
+            : Math.Max(0, character.ExperiencePoints);
+    }
+
     public static ExperienceAdjustmentResult ApplyExperienceAdjustment(CharacterSheet character, int adjustment)
     {
         if (character is null)
@@ -327,11 +334,25 @@ public static class CharacterProgressionService
         if (classIds.Count == 0 || classIds.All(string.IsNullOrWhiteSpace))
             classIds = new List<string> { character.ClassId };
 
+        // Only Add Existing seeds separate balances. Keep their difference without changing
+        // the existing shared award/prime-requisite bonus calculation. Some callers update
+        // ExperiencePoints directly before requesting a zero-amount recalculation.
+        if (character.ClassMode == "multiclass" && character.ClassExperiencePoints.Count > 0)
+        {
+            int previousPrimaryExperience = GetExperienceForClass(character, character.ClassId);
+            long sharedAdjustment = (long)character.ExperiencePoints - previousPrimaryExperience;
+            character.ClassExperiencePoints = classIds
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .ToDictionary(id => id,
+                    id => (int)Math.Clamp((long)GetExperienceForClass(character, id) + sharedAdjustment, 0L, int.MaxValue),
+                    StringComparer.OrdinalIgnoreCase);
+        }
+
         character.ClassLevels = classIds
             .Where(id => !string.IsNullOrWhiteSpace(id))
             .ToDictionary(
                 id => id,
-                id => GetLevelForExperience(id, character.ExperiencePoints),
+                id => GetLevelForExperience(id, GetExperienceForClass(character, id)),
                 StringComparer.OrdinalIgnoreCase);
 
         int newLevel = character.ClassLevels.Count > 0 ? character.ClassLevels.Values.Min() : 1;
@@ -345,8 +366,8 @@ public static class CharacterProgressionService
 
         string classToken = ResolvePrimaryClassToken(character.ClassId);
         int primaryLevel = character.ClassLevels.GetValueOrDefault(character.ClassId, character.Level);
-        character.Thac0 = GetBaseThac0(character, classToken, primaryLevel);
-        character.AttackRate = GetWarriorAttackRate(classToken, primaryLevel);
+        character.Thac0 = GetBaseThac0(character);
+        character.AttackRate = GetBaseAttackRate(character);
         ApplySpellSlotProgression(character, classToken, primaryLevel);
 
         return new ExperienceAdjustmentResult
@@ -651,6 +672,33 @@ public static class CharacterProgressionService
         return isPlayersOption ? character.Bonuses?.HpPerLevel ?? 0 : 0;
     }
 
+    /// <summary>Multiclass characters use the best THAC0 from each class at its own level.
+    /// Strength, weapons, specialization and other attack modifiers are applied separately.</summary>
+    public static int GetBaseThac0(CharacterSheet character)
+    {
+        ArgumentNullException.ThrowIfNull(character);
+        if (!string.Equals(character.ClassMode, "multiclass", StringComparison.OrdinalIgnoreCase))
+            return GetBaseThac0(character, ResolvePrimaryClassToken(character.ClassId), character.Level);
+
+        var ids = character.ClassIds.Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        if (ids.Count == 0)
+            ids = character.ClassId.Split(new[] { '/', '+', ',', ';', '|' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+        return ids.Select(id =>
+        {
+            int level = character.ClassLevels.FirstOrDefault(pair => string.Equals(pair.Key, id, StringComparison.OrdinalIgnoreCase)).Value;
+            if (level <= 0)
+                level = GetLevelForExperience(id, GetExperienceForClass(character, id));
+            return GetBaseThac0(character, ResolvePrimaryClassToken(id), level);
+        }).DefaultIfEmpty(GetBaseThac0(character, ResolvePrimaryClassToken(character.ClassId), character.Level)).Min();
+    }
+
+    // Preserve single-class/manual base values in display and attack calculations; repair
+    // multiclass derived values in memory only when explicitly updating progression.
+    public static int GetCombatBaseThac0(CharacterSheet character)
+        => string.Equals(character.ClassMode, "multiclass", StringComparison.OrdinalIgnoreCase)
+            ? GetBaseThac0(character) : character.Thac0;
+
     private static int GetBaseThac0(CharacterSheet character, string classId, int level)
     {
         int clampedLevel = Math.Max(1, level);
@@ -669,6 +717,25 @@ public static class CharacterProgressionService
             "wizard" or "mage" or "illusionist" => 20 - ((clampedLevel - 1) / 3),
             _ => 20 - ((clampedLevel - 1) / 2),
         };
+    }
+
+    public static string GetBaseAttackRate(CharacterSheet character)
+    {
+        ArgumentNullException.ThrowIfNull(character);
+        var ids = string.Equals(character.ClassMode, "multiclass", StringComparison.OrdinalIgnoreCase)
+            ? character.ClassIds.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct(StringComparer.OrdinalIgnoreCase).ToList()
+            : new List<string> { character.ClassId };
+        if (ids.Count == 0)
+            ids.Add(character.ClassId);
+        int warriorLevel = ids.Where(id => IsWarriorClass(ResolvePrimaryClassToken(id)))
+            .Select(id =>
+            {
+                if (!string.Equals(character.ClassMode, "multiclass", StringComparison.OrdinalIgnoreCase))
+                    return Math.Max(1, character.Level);
+                int level = character.ClassLevels.FirstOrDefault(pair => string.Equals(pair.Key, id, StringComparison.OrdinalIgnoreCase)).Value;
+                return level > 0 ? level : GetLevelForExperience(id, GetExperienceForClass(character, id));
+            }).DefaultIfEmpty(0).Max();
+        return warriorLevel == 0 ? "1/round" : GetWarriorAttackRate("fighter", warriorLevel);
     }
 
     private static string GetWarriorAttackRate(string classId, int level)

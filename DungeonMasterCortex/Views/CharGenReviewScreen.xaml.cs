@@ -279,6 +279,21 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                         ? $"Existing character mode: Total XP {enteredXp:N0} split across {classCount} classes -> {effectiveXp:N0} per class -> Level {derivedLevel}."
                         : $"Existing character mode: XP {effectiveXp:N0} -> Level {derivedLevel}.";
                 }
+                if (cg.UsesSeparateExistingClassExperience)
+                {
+                    string classSummary = string.Join("\n", GetEffectiveClassIds(cg).Select(id =>
+                    {
+                        string className = _app.Rules.Classes.TryGetValue(id, out var definition) ? definition.Name : id;
+                        int xp = cg.GetExistingExperienceForClass(id);
+                        return $"{className}: {xp:N0} XP → Level {CharacterProgressionService.GetLevelForExperience(id, xp)}";
+                    }));
+                    LevelUpSummary.Text = "Existing character — separate starting XP (bonuses already included):\n" + classSummary;
+                    if (string.Equals(cg.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase))
+                    {
+                        int advances = cg.GetExistingClassLevelAdvances();
+                        LevelUpSummary.Text += $"\nCP award: {Math.Max(0, cg.ExistingCpPerLevel) * advances:N0} from {advances} class level(s) + {Math.Max(0, cg.ExistingStartingUnspentCharacterPoints):N0} starting pool = {cg.GetExistingCharacterPointPool():N0}.";
+                    }
+                }
                 LevelUpSummary.Visibility = Visibility.Visible;
             }
             else
@@ -340,13 +355,11 @@ public partial class CharGenReviewScreen : UserControl, IScreen
 
         if (selectedNwps.Count > 0)
         {
-            int improvementCp = selectedNwps.Sum(x =>
-                cg.SelectedNonweaponProficiencyImprovements.TryGetValue(x.Id, out int cp)
-                    ? Math.Max(0, cp)
-                    : 0);
+            int improvementCp = NwpGrantRules.GetImprovementCost(
+                selectedNwps.Select(x => x.Id), cg.SelectedNonweaponProficiencyImprovements);
             if (string.Equals(cg.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase))
             {
-                int purchaseCp = selectedNwps.Sum(x => x.CpCost > 0 ? x.CpCost : Math.Max(1, x.Slots));
+                int purchaseCp = selectedNwps.Sum(x => NwpGrantRules.GetAcquisitionCost(cg, x));
                 optionLines.Add($"Nonweapon proficiencies ({purchaseCp} CP purchases, {improvementCp} CP improvements): {string.Join(", ", selectedNwps.Select(x => FormatNwpSummary(cg, x)))}");
             }
             else
@@ -513,8 +526,8 @@ public partial class CharGenReviewScreen : UserControl, IScreen
             int availablePoolCp = Math.Max(0, startingPoolCp + pendingCp);
 
             var nwpDefinitions = _app.CharacterOptions.GetCatalog().NonweaponProficiencies.ToList();
-            int baselineNwpCp = CalculateTotalNwpCp(cg.BaselineNonweaponProficiencyIds, cg.BaselineNonweaponProficiencyImprovements, nwpDefinitions);
-            int currentNwpCp = CalculateTotalNwpCp(cg.SelectedNonweaponProficiencyIds, cg.SelectedNonweaponProficiencyImprovements, nwpDefinitions);
+            int baselineNwpCp = CalculateTotalNwpCp(cg.BaselineNonweaponProficiencyIds, cg.BaselineNonweaponProficiencyImprovements, nwpDefinitions, cg);
+            int currentNwpCp = CalculateTotalNwpCp(cg, nwpDefinitions);
             int baselineWeaponCp = GetEffectiveWeaponCpUsedForState(cg, effectiveClassIds, cg.BaselineWeaponProficiencies);
             int currentWeaponCp = GetEffectiveWeaponCpUsedForState(cg, effectiveClassIds, cg.SelectedWeaponProficiencies);
             int cpSpentThisCycle = Math.Max(0, currentNwpCp - baselineNwpCp) + Math.Max(0, currentWeaponCp - baselineWeaponCp);
@@ -662,7 +675,20 @@ public partial class CharGenReviewScreen : UserControl, IScreen
         int conHpBonus = CharacterProgressionService.GetConHitPointBonus(con, cg.ClassId);
         int totalHpPerLevelBonus = conHpBonus + previewSheet.Bonuses.HpPerLevel;
         int ac = previewSheet.ArmorClass;
-        int baseThac0 = GetBaseThac0(cg.ClassId, level);
+        previewSheet.ClassMode = cg.ClassMode;
+        previewSheet.ClassIds = GetEffectiveClassIds(cg);
+        previewSheet.Level = level;
+        previewSheet.ClassLevels = previewSheet.ClassIds.ToDictionary(id => id,
+            id => cg.IsExistingCharacterMode && !cg.IsLevelUpMode
+                ? CharacterProgressionService.GetLevelForExperience(id, cg.GetExistingExperienceForClass(id))
+                : cg.IsLevelUpMode && cg.LevelUpCharacterIndex >= 0 && cg.LevelUpCharacterIndex < _app.Characters.Count
+                    ? Math.Max(_app.Characters[cg.LevelUpCharacterIndex].ClassLevels.GetValueOrDefault(id, 1),
+                        CharacterProgressionService.GetLevelForExperience(id,
+                            (int)Math.Clamp((long)CharacterProgressionService.GetExperienceForClass(_app.Characters[cg.LevelUpCharacterIndex], id)
+                                + Math.Max(0, cg.LevelUpPendingExperienceGain), 0L, int.MaxValue)))
+                    : level,
+            StringComparer.OrdinalIgnoreCase);
+        int baseThac0 = CharacterProgressionService.GetBaseThac0(previewSheet);
         int effectiveThac0 = baseThac0;
 
         CoreStatsSummary.Text = $"Level {level}  |  HP {hp}  |  AC {ac}  |  THAC0 {effectiveThac0}"
@@ -772,19 +798,7 @@ public partial class CharGenReviewScreen : UserControl, IScreen
 
     private int GetExistingExperienceForLeveling(CharGenState cg)
     {
-        int enteredXp = Math.Max(0, cg.ExistingStartingExperience);
-        var classIds = GetEffectiveClassIds(cg)
-            .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
-        int classCount = classIds.Count;
-        if (classCount <= 1)
-            return enteredXp;
-
-        if (!cg.ExistingExperienceIsGrandTotalForMulticlass)
-            return enteredXp;
-
-        return Math.Max(0, enteredXp / classCount);
+        return cg.GetExistingExperienceForClass(cg.ClassId);
     }
 
     private void RebuildSheetAbilityStateForSelectedClasses(CharacterSheet sheet, CharGenState cg)
@@ -827,7 +841,7 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                 selectedAbilityIds,
                 cg.RacialCarryoverToClassPoints,
                 specializationId,
-                Math.Max(1, sheet.Level),
+                cg.UsesSeparateExistingClassExperience ? cg.GetConfiguredClassLevel(classId) : Math.Max(1, sheet.Level),
                 cg.RaceId);
 
             var spheres = cg.SpheresByClass.TryGetValue(classId, out var classSpheres)
@@ -1146,7 +1160,7 @@ public partial class CharGenReviewScreen : UserControl, IScreen
             if (isPlayersOptionCharacter)
             {
                 int currentNwpCp = CalculateTotalNwpCp(cg, nwpDefinitions);
-                int baselineNwpCp = CalculateTotalNwpCp(cg.BaselineNonweaponProficiencyIds, cg.BaselineNonweaponProficiencyImprovements, nwpDefinitions);
+                int baselineNwpCp = CalculateTotalNwpCp(cg.BaselineNonweaponProficiencyIds, cg.BaselineNonweaponProficiencyImprovements, nwpDefinitions, cg);
 
                 var classIdsForWeaponCp = currentClassIds.Count > 0 ? currentClassIds : new List<string> { cg.ClassId };
                 int currentWeaponCp = GetEffectiveWeaponCpUsedForState(cg, classIdsForWeaponCp, cg.SelectedWeaponProficiencies);
@@ -1318,7 +1332,7 @@ public partial class CharGenReviewScreen : UserControl, IScreen
             existing.WizardSpellLists = BuildSafeWizardSpellLists(cg.WizardSpellLists, existing.WizardSpellbookIds);
 
             RebuildSheetAbilityStateForSelectedClasses(existing, cg);
-            existing.Thac0 = GetBaseThac0(existing.ClassId, Math.Max(1, existing.Level));
+            existing.Thac0 = CharacterProgressionService.GetBaseThac0(existing);
             
             // DEBUG: Log spell data after filtering
             System.Diagnostics.Debug.WriteLine($"[LevelUp-Saved] existing.WizardSpellbookIds count: {existing.WizardSpellbookIds?.Count ?? 0}");
@@ -1415,13 +1429,14 @@ public partial class CharGenReviewScreen : UserControl, IScreen
 
             sheet.ExperiencePoints = effectiveXp;
             configuredLevel = CharacterProgressionService.GetLevelForExperience(cg.ClassId, effectiveXp);
-            if (classCount > 1 && cg.ExistingExperienceIsGrandTotalForMulticlass)
+            if (classCount > 1 && cg.ExistingExperienceIsGrandTotalForMulticlass && !cg.UsesSeparateExistingClassExperience)
             {
                 sheet.Notes.Add($"Existing character XP entered as total {enteredXp:N0}; stored as {effectiveXp:N0} per class for multiclass progression.");
             }
         }
 
-        if (_app.License.IsDemoMode && configuredLevel > _app.License.DemoMaxLevel)
+        if (_app.License.IsDemoMode && (configuredLevel > _app.License.DemoMaxLevel
+            || (cg.UsesSeparateExistingClassExperience && effectiveClassIds.Any(id => cg.GetConfiguredClassLevel(id) > _app.License.DemoMaxLevel))))
         {
             MessageBox.Show(
                 $"Demo mode allows a maximum level of {_app.License.DemoMaxLevel}.",
@@ -1507,6 +1522,16 @@ public partial class CharGenReviewScreen : UserControl, IScreen
         sheet.ClassName = BuildClassDisplayName(sheet.ClassIds, sheet.ClassName);
         if (cg.IsExistingCharacterMode)
         {
+            if (cg.UsesSeparateExistingClassExperience)
+            {
+                sheet.ClassExperiencePoints = sheet.ClassIds.ToDictionary(
+                    id => id,
+                    id => cg.GetExistingExperienceForClass(id),
+                    StringComparer.OrdinalIgnoreCase);
+                sheet.ExperiencePoints = cg.GetExistingExperienceForClass(sheet.ClassId);
+                sheet.Notes.Add("Existing character starting XP by class (includes prior bonuses): "
+                    + string.Join(", ", sheet.ClassIds.Select(id => $"{id}: {sheet.ClassExperiencePoints[id]:N0}")));
+            }
             CharacterProgressionService.ApplyExperienceAdjustment(sheet, 0);
         }
         else
@@ -1516,6 +1541,7 @@ public partial class CharGenReviewScreen : UserControl, IScreen
                 _ => Math.Max(1, sheet.Level),
                 StringComparer.OrdinalIgnoreCase);
         }
+        sheet.Thac0 = CharacterProgressionService.GetBaseThac0(sheet);
         if (cg.SelectedAbilitiesByClass.Count == 0
             && !string.IsNullOrWhiteSpace(cg.ClassId)
             && cg.SelectedClassAbilityIds.Count > 0)
@@ -1851,26 +1877,33 @@ public partial class CharGenReviewScreen : UserControl, IScreen
         int cpSpent = isPo && cg.SelectedNonweaponProficiencyImprovements.TryGetValue(proficiency.Id, out int cp)
             ? Math.Max(0, cp)
             : 0;
-        int cpPerPoint = proficiency.CpCost > 0 ? proficiency.CpCost : 1;
-        int improvement = cpSpent / Math.Max(1, cpPerPoint);
+        // Player's Option improvements are 1 CP per +1, regardless of the initial purchase cost.
+        // This formatter is also used when saving new and updated character summaries.
+        int improvement = cpSpent;
         int familyScore = GetReviewNwpFamilyScore(cg, proficiency);
         int rangerTrackingBonus = RangerTrackingRules.GetBonus(cg, proficiency);
+        int synergyBonus = isPo ? NwpSynergyRules.GetPermanentBonus(cg, proficiency) : 0;
         int target = isPo
-            ? Math.Max(5, proficiency.PlayersOptionBaseRating) + GetReviewTable44Modifier(familyScore) + improvement + rangerTrackingBonus
+            ? Math.Max(0, proficiency.PlayersOptionBaseRating) + GetReviewTable44Modifier(familyScore) + improvement + rangerTrackingBonus + synergyBonus
             : familyScore + proficiency.CheckModifier + improvement + rangerTrackingBonus;
-        int purchaseCp = IsNwpGrantedBySelectedClassAbility(cg, proficiency)
-            ? 0
-            : proficiency.CpCost > 0 ? proficiency.CpCost : Math.Max(1, proficiency.Slots);
+        int purchaseCp = NwpGrantRules.GetAcquisitionCost(cg, proficiency);
         int totalCp = purchaseCp + cpSpent;
         string cpSummary = purchaseCp == 0
-            ? $"{totalCp} CP improvement; granted by class"
+            ? $"{totalCp} CP improvement; granted by {(cg.KitFreeNwpIds.Contains(proficiency.Id, StringComparer.OrdinalIgnoreCase) ? "kit" : "class")}"
             : cpSpent > 0
                 ? $"{totalCp} CP: {purchaseCp} purchase + {cpSpent} improvement"
                 : $"{totalCp} CP purchase";
         string summary = isPo
             ? $"{proficiency.Name} {target} ({cpSummary})"
             : $"{proficiency.Name} {target}";
-        summary += RangerTrackingRules.GetConditionalTargetSummary(cg, proficiency, target);
+        if (RangerTrackingRules.IsTracking(proficiency.Id, proficiency.Name))
+            summary += RangerTrackingRules.GetConditionalTargetSummary(cg, proficiency, target);
+        else if (isPo)
+        {
+            string conditional = NwpSynergyRules.GetConditionalSummary(cg, proficiency, target);
+            if (!string.IsNullOrEmpty(conditional))
+                summary += "; conditional alternatives: " + conditional.Replace(Environment.NewLine, "; ");
+        }
 
         if (cg.SelectedNonweaponProficiencyNotes.TryGetValue(proficiency.Id, out var note)
             && !string.IsNullOrWhiteSpace(note))
@@ -1954,7 +1987,7 @@ public partial class CharGenReviewScreen : UserControl, IScreen
             "free_spoken" => "Free Spoken Language",
             "modern_languages" => "Modern Languages",
             "ancient_languages" => "Ancient Languages",
-            "animal_languages" => "Animal Languages",
+            "animal_languages" => "Creature Languages (Druid)",
             "reading_writing" => "Reading/Writing",
             _ => language.SourceKey,
         };
@@ -2118,51 +2151,17 @@ public partial class CharGenReviewScreen : UserControl, IScreen
 
     private static int CalculateTotalNwpCp(CharGenState cg, List<NonweaponProficiencyDefinition> definitions)
     {
-        int total = CalculateTotalNwpCp(cg.SelectedNonweaponProficiencyIds, cg.SelectedNonweaponProficiencyImprovements, definitions);
-        var grantedTracking = definitions.FirstOrDefault(definition =>
-            RangerTrackingRules.IsTracking(definition.Id, definition.Name)
-            && cg.SelectedNonweaponProficiencyIds.Contains(definition.Id, StringComparer.OrdinalIgnoreCase));
-        if (grantedTracking is not null && IsNwpGrantedBySelectedClassAbility(cg, grantedTracking))
-            total -= grantedTracking.CpCost > 0 ? grantedTracking.CpCost : Math.Max(1, grantedTracking.Slots);
-        return Math.Max(0, total);
-    }
-
-    private static bool IsNwpGrantedBySelectedClassAbility(CharGenState cg, NonweaponProficiencyDefinition proficiency)
-    {
-        if (!RangerTrackingRules.IsTracking(proficiency.Id, proficiency.Name))
-            return false;
-
-        return cg.SelectedClassAbilityIds
-            .Concat(cg.SelectedAbilitiesByClass.Values.SelectMany(ids => ids))
-            .Select(RulesEngine.ExtractClassAbilityBaseId)
-            .Any(id => string.Equals(id, RangerTrackingRules.TrackingAbilityId, StringComparison.OrdinalIgnoreCase));
+        return CalculateTotalNwpCp(cg.SelectedNonweaponProficiencyIds,
+            cg.SelectedNonweaponProficiencyImprovements, definitions, cg);
     }
 
     private static int CalculateTotalNwpCp(
         List<string> selectedIds,
         Dictionary<string, int> improvements,
-        List<NonweaponProficiencyDefinition> definitions)
+        List<NonweaponProficiencyDefinition> definitions,
+        CharGenState cg)
     {
-        var byId = definitions
-            .GroupBy(x => x.Id, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
-
-        int total = 0;
-        foreach (string id in selectedIds)
-        {
-            if (!byId.TryGetValue(id, out var def))
-                continue;
-            total += def.CpCost > 0 ? def.CpCost : Math.Max(1, def.Slots);
-        }
-
-        foreach (var kv in improvements)
-        {
-            if (!byId.TryGetValue(kv.Key, out var def))
-                continue;
-            total += Math.Max(0, kv.Value);
-        }
-
-        return total;
+        return NwpGrantRules.GetTotalBaseCost(selectedIds, improvements, definitions, cg);
     }
 
     private static List<string> GetAddedIds(List<string> current, List<string> baseline)

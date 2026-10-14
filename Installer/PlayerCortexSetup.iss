@@ -2,7 +2,7 @@
 ; Build source expected in C:\Users\kelava\Documents\Projects\DMC Updates\playercodex
 
 #define MyAppName "Player Codex"
-#define MyAppVersion "1.4.24"
+#define MyAppVersion "1.4.25"
 #define MyAppPublisher "Dungeon Master Codex"
 #define MyAppExeName "PlayerCortex.exe"
 #ifndef BuildSourceDir
@@ -26,7 +26,7 @@ DefaultDirName={autopf}\PlayerCodex
 DefaultGroupName=Player Codex
 DisableProgramGroupPage=yes
 OutputDir={#OutputDir}
-OutputBaseFilename=PlayerCodex-Setup-1.4.24
+OutputBaseFilename=PlayerCodex-Setup-1.4.25
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern

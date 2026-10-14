@@ -397,7 +397,7 @@
                                         <ComboBoxItem Content="Free Spoken Language" Tag="free_spoken" IsSelected="True"/>
                                         <ComboBoxItem Content="Modern Languages" Tag="modern_languages"/>
                                         <ComboBoxItem Content="Ancient Languages" Tag="ancient_languages"/>
-                                        <ComboBoxItem Content="Animal Languages" Tag="animal_languages"/>
+                                        <ComboBoxItem Content="Creature Languages (Druid)" Tag="animal_languages"/>
                                         <ComboBoxItem Content="Priest Secret Language" Tag="priest_secret_language"/>
                                         <ComboBoxItem Content="Reading/Writing" Tag="reading_writing"/>
                                     </ComboBox>

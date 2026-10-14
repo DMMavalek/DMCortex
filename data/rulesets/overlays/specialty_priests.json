@@ -1,0 +1,3665 @@
+{
+  "format": "dmcortex_specialty_priests_v1",
+  "source_workbook": "Deity List for Players.xlsx",
+  "source_sheet": "Human Deities",
+  "deities": {
+    "anawar": {
+      "name": "Anawar",
+      "alignment": "CE",
+      "portfolio": "Chaos/Destruction",
+      "follower_alignments": [
+        "N",
+        "CN",
+        "LE",
+        "NE",
+        "CE"
+      ],
+      "follower_ability": {
+        "description": "[Follower Benefit - Anawar] All Devestators gain: +2 save versus Law/Order spells and spells cast from Priests of Assyra May select Rogue Weapons",
+        "point_cost": 0,
+        "auto_granted": true,
+        "allow_multiple": false,
+        "requires_player_text": false,
+        "allow_purchase_after_level_one": false
+      }
+    },
+    "aradax": {
+      "name": "Aradax",
+      "alignment": "N",
+      "portfolio": "Moon/Navigation/Travel",
+      "follower_alignments": [
+        "LG",
+        "NG",
+        "CG",
+        "LN",
+        "N",
+        "CN",
+        "LE",
+        "NE",
+        "CE"
+      ],
+      "follower_ability": {
+        "description": "[Follower Benefit - Aradax] All Moonwardens gain: When in moonlight (no sun visible), Can cast 1 spell per day as if 4 levels higher Gains Wizard Non weapon skills Gains +1 saving throws from Fire spells",
+        "point_cost": 0,
+        "auto_granted": true,
+        "allow_multiple": false,
+        "requires_player_text": false,
+        "allow_purchase_after_level_one": false
+      }
+    },
+    "assyra": {
+      "name": "Assyra",
+      "alignment": "LG",
+      "portfolio": "Justice/Law",
+      "follower_alignments": [
+        "LG",
+        "LN",
+        "N",
+        "LE"
+      ],
+      "follower_ability": {
+        "description": "[Follower Benefit - Assyra] All Balancers gain: +2 to law checks +1 to attacks against creatures of Chaos (CE)",
+        "point_cost": 0,
+        "auto_granted": true,
+        "allow_multiple": false,
+        "requires_player_text": false,
+        "allow_purchase_after_level_one": false
+      }
+    },
+    "cellemys": {
+      "name": "Cellemys",
+      "alignment": "LN",
+      "portfolio": "Beauty/Love/Passion",
+      "follower_alignments": [
+        "LG",
+        "NG",
+        "CG",
+        "LN",
+        "N",
+        "CN",
+        "LE",
+        "NE",
+        "CE"
+      ],
+      "follower_ability": {
+        "description": "[Follower Benefit - Cellemys] All Lovekeepers gain: +2 bonus on reaction adjustments, +3 versus the opposite sex",
+        "point_cost": 0,
+        "auto_granted": true,
+        "allow_multiple": false,
+        "requires_player_text": false,
+        "allow_purchase_after_level_one": false
+      }
+    },
+    "cyreus": {
+      "name": "Cyreus",
+      "alignment": "NE",
+      "portfolio": "Fear/Hatred",
+      "follower_alignments": [
+        "N",
+        "LE",
+        "NE",
+        "CE"
+      ],
+      "follower_ability": {
+        "description": "[Follower Benefit - Cyreus] All Sinisters gain: Immunity to Fear induced from spells Recipients of their Fear Spells gain -2 to saving throws",
+        "point_cost": 0,
+        "auto_granted": true,
+        "allow_multiple": false,
+        "requires_player_text": false,
+        "allow_purchase_after_level_one": false
+      }
+    },
+    "dalrion": {
+      "name": "Dalrion",
+      "alignment": "LN",
+      "portfolio": "Healing",
+      "follower_alignments": [
+        "LG",
+        "NG",
+        "CG",
+        "LN",
+        "N",
+        "CN",
+        "LE",
+        "NE",
+        "CE"
+      ],
+      "follower_ability": {
+        "description": "[Follower Benefit - Dalrion] All Lifemenders gain: +2 bonus to healing checks when herbalism check is successful Once a week can maximize a healing spell Chooses 1 undead type and gains a +1 to turning that type",
+        "point_cost": 0,
+        "auto_granted": true,
+        "allow_multiple": false,
+        "requires_player_text": false,
+        "allow_purchase_after_level_one": false
+      }
+    },
+    "grezal": {
+      "name": "Grezal",
+      "alignment": "NG",
+      "portfolio": "Creativity/Knowledge",
+      "follower_alignments": [
+        "LG",
+        "NG",
+        "CG",
+        "LN",
+        "N",
+        "CN",
+        "LE",
+        "NE",
+        "CE"
+      ],
+      "follower_ability": {
+        "description": "[Follower Benefit - Grezal] All Bookwyrms gain: Can use a pearl of 50 gps to cast identify Gains +1 to skill checks that involve creativity Gain +2 to knowledge checks in areas of expertise",
+        "point_cost": 0,
+        "auto_granted": true,
+        "allow_multiple": false,
+        "requires_player_text": false,
+        "allow_purchase_after_level_one": false
+      }
+    },
+    "grianna": {
+      "name": "Grianna",
+      "alignment": "CG",
+      "portfolio": "Water / Oceans",
+      "follower_alignments": [
+        "NG",
+        "CG",
+        "N",
+        "CN",
+        "NE",
+        "CE"
+      ],
+      "follower_ability": {
+        "description": "[Follower Benefit - Grianna] All wavemasters gain: +2 saves versus water abilities Can create 1 gallon of water per level +2 to swimming checks in still waters, +1 in rough waters",
+        "point_cost": 0,
+        "auto_granted": true,
+        "allow_multiple": false,
+        "requires_player_text": false,
+        "allow_purchase_after_level_one": false
+      }
+    },
+    "invictus": {
+      "name": "Invictus",
+      "alignment": "LN",
+      "portfolio": "Strength",
+      "follower_alignments": [
+        "LG",
+        "NG",
+        "CG",
+        "LN",
+        "N",
+        "CN",
+        "LE",
+        "NE",
+        "CE"
+      ],
+      "follower_ability": {
+        "description": "[Follower Benefit - Invictus] All Invictors gain: +1 to strength checks +2 to saving throws versus spells that affect strength",
+        "point_cost": 0,
+        "auto_granted": true,
+        "allow_multiple": false,
+        "requires_player_text": false,
+        "allow_purchase_after_level_one": false
+      }
+    },
+    "kaanos": {
+      "name": "Kaanos",
+      "alignment": "N",
+      "portfolio": "Sun / Nature / Growth",
+      "follower_alignments": [
+        "NG",
+        "LN",
+        "N",
+        "CN",
+        "NE"
+      ],
+      "follower_ability": {
+        "description": "[Follower Benefit - Kaanos] All Sunlords/Sunladies gain: +2 saving throws versus fire -1 Saving trhows versus ice/water",
+        "point_cost": 0,
+        "auto_granted": true,
+        "allow_multiple": false,
+        "requires_player_text": false,
+        "allow_purchase_after_level_one": false
+      }
+    },
+    "kaldoza": {
+      "name": "Kaldoza",
+      "alignment": "CN",
+      "portfolio": "Money/Trade/Wealth",
+      "follower_alignments": [
+        "LG",
+        "NG",
+        "CG",
+        "LN",
+        "N",
+        "CN",
+        "LE",
+        "NE",
+        "CE"
+      ],
+      "follower_ability": {
+        "description": "[Follower Benefit - Kaldoza] All Coinsmiths gain: Can identify items as bard skill (5% per level)",
+        "point_cost": 0,
+        "auto_granted": true,
+        "allow_multiple": false,
+        "requires_player_text": false,
+        "allow_purchase_after_level_one": false
+      }
+    },
+    "kezbar": {
+      "name": "Kezbar",
+      "alignment": "NG",
+      "portfolio": "Music/Art/Dance/Joy/Poetry",
+      "follower_alignments": [
+        "LG",
+        "NG",
+        "CG",
+        "LN",
+        "N",
+        "CN",
+        "LE",
+        "NE",
+        "CE"
+      ],
+      "follower_ability": null
+    },
+    "mortend": {
+      "name": "Mortend",
+      "alignment": "NE",
+      "portfolio": "Death / The Dead",
+      "follower_alignments": [
+        "LG",
+        "NG",
+        "CG",
+        "LN",
+        "N",
+        "CN",
+        "LE",
+        "NE",
+        "CE"
+      ],
+      "follower_ability": null
+    },
+    "nyssia": {
+      "name": "Nyssia",
+      "alignment": "N",
+      "portfolio": "Weather",
+      "follower_alignments": [
+        "NG",
+        "CG",
+        "LN",
+        "N",
+        "CN",
+        "LE"
+      ],
+      "follower_ability": null
+    },
+    "oslok": {
+      "name": "Oslok",
+      "alignment": "CG",
+      "portfolio": "Luck/Adventure",
+      "follower_alignments": [
+        "LG",
+        "NG",
+        "CG",
+        "LN",
+        "N",
+        "CN",
+        "LE",
+        "NE",
+        "CE"
+      ],
+      "follower_ability": null
+    },
+    "samona": {
+      "name": "Samona",
+      "alignment": "CE",
+      "portfolio": "Deception",
+      "follower_alignments": [
+        "LN",
+        "N",
+        "CN",
+        "LE",
+        "NE",
+        "CE"
+      ],
+      "follower_ability": null
+    },
+    "sektheus": {
+      "name": "Sektheus",
+      "alignment": "N",
+      "portfolio": "Earth/Stone/Oaths",
+      "follower_alignments": [
+        "LG",
+        "NG",
+        "CG",
+        "LN",
+        "N",
+        "CN",
+        "LE",
+        "NE",
+        "CE"
+      ],
+      "follower_ability": null
+    },
+    "silthos": {
+      "name": "Silthos",
+      "alignment": "NE",
+      "portfolio": "Disease/Poison",
+      "follower_alignments": [
+        "LG",
+        "NG",
+        "CG",
+        "LN",
+        "N",
+        "CN",
+        "LE",
+        "NE",
+        "CE"
+      ],
+      "follower_ability": null
+    },
+    "thoria": {
+      "name": "Thoria",
+      "alignment": "CN",
+      "portfolio": "Fire",
+      "follower_alignments": [
+        "LG",
+        "NG",
+        "CG",
+        "LN",
+        "N",
+        "CN",
+        "LE",
+        "NE",
+        "CE"
+      ],
+      "follower_ability": null
+    },
+    "trion": {
+      "name": "Trion",
+      "alignment": "LG",
+      "portfolio": "Magic",
+      "follower_alignments": [
+        "LG",
+        "NG",
+        "CG",
+        "LN",
+        "N",
+        "CN",
+        "LE",
+        "NE",
+        "CE"
+      ],
+      "follower_ability": {
+        "description": "[Follower Benefit - Trion] All magehands gain: +2 skill checks to Intelligence or Intelligence/knowledge based skills Gain an additional language to read/write every odd level (starting at",
+        "point_cost": 0,
+        "auto_granted": true,
+        "allow_multiple": false,
+        "requires_player_text": false,
+        "allow_purchase_after_level_one": false
+      }
+    },
+    "trokdarr": {
+      "name": "Trokdarr",
+      "alignment": "NG",
+      "portfolio": "Guardian/Protection",
+      "follower_alignments": [
+        "LG",
+        "NG",
+        "CG",
+        "LN",
+        "N",
+        "CN",
+        "LE",
+        "NE",
+        "CE"
+      ],
+      "follower_ability": null
+    },
+    "trovann": {
+      "name": "Trovann",
+      "alignment": "CE",
+      "portfolio": "Agony/Pain/Suffering",
+      "follower_alignments": [
+        "LG",
+        "NG",
+        "CG",
+        "LN",
+        "N",
+        "CN",
+        "LE",
+        "NE",
+        "CE"
+      ],
+      "follower_ability": null
+    },
+    "trystram": {
+      "name": "Trystram",
+      "alignment": "LE",
+      "portfolio": "Shadows - Theives",
+      "follower_alignments": [
+        "LG",
+        "NG",
+        "CG",
+        "LN",
+        "N",
+        "CN",
+        "LE",
+        "NE",
+        "CE"
+      ],
+      "follower_ability": null
+    },
+    "una": {
+      "name": "Una",
+      "alignment": "NG",
+      "portfolio": "Agriculture/Nature",
+      "follower_alignments": [
+        "LG",
+        "NG",
+        "CG",
+        "LN",
+        "N",
+        "CN",
+        "LE",
+        "NE",
+        "CE"
+      ],
+      "follower_ability": null
+    },
+    "valdron": {
+      "name": "Valdron",
+      "alignment": "LE",
+      "portfolio": "Evil",
+      "follower_alignments": [
+        "LG",
+        "NG",
+        "CG",
+        "LN",
+        "N",
+        "CN",
+        "LE",
+        "NE",
+        "CE"
+      ],
+      "follower_ability": null
+    },
+    "vogvir": {
+      "name": "Vogvir",
+      "alignment": "LG",
+      "portfolio": "Good",
+      "follower_alignments": [
+        "LG",
+        "NG",
+        "CG",
+        "LN",
+        "N",
+        "CN",
+        "LE",
+        "NE",
+        "CE"
+      ],
+      "follower_ability": null
+    },
+    "xanca": {
+      "name": "Xanca",
+      "alignment": "CN",
+      "portfolio": "Battle/War",
+      "follower_alignments": [
+        "LG",
+        "NG",
+        "CG",
+        "LN",
+        "N",
+        "CN",
+        "LE",
+        "NE",
+        "CE"
+      ],
+      "follower_ability": null
+    },
+    "zichhia": {
+      "name": "Zichhia",
+      "alignment": "NG",
+      "portfolio": "Birth/Life/Renewal/Fertility",
+      "follower_alignments": [
+        "LG",
+        "NG",
+        "CG",
+        "LN",
+        "N",
+        "CN",
+        "LE",
+        "NE",
+        "CE"
+      ],
+      "follower_ability": null
+    },
+    "ziegrid": {
+      "name": "Ziegrid",
+      "alignment": "LE",
+      "portfolio": "Misfortune/Mischief",
+      "follower_alignments": [
+        "LG",
+        "NG",
+        "CG",
+        "LN",
+        "N",
+        "CN",
+        "LE",
+        "NE",
+        "CE"
+      ],
+      "follower_ability": null
+    },
+    "zorvag": {
+      "name": "Zorvag",
+      "alignment": "CG",
+      "portfolio": "Air/Wind",
+      "follower_alignments": [
+        "LG",
+        "NG",
+        "CG",
+        "LN",
+        "N",
+        "CN",
+        "LE",
+        "NE",
+        "CE"
+      ],
+      "follower_ability": null
+    }
+  },
+  "classes": {
+    "specialty_priest_anawar": {
+      "name": "Devastators (Anawar)",
+      "ability_minimums": {
+        "str": 12,
+        "wis": 14
+      },
+      "allowed_races": [
+        "half-elf",
+        "human"
+      ],
+      "allowed_alignments": [
+        "LE",
+        "NE",
+        "CE"
+      ],
+      "rules_mode": "players_option",
+      "class_point_budget": 30,
+      "class_ability_ids": [
+        "specialty_priest_anawar_deity_profile",
+        "specialty_priest_anawar_priest_rules",
+        "specialty_priest_anawar_faith_lore",
+        "specialty_priest_anawar_level_ability_lvl1_1",
+        "specialty_priest_anawar_level_ability_lvl3_2",
+        "specialty_priest_anawar_level_ability_lvl5_3",
+        "specialty_priest_anawar_level_ability_lvl7_4",
+        "specialty_priest_anawar_level_ability_lvl9_5",
+        "specialty_priest_anawar_level_ability_lvl13_6"
+      ],
+      "fixed_spheres": {
+        "All": "major",
+        "Astral": "major",
+        "Chaos": "major",
+        "Combat": "major",
+        "Necromantic": "major",
+        "Summoning": "major",
+        "Thought": "major",
+        "War": "major",
+        "Charm": "minor",
+        "Divination": "minor",
+        "Elemental": "minor",
+        "Wards": "minor",
+        "Weather": "minor"
+      },
+      "starting_funds_roll": "3d6x10",
+      "source": "custom",
+      "deity": "Anawar",
+      "deity_id": "anawar",
+      "specialty_priest_title": "Devastators",
+      "follower_benefit": "All Devestators gain: +2 save versus Law/Order spells and spells cast from Priests of Assyra May select Rogue Weapons",
+      "import_status": "complete"
+    },
+    "specialty_priest_aradax": {
+      "name": "Moonwarders (Aradax)",
+      "ability_minimums": {
+        "wis": 12,
+        "dex": 12,
+        "con": 13
+      },
+      "allowed_races": [
+        "half-elf",
+        "human"
+      ],
+      "allowed_alignments": [
+        "NG",
+        "N",
+        "CN",
+        "NE"
+      ],
+      "rules_mode": "players_option",
+      "class_point_budget": 25,
+      "class_ability_ids": [
+        "specialty_priest_aradax_deity_profile",
+        "specialty_priest_aradax_priest_rules",
+        "specialty_priest_aradax_faith_lore",
+        "specialty_priest_aradax_level_ability_lvl1_1",
+        "specialty_priest_aradax_level_ability_lvl2_2",
+        "specialty_priest_aradax_level_ability_lvl4_3",
+        "specialty_priest_aradax_level_ability_lvl5_4",
+        "specialty_priest_aradax_level_ability_lvl7_5",
+        "specialty_priest_aradax_level_ability_lvl9_6",
+        "specialty_priest_aradax_level_ability_lvl11_7"
+      ],
+      "fixed_spheres": {
+        "All": "major",
+        "Astral": "major",
+        "Chaos": "major",
+        "Combat": "major",
+        "Creation": "major",
+        "Divination": "major",
+        "Elemental Water": "major",
+        "Elemental Air": "major",
+        "Necromantic": "major",
+        "Wards": "major",
+        "Weather": "major",
+        "Charm": "minor",
+        "Elemental Earth": "minor",
+        "Elemental Fire": "minor",
+        "Healing": "minor",
+        "Protection": "minor",
+        "Summoning": "minor"
+      },
+      "starting_funds_roll": "3d6x10",
+      "source": "custom",
+      "deity": "Aradax",
+      "deity_id": "aradax",
+      "specialty_priest_title": "Moonwarders",
+      "follower_benefit": "All Moonwardens gain: When in moonlight (no sun visible), Can cast 1 spell per day as if 4 levels higher Gains Wizard Non weapon skills Gains +1 saving throws from Fire spells",
+      "import_status": "complete"
+    },
+    "specialty_priest_assyra": {
+      "name": "The Balancers (Assyra)",
+      "ability_minimums": {
+        "str": 15,
+        "wis": 14
+      },
+      "allowed_races": [],
+      "allowed_alignments": [
+        "LG",
+        "LN",
+        "LE"
+      ],
+      "rules_mode": "players_option",
+      "class_point_budget": 27,
+      "class_ability_ids": [
+        "specialty_priest_assyra_deity_profile",
+        "specialty_priest_assyra_priest_rules",
+        "specialty_priest_assyra_faith_lore",
+        "specialty_priest_assyra_level_ability_lvl1_1",
+        "specialty_priest_assyra_level_ability_lvl2_2",
+        "specialty_priest_assyra_level_ability_lvl3_3",
+        "specialty_priest_assyra_level_ability_lvl5_4",
+        "specialty_priest_assyra_level_ability_lvl7_5",
+        "specialty_priest_assyra_level_ability_lvl9_6",
+        "specialty_priest_assyra_level_ability_lvl13_7"
+      ],
+      "fixed_spheres": {
+        "All": "major",
+        "Astral": "major",
+        "Combat": "major",
+        "Divination": "major",
+        "Guardian": "major",
+        "Healing": "major",
+        "Law": "major",
+        "Protection": "major",
+        "Travelers": "major",
+        "Charm": "minor",
+        "Creation": "minor",
+        "Elemental": "minor",
+        "Sun": "minor",
+        "War": "minor",
+        "Wards": "minor"
+      },
+      "starting_funds_roll": "3d6x10",
+      "source": "custom",
+      "deity": "Assyra",
+      "deity_id": "assyra",
+      "specialty_priest_title": "The Balancers",
+      "follower_benefit": "All Balancers gain: +2 to law checks +1 to attacks against creatures of Chaos (CE)",
+      "import_status": "complete"
+    },
+    "specialty_priest_cellemys": {
+      "name": "Lovekeepers (Cellemys)",
+      "ability_minimums": {
+        "cha": 15,
+        "int": 12,
+        "wis": 14
+      },
+      "allowed_races": [
+        "half-elf",
+        "human",
+        "elf"
+      ],
+      "allowed_alignments": [
+        "LG",
+        "NG",
+        "LN",
+        "N"
+      ],
+      "rules_mode": "players_option",
+      "class_point_budget": 27,
+      "class_ability_ids": [
+        "specialty_priest_cellemys_deity_profile",
+        "specialty_priest_cellemys_priest_rules",
+        "specialty_priest_cellemys_faith_lore",
+        "specialty_priest_cellemys_level_ability_lvl1_1",
+        "specialty_priest_cellemys_level_ability_lvl3_2",
+        "specialty_priest_cellemys_level_ability_lvl5_3",
+        "specialty_priest_cellemys_level_ability_lvl7_4",
+        "specialty_priest_cellemys_level_ability_lvl9_5",
+        "specialty_priest_cellemys_level_ability_lvl14_6"
+      ],
+      "fixed_spheres": {
+        "All": "major",
+        "Astral": "major",
+        "Charm": "major",
+        "Creation": "major",
+        "Divination": "major",
+        "Guardian": "major",
+        "Healing": "major",
+        "Plant": "major",
+        "Protection": "major",
+        "Animal": "minor",
+        "Combat": "minor",
+        "Elemental": "minor",
+        "Necromantic": "minor",
+        "Summoning": "minor",
+        "Sun": "minor"
+      },
+      "starting_funds_roll": "3d6x10",
+      "source": "custom",
+      "deity": "Cellemys",
+      "deity_id": "cellemys",
+      "specialty_priest_title": "Lovekeepers",
+      "follower_benefit": "All Lovekeepers gain: +2 bonus on reaction adjustments, +3 versus the opposite sex",
+      "import_status": "complete"
+    },
+    "specialty_priest_cyreus": {
+      "name": "Sinisters (Cyreus)",
+      "ability_minimums": {
+        "wis": 12,
+        "cha": 12
+      },
+      "allowed_races": [
+        "half-elf",
+        "half-orc",
+        "human"
+      ],
+      "allowed_alignments": [
+        "NE",
+        "CE"
+      ],
+      "rules_mode": "players_option",
+      "class_point_budget": 27,
+      "class_ability_ids": [
+        "specialty_priest_cyreus_deity_profile",
+        "specialty_priest_cyreus_priest_rules",
+        "specialty_priest_cyreus_faith_lore",
+        "specialty_priest_cyreus_level_ability_lvl1_1",
+        "specialty_priest_cyreus_level_ability_lvl3_2",
+        "specialty_priest_cyreus_level_ability_lvl5_3",
+        "specialty_priest_cyreus_level_ability_lvl7_4",
+        "specialty_priest_cyreus_level_ability_lvl9_5",
+        "specialty_priest_cyreus_level_ability_lvl11_6"
+      ],
+      "fixed_spheres": {
+        "All": "major",
+        "Astral": "major",
+        "Chaos": "major",
+        "Charm": "major",
+        "Combat": "major",
+        "Elemental": "major",
+        "Summoning": "major",
+        "Thought": "major",
+        "War": "major",
+        "Wards": "major",
+        "Divination": "minor",
+        "Elemental Fire": "minor",
+        "Healing": "minor",
+        "Protection": "minor",
+        "Travelers": "minor",
+        "Weather": "minor"
+      },
+      "starting_funds_roll": "3d6x10",
+      "source": "custom",
+      "deity": "Cyreus",
+      "deity_id": "cyreus",
+      "specialty_priest_title": "Sinisters",
+      "follower_benefit": "All Sinisters gain: Immunity to Fear induced from spells Recipients of their Fear Spells gain -2 to saving throws",
+      "import_status": "complete"
+    },
+    "specialty_priest_dalrion": {
+      "name": "Lifemenders (Dalrion)",
+      "ability_minimums": {
+        "wis": 15,
+        "int": 12
+      },
+      "allowed_races": [],
+      "allowed_alignments": [
+        "LG",
+        "NG",
+        "CG",
+        "LN",
+        "N"
+      ],
+      "rules_mode": "players_option",
+      "class_point_budget": 27,
+      "class_ability_ids": [
+        "specialty_priest_dalrion_deity_profile",
+        "specialty_priest_dalrion_priest_rules",
+        "specialty_priest_dalrion_faith_lore",
+        "specialty_priest_dalrion_level_ability_lvl1_1",
+        "specialty_priest_dalrion_level_ability_lvl2_2",
+        "specialty_priest_dalrion_level_ability_lvl4_3",
+        "specialty_priest_dalrion_level_ability_lvl6_4",
+        "specialty_priest_dalrion_level_ability_lvl9_5",
+        "specialty_priest_dalrion_level_ability_lvl12_6",
+        "specialty_priest_dalrion_level_ability_lvl15_7"
+      ],
+      "fixed_spheres": {
+        "All": "major",
+        "Astral": "major",
+        "Creation": "major",
+        "Divination": "major",
+        "Guardian": "major",
+        "Healing": "major",
+        "Necromantic": "major",
+        "Protection": "major",
+        "Sun": "major",
+        "Charm": "minor",
+        "Elemental": "minor",
+        "Law": "minor",
+        "Time": "minor",
+        "Travelers": "minor",
+        "Weather": "minor"
+      },
+      "starting_funds_roll": "3d6x10",
+      "source": "custom",
+      "deity": "Dalrion",
+      "deity_id": "dalrion",
+      "specialty_priest_title": "Lifemenders",
+      "follower_benefit": "All Lifemenders gain: +2 bonus to healing checks when herbalism check is successful Once a week can maximize a healing spell Chooses 1 undead type and gains a +1 to turning that type",
+      "import_status": "complete"
+    },
+    "specialty_priest_grezal": {
+      "name": "Bookwyrms (Grezal)",
+      "ability_minimums": {
+        "int": 14,
+        "wis": 14
+      },
+      "allowed_races": [
+        "half-elf",
+        "human",
+        "gnome"
+      ],
+      "allowed_alignments": [
+        "LG",
+        "NG",
+        "CG",
+        "LN",
+        "N",
+        "CN",
+        "LE",
+        "NE",
+        "CE"
+      ],
+      "rules_mode": "players_option",
+      "class_point_budget": 27,
+      "class_ability_ids": [
+        "specialty_priest_grezal_deity_profile",
+        "specialty_priest_grezal_priest_rules",
+        "specialty_priest_grezal_faith_lore",
+        "specialty_priest_grezal_level_ability_lvl1_1",
+        "specialty_priest_grezal_level_ability_lvl2_2",
+        "specialty_priest_grezal_level_ability_lvl3_3",
+        "specialty_priest_grezal_level_ability_lvl4_4",
+        "specialty_priest_grezal_level_ability_lvl5_5",
+        "specialty_priest_grezal_level_ability_lvl7_6",
+        "specialty_priest_grezal_level_ability_lvl9_7",
+        "specialty_priest_grezal_level_ability_lvl11_8"
+      ],
+      "fixed_spheres": {
+        "All": "major",
+        "Astral": "major",
+        "Creation": "major",
+        "Divination": "major",
+        "Healing": "major",
+        "Law": "major",
+        "Necromantic": "major",
+        "Numbers": "major",
+        "Thought": "major",
+        "Time": "major",
+        "Charm": "minor",
+        "Guardian": "minor",
+        "Protection": "minor",
+        "Sun": "minor",
+        "Travelers": "minor"
+      },
+      "starting_funds_roll": "3d6x10",
+      "source": "custom",
+      "deity": "Grezal",
+      "deity_id": "grezal",
+      "specialty_priest_title": "Bookwyrms",
+      "follower_benefit": "All Bookwyrms gain: Can use a pearl of 50 gps to cast identify Gains +1 to skill checks that involve creativity Gain +2 to knowledge checks in areas of expertise",
+      "import_status": "complete"
+    },
+    "specialty_priest_grianna": {
+      "name": "Wavemasters (Grianna)",
+      "ability_minimums": {
+        "str": 14,
+        "wis": 15,
+        "dex": 12
+      },
+      "allowed_races": [
+        "aquatic_elf_po",
+        "half-elf",
+        "human"
+      ],
+      "allowed_alignments": [
+        "CG",
+        "LN",
+        "N",
+        "CN",
+        "CE"
+      ],
+      "rules_mode": "players_option",
+      "class_point_budget": 27,
+      "class_ability_ids": [
+        "specialty_priest_grianna_deity_profile",
+        "specialty_priest_grianna_priest_rules",
+        "specialty_priest_grianna_faith_lore",
+        "specialty_priest_grianna_level_ability_lvl1_1",
+        "specialty_priest_grianna_level_ability_lvl2_2",
+        "specialty_priest_grianna_level_ability_lvl3_3",
+        "specialty_priest_grianna_level_ability_lvl5_4",
+        "specialty_priest_grianna_level_ability_lvl7_5",
+        "specialty_priest_grianna_level_ability_lvl10_6",
+        "specialty_priest_grianna_level_ability_lvl11_7",
+        "specialty_priest_grianna_level_ability_lvl12_8"
+      ],
+      "fixed_spheres": {
+        "All": "major",
+        "Chaos": "major",
+        "Combat": "major",
+        "Creation": "major",
+        "Elemental Water": "major",
+        "Healing": "major",
+        "Necromantic": "major",
+        "Summoning": "major",
+        "Weather": "major",
+        "Charm": "minor",
+        "Elemental Earth": "minor",
+        "Elemental Air": "minor",
+        "Guardian": "minor",
+        "Protection": "minor"
+      },
+      "starting_funds_roll": "3d6x10",
+      "source": "custom",
+      "deity": "Grianna",
+      "deity_id": "grianna",
+      "specialty_priest_title": "Wavemasters",
+      "follower_benefit": "All wavemasters gain: +2 saves versus water abilities Can create 1 gallon of water per level +2 to swimming checks in still waters, +1 in rough waters",
+      "import_status": "complete"
+    },
+    "specialty_priest_invictus": {
+      "name": "Invictors (Invictus)",
+      "ability_minimums": {
+        "str": 15,
+        "wis": 14,
+        "con": 12
+      },
+      "allowed_races": [
+        "half-elf",
+        "human",
+        "dwarf"
+      ],
+      "allowed_alignments": [
+        "NG",
+        "CG",
+        "LN",
+        "CN"
+      ],
+      "rules_mode": "players_option",
+      "class_point_budget": 27,
+      "class_ability_ids": [
+        "specialty_priest_invictus_deity_profile",
+        "specialty_priest_invictus_priest_rules",
+        "specialty_priest_invictus_faith_lore",
+        "specialty_priest_invictus_level_ability_lvl1_1",
+        "specialty_priest_invictus_level_ability_lvl3_2",
+        "specialty_priest_invictus_level_ability_lvl5_3",
+        "specialty_priest_invictus_level_ability_lvl6_4",
+        "specialty_priest_invictus_level_ability_lvl7_5",
+        "specialty_priest_invictus_level_ability_lvl8_6",
+        "specialty_priest_invictus_level_ability_lvl9_7",
+        "specialty_priest_invictus_level_ability_lvl13_8"
+      ],
+      "fixed_spheres": {
+        "All": "major",
+        "Combat": "major",
+        "Elemental": "major",
+        "Guardian": "major",
+        "Protection": "major",
+        "Sun": "major",
+        "Thought": "major",
+        "Wards": "major",
+        "Divination": "minor",
+        "Healing": "minor",
+        "Summoning": "minor",
+        "Numbers": "minor"
+      },
+      "starting_funds_roll": "3d6x10",
+      "source": "custom",
+      "deity": "Invictus",
+      "deity_id": "invictus",
+      "specialty_priest_title": "Invictors",
+      "follower_benefit": "All Invictors gain: +1 to strength checks +2 to saving throws versus spells that affect strength",
+      "import_status": "complete"
+    },
+    "specialty_priest_kaanos": {
+      "name": "Sunlords, Sunladies (Kaanos)",
+      "ability_minimums": {
+        "wis": 14,
+        "con": 12
+      },
+      "allowed_races": [
+        "half-elf",
+        "human",
+        "halfling",
+        "elf"
+      ],
+      "allowed_alignments": [
+        "NG",
+        "LN",
+        "N",
+        "NE"
+      ],
+      "rules_mode": "players_option",
+      "class_point_budget": 25,
+      "class_ability_ids": [
+        "specialty_priest_kaanos_deity_profile",
+        "specialty_priest_kaanos_priest_rules",
+        "specialty_priest_kaanos_faith_lore",
+        "specialty_priest_kaanos_level_ability_lvl1_1",
+        "specialty_priest_kaanos_level_ability_lvl2_2",
+        "specialty_priest_kaanos_level_ability_lvl3_3",
+        "specialty_priest_kaanos_level_ability_lvl5_4",
+        "specialty_priest_kaanos_level_ability_lvl7_5",
+        "specialty_priest_kaanos_level_ability_lvl9_6",
+        "specialty_priest_kaanos_level_ability_lvl11_7",
+        "specialty_priest_kaanos_level_ability_lvl13_8"
+      ],
+      "fixed_spheres": {
+        "All": "major",
+        "Astral": "major",
+        "Combat": "major",
+        "Divination": "major",
+        "Elemental Fire": "major",
+        "Guardian": "major",
+        "Healing": "major",
+        "Summoning": "major",
+        "Sun": "major",
+        "Weather": "major",
+        "Charm": "minor",
+        "Creation": "minor",
+        "Elemental Earth": "minor",
+        "Elemental Air": "minor",
+        "Necromantic": "minor",
+        "Numbers": "minor",
+        "Protection": "minor",
+        "Thought": "minor"
+      },
+      "starting_funds_roll": "3d6x10",
+      "source": "custom",
+      "deity": "Kaanos",
+      "deity_id": "kaanos",
+      "specialty_priest_title": "Sunlords, Sunladies",
+      "follower_benefit": "All Sunlords/Sunladies gain: +2 saving throws versus fire -1 Saving trhows versus ice/water",
+      "import_status": "complete"
+    },
+    "specialty_priest_kaldoza": {
+      "name": "Coinsmiths (Kaldoza)",
+      "ability_minimums": {
+        "wis": 13,
+        "cha": 12
+      },
+      "allowed_races": [],
+      "allowed_alignments": [
+        "CG",
+        "LN",
+        "N",
+        "CN",
+        "CE"
+      ],
+      "rules_mode": "players_option",
+      "class_point_budget": 25,
+      "class_ability_ids": [
+        "specialty_priest_kaldoza_deity_profile",
+        "specialty_priest_kaldoza_priest_rules",
+        "specialty_priest_kaldoza_faith_lore",
+        "specialty_priest_kaldoza_level_ability_lvl1_1",
+        "specialty_priest_kaldoza_level_ability_lvl3_2",
+        "specialty_priest_kaldoza_level_ability_lvl4_3",
+        "specialty_priest_kaldoza_level_ability_lvl5_4",
+        "specialty_priest_kaldoza_level_ability_lvl7_5",
+        "specialty_priest_kaldoza_level_ability_lvl9_6",
+        "specialty_priest_kaldoza_level_ability_lvl11_7"
+      ],
+      "fixed_spheres": {
+        "All": "major",
+        "Charm": "major",
+        "Creation": "major",
+        "Divination": "major",
+        "Elemental Earth": "major",
+        "Guardian": "major",
+        "Numbers": "major",
+        "Protection": "major",
+        "Thought": "major",
+        "Time": "major",
+        "Travelers": "major",
+        "Chaos": "minor",
+        "Combat": "minor",
+        "Healing": "minor",
+        "Law": "minor",
+        "Necromantic": "minor",
+        "War": "minor",
+        "Wards": "minor"
+      },
+      "starting_funds_roll": "3d6x10",
+      "source": "custom",
+      "deity": "Kaldoza",
+      "deity_id": "kaldoza",
+      "specialty_priest_title": "Coinsmiths",
+      "follower_benefit": "All Coinsmiths gain: Can identify items as bard skill (5% per level)",
+      "import_status": "complete"
+    },
+    "specialty_priest_kezbar": {
+      "name": "Songsmiths (Kezbar)",
+      "ability_minimums": {
+        "int": 12,
+        "wis": 14,
+        "cha": 13
+      },
+      "allowed_races": [
+        "half-elf",
+        "human",
+        "gnome",
+        "halfling",
+        "elf"
+      ],
+      "allowed_alignments": [
+        "NG",
+        "CG",
+        "LN",
+        "N",
+        "CN"
+      ],
+      "rules_mode": "players_option",
+      "class_point_budget": 25,
+      "class_ability_ids": [
+        "specialty_priest_kezbar_deity_profile",
+        "specialty_priest_kezbar_priest_rules",
+        "specialty_priest_kezbar_faith_lore",
+        "specialty_priest_kezbar_deity_spells",
+        "specialty_priest_kezbar_level_ability_lvl1_1",
+        "specialty_priest_kezbar_level_ability_lvl2_2",
+        "specialty_priest_kezbar_level_ability_lvl3_3",
+        "specialty_priest_kezbar_level_ability_lvl5_4",
+        "specialty_priest_kezbar_level_ability_lvl7_5",
+        "specialty_priest_kezbar_level_ability_lvl9_6",
+        "specialty_priest_kezbar_level_ability_lvl11_7",
+        "specialty_priest_kezbar_level_ability_lvl15_8"
+      ],
+      "fixed_spheres": {
+        "All": "major",
+        "Charm": "major",
+        "Creation": "major",
+        "Divination": "major",
+        "Guardian": "major",
+        "Healing": "major",
+        "Numbers": "major",
+        "Thought": "major",
+        "Time": "major",
+        "Wards": "major",
+        "Chaos": "minor",
+        "Elemental": "minor",
+        "Law": "minor",
+        "Protection": "minor",
+        "Sun": "minor",
+        "Travelers": "minor"
+      },
+      "starting_funds_roll": "3d6x10",
+      "source": "custom",
+      "deity": "Kezbar",
+      "deity_id": "kezbar",
+      "specialty_priest_title": "Songsmiths",
+      "follower_benefit": "",
+      "import_status": "complete"
+    },
+    "specialty_priest_mortend": {
+      "name": "Deathbringers (Mortend)",
+      "ability_minimums": {
+        "wis": 12
+      },
+      "allowed_races": [
+        "human"
+      ],
+      "allowed_alignments": [
+        "NG",
+        "LN",
+        "N",
+        "CN",
+        "LE",
+        "NE",
+        "CE"
+      ],
+      "rules_mode": "players_option",
+      "class_point_budget": 25,
+      "class_ability_ids": [
+        "specialty_priest_mortend_deity_profile",
+        "specialty_priest_mortend_priest_rules",
+        "specialty_priest_mortend_faith_lore",
+        "specialty_priest_mortend_level_ability_lvl1_1",
+        "specialty_priest_mortend_level_ability_lvl2_2",
+        "specialty_priest_mortend_level_ability_lvl3_3",
+        "specialty_priest_mortend_level_ability_lvl5_4",
+        "specialty_priest_mortend_level_ability_lvl10_5",
+        "specialty_priest_mortend_level_ability_lvl14_6",
+        "specialty_priest_mortend_level_ability_lvl18_7"
+      ],
+      "fixed_spheres": {
+        "All": "major",
+        "Astral": "major",
+        "Chaos": "major",
+        "Combat": "major",
+        "Divination": "major",
+        "Elemental Earth": "major",
+        "Necromantic": "major",
+        "Numbers": "major",
+        "Protection": "major",
+        "Wards": "major",
+        "Animal": "minor",
+        "Charm": "minor",
+        "Creation": "minor",
+        "Elemental Air": "minor",
+        "Elemental Water": "minor",
+        "Elemental Fire": "minor",
+        "Healing": "minor",
+        "Plant": "minor",
+        "Thought": "minor"
+      },
+      "starting_funds_roll": "3d6x10",
+      "source": "custom",
+      "deity": "Mortend",
+      "deity_id": "mortend",
+      "specialty_priest_title": "Deathbringers",
+      "follower_benefit": "",
+      "import_status": "complete"
+    },
+    "specialty_priest_nyssia": {
+      "name": "Stormlords (Nyssia)",
+      "ability_minimums": {
+        "int": 12,
+        "wis": 12
+      },
+      "allowed_races": [
+        "half-elf",
+        "human"
+      ],
+      "allowed_alignments": [
+        "NG",
+        "N",
+        "CN"
+      ],
+      "rules_mode": "players_option",
+      "class_point_budget": 27,
+      "class_ability_ids": [
+        "specialty_priest_nyssia_deity_profile",
+        "specialty_priest_nyssia_priest_rules",
+        "specialty_priest_nyssia_faith_lore",
+        "specialty_priest_nyssia_level_ability_lvl1_1",
+        "specialty_priest_nyssia_level_ability_lvl3_2",
+        "specialty_priest_nyssia_level_ability_lvl5_3",
+        "specialty_priest_nyssia_level_ability_lvl7_4",
+        "specialty_priest_nyssia_level_ability_lvl9_5",
+        "specialty_priest_nyssia_level_ability_lvl12_6"
+      ],
+      "fixed_spheres": {
+        "All": "major",
+        "Chaos": "major",
+        "Combat": "major",
+        "Creation": "major",
+        "Elemental": "major",
+        "Healing": "major",
+        "Necromantic": "major",
+        "Summoning": "major",
+        "Weather": "major",
+        "Animal": "minor",
+        "Charm": "minor",
+        "Divination": "minor",
+        "Guardian": "minor",
+        "Plant": "minor",
+        "Protection": "minor",
+        "Sun": "minor",
+        "Wards": "minor"
+      },
+      "starting_funds_roll": "3d6x10",
+      "source": "custom",
+      "deity": "Nyssia",
+      "deity_id": "nyssia",
+      "specialty_priest_title": "Stormlords",
+      "follower_benefit": "",
+      "import_status": "complete"
+    },
+    "specialty_priest_oslok": {
+      "name": "Lucksmiths (Oslok)",
+      "ability_minimums": {
+        "dex": 14,
+        "wis": 14
+      },
+      "allowed_races": [
+        "half-elf",
+        "human",
+        "halfling"
+      ],
+      "allowed_alignments": [
+        "NG",
+        "CG"
+      ],
+      "rules_mode": "players_option",
+      "class_point_budget": 27,
+      "class_ability_ids": [
+        "specialty_priest_oslok_deity_profile",
+        "specialty_priest_oslok_priest_rules",
+        "specialty_priest_oslok_faith_lore",
+        "specialty_priest_oslok_level_ability_lvl1_1",
+        "specialty_priest_oslok_level_ability_lvl3_2",
+        "specialty_priest_oslok_level_ability_lvl5_3",
+        "specialty_priest_oslok_level_ability_lvl7_4",
+        "specialty_priest_oslok_level_ability_lvl7_5",
+        "specialty_priest_oslok_level_ability_lvl9_6",
+        "specialty_priest_oslok_level_ability_lvl12_7"
+      ],
+      "fixed_spheres": {
+        "All": "major",
+        "Chaos": "major",
+        "Charm": "major",
+        "Creation": "major",
+        "Divination": "major",
+        "Healing": "major",
+        "Necromantic": "major",
+        "Protection": "major",
+        "Summoning": "major",
+        "Travelers": "major",
+        "Guardian": "minor",
+        "Sun": "minor",
+        "Wards": "minor",
+        "Weather": "minor"
+      },
+      "starting_funds_roll": "3d6x10",
+      "source": "custom",
+      "deity": "Oslok",
+      "deity_id": "oslok",
+      "specialty_priest_title": "Lucksmiths",
+      "follower_benefit": "",
+      "import_status": "complete"
+    },
+    "specialty_priest_samona": {
+      "name": "Priest of Samona",
+      "ability_minimums": {
+        "str": 12,
+        "wis": 13
+      },
+      "allowed_races": [
+        "half-orc",
+        "human"
+      ],
+      "allowed_alignments": [
+        "NE",
+        "CE"
+      ],
+      "rules_mode": "players_option",
+      "class_point_budget": 27,
+      "class_ability_ids": [
+        "specialty_priest_samona_deity_profile",
+        "specialty_priest_samona_priest_rules",
+        "specialty_priest_samona_faith_lore",
+        "specialty_priest_samona_level_ability_lvl1_1",
+        "specialty_priest_samona_level_ability_lvl2_2",
+        "specialty_priest_samona_level_ability_lvl3_3",
+        "specialty_priest_samona_level_ability_lvl5_4",
+        "specialty_priest_samona_level_ability_lvl7_5",
+        "specialty_priest_samona_level_ability_lvl10_6"
+      ],
+      "fixed_spheres": {
+        "All": "major",
+        "Astral": "major",
+        "Charm": "major",
+        "Combat": "major",
+        "Guardian": "major",
+        "Necromantic": "major",
+        "Summoning": "major",
+        "Sun": "major",
+        "Time": "major",
+        "War": "major",
+        "Divination": "minor",
+        "Elemental": "minor",
+        "Healing": "minor",
+        "Weather": "minor"
+      },
+      "starting_funds_roll": "3d6x10",
+      "source": "custom",
+      "deity": "Samona",
+      "deity_id": "samona",
+      "specialty_priest_title": "",
+      "follower_benefit": "",
+      "import_status": "generic_priest_fallback"
+    },
+    "specialty_priest_sektheus": {
+      "name": "Priest of Sektheus",
+      "ability_minimums": {},
+      "allowed_races": [
+        "human",
+        "dwarf"
+      ],
+      "allowed_alignments": [
+        "LG",
+        "NG",
+        "LN",
+        "N",
+        "LE",
+        "NE"
+      ],
+      "rules_mode": "players_option",
+      "class_point_budget": 30,
+      "class_ability_ids": [
+        "specialty_priest_sektheus_deity_profile",
+        "specialty_priest_sektheus_priest_rules",
+        "specialty_priest_sektheus_faith_lore",
+        "specialty_priest_sektheus_granted_abilities"
+      ],
+      "fixed_spheres": {
+        "All": "major",
+        "Astral": "major",
+        "Charm": "major",
+        "Combat": "major",
+        "Creation": "major",
+        "Divination": "major",
+        "Guardian": "major",
+        "Healing": "major",
+        "Necromantic": "major",
+        "Protection": "major",
+        "Summoning": "major",
+        "Elemental": "minor"
+      },
+      "starting_funds_roll": "3d6x10",
+      "source": "custom",
+      "deity": "Sektheus",
+      "deity_id": "sektheus",
+      "specialty_priest_title": "",
+      "follower_benefit": "",
+      "import_status": "generic_priest_fallback"
+    },
+    "specialty_priest_silthos": {
+      "name": "Priest of Silthos",
+      "ability_minimums": {},
+      "allowed_races": [],
+      "allowed_alignments": [
+        "NE"
+      ],
+      "rules_mode": "players_option",
+      "class_point_budget": 30,
+      "class_ability_ids": [
+        "specialty_priest_silthos_deity_profile",
+        "specialty_priest_silthos_priest_rules",
+        "specialty_priest_silthos_granted_abilities"
+      ],
+      "fixed_spheres": {
+        "All": "major",
+        "Astral": "major",
+        "Charm": "major",
+        "Combat": "major",
+        "Creation": "major",
+        "Divination": "major",
+        "Guardian": "major",
+        "Healing": "major",
+        "Necromantic": "major",
+        "Protection": "major",
+        "Summoning": "major",
+        "Elemental": "minor"
+      },
+      "starting_funds_roll": "3d6x10",
+      "source": "custom",
+      "deity": "Silthos",
+      "deity_id": "silthos",
+      "specialty_priest_title": "",
+      "follower_benefit": "",
+      "import_status": "generic_priest_fallback"
+    },
+    "specialty_priest_thoria": {
+      "name": "Priest of Thoria",
+      "ability_minimums": {},
+      "allowed_races": [],
+      "allowed_alignments": [
+        "CN"
+      ],
+      "rules_mode": "players_option",
+      "class_point_budget": 30,
+      "class_ability_ids": [
+        "specialty_priest_thoria_deity_profile",
+        "specialty_priest_thoria_priest_rules",
+        "specialty_priest_thoria_granted_abilities"
+      ],
+      "fixed_spheres": {
+        "All": "major",
+        "Astral": "major",
+        "Charm": "major",
+        "Combat": "major",
+        "Creation": "major",
+        "Divination": "major",
+        "Guardian": "major",
+        "Healing": "major",
+        "Necromantic": "major",
+        "Protection": "major",
+        "Summoning": "major",
+        "Elemental": "minor"
+      },
+      "starting_funds_roll": "3d6x10",
+      "source": "custom",
+      "deity": "Thoria",
+      "deity_id": "thoria",
+      "specialty_priest_title": "",
+      "follower_benefit": "",
+      "import_status": "generic_priest_fallback"
+    },
+    "specialty_priest_trion": {
+      "name": "Magehands (Trion)",
+      "ability_minimums": {
+        "int": 13,
+        "wis": 14
+      },
+      "allowed_races": [
+        "half-elf",
+        "human"
+      ],
+      "allowed_alignments": [
+        "LG",
+        "NG",
+        "CG",
+        "LN",
+        "N"
+      ],
+      "rules_mode": "players_option",
+      "class_point_budget": 25,
+      "class_ability_ids": [
+        "specialty_priest_trion_deity_profile",
+        "specialty_priest_trion_priest_rules",
+        "specialty_priest_trion_faith_lore",
+        "specialty_priest_trion_level_ability_lvl3_1",
+        "specialty_priest_trion_level_ability_lvl1_2",
+        "specialty_priest_trion_level_ability_lvl2_3",
+        "specialty_priest_trion_level_ability_lvl3_4",
+        "specialty_priest_trion_level_ability_lvl5_5",
+        "specialty_priest_trion_level_ability_lvl6_6",
+        "specialty_priest_trion_level_ability_lvl8_7",
+        "specialty_priest_trion_level_ability_lvl9_8",
+        "specialty_priest_trion_level_ability_lvl11_9",
+        "specialty_priest_trion_level_ability_lvl15_10"
+      ],
+      "fixed_spheres": {
+        "All": "major",
+        "Astral": "major",
+        "Charm": "major",
+        "Divination": "major",
+        "Elemental": "major",
+        "Guardian": "major",
+        "Healing": "major",
+        "Necromantic": "major",
+        "Protection": "major",
+        "Thought": "major",
+        "Combat": "minor",
+        "Law": "minor",
+        "Numbers": "minor",
+        "Summoning": "minor",
+        "Sun": "minor",
+        "Time": "minor",
+        "Wards": "minor"
+      },
+      "starting_funds_roll": "3d6x10",
+      "source": "custom",
+      "deity": "Trion",
+      "deity_id": "trion",
+      "specialty_priest_title": "Magehands",
+      "follower_benefit": "All magehands gain: +2 skill checks to Intelligence or Intelligence/knowledge based skills Gain an additional language to read/write every odd level (starting at",
+      "import_status": "complete"
+    },
+    "specialty_priest_trokdarr": {
+      "name": "Priest of Trokdarr",
+      "ability_minimums": {},
+      "allowed_races": [],
+      "allowed_alignments": [
+        "NG"
+      ],
+      "rules_mode": "players_option",
+      "class_point_budget": 30,
+      "class_ability_ids": [
+        "specialty_priest_trokdarr_deity_profile",
+        "specialty_priest_trokdarr_priest_rules",
+        "specialty_priest_trokdarr_granted_abilities"
+      ],
+      "fixed_spheres": {
+        "All": "major",
+        "Astral": "major",
+        "Charm": "major",
+        "Combat": "major",
+        "Creation": "major",
+        "Divination": "major",
+        "Guardian": "major",
+        "Healing": "major",
+        "Necromantic": "major",
+        "Protection": "major",
+        "Summoning": "major",
+        "Elemental": "minor"
+      },
+      "starting_funds_roll": "3d6x10",
+      "source": "custom",
+      "deity": "Trokdarr",
+      "deity_id": "trokdarr",
+      "specialty_priest_title": "",
+      "follower_benefit": "",
+      "import_status": "generic_priest_fallback"
+    },
+    "specialty_priest_trovann": {
+      "name": "Priest of Trovann",
+      "ability_minimums": {},
+      "allowed_races": [],
+      "allowed_alignments": [
+        "CE"
+      ],
+      "rules_mode": "players_option",
+      "class_point_budget": 30,
+      "class_ability_ids": [
+        "specialty_priest_trovann_deity_profile",
+        "specialty_priest_trovann_priest_rules",
+        "specialty_priest_trovann_granted_abilities"
+      ],
+      "fixed_spheres": {
+        "All": "major",
+        "Astral": "major",
+        "Charm": "major",
+        "Combat": "major",
+        "Creation": "major",
+        "Divination": "major",
+        "Guardian": "major",
+        "Healing": "major",
+        "Necromantic": "major",
+        "Protection": "major",
+        "Summoning": "major",
+        "Elemental": "minor"
+      },
+      "starting_funds_roll": "3d6x10",
+      "source": "custom",
+      "deity": "Trovann",
+      "deity_id": "trovann",
+      "specialty_priest_title": "",
+      "follower_benefit": "",
+      "import_status": "generic_priest_fallback"
+    },
+    "specialty_priest_trystram": {
+      "name": "Priest of Trystram",
+      "ability_minimums": {},
+      "allowed_races": [],
+      "allowed_alignments": [
+        "LE"
+      ],
+      "rules_mode": "players_option",
+      "class_point_budget": 30,
+      "class_ability_ids": [
+        "specialty_priest_trystram_deity_profile",
+        "specialty_priest_trystram_priest_rules",
+        "specialty_priest_trystram_granted_abilities"
+      ],
+      "fixed_spheres": {
+        "All": "major",
+        "Astral": "major",
+        "Charm": "major",
+        "Combat": "major",
+        "Creation": "major",
+        "Divination": "major",
+        "Guardian": "major",
+        "Healing": "major",
+        "Necromantic": "major",
+        "Protection": "major",
+        "Summoning": "major",
+        "Elemental": "minor"
+      },
+      "starting_funds_roll": "3d6x10",
+      "source": "custom",
+      "deity": "Trystram",
+      "deity_id": "trystram",
+      "specialty_priest_title": "",
+      "follower_benefit": "",
+      "import_status": "generic_priest_fallback"
+    },
+    "specialty_priest_valdron": {
+      "name": "Priest of Valdron",
+      "ability_minimums": {},
+      "allowed_races": [],
+      "allowed_alignments": [
+        "LE"
+      ],
+      "rules_mode": "players_option",
+      "class_point_budget": 30,
+      "class_ability_ids": [
+        "specialty_priest_valdron_deity_profile",
+        "specialty_priest_valdron_priest_rules",
+        "specialty_priest_valdron_granted_abilities"
+      ],
+      "fixed_spheres": {
+        "All": "major",
+        "Astral": "major",
+        "Charm": "major",
+        "Combat": "major",
+        "Creation": "major",
+        "Divination": "major",
+        "Guardian": "major",
+        "Healing": "major",
+        "Necromantic": "major",
+        "Protection": "major",
+        "Summoning": "major",
+        "Elemental": "minor"
+      },
+      "starting_funds_roll": "3d6x10",
+      "source": "custom",
+      "deity": "Valdron",
+      "deity_id": "valdron",
+      "specialty_priest_title": "",
+      "follower_benefit": "",
+      "import_status": "generic_priest_fallback"
+    },
+    "specialty_priest_vogvir": {
+      "name": "Priest of Vogvir",
+      "ability_minimums": {},
+      "allowed_races": [],
+      "allowed_alignments": [
+        "LG"
+      ],
+      "rules_mode": "players_option",
+      "class_point_budget": 30,
+      "class_ability_ids": [
+        "specialty_priest_vogvir_deity_profile",
+        "specialty_priest_vogvir_priest_rules",
+        "specialty_priest_vogvir_granted_abilities"
+      ],
+      "fixed_spheres": {
+        "All": "major",
+        "Astral": "major",
+        "Charm": "major",
+        "Combat": "major",
+        "Creation": "major",
+        "Divination": "major",
+        "Guardian": "major",
+        "Healing": "major",
+        "Necromantic": "major",
+        "Protection": "major",
+        "Summoning": "major",
+        "Elemental": "minor"
+      },
+      "starting_funds_roll": "3d6x10",
+      "source": "custom",
+      "deity": "Vogvir",
+      "deity_id": "vogvir",
+      "specialty_priest_title": "",
+      "follower_benefit": "",
+      "import_status": "generic_priest_fallback"
+    },
+    "specialty_priest_xanca": {
+      "name": "Priest of Xanca",
+      "ability_minimums": {},
+      "allowed_races": [],
+      "allowed_alignments": [
+        "CN"
+      ],
+      "rules_mode": "players_option",
+      "class_point_budget": 30,
+      "class_ability_ids": [
+        "specialty_priest_xanca_deity_profile",
+        "specialty_priest_xanca_priest_rules",
+        "specialty_priest_xanca_granted_abilities"
+      ],
+      "fixed_spheres": {
+        "All": "major",
+        "Astral": "major",
+        "Charm": "major",
+        "Combat": "major",
+        "Creation": "major",
+        "Divination": "major",
+        "Guardian": "major",
+        "Healing": "major",
+        "Necromantic": "major",
+        "Protection": "major",
+        "Summoning": "major",
+        "Elemental": "minor"
+      },
+      "starting_funds_roll": "3d6x10",
+      "source": "custom",
+      "deity": "Xanca",
+      "deity_id": "xanca",
+      "specialty_priest_title": "",
+      "follower_benefit": "",
+      "import_status": "generic_priest_fallback"
+    },
+    "specialty_priest_zichhia": {
+      "name": "Priest of Zichhia",
+      "ability_minimums": {},
+      "allowed_races": [],
+      "allowed_alignments": [
+        "NG"
+      ],
+      "rules_mode": "players_option",
+      "class_point_budget": 30,
+      "class_ability_ids": [
+        "specialty_priest_zichhia_deity_profile",
+        "specialty_priest_zichhia_priest_rules",
+        "specialty_priest_zichhia_granted_abilities"
+      ],
+      "fixed_spheres": {
+        "All": "major",
+        "Astral": "major",
+        "Charm": "major",
+        "Combat": "major",
+        "Creation": "major",
+        "Divination": "major",
+        "Guardian": "major",
+        "Healing": "major",
+        "Necromantic": "major",
+        "Protection": "major",
+        "Summoning": "major",
+        "Elemental": "minor"
+      },
+      "starting_funds_roll": "3d6x10",
+      "source": "custom",
+      "deity": "Zichhia",
+      "deity_id": "zichhia",
+      "specialty_priest_title": "",
+      "follower_benefit": "",
+      "import_status": "generic_priest_fallback"
+    },
+    "specialty_priest_ziegrid": {
+      "name": "Priest of Ziegrid",
+      "ability_minimums": {},
+      "allowed_races": [],
+      "allowed_alignments": [
+        "LE"
+      ],
+      "rules_mode": "players_option",
+      "class_point_budget": 30,
+      "class_ability_ids": [
+        "specialty_priest_ziegrid_deity_profile",
+        "specialty_priest_ziegrid_priest_rules",
+        "specialty_priest_ziegrid_granted_abilities"
+      ],
+      "fixed_spheres": {
+        "All": "major",
+        "Astral": "major",
+        "Charm": "major",
+        "Combat": "major",
+        "Creation": "major",
+        "Divination": "major",
+        "Guardian": "major",
+        "Healing": "major",
+        "Necromantic": "major",
+        "Protection": "major",
+        "Summoning": "major",
+        "Elemental": "minor"
+      },
+      "starting_funds_roll": "3d6x10",
+      "source": "custom",
+      "deity": "Ziegrid",
+      "deity_id": "ziegrid",
+      "specialty_priest_title": "",
+      "follower_benefit": "",
+      "import_status": "generic_priest_fallback"
+    },
+    "specialty_priest_zorvag": {
+      "name": "Priest of Zorvag",
+      "ability_minimums": {},
+      "allowed_races": [],
+      "allowed_alignments": [
+        "CG"
+      ],
+      "rules_mode": "players_option",
+      "class_point_budget": 30,
+      "class_ability_ids": [
+        "specialty_priest_zorvag_deity_profile",
+        "specialty_priest_zorvag_priest_rules",
+        "specialty_priest_zorvag_granted_abilities"
+      ],
+      "fixed_spheres": {
+        "All": "major",
+        "Astral": "major",
+        "Charm": "major",
+        "Combat": "major",
+        "Creation": "major",
+        "Divination": "major",
+        "Guardian": "major",
+        "Healing": "major",
+        "Necromantic": "major",
+        "Protection": "major",
+        "Summoning": "major",
+        "Elemental": "minor"
+      },
+      "starting_funds_roll": "3d6x10",
+      "source": "custom",
+      "deity": "Zorvag",
+      "deity_id": "zorvag",
+      "specialty_priest_title": "",
+      "follower_benefit": "",
+      "import_status": "generic_priest_fallback"
+    }
+  },
+  "class_ability_library": {
+    "specialty_priest_anawar_deity_profile": {
+      "description": "[Deity Profile] Portfolio: Chaos/Destruction; Deity alignment: CE; Gender: Male; Symbol: Hammer Breaking a Stone; Worshiper alignment: LE, CE, NE, N, CN; Clergy alignment: LE, CE, NE, N; Turn undead: C: Y / SP: Y; Command undead: C: Y / SP: Y",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_anawar_priest_rules": {
+      "description": "[Specialty Priest Rules] Prime requisite: Wisdom; Priest alignment: CE, LE, NE; Weapons: Any Bledgeoning; Armor: Leather or lighter; Magical items: Same as Cleric or Rogue; NWP groups: Priest, General,Rogue; Required proficiency: Trouble Sense; Bonus proficiency: Disguise",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_anawar_faith_lore": {
+      "description": "[Faith and Church] Faith: Worshippers of Anawar tend to stay in the shadows and avoid direct confrontation. The clergy tries to sow chaos that causes destruction whenever possible. Their main goal is destroy the followers of Law and Order.; Day-to-day activities: Worship in the shadows. Work towards causing chaos within the ranks of the clergy who follow good aligned gods.; Holy days and ceremonies: The first day of each new year, the followers of Anawar rejoice and celebrate the Great Comet, which the believe was brought to the world by Anawar.; Centers of worship: Unknown; Priestly vestments: Dark browns and blacks, with symbol barely seen. For celebrations, they wear red robes with dark trim. The symbol of their god is blazened in gold on their chest.; Foes: Assyra",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_anawar_level_ability_lvl1_1": {
+      "description": "Level 1: Can cast Battlefate 1/day",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_anawar_level_ability_lvl3_2": {
+      "description": "Level 3: Cast Brittle 1/day (Item saves vs crushing or destroyed)",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_anawar_level_ability_lvl5_3": {
+      "description": "Level 5: Gains +2 to hit and damage against Lawful Foes",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_anawar_level_ability_lvl7_4": {
+      "description": "Level 7: Cast Invisibility on self 1/day - used to escape a chaotic situation",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_anawar_level_ability_lvl9_5": {
+      "description": "Level 9: 1/week can commune with Anawar to see if action in the next 5 rounds is accepted",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_anawar_level_ability_lvl13_6": {
+      "description": "Level 13: Cast Finger of Death 2/week against LG foes - Foe gains -2 to saving throw",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_aradax_deity_profile": {
+      "description": "[Deity Profile] Portfolio: Moon/Navigation/Travel; Deity alignment: N; Gender: Female; Symbol: Crescent Moon behind still water; Worshiper alignment: Any; Clergy alignment: Any Neutral Alignment; Turn undead: C: Y / SP: Y; Command undead: C: N / SP: N",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_aradax_priest_rules": {
+      "description": "[Specialty Priest Rules] Prime requisite: Wis; Priest alignment: NG, N, CN, NE; Weapons: Any Bludgeoning; Armor: Chainmail or less; Magical items: Same as Cleric; NWP groups: Priest, General, Wizard; Required proficiency: Astronomy; Bonus proficiency: Astrology",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_aradax_faith_lore": {
+      "description": "[Faith and Church] Faith: Worshippers prefer the night over the day. When the moon is high, they are at their most powerful. Waning moons when they are at their weakest. During an eclipse, they have no powers. They worship the moon and its ability to affect the waves and the moods of those around them.; Day-to-day activities: Like any clergy, they take care of their followers and tend worshippers.; Holy days and ceremonies: Each full moon the priests of Aradax will pray for a boon. If the prayer is heard, the cleric will recieve a +2 to any action they take the following day (%10 bonus). The priest gains a 2 percent chance, per level, to gain this boon.; Centers of worship: Port Gillemus Jelleprose; Priestly vestments: Normal robes/attire during the day. When the moon is full, they wear robes the color of a blue moon with a yellow holy symbol on each sleeve.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_aradax_level_ability_lvl1_1": {
+      "description": "Level 1: Gains Infravision (If already possessed, doubles range)",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_aradax_level_ability_lvl2_2": {
+      "description": "Level 2: Can bless a weapon under a full moon that operates as a +1 weapon. If a second weapon is blessed, the first loses its powers. If the same weapon is bless under a full moon, the priest has a 10% chance to increase it to a +2.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_aradax_level_ability_lvl4_3": {
+      "description": "Level 4: Cast Starshine 1/day",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_aradax_level_ability_lvl5_4": {
+      "description": "Level 5: Cast Moonblade 1/day",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_aradax_level_ability_lvl7_5": {
+      "description": "Level 7: Cast Moonweb 1/day",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_aradax_level_ability_lvl9_6": {
+      "description": "Level 9: Moonwarders gain +2 to AC when the moon is out.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_aradax_level_ability_lvl11_7": {
+      "description": "Level 11: Can cast Raise Dead During a full moon. The body cannot have been dead for more days than the priest has levels.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_assyra_deity_profile": {
+      "description": "[Deity Profile] Portfolio: Justice/Law; Deity alignment: LG; Gender: Female; Symbol: An unbalanced scale. A sunburst on the left scale, and a dark cloud on the right. The scale tips to the left.; Worshiper alignment: LG, LN, N, LE; Clergy alignment: LG, LN, LE (Paladin must be LG); Turn undead: C: Y / SP: Y / P: Y; Command undead: None",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_assyra_priest_rules": {
+      "description": "[Specialty Priest Rules] Prime requisite: Str, Wis; Priest alignment: LG, LN, LE; Weapons: Any; Armor: Any; Magical items: Any; NWP groups: Priest, General; Required proficiency: Etiquette; Bonus proficiency: Law, Local History",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_assyra_faith_lore": {
+      "description": "[Faith and Church] Faith: Worshippers of Assyra tend to travel the land seeking to right wrongs and bring justice where it is needed. They operate as court and jury wherever they can as needed. The followers of Assyra can recite the laws of the land they are from without issue. They are fair and will use whatever means necessary to make sure they judge fairly.; Day-to-day activities: Rule on laws, settle disputes, and make sure everyone is obeying the law.; Holy days and ceremonies: The first of every month, the clergy takes the day off of making any judgements. They settle back and spend the day in contemplation and study. 1 per year (as dictated by the churches), the clergy gathers for 3 days to share stories and rulings and any special situations that arose.; Centers of worship: Acacea City Bellemus Nict Allengar; Priestly vestments: Daily: Armor with the holy symbol on the breastplate. If a shield is used, the symbol is emblazened on the center of the shield.; Foes: Evil, Conflict, Deception",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_assyra_level_ability_lvl1_1": {
+      "description": "Level 1: Gains weapons same as fighter and gains exceptional strength",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_assyra_level_ability_lvl2_2": {
+      "description": "Level 2: Can cast Protection from Chaos 1/day",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_assyra_level_ability_lvl3_3": {
+      "description": "Level 3: Strength of One 1/week",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_assyra_level_ability_lvl5_4": {
+      "description": "Level 5: Can detect lie or know alignment 1/day, Can Specialize in 1 weapon",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_assyra_level_ability_lvl7_5": {
+      "description": "Level 7: Gains 3/2 on attacks",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_assyra_level_ability_lvl9_6": {
+      "description": "Level 9: Gains 90% immunity to charm spells",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_assyra_level_ability_lvl13_7": {
+      "description": "Level 13: gains 2 melee attacks per round - Cast cast Detect Lie 3/day",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_cellemys_deity_profile": {
+      "description": "[Deity Profile] Portfolio: Beauty/Love/Passion; Deity alignment: LN; Gender: Male; Symbol: Silhouette of a male or female face with flowing hair covering half the face.; Worshiper alignment: Any; Clergy alignment: LG, LN, NG, N, CG, CN; Turn undead: C: Y / SP: N; Command undead: C: N / SP: N",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_cellemys_priest_rules": {
+      "description": "[Specialty Priest Rules] Prime requisite: Cha; Priest alignment: LG, LN, NG, N; Weapons: Any Bludgeoning; Armor: Any armor equal to chainmail or less; Magical items: Same as Cleric; NWP groups: Priest, General; Required proficiency: None - Something artistic recommended; Bonus proficiency: Etiquette",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_cellemys_faith_lore": {
+      "description": "[Faith and Church] Faith: The worshippers of Cellemys take great pride in the way they look. The work hard to maintain their beauty and promote love between all beings. They hate violence, but will answer violence with violence if they have no other choice. The priests must maintain their own physical beauty or fall from Cellemys's favor. If they drop below a 15 charisma, they will lose their powers until they can regain their beaty.; Day-to-day activities: Aid and show love to everyone around them. Will aid in making anyone who wants to look better. They are typically responsible for making sure the leaders of a town or city look their best.; Holy days and ceremonies: There is no special day that followers of Cellemys celebrate. They find celebration in all things beautiful. They also celebrate weddings and things devoted to love.; Centers of worship: Acacea City Nicht Allengar; Priestly vestments: Daily: Anything that promotes their beauty Holy Ceremonies: Flowing, extravagant robes of any color. The symbol of their diety emblazened anywhere they feel adds to the apparel.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_cellemys_level_ability_lvl1_1": {
+      "description": "Level 1: gains charm person 1/day",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_cellemys_level_ability_lvl3_2": {
+      "description": "Level 3: Gains a permenant +1 to charisma",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_cellemys_level_ability_lvl5_3": {
+      "description": "Level 5: Gains remove fear/courage 2/day",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_cellemys_level_ability_lvl7_4": {
+      "description": "Level 7: By dancing or singing can cast an otto's resistible dance (as per the wizard spell) 3/week",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_cellemys_level_ability_lvl9_5": {
+      "description": "Level 9: Gains a permenant +1 to charisma",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_cellemys_level_ability_lvl14_6": {
+      "description": "Level 14: Ages 1 year for every 5 years of real time",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_cyreus_deity_profile": {
+      "description": "[Deity Profile] Portfolio: Fear/Hatred; Deity alignment: NE; Gender: Male; Symbol: A pair of red horns on a black field.; Worshiper alignment: CE, LE, NE, N; Clergy alignment: CE, LE, NE; Turn undead: C:Y / SP: Y; Command undead: C: Y / SP: N",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_cyreus_priest_rules": {
+      "description": "[Specialty Priest Rules] Prime requisite: Wis; Priest alignment: CE, NE; Weapons: Any Bludgeoning; Armor: Any Armor, but prefer lighter armor for greater stealth and movement.; Magical items: Same as Cleric; NWP groups: Priest, General, Rogue; Required proficiency: Astrology, Astronomy; Bonus proficiency: Herbalism",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_cyreus_faith_lore": {
+      "description": "[Faith and Church] Faith: Cyreus rules his clergy by Fear and rewards. His demands of his clergy are to spread fear and incite hatred in those they come across. The follower of Cyreus work from the shadows as they can. They spread rumors to cause this fear and hatred. When working in the shadows is not possible, the clergy use their spells connection to Cyreus to spread those emotions. Cyreus has been known to bestow great rewards for those who are successful.; Day-to-day activities: There are no main centers of worship for the followers of Cyreus. They spend most of their time in secret gathers and around small altars in shrines hidden from plain sight. They disguise themselves as whatever they must to infiltrate great gathers to spread the fear and mistrust, and hopefully hatred. Many followers of Cyreus spend there time in mundane jobs during the day and working at night to perform whatever plans they have concocted themselves or have been given from the higher priests.; Holy days and ceremonies: The comet caused more fear than anyone living can remember. The clergy work to create a worldwide fear similar to that the comet caused. Because of this, the worshippers of Cyreus will celebrate the day the comet hit the world. They also celebrate any time they feel they have successed in their goals.; Centers of worship: The biggest gathering of the followers of Cyreus is in Nict Allengar.; Priestly vestments: When performing duties as a cleric, the clergy dress in all dark colors and wear a mask designed to inspire fear. Typically this is demon in nature.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_cyreus_level_ability_lvl1_1": {
+      "description": "Level 1: Can cast cause fear 1/day",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_cyreus_level_ability_lvl3_2": {
+      "description": "Level 3: Can cast cloak of fear 1/day with a 10' radius",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_cyreus_level_ability_lvl5_3": {
+      "description": "Level 5: Can cast Forget 1/day as wizard spell",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_cyreus_level_ability_lvl7_4": {
+      "description": "Level 7: Can cast Wall of Gloom 1/day (per wizard spell)",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_cyreus_level_ability_lvl9_5": {
+      "description": "Level 9: Can cast Fear 1/day (per wizard spell)",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_cyreus_level_ability_lvl11_6": {
+      "description": "Level 11: Call cast Phantasmal Killer 1/day (per wizard spell)",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_dalrion_deity_profile": {
+      "description": "[Deity Profile] Portfolio: Healing; Deity alignment: LN; Gender: Female; Symbol: Dark Silhouette of a right hand with a white glow around it on a blue field.; Worshiper alignment: Any; Clergy alignment: LG, NG, LN, N, CG, CN; Turn undead: C: Y / SP: Y; Command undead: C: N / SP: N",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_dalrion_priest_rules": {
+      "description": "[Specialty Priest Rules] Prime requisite: Wis; Priest alignment: LG, LN, NG, N, CG; Weapons: Lasso, Mancatcher, Quarterstaff Fights with wizard THAC0; Armor: Any up to Studded Leather, No shield; Magical items: Same as Cleric, any that involve healing (but can only use the healing portion); NWP groups: Priest, General; Required proficiency: Herbalism; Bonus proficiency: Healing",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_dalrion_faith_lore": {
+      "description": "[Faith and Church] Faith: Worshippers of Dalrion put the health and wellbeing of all creatures, regardless of alignment, first. They tend to the day to day needs of the community they live in. They are not known to travel, but will make exceptions depending on the cause. Though they seek health and wellbeing for all creatures, they will raise arms to those causing pain and suffering on other intentionally. They will seek to resolve the conflict through diplomacy first, but will not hestitate to do battle when diplomacy fails.; Day-to-day activities: Will tend to the needs of the injured and sick in their community. They tend to have a temple or shrine in most communities to aid in keeping the population safe and healthy. When the militia is active, several members of the church will travel with the army to aid in keeping the army safe. The followers of Dalrion tend to detest the undead as they are an abomination to the living. They will do everything in their power to destroy undead. All healing is done with any sized donation to anyone seeking healing. If no donation is possible, the priests will still offer the healing in exchange for help around the temple.; Holy days and ceremonies: The seventh day of the six month is a holy day for followers of Dalrion. They will gather at the temples and celebrate life, health, and well being. On these days, All healing is free without payment or donations.; Centers of worship: Acacea City; Priestly vestments: Simple, white robes. Soft shoes. 3 vials of holy water strapped to their belt for all to see.; Foes: Pain, Suffering",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_dalrion_level_ability_lvl1_1": {
+      "description": "Level 1: Can cast cure light wounds (1/day) in addition to any spells memorized",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_dalrion_level_ability_lvl2_2": {
+      "description": "Level 2: Can turn undead at 3 levels higher",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_dalrion_level_ability_lvl4_3": {
+      "description": "Level 4: Can cast cure medium wound (1/day) in addition to daily spells",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_dalrion_level_ability_lvl6_4": {
+      "description": "Level 6: Can cure blindness or disease (1/day) in addition to daily spells",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_dalrion_level_ability_lvl9_5": {
+      "description": "Level 9: Cast Cure serious Wound (1/day) in addition to daily spells",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_dalrion_level_ability_lvl12_6": {
+      "description": "Level 12: Raise dead (2/week) requires no rest",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_dalrion_level_ability_lvl15_7": {
+      "description": "Level 15: Can cast Mass party Heal (1/week) to cure wounds.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_grezal_deity_profile": {
+      "description": "[Deity Profile] Portfolio: Creativity/Knowledge; Deity alignment: NG; Gender: Male; Symbol: A yellow, open book on a field of blue.; Worshiper alignment: Any; Clergy alignment: Any; Turn undead: C: Y / SP: Y; Command undead: C: Y / SP: Y",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_grezal_priest_rules": {
+      "description": "[Specialty Priest Rules] Prime requisite: Int, Wis; Priest alignment: Any; Weapons: Same as Cleric; Armor: Any up to Banded Mail; Magical items: Same as Cleric; NWP groups: Priest, General, Wizard; Required proficiency: Local History; Bonus proficiency: Ancient History Lore: ______ (Area of Expertise)",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_grezal_faith_lore": {
+      "description": "[Faith and Church] Faith: Worshippers of Grezal value knowledge above all else. They seek to learn as much as they can about any subject, but most find themselves becoming experts on 1 or 2 subjects. The worshippers tend to flock towards cities or areas with great libraries to perform their studies. The libraries appreciate the care followers of Grezal show towards knowledge, and most have allowed temples to be built inside the libraries. The worshippers of Grezal will gladly follow an adventuring party if they believe they might uncover something useful to enhance their area of expertise. The hazard of this order is that they do not care what information is used for, as long as it is willingly shared.; Day-to-day activities: Spending time in the library/temple attempting to gain knowledge. Spending time with the local lord/lady to help in situations that require specific information they might have. Working with the wizard conclave exchanging learned information and recording what they learn to add to the library. Seeking out books, of any sort, to add to their library.; Holy days and ceremonies: Once a month, the priests of Grezal will attend a local school and teach a subject on their specialty (an attempt to gain more followers). After this day of teaching, the priests gather at a library and exchange notes and celebrate any new knowledge gained. This can go on for days, but typically ends after 3.; Centers of worship: Acacea City All cities that have a library have a shrine/temple to Grezal.; Priestly vestments: No formal vestments. They tend to be a bit scatterbrained and/or distracted. When in service, they are wearing regular, daily clothing.; Foes: Choas, Destruction",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_grezal_level_ability_lvl1_1": {
+      "description": "Level 1: Gains the ability to identify items 5% per level (per bard)",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_grezal_level_ability_lvl2_2": {
+      "description": "Level 2: Can cast Detect Magic 1/day",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_grezal_level_ability_lvl3_3": {
+      "description": "Level 3: Can cast identify 1/day per wizard spell",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_grezal_level_ability_lvl4_4": {
+      "description": "Level 4: Can identify 1 item 1/week without use of a spell component. Learn everything about that 1 item. Can use this similar to a legend lore: Will tell the history of the item in question on top of any magical abilities.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_grezal_level_ability_lvl5_5": {
+      "description": "Level 5: Gain a bonus of +2 to any ability requiring a knowledge check, +4 when in their area of expertise",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_grezal_level_ability_lvl7_6": {
+      "description": "Level 7: gain a +2 bonus to saving throws versus any spell",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_grezal_level_ability_lvl9_7": {
+      "description": "Level 9: Can cast an advanced version of Identify (1/week). This will allow them to learn everything about an item without expending spell components. Needs Diamond of 100 gp value and holy symbol.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_grezal_level_ability_lvl11_8": {
+      "description": "Level 11: Gain the benefit of a constant free action as the level 4 priest spell",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_grianna_deity_profile": {
+      "description": "[Deity Profile] Portfolio: Water / Oceans; Deity alignment: CG; Gender: Female; Symbol: Giant Wave on a field of white; Worshiper alignment: CG, CE, CN, N, NG, NE; Clergy alignment: CG, CE, CN, N, NG, NE; Turn undead: C: Y / SP: Y; Command undead: C: Y / SP: N",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_grianna_priest_rules": {
+      "description": "[Specialty Priest Rules] Prime requisite: Wis, Str; Priest alignment: CG, CN, N, CE, LN; Weapons: Any Bludgeoning plus trident and harpoon; Armor: Any up to Studded Leather, plus shield; Magical items: Same as cleric, and anything to do with water; NWP groups: Priest, General; Required proficiency: Modern Language of Sea Dwelling Creature; Bonus proficiency: Swimming",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_grianna_faith_lore": {
+      "description": "[Faith and Church] Faith: Worshippers prefer water and the things that come with it. They typically set up temples and shrines near bodies of water. The worshippers of Grianna were greatly responsible for preventing much of the damage caused by the Comet. Without them controlling the waves and the water, the damage would have been much more devestation. The followers of Grianna are known to bring this up to anyone they feel will be impressed by it.; Day-to-day activities: Spending time by the water tending to the fish and other sea/lake creatures. Because they are normally located in towns near lakes or oceans, they spend a great deal of time out on the boats helping coax the fish and other sea life into the nets. They are very carefuly to make sure only what is needed is caught.; Holy days and ceremonies: High Tide is a special time for the followers of Grianna. They spent time by the water contenplating the ocean and its power. During these times, the priests put on a special show dedicated to Grianna that they also use to gain new followers.; Centers of worship: Port Gillemus Forest End; Priestly vestments: Normal day clothes for day to day activities. During special ceremonies, they wear bathing suits and submerse themselves in the waters.; Foes: Fire, Death, Disease",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_grianna_level_ability_lvl1_1": {
+      "description": "Level 1: gains the ability to breath underwater",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_grianna_level_ability_lvl2_2": {
+      "description": "Level 2: Can Purify Water at will, Gains immunity to Poisons",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_grianna_level_ability_lvl3_3": {
+      "description": "Level 3: gains Waterwalk 1/day (per spell)",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_grianna_level_ability_lvl5_4": {
+      "description": "Level 5: Can create water 1/day as the spell",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_grianna_level_ability_lvl7_5": {
+      "description": "Level 7: Can move through water as if wearing a free action ring",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_grianna_level_ability_lvl10_6": {
+      "description": "Level 10: Can summon Water elemental (1/week)",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_grianna_level_ability_lvl11_7": {
+      "description": "Level 11: Can calm waters around them. Can calm waters in a square mile per level. Working with another priest, they can expand this out to 2 miles/combined levels.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_grianna_level_ability_lvl12_8": {
+      "description": "Level 12: Can cast Wall of Ice 1/day",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_invictus_deity_profile": {
+      "description": "[Deity Profile] Portfolio: Strength; Deity alignment: LN; Gender: Male; Symbol: Silhouette of a man holding to hammers crossed above his head; Worshiper alignment: Any; Clergy alignment: LG, NG, CG, N, CN, LE, NE; Turn undead: C: Y / SP: Y; Command undead: None",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_invictus_priest_rules": {
+      "description": "[Specialty Priest Rules] Prime requisite: Str; Priest alignment: CG, CN, NG, LN; Weapons: Same as Cleric; Armor: Any; Magical items: Any; NWP groups: Priest, General, Warrior; Required proficiency: Endurance; Bonus proficiency: None",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_invictus_faith_lore": {
+      "description": "[Faith and Church] Faith: Worshippres of Invictus view physical strength above all else. They strive to lead everyone from every following to work on being as strong as they can be. The followers of Invictus work towards their own physical strength daily. They have a 60 minute regiment they follow to build strength in all areas of their bodies. They invite anyone wiling to participate to join them in their daily trainings. They are humble to outsiders about their own strength, but will readily flex and show themselves off to other followers of Invictus as well as any others who show to be physically fit.; Day-to-day activities: Physical Activies - they are always willing to participate in anything involving physical strength. When the town builds a new building, they are there in force. Leading others into improving their strength Participating in anything they feel will allow them to show of their strength and the strength of their god.; Holy days and ceremonies: Twice a year, the temples to Invictus pick a location and meet to demonstrate feats of strength to each other. Invictus supports these events and grants a boon to the winner.; Centers of worship: Acacea City; Priestly vestments: The followers of Invictus tend towards garments that show off their arms and legs, prefer to dress in as little clothes as possible to show off their physique. When on adventures or missions, they understand that importance of armor and protection and will dress acordingly.; Allies: Adventure, Protection, Good, Law/Justice, Battle/War; Foes: Death, Deception, Undead, Chaos",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_invictus_level_ability_lvl1_1": {
+      "description": "Level 1: Can cast Strength 1/day (per wizard spell), Uses the fighter exceptional strength bonus.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_invictus_level_ability_lvl3_2": {
+      "description": "Level 3: Gains +1 Strength (or 10% to exceptional strength)",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_invictus_level_ability_lvl5_3": {
+      "description": "Level 5: Can cast Strength of Stone 1/day",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_invictus_level_ability_lvl6_4": {
+      "description": "Level 6: Gains +1 Strength (or 10% to exceptional strength)",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_invictus_level_ability_lvl7_5": {
+      "description": "Level 7: Gains an extra attack per round (1/1 becomes 3/2, 3/2 becomes 2/1, etc)",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_invictus_level_ability_lvl8_6": {
+      "description": "Level 8: Can cast any divine spell that directly affects strength, regardless of Sphere",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_invictus_level_ability_lvl9_7": {
+      "description": "Level 9: Immune to any spell or effect that affects Strength",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_invictus_level_ability_lvl13_8": {
+      "description": "Level 13: Gains an additional attack per round (3/2 becomes 2/1, 2/1 becomes 5/2, etc)",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kaanos_deity_profile": {
+      "description": "[Deity Profile] Portfolio: Sun / Nature / Growth; Deity alignment: N; Gender: Female; Symbol: Two hands holding a sun; Worshiper alignment: All Neutral; Clergy alignment: NG, LN, N, NE, CN; Turn undead: C: Y / SP: Y; Command undead: None",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kaanos_priest_rules": {
+      "description": "[Specialty Priest Rules] Prime requisite: Wis; Priest alignment: NG, LN, N, NE; Weapons: Any Bludgeoning; Armor: Any; Magical items: Same as Cleric; NWP groups: Priest, General; Bonus proficiency: Firebuilding",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kaanos_faith_lore": {
+      "description": "[Faith and Church] Faith: Worshippers of Kaanos fall under 3 cagories: Those who worship the sun, fire, and warmth; those who worship nature and the sun's affects on the growth of things in nature (and focus more on nature than the sun); and those who worship Kaanos for all things that grow through life, sun and nurturing. The three work together pretty harmoneously, although arguements have been known to break out amoungst followers over the which aspect is better. The followers know that death and cold are both in the natural order of things, though they will openly fight with followers of ice, cold, and death if the situation presents itself (usually civil enough not to become physical).; Day-to-day activities: Day to day activities include nurturing plants, animals, and the community. Celebrating the Sun and Nature Tending the temple and the community to help it grow and thrive; Holy days and ceremonies: In the fall when the days get shorter and things start to die, the followers of Kaanos gather together with the community to pray and offer small sacrifices to the deity for a fruitful harvest and a fruitful following year.; Centers of worship: They tend to have worship centers in smaller communities, but have shrines in the major cities where allowed.; Priestly vestments: Robes or tabbards with the symbol emblazened on the front. If a shield is used, they typically include the symbol there as well.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kaanos_level_ability_lvl1_1": {
+      "description": "Level 1: Cast all Sun and Elemental Fire, at 3 levels higher",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kaanos_level_ability_lvl2_2": {
+      "description": "Level 2: Turn undead at 1 level lower",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kaanos_level_ability_lvl3_3": {
+      "description": "Level 3: Can cast Flame Blade (1/day)",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kaanos_level_ability_lvl5_4": {
+      "description": "Level 5: Gains ability to hit fire creatures only hit by magical weapons",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kaanos_level_ability_lvl7_5": {
+      "description": "Level 7: Can cast fireball in place of 3rd level clerical spell at 2 levels lower. (7th level priest casts as if a 5th level wizard, 8th as 6th, etc)",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kaanos_level_ability_lvl9_6": {
+      "description": "Level 9: Can turn vampires as if 4 levels higher.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kaanos_level_ability_lvl11_7": {
+      "description": "Level 11: Gains +2 to hit anything unnatural (undead, devils, etc) or anything cold based.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kaanos_level_ability_lvl13_8": {
+      "description": "Level 13: Can create Sunlight 1/day. The priest channels the powers of the sun and can produce a small, glowing sun in the palm of their hand. All creatures within 30 feet of the orb are affected by the sunlight.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kaldoza_deity_profile": {
+      "description": "[Deity Profile] Portfolio: Money/Trade/Wealth; Deity alignment: CN; Gender: Female; Symbol: Two gold coins balanced on a scale; Worshiper alignment: Any; Clergy alignment: LN, CG, CN, CE, N, NG; Turn undead: C: N / SP: N; Command undead: None",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kaldoza_priest_rules": {
+      "description": "[Specialty Priest Rules] Prime requisite: Wis, Cha; Priest alignment: LN, CG, CN, CE, N; Weapons: Any Bludgeoning, daggers; Armor: Any chainmail or lighter; Magical items: Same as Cleric; NWP groups: Priest, General, Rogue; Required proficiency: Looting; Bonus proficiency: Fast Talking, Appraising",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kaldoza_faith_lore": {
+      "description": "[Faith and Church] Faith: Worshippers of Kaldoza enjoy wealth. They seek to line their pockets with valuable coins and items with as little loss to themselves as possible. Worshippers of Kaldoza seem to have a sense for trade and item values, and can often gain advantage in any deal they are a part of. They will rarely attempt to make a deal of another worshipper of Kaldoza. They tend to thrive best in large cities.; Day-to-day activities: Followers of Kaldoza spend their days at the market buying, selling, or doing whatever it takes to make a profit. Even though they always strive to make the best deals (and will take whatever advantages they can), they do not consider themselves theives and will defend themselves whenever possible. When not at markets, they are scheming and finding ways to make a profit.; Holy days and ceremonies: They have no special holy days. They celebrate every good deal equally. If a deal goes extremely well, they will invite others of their order to celebrate with them, typically paying for drinks and meals for the night. (To show they are not selfish).; Centers of worship: Any large city.; Priestly vestments: Fine clothes reflecting their success at making money. Most will dress in silks.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kaldoza_level_ability_lvl1_1": {
+      "description": "Level 1: Can cast detect lie 1/day",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kaldoza_level_ability_lvl3_2": {
+      "description": "Level 3: Can haggle down a price of any item on a successful Charisma/Leadership check. The price drops or raises 2% per charisma score above 12.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kaldoza_level_ability_lvl4_3": {
+      "description": "Level 4: Gains +1 to appraising skill",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kaldoza_level_ability_lvl5_4": {
+      "description": "Level 5: Can cast detect magic 2/day",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kaldoza_level_ability_lvl7_5": {
+      "description": "Level 7: Can cast Fool's Gold 1/day",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kaldoza_level_ability_lvl9_6": {
+      "description": "Level 9: Gains +2 to appraising skill",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kaldoza_level_ability_lvl11_7": {
+      "description": "Level 11: Can haggle down a price of any item on a successful Charisma/Leadership check. The price drops or raises 10% per charisma score above 12.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kezbar_deity_profile": {
+      "description": "[Deity Profile] Portfolio: Music/Art/Dance/Joy/Poetry; Deity alignment: NG; Gender: Male; Symbol: Two paint brushes crossed over an Easel.; Worshiper alignment: Any; Clergy alignment: LN, N, CN, CG, NG, LG; Turn undead: C: N / SP: N / Mo: N; Command undead: C: N / SP: N / Mo: N",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kezbar_priest_rules": {
+      "description": "[Specialty Priest Rules] Prime requisite: Wis, Cha; Priest alignment: N, NG, LN, CN, CG; Weapons: Quarterstaff, Rope, Whip, Mancatcher, Club; Armor: Any up to Studded Leather; Magical items: Same as Cleric, Wizard or Bard; NWP groups: Priest, General, Rogue (bard related); Required proficiency: Dancing , Singing or Musical Instrument (pick one); Bonus proficiency: They can pick one lore skill for free that relates to music or poetry.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kezbar_faith_lore": {
+      "description": "[Faith and Church] Faith: Everything is a celebration to the followers of Kezbar. They relish in the finer things of life; music, art, dancing, and poetry. They find these things to bring them great joy, and the end results justifies these means. The followers of Kezbar not only celebrate these things, but guard them very closely. They spend there time gathering anything they find that centers on the portfolio of Kezbar. They will go out of the way to scribe songs (music and lyrics) and poetry, and will attempt to learn new dances as they find them. They will bring these works of art back to their temple to share with other followers. Followers of Kezbar are welcoming to all those that wish to share in the arts and crafts of their world.; Day-to-day activities: Seeking out new poems, songs, instruments to learn, and dancing is the primary goal of followers of Kezbar. Kezbar's main goal is to collect and protect all forms of art above and beyond else, regardless of his worshippers perception of what they feel is right by him. He encourages his followers to learn as many instruments as possible and to record and recite anything they find that will benefit the generations to come. Kezbar's goal is a world of peace where new ideas can flourish and make his followers happy.; Holy days and ceremonies: There are few holy days that the worshippers of Kezbar will not find a reason to celebrate. Any festival or gathering where they can spread their knowledge is a celebration to them. For the cleric and specialty priests of Kezbar, they celebrate the day of knowledge, which is the first day of the 7th month. They spend this day in reflection and will recite poetry or songs to each other in the seclusion of their temples. If a temple is not available, they will spend the full day in silent meditation, recalling all they have learned and shared with other followers.; Centers of worship: Anywhere where music and poetry can be found is a place where a temple or shrine can be found.; Priestly vestments: Anything the wearer feels is artistic and will spread joy to anyone who sees it.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kezbar_deity_spells": {
+      "description": "[Deity Spells] Harp of War (7th Level) in faiths and avatar",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kezbar_level_ability_lvl1_1": {
+      "description": "Level 1: Can cast charm person with song or dance 1/day",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kezbar_level_ability_lvl2_2": {
+      "description": "Level 2: Can sing a loud, sustained note once a day which is equal to the wizard spell shatter",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kezbar_level_ability_lvl3_3": {
+      "description": "Level 3: Can cast dispel silence 1/day",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kezbar_level_ability_lvl5_4": {
+      "description": "Level 5: Can cast shout 2/day (wizard spell 4th level)",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kezbar_level_ability_lvl7_5": {
+      "description": "Level 7: Can sing so sweetly that the rocks will talk to them. Effective as the spell stone tell (1/day)",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kezbar_level_ability_lvl9_6": {
+      "description": "Level 9: Can enthrall an audience 1/day with song or dance.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kezbar_level_ability_lvl11_7": {
+      "description": "Level 11: Can create a song of suggestion (3rd level wizard spell) 1/day",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_kezbar_level_ability_lvl15_8": {
+      "description": "Level 15: Can cast Harp of War (7th level priest spell) 1 per day",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_mortend_deity_profile": {
+      "description": "[Deity Profile] Portfolio: Death / The Dead; Deity alignment: NE; Gender: Female; Symbol: Crossed Scythes; Worshiper alignment: Any; Clergy alignment: LN, NG, N, CN, LE, NE, CE; Turn undead: C: Y / SP: Y; Command undead: C: Y / SP: Y",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_mortend_priest_rules": {
+      "description": "[Specialty Priest Rules] Prime requisite: Wis; Priest alignment: LN, NG, N, CN, LE, NE, CE; Weapons: Any Priest; Armor: Any Priest; Magical items: Same as Cleric; NWP groups: Priest, General; Required proficiency: Herbalism; Bonus proficiency: None",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_mortend_faith_lore": {
+      "description": "[Faith and Church] Faith: Although Mortend relishes in the souls she gathers from those who die and join her realm, she is a necessary god. She works through her worshippers to bring souls to her realm to strengthen her powers and her portfolio. She seeks to grow in power as a god and does so through living and undead worshippers, as well as the size of the souls in her realm. Followers of Mortend do not all agree on how to best worship her. Some use her to usher the dead to the afterlife, knowing that death is a natural part of life. Others worship Mortend to practice the arts of necromancy. Still others worship Mortend to their own ends; seeking a life of undeath; whether immediately or when their life naturally end. They seek to remain behind to continue thier own lives and benefit Mortend as long as they can.; Day-to-day activities: Depending on their outlook of death, most priests seek to guide those that have died into the afterlife. Temples and shrines to Mortend can be found in any city or village. Many non-worshippers will seek guidance after a death in the family or of friends, and the priesthoods finds themselves consoling those who have lost someone. They perform end of life rites of passage to the afterlife. They perform these rites for anyone, regardless of their faith; but will seek to bring the soul of the deceased to Mortend's realm. ----------------------- Those that seek more practice their necromancy, mostly in secret. Since their goals are their own, the day to day activity varies from follower to follower. They all agree that practicing necromancy (bring back the dead or speaking to the dead) enhances the power of Mortend. ----------------------- Those seeking an undead afterlife spend their days practicing thier craft and researching the means to becoming an undead. They seek to do little else and will only adventure if it directly benefits them.; Holy days and ceremonies: Each town and city has their own day of reflection for those that have fallen. On any of these days, the priests work their way through temples and cemetaries, consoling those that have lost someone and speaking words over the dead to keep them at peace.; Centers of worship: Many cities and villages have a shrine or temple to Mortend. The major center of worship is located in Acacea City.; Priestly vestments: Dark colored robes or clothing. They tend to enhance their wardrobe with colors of blood.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_mortend_level_ability_lvl1_1": {
+      "description": "Level 1: Gain insight into death and the dead. Can Speak with Dead 1/day to anyone who is in Mortend's realm, being able to hold a conversation instead of yes/no questions.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_mortend_level_ability_lvl2_2": {
+      "description": "Level 2: Speak with Dead 1/day any faith. There is a 5% chance per level that a conversation can be had with anyone not in the realm of Mortend",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_mortend_level_ability_lvl3_3": {
+      "description": "Level 3: Can preserve the dead. Any dead body preserved lasts 3 times longer for spells that affect the dead. (i.e. Raise dead can be cast on someone who was dead 3 times longer than listed)",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_mortend_level_ability_lvl5_4": {
+      "description": "Level 5: Can cast necormancy spells 2 levels higher",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_mortend_level_ability_lvl10_5": {
+      "description": "Level 10: Can Raise Dead without side effects to any soul in Mortend's realm",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_mortend_level_ability_lvl14_6": {
+      "description": "Level 14: Can Raise Dead without side effects (no rest required afterwards)",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_mortend_level_ability_lvl18_7": {
+      "description": "Level 18: Can petition Mortend to become a Lich 1/level. Gains 3% chance per level.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_nyssia_deity_profile": {
+      "description": "[Deity Profile] Portfolio: Weather; Deity alignment: N; Gender: Female; Symbol: Cloud with 3 lines coming out the bottom each ending in a raindrop.; Worshiper alignment: NG, CG, LN,N,LE,CN; Clergy alignment: NG, CG, LN, N, CN; Turn undead: C: Y / SP: Y; Command undead: C: N / SP: N",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_nyssia_priest_rules": {
+      "description": "[Specialty Priest Rules] Prime requisite: Wis; Priest alignment: CN, N, NG; Weapons: Any Bludgeoning, plus scmitar and scythe; Armor: Any; Magical items: Same as Cleric, and can use anything to do with the weather; NWP groups: Priest, General; Required proficiency: None; Bonus proficiency: Weather Sense",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_nyssia_faith_lore": {
+      "description": "[Faith and Church] Faith: Followers of Nyssia pray for weather. They understand the weather changes constantly and all forms of weather are needed. They tend to work closely with those involved in agriculture. Nyssian priests spend much time praying and divining about the weather, and work to balance the forces of nature to produce beneficial weather for the situation.; Day-to-day activities: Being a priesthood seeking balance of nature, they spend their time in nature as much as cities/villages. They work towards helping grow crops, calm the seas for ships.; Holy days and ceremonies: There are no specific days that the weather priests celebrate. Instead, they celebrate the weather when conditions are perfect: The perfect storm, a cloudless sunny day, etc.; Centers of worship: Most villages have a shrine to Nyssia. The major center of worship is the Port city of Nicht Allengar.; Priestly vestments: Nothing special for their vestments. They tend to wear the color of the sky ranging from a bright blue sunny day to a grey representing a rainy, cloudy day.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_nyssia_level_ability_lvl1_1": {
+      "description": "Level 1: Gains a +2 saving throw against any spell or effect that involves weather.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_nyssia_level_ability_lvl3_2": {
+      "description": "Level 3: Can call lightning 1/day",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_nyssia_level_ability_lvl5_3": {
+      "description": "Level 5: Gains Control Temperature 1/day",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_nyssia_level_ability_lvl7_4": {
+      "description": "Level 7: Gain the ability to breath underwater, cast waterwalk 1/day",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_nyssia_level_ability_lvl9_5": {
+      "description": "Level 9: Can affect the weather of an area within 1/2 mile radius for every 3 levels. Takes 1/hour, but can change the weather to whatever they desire. The effects last for 1 hour/level.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_nyssia_level_ability_lvl12_6": {
+      "description": "Level 12: Can Call Lightning 2/day.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_oslok_deity_profile": {
+      "description": "[Deity Profile] Portfolio: Luck/Adventure; Deity alignment: CG; Gender: Male; Symbol: 2 gold coins, balanced on top of one another; Worshiper alignment: Any; Clergy alignment: N, CN, NG, CG; Turn undead: C: Y / SP: Y; Command undead: C: N / SP: N",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_oslok_priest_rules": {
+      "description": "[Specialty Priest Rules] Prime requisite: Dexterity, Wisdom; Priest alignment: NG, CG; Weapons: Any Bludgeoning; Armor: Any; Magical items: Same as Cleric; NWP groups: Priest, General, Rogue; Required proficiency: None; Bonus proficiency: Gaming",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_oslok_faith_lore": {
+      "description": "[Faith and Church] Faith: Oslok teaches his followers to be bold and daring, trusting in luck to help them get through any trials they have. Clergy should be willing to take risks and place themselves in the hands of fate and luck.; Day-to-day activities: The clergy travel from city to city encouraging people to take chances and puruse their dreams. The do caution against silly risks. The followers of Oslok will aid in any such endevors and offer healin, other magics, and counsel to anyone who follows their luck and takes chances.; Holy days and ceremonies: There are no specific holidays for the church. Some individual temples will celebrate days of luck specific to a region or city, however.; Centers of worship: Temples and shrines exist in all major towns and cities throughout the Kingdom. The major center of worship is found in Shay Ell.; Priestly vestments: Any vestment is acceptable; however every priest has 1 item they consider lucky and wear or show it proudly.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_oslok_level_ability_lvl1_1": {
+      "description": "Level 1: May choose to reroll 1 die of any type 1/day. This may be declared after a die roll is made.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_oslok_level_ability_lvl3_2": {
+      "description": "Level 3: Gains a +1 to all skill checks requiring Dexterity",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_oslok_level_ability_lvl5_3": {
+      "description": "Level 5: Gains +2 to all saving throws",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_oslok_level_ability_lvl7_4": {
+      "description": "Level 7: Can cast feat ((Faith's and Avatars) 4th level priest spell) or lower resistance (5th level wizard spell) 1/day",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_oslok_level_ability_lvl7_5": {
+      "description": "Level 7: Can cast Probabilty Control 1/day",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_oslok_level_ability_lvl9_6": {
+      "description": "Level 9: Cast luckbolt 1/day (Faith's and Avatars - Tymora Spell)",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_oslok_level_ability_lvl12_7": {
+      "description": "Level 12: Can choose to automatically succeed any saving throw 1/day. They choose this ability instead of rolling (they cannot fail a saving throw and then choose to use this ability). ----Alternatively, this ability can allow the priest to make a saving throw (DM determins which ability to check) where a saving throw would not normally be allowed.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_samona_deity_profile": {
+      "description": "[Deity Profile] Portfolio: Deception; Deity alignment: CE; Gender: Female; Symbol: A black skull on a white sunburst.; Worshiper alignment: LN, N, CN, LE, NE, CE; Clergy alignment: LE, NE, CE; Turn undead: C: Y / SP: Y; Command undead: C: Y / SP: Y",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_samona_priest_rules": {
+      "description": "[Specialty Priest Rules] Prime requisite: Wisdom; Priest alignment: NE, CE; Weapons: Any Bludgeoning; Armor: Chainmail or less; Magical items: Same as cleric; NWP groups: Priest, General, Rogue; Required proficiency: 2 languages; Bonus proficiency: Disguise",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_samona_faith_lore": {
+      "description": "[Faith and Church] Faith: Samona is a god who seeks control. His faith uses lies and deception to control those around them. They seek to bring more power to their deity, and do so through whatever means is necessary. The priests and other followers of Samona seek to have everyone recognize Samona as the one, true deity. Lies and deception are the way of life, and priests seek to use these methods to destroy those of other faiths and convert as many to Samona as possible. Random violence is good, but not as violence that serves a great good.; Day-to-day activities: The followers of Samona seek to spread strife and suffering. They work towards bringing people to follow Samona, even if that means murder and violence are used to bring people to Samona's cause through fear. They support those in power who are cruel and seek to expand their empires. The spend time trying to gain Samona's favor and can often be found secretly scheming against other priests of Samona. Because so much about them is known to be cruel and violent, they do not opening worship anywhere. They are found in the shadows, practicing their schemes and controlling what they can control.; Holy days and ceremonies: None.; Centers of worship: There are no known major centers of worship except by those that follow Samona.; Priestly vestments: Dark clothing. They can often be mistaken for rogues.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_samona_level_ability_lvl1_1": {
+      "description": "Level 1: +1 saving throws verses spells using deception and spells from illusion/phantasm schools/spheres",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_samona_level_ability_lvl2_2": {
+      "description": "Level 2: Unaffected by fear spells and other emotion altering spells",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_samona_level_ability_lvl3_3": {
+      "description": "Level 3: Gain glibness as a trait; they are able to talk smoothly and convincingly about any subject. They gain a saving throw versus spells for spells that detect lies (even if one is not allowed)",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_samona_level_ability_lvl5_4": {
+      "description": "Level 5: Gain the ability of Hide in Shadow and Move Silently. Starting at 25% in each state and gaining 5% per level after. Also gains the rogue's backstab ability",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_samona_level_ability_lvl7_5": {
+      "description": "Level 7: Can cast Phantasmal Killer 1/day",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_samona_level_ability_lvl10_6": {
+      "description": "Level 10: Can cast invisibilty on self 3/day",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_sektheus_deity_profile": {
+      "description": "[Deity Profile] Portfolio: Earth/Stone/Oaths; Deity alignment: N; Gender: Male; Symbol: Mountain Silhouette pierced by a vertical chisel; Worshiper alignment: Any; Clergy alignment: LG, NG, LN, N, LE, NE; Turn undead: C: N / SP: N; Command undead: C: N / SP: N",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_sektheus_priest_rules": {
+      "description": "[Specialty Priest Rules] Standard priest capabilities; detailed restrictions pending.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_sektheus_faith_lore": {
+      "description": "[Faith and Church] Faith: Sektheus teaches that truth is the cornerstone of all civilization, and that every oath shapes the world. Followers must never speak falsehoods, break a vow, or build on weak foundations. The faithful believe that labor, particularly involving stone or earth, is sacred. Temples often double as courts, archives, or vaults — places where oaths are made and kept. Sektheus offers no mercy for willful liars, but endless patience to those who toil honestly and speak truth.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_sektheus_granted_abilities": {
+      "description": "[Granted Abilities] Standard priest abilities; specialty details pending.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_silthos_deity_profile": {
+      "description": "[Deity Profile] Portfolio: Disease/Poison; Deity alignment: NE; Gender: Male",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_silthos_priest_rules": {
+      "description": "[Specialty Priest Rules] Standard priest capabilities; detailed restrictions pending.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_silthos_granted_abilities": {
+      "description": "[Granted Abilities] Standard priest abilities; specialty details pending.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_thoria_deity_profile": {
+      "description": "[Deity Profile] Portfolio: Fire; Deity alignment: CN; Gender: Female",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_thoria_priest_rules": {
+      "description": "[Specialty Priest Rules] Standard priest capabilities; detailed restrictions pending.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_thoria_granted_abilities": {
+      "description": "[Granted Abilities] Standard priest abilities; specialty details pending.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_trion_deity_profile": {
+      "description": "[Deity Profile] Portfolio: Magic; Deity alignment: LG; Gender: Male; Symbol: A swirl of white smoke, surrounded by sparkles.; Worshiper alignment: Any; Clergy alignment: Any; Turn undead: C: Y / SP: Y; Command undead: C: Y / SP: Y",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_trion_priest_rules": {
+      "description": "[Specialty Priest Rules] Prime requisite: Int, Wis; Priest alignment: N, NG, LN, LG, CG; Weapons: Same as Cleric; Armor: None; Magical items: Same as Cleric or Wizard; NWP groups: Priest, General, Wizard; Required proficiency: Read/Writing; Bonus proficiency: Spellcraft",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_trion_faith_lore": {
+      "description": "[Faith and Church] Faith: Worshippers of Trion hold a strong belief that the Arcane and Divine are not as far apart as others believe. They work closely with the Conclave and have the same basic goals: Recover and Restore the magic from before the Crater. The worshippers spend some time in study of magical items and scrolls, hoping to glean something from them to help in the learning of what was once lost... The art of creating magical items. Worshippers of Trion are happy to join adventuring groups to aid them with healing and possible recovery of said magical items.; Day-to-day activities: Spending time in the church performing priestly duties to the general population. Offer services to adventurers to help identify items. Confer often with the priests worshipping Grezel comparing notes and experiementing with magical experiements.; Holy days and ceremonies: When the 2 moons are in alignment, the worshippers of Trion believe their power is at its peak. These days/nights are spent in communion with other priests of the order where the leader of the church attempts to pray for knowledge of magical nature.; Centers of worship: Acacea City Bellemus; Priestly vestments: Mage Robes with the symbol of Trion on both sleeves. They color does not matter, but is usually of fine quality.; Allies: Knowledge",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_trion_level_ability_lvl3_1": {
+      "description": "Level 3: Can multi-class in Wizard/Cleric even as a human (both ability scores must be 15 or above) Gain Wizard Non-weapon Proficiencies.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_trion_level_ability_lvl1_2": {
+      "description": "Level 1: gain saving throw of +2 against any Arcane spell",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_trion_level_ability_lvl2_3": {
+      "description": "Level 2: Cast cast Detect Magic 1/day as a bonus spell",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_trion_level_ability_lvl3_4": {
+      "description": "Level 3: Cast cast Identify (as 1st level wizard spell) 2/week",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_trion_level_ability_lvl5_5": {
+      "description": "Level 5: Cast cast Dispel Magic at 2 levels higher (not a bonus spell)",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_trion_level_ability_lvl6_6": {
+      "description": "Level 6: Casting time of all spells decrease. Casting time is halved rounding down for spells that take less than 1 round to cast.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_trion_level_ability_lvl8_7": {
+      "description": "Level 8: Can cast common wizard spells from the school of divination or Invocation/Evocation in place of a clerical spell of the same level. This is granted as a prayer, no spellbook is needed.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_trion_level_ability_lvl9_8": {
+      "description": "Level 9: Gains a +1 to intelligence",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_trion_level_ability_lvl11_9": {
+      "description": "Level 11: Gains 100% Magic Resistance from 1 spell of choice",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_trion_level_ability_lvl15_10": {
+      "description": "Level 15: Can pick any 3 wizard spells and cast them in place of a priest spell - Spells must be level 6 or less",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_trokdarr_deity_profile": {
+      "description": "[Deity Profile] Portfolio: Guardian/Protection; Deity alignment: NG; Gender: Male",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_trokdarr_priest_rules": {
+      "description": "[Specialty Priest Rules] Standard priest capabilities; detailed restrictions pending.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_trokdarr_granted_abilities": {
+      "description": "[Granted Abilities] Standard priest abilities; specialty details pending.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_trovann_deity_profile": {
+      "description": "[Deity Profile] Portfolio: Agony/Pain/Suffering; Deity alignment: CE; Gender: Male",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_trovann_priest_rules": {
+      "description": "[Specialty Priest Rules] Standard priest capabilities; detailed restrictions pending.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_trovann_granted_abilities": {
+      "description": "[Granted Abilities] Standard priest abilities; specialty details pending.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_trystram_deity_profile": {
+      "description": "[Deity Profile] Portfolio: Shadows - Theives; Deity alignment: LE; Gender: Male",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_trystram_priest_rules": {
+      "description": "[Specialty Priest Rules] Standard priest capabilities; detailed restrictions pending.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_trystram_granted_abilities": {
+      "description": "[Granted Abilities] Standard priest abilities; specialty details pending.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_valdron_deity_profile": {
+      "description": "[Deity Profile] Portfolio: Evil; Deity alignment: LE; Gender: Male",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_valdron_priest_rules": {
+      "description": "[Specialty Priest Rules] Standard priest capabilities; detailed restrictions pending.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_valdron_granted_abilities": {
+      "description": "[Granted Abilities] Standard priest abilities; specialty details pending.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_vogvir_deity_profile": {
+      "description": "[Deity Profile] Portfolio: Good; Deity alignment: LG; Gender: Male",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_vogvir_priest_rules": {
+      "description": "[Specialty Priest Rules] Standard priest capabilities; detailed restrictions pending.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_vogvir_granted_abilities": {
+      "description": "[Granted Abilities] Standard priest abilities; specialty details pending.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_xanca_deity_profile": {
+      "description": "[Deity Profile] Portfolio: Battle/War; Deity alignment: CN; Gender: Female",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_xanca_priest_rules": {
+      "description": "[Specialty Priest Rules] Standard priest capabilities; detailed restrictions pending.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_xanca_granted_abilities": {
+      "description": "[Granted Abilities] Standard priest abilities; specialty details pending.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_zichhia_deity_profile": {
+      "description": "[Deity Profile] Portfolio: Birth/Life/Renewal/Fertility; Deity alignment: NG; Gender: Female",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_zichhia_priest_rules": {
+      "description": "[Specialty Priest Rules] Standard priest capabilities; detailed restrictions pending.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_zichhia_granted_abilities": {
+      "description": "[Granted Abilities] Standard priest abilities; specialty details pending.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_ziegrid_deity_profile": {
+      "description": "[Deity Profile] Portfolio: Misfortune/Mischief; Deity alignment: LE; Gender: Female",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_ziegrid_priest_rules": {
+      "description": "[Specialty Priest Rules] Standard priest capabilities; detailed restrictions pending.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_ziegrid_granted_abilities": {
+      "description": "[Granted Abilities] Standard priest abilities; specialty details pending.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_zorvag_deity_profile": {
+      "description": "[Deity Profile] Portfolio: Air/Wind; Deity alignment: CG; Gender: Male",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_zorvag_priest_rules": {
+      "description": "[Specialty Priest Rules] Standard priest capabilities; detailed restrictions pending.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    },
+    "specialty_priest_zorvag_granted_abilities": {
+      "description": "[Granted Abilities] Standard priest abilities; specialty details pending.",
+      "point_cost": 0,
+      "auto_granted": true,
+      "allow_multiple": false,
+      "requires_player_text": false,
+      "allow_purchase_after_level_one": false
+    }
+  }
+}

@@ -33,7 +33,7 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
         [FreeSpokenLanguageSource] = "Free Spoken Language",
         [ModernLanguagesSource] = "Modern Languages",
         [AncientLanguagesSource] = "Ancient Languages",
-        [AnimalLanguagesSource] = "Animal Languages",
+        [AnimalLanguagesSource] = "Creature Languages (Druid)",
         [ReadingWritingSource] = "Reading/Writing",
         [PriestSecretLanguageSource] = "Priest Secret Language",
     };
@@ -77,6 +77,7 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
         _catalog = _app.CharacterOptions.GetCatalog();
         if (!_app.CharGen.IsLevelUpMode)
             SeedKitNwps();
+        RangerTrackingRules.EnsureGrantedTracking(_app.CharGen, _catalog.NonweaponProficiencies);
 
         if (OverallCpPanel != null)
             OverallCpPanel.Visibility = IsPlayersOptionMode ? Visibility.Visible : Visibility.Collapsed;
@@ -570,8 +571,7 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
     private int GetNwpPurchaseCost(NonweaponProficiencyDefinition proficiency)
     {
         if (IsKitFreeNwp(proficiency.Id)) return 0;
-        if (RangerTrackingRules.IsTracking(proficiency.Id, proficiency.Name)
-            && HasSelectedClassAbility(RangerTrackingRules.TrackingAbilityId))
+        if (IsClassGrantedNwp(proficiency))
         {
             return 0;
         }
@@ -849,6 +849,7 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
     private int GetEffectiveNwpSlotCost(NonweaponProficiencyDefinition proficiency)
     {
         if (IsKitFreeNwp(proficiency.Id)) return 0;
+        if (IsClassGrantedNwp(proficiency)) return 0;
         int baseCost = Math.Max(1, proficiency.Slots);
 
         bool isLanguageNwp = IsLanguageNwpForSource(proficiency, ModernLanguagesSource)
@@ -1551,7 +1552,10 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
         int rangerTrackingBonus = proficiency is null
             ? 0
             : RangerTrackingRules.GetBonus(_app.CharGen, proficiency);
-        return _aggregatedNwpCheckBonus + targeted + rangerTrackingBonus;
+        int synergyBonus = proficiency is not null && IsPlayersOptionMode
+            ? NwpSynergyRules.GetPermanentBonus(_app.CharGen, proficiency)
+            : 0;
+        return _aggregatedNwpCheckBonus + targeted + rangerTrackingBonus + synergyBonus;
     }
 
     private void RefreshAggregatedNwpCheckBonuses()
@@ -1616,6 +1620,8 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
             int cpSpent = GetNwpImprovementCp(proficiency.Id);
             int poTarget = baseRating + poTable44Bonus + poImprovement;
             int finalTarget = poTarget + abilityBonus;
+            int synergyBonus = NwpSynergyRules.GetPermanentBonus(_app.CharGen, proficiency);
+            int otherAbilityBonus = abilityBonus - synergyBonus;
 
             int purchaseCp = GetNwpPurchaseCost(proficiency);
             string crossoverTag = HasNwpCrossoverPenalty(proficiency) ? " (includes crossover penalty)" : string.Empty;
@@ -1625,7 +1631,10 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
                      : $"Cost: {purchaseCp} CP{crossoverTag}\n")
                  + $"Initial rating: {baseRating}\n"
                  + $"Relevant ability: {checkAbility}\n"
-                 + $"Check: {baseRating}{FormatSigned(poTable44Bonus)} (Table 44 from {GetSubAbilitySourceLabel(proficiency)} {relevantScore}){(poImprovement > 0 ? $" {FormatSigned(poImprovement)} improvement" : string.Empty)}{(abilityBonus != 0 ? $" {FormatSigned(abilityBonus)} ability bonus" : string.Empty)} = {finalTarget}\n"
+                 + $"Check: {baseRating}{FormatSigned(poTable44Bonus)} (Table 44 from {GetSubAbilitySourceLabel(proficiency)} {relevantScore}){(poImprovement > 0 ? $" {FormatSigned(poImprovement)} improvement" : string.Empty)}{(otherAbilityBonus != 0 ? $" {FormatSigned(otherAbilityBonus)} ability bonus" : string.Empty)}{(synergyBonus != 0 ? $" {FormatSigned(synergyBonus)} permanent synergy (free)" : string.Empty)} = {finalTarget}\n"
+                 + (GetNwpConditionalTargetSummary(proficiency, finalTarget) is { Length: > 0 } conditional
+                     ? $"Conditional checks{conditional}\n"
+                     : string.Empty)
                  + (cpSpent > 0
                      ? $"Improvement CP spent: {cpSpent}\n\n"
                      : "\n")
@@ -1854,6 +1863,14 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
     {
         if (SelectedNwpList.SelectedItem is not CatalogListItem item)
             return;
+
+        var proficiency = _catalog.NonweaponProficiencies.FirstOrDefault(p => string.Equals(p.Id, item.Id, StringComparison.OrdinalIgnoreCase));
+        if (proficiency is not null && IsClassGrantedNwp(proficiency))
+        {
+            MessageBox.Show("Tracking is granted by your Ranger class ability and costs no NWP CP or slots. Remove the class ability first if you no longer want the grant.",
+                "Class-Granted Proficiency", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
 
         if (IsLockedNwp(item.Id))
         {
@@ -2126,6 +2143,8 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
         string kitTag = IsKitFreeNwp(proficiency.Id) ? " [Kit: Free]"
             : _app.CharGen.KitRequiredNwpIds.Any(id => string.Equals(id, proficiency.Id, StringComparison.OrdinalIgnoreCase)) ? " [Kit: Required]"
             : string.Empty;
+        if (IsClassGrantedNwp(proficiency))
+            kitTag += " [Granted by class: Free]";
 
         if (string.Equals(_app.CharGen.CharacterMode, "players_option", StringComparison.OrdinalIgnoreCase))
         {
@@ -2143,8 +2162,12 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
             };
             if (poImprovement > 0)
                 poBonusParts.Add($"{FormatSigned(poImprovement)} from CP");
-            if (abilityBonuses != 0)
-                poBonusParts.Add($"{FormatSigned(abilityBonuses)} from abilities");
+            int synergyBonus = NwpSynergyRules.GetPermanentBonus(_app.CharGen, proficiency);
+            int otherAbilityBonuses = abilityBonuses - synergyBonus;
+            if (otherAbilityBonuses != 0)
+                poBonusParts.Add($"{FormatSigned(otherAbilityBonuses)} from abilities");
+            if (synergyBonus != 0)
+                poBonusParts.Add($"{FormatSigned(synergyBonus)} permanent synergy (free)");
             string poBonusBreakdown = string.Join(", ", poBonusParts);
 
             int purchaseCp = GetNwpPurchaseCost(proficiency);
@@ -2156,10 +2179,7 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
             string progressLabel = cpSpent > 0
                 ? $", improv {cpSpent} CP"
                 : string.Empty;
-            string conditionalTargets = RangerTrackingRules.GetConditionalTargetSummary(
-                _app.CharGen,
-                proficiency,
-                poTarget);
+            string conditionalTargets = GetNwpConditionalTargetSummary(proficiency, poTarget);
             return $"{proficiency.Name} ({costLabel}), base {baseRating}, bonus {FormatSigned(poTotalBonus)} ({poBonusBreakdown}), target {poTarget}{conditionalTargets}{progressLabel}{noteSuffix}{kitTag}";
         }
 
@@ -2187,6 +2207,19 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
         return $"{proficiency.Name} ({coreCostLabel}), base {baseScore}, bonus {FormatSigned(totalBonus)} ({bonusBreakdown}), target {target}{noteSuffix}{kitTag}";
     }
 
+    private string GetNwpConditionalTargetSummary(NonweaponProficiencyDefinition proficiency, int target)
+    {
+        if (!IsPlayersOptionMode)
+            return string.Empty;
+        if (RangerTrackingRules.IsTracking(proficiency.Id, proficiency.Name))
+            return RangerTrackingRules.GetConditionalTargetSummary(_app.CharGen, proficiency, target);
+
+        string summary = NwpSynergyRules.GetConditionalSummary(_app.CharGen, proficiency, target);
+        return string.IsNullOrEmpty(summary)
+            ? string.Empty
+            : "; conditional alternatives: " + summary.Replace(Environment.NewLine, "; ");
+    }
+
     private Dictionary<string, int> GetLanguageAllowanceBySource()
     {
         return new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
@@ -2194,13 +2227,18 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
             [FreeSpokenLanguageSource] = 1,
             [ModernLanguagesSource] = GetLanguageSlotsFromNwp(ModernLanguagesSource),
             [AncientLanguagesSource] = GetLanguageSlotsFromNwp(AncientLanguagesSource),
-            [AnimalLanguagesSource] = HasSelectedClassAbility("druid_communicate_with_creatures")
-                ? Math.Max(1, _app.CharGen.CharacterLevel)
-                : 0,
+            [AnimalLanguagesSource] = DruidCreatureLanguageRules.GetAllowance(_app.CharGen,
+                _app.CharGen.IsLevelUpMode && _app.CharGen.LevelUpCharacterIndex >= 0
+                    && _app.CharGen.LevelUpCharacterIndex < _app.Characters.Count
+                        ? _app.Characters[_app.CharGen.LevelUpCharacterIndex] : null),
             [ReadingWritingSource] = GetLanguageSlotsFromNwp(ReadingWritingSource),
             [PriestSecretLanguageSource] = HasSelectedClassAbility("cleric_secret_language") ? 1 : 0,
         };
     }
+
+    private bool IsClassGrantedNwp(NonweaponProficiencyDefinition proficiency)
+        => RangerTrackingRules.IsTracking(proficiency.Id, proficiency.Name)
+            && RangerTrackingRules.HasTrackingGrant(_app.CharGen);
 
     private bool HasSelectedClassAbility(string abilityId)
     {
@@ -2320,6 +2358,8 @@ public partial class CharGenCharacterOptionsScreen : UserControl, IScreen
         int remaining = GetRemainingLanguageSlots(sourceKey, GetSelectedLanguageIndex());
         string modeLabel = IsSpokenLanguageSource(sourceKey) ? "spoken" : "literate";
         LanguageEditorHelpText.Text = $"{LanguageSourceLabels[sourceKey]} has {Math.Max(0, remaining)} slot{(Math.Abs(remaining) == 1 ? string.Empty : "s")} available for this {modeLabel} entry.";
+        if (string.Equals(sourceKey, AnimalLanguagesSource, StringComparison.OrdinalIgnoreCase))
+            LanguageEditorHelpText.Text += " Communicate with Creatures grants one free creature language per Druid level, including level 1. Enter a creature type, such as centaurs, dryads, pixies, or treants, then save. No language NWP purchase is required.";
     }
 
     private string GetSelectedLanguageSourceKey()

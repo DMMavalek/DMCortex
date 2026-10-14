@@ -815,6 +815,9 @@ public partial class CharGenClassScreen : UserControl, IScreen
             _app.CharGen.SelectedClassIds  = new() { cls.Id };
         }
 
+        if (_app.CharGen.UsesSeparateExistingClassExperience && !PromptForExistingClassExperience())
+            return;
+
         _app.CharGen.RecalculateLevelFromExistingExperience();
 
         // Core Rules normally skip class abilities. Re-enable the class abilities
@@ -845,6 +848,83 @@ public partial class CharGenClassScreen : UserControl, IScreen
         }
 
         _app.GoTo("chargen_class_abilities");
+    }
+
+    private bool PromptForExistingClassExperience()
+    {
+        var cg = _app.CharGen;
+        var window = new Window
+        {
+            Title = "Existing Character — XP by Class",
+            Width = 520,
+            SizeToContent = SizeToContent.Height,
+            MaxHeight = 650,
+            Owner = _app,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            ResizeMode = ResizeMode.NoResize,
+            ShowInTaskbar = false,
+        };
+        var panel = new StackPanel { Margin = new Thickness(18) };
+        panel.Children.Add(new TextBlock
+        {
+            Text = "Enter each class's current XP total, including any prime-requisite bonuses already earned. These are final totals; no bonus or split is applied again.",
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 0, 0, 14),
+        });
+        var inputs = new Dictionary<string, TextBox>(System.StringComparer.OrdinalIgnoreCase);
+        foreach (string classId in cg.SelectedClassIds.Distinct(System.StringComparer.OrdinalIgnoreCase))
+        {
+            string className = _app.Rules.Classes.TryGetValue(classId, out var cls) ? cls.Name : classId;
+            panel.Children.Add(new TextBlock { Text = className + " XP:", Margin = new Thickness(0, 4, 0, 2) });
+            var input = new TextBox
+            {
+                Text = cg.GetExistingExperienceForClass(classId).ToString(),
+                Padding = new Thickness(6, 3, 6, 3),
+            };
+            var levelLabel = new TextBlock { Margin = new Thickness(0, 2, 0, 8) };
+            void RefreshLevel()
+            {
+                levelLabel.Text = int.TryParse(input.Text.Trim(), out int xp) && xp >= 0
+                    ? $"Level {CharacterProgressionService.GetLevelForExperience(classId, xp)}"
+                    : "Enter a non-negative whole number.";
+            }
+            input.TextChanged += (_, _) => RefreshLevel();
+            RefreshLevel();
+            inputs[classId] = input;
+            panel.Children.Add(input);
+            panel.Children.Add(levelLabel);
+        }
+        var actions = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Margin = new Thickness(0, 12, 0, 0),
+        };
+        var cancel = new Button { Content = "Cancel", Width = 80, IsCancel = true, Margin = new Thickness(0, 0, 8, 0) };
+        var accept = new Button { Content = "Continue", Width = 90, IsDefault = true };
+        accept.Click += (_, _) =>
+        {
+            var experienceByClass = new Dictionary<string, int>(System.StringComparer.OrdinalIgnoreCase);
+            foreach (var (classId, input) in inputs)
+            {
+                if (!int.TryParse(input.Text.Trim(), out int xp) || xp < 0)
+                {
+                    MessageBox.Show(window, "Enter a non-negative whole number for each class's XP.",
+                        "Invalid Experience", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    input.Focus();
+                    input.SelectAll();
+                    return;
+                }
+                experienceByClass[classId] = xp;
+            }
+            cg.ExistingClassExperiencePoints = experienceByClass;
+            window.DialogResult = true;
+        };
+        actions.Children.Add(cancel);
+        actions.Children.Add(accept);
+        panel.Children.Add(actions);
+        window.Content = new ScrollViewer { Content = panel, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        return window.ShowDialog() == true;
     }
 
     private Dictionary<string, int> GetEffectiveAbilities()

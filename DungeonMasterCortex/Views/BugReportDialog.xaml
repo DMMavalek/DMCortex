@@ -1,0 +1,124 @@
+<Window x:Class="DungeonMasterCortex.Views.BugReportDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Report Bug"
+        Width="720"
+        Height="700"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
+        Background="#1e1e1e"
+        Foreground="#d4af37"
+        ResizeMode="CanResizeWithGrip">
+
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="Report a Bug"
+                   FontSize="22"
+                   FontWeight="Bold"
+                   Margin="0,0,0,8"/>
+
+        <TextBlock Grid.Row="1"
+                   Text="Please include clear reproduction steps. This sends to the same support email used for activation requests."
+                   Foreground="#e0e0e0"
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,12"/>
+
+        <Grid Grid.Row="2" Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                <TextBlock Text="Summary" Foreground="#e0e0e0" Margin="0,0,0,4"/>
+                <TextBox x:Name="TxtSummary" MinWidth="360" MaxLength="140"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1">
+                <TextBlock Text="Severity" Foreground="#e0e0e0" Margin="0,0,0,4"/>
+                <ComboBox x:Name="SeverityCombo" SelectedIndex="1">
+                    <ComboBoxItem Content="Critical"/>
+                    <ComboBoxItem Content="High"/>
+                    <ComboBoxItem Content="Medium"/>
+                    <ComboBoxItem Content="Low"/>
+                </ComboBox>
+            </StackPanel>
+        </Grid>
+
+        <StackPanel Grid.Row="3" Margin="0,0,0,8">
+            <TextBlock Text="Your Email (optional)" Foreground="#e0e0e0" Margin="0,0,0,4"/>
+            <TextBox x:Name="TxtReporterEmail" MinWidth="420"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="4" Margin="0,0,0,8">
+            <TextBlock Text="Steps to Reproduce" Foreground="#e0e0e0" Margin="0,0,0,4"/>
+            <TextBox x:Name="TxtSteps" Height="95" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="5" Margin="0,0,0,8">
+            <TextBlock Text="Expected Result" Foreground="#e0e0e0" Margin="0,0,0,4"/>
+            <TextBox x:Name="TxtExpected" Height="70" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap"/>
+        </StackPanel>
+
+        <Grid Grid.Row="6" Margin="0,0,0,8">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <StackPanel Grid.Row="0" Margin="0,0,0,8">
+                <TextBlock Text="Actual Result" Foreground="#e0e0e0" Margin="0,0,0,4"/>
+                <TextBox x:Name="TxtActual" Height="90" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap"/>
+            </StackPanel>
+
+            <TextBlock Grid.Row="1" Text="Diagnostics (auto-included)" Foreground="#e0e0e0" Margin="0,0,0,4"/>
+            <TextBox Grid.Row="2"
+                     x:Name="TxtDiagnostics"
+                     IsReadOnly="True"
+                     Height="120"
+                     VerticalScrollBarVisibility="Auto"
+                     TextWrapping="Wrap"
+                     Foreground="#cfcfcf"
+                     Background="#252525"/>
+        </Grid>
+
+        <Grid Grid.Row="7">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0"
+                       x:Name="TxtStatus"
+                       Text="Status: Waiting for details"
+                       Foreground="#c0c0c0"
+                       VerticalAlignment="Center"
+                       TextWrapping="Wrap"
+                       Margin="0,0,12,0"/>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Send Report"
+                        Style="{StaticResource GoldButton}"
+                        Width="130"
+                        Margin="0,0,10,0"
+                        Click="BtnSendReport_Click"/>
+                <Button Content="Close"
+                        Style="{StaticResource GoldButton}"
+                        Width="100"
+                        Click="BtnClose_Click"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

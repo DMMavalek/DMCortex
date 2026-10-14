@@ -6,10 +6,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-    <Version>1.4.24</Version>
-    <AssemblyVersion>1.4.24.0</AssemblyVersion>
-    <FileVersion>1.4.24.0</FileVersion>
-    <InformationalVersion>1.4.24</InformationalVersion>
+    <Version>1.4.25</Version>
+    <AssemblyVersion>1.4.25.0</AssemblyVersion>
+    <FileVersion>1.4.25.0</FileVersion>
+    <InformationalVersion>1.4.25</InformationalVersion>
     <DefineConstants>$(DefineConstants);APP_EDITION_DM</DefineConstants>
   </PropertyGroup>
 
@@ -62,14 +62,17 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="..\data\rulesets\nwp_synergies.json"
+                      Link="data\rulesets\nwp_synergies.json"
+                      LogicalName="DungeonMasterCortex.NwpSynergies.json" />
     <Content Include="CHANGELOG.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
     <Content Include="..\DungeonMasterCortex.Tools\smtp_activation.json">
       <Link>smtp_activation.json</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
     </Content>
     <Content Include="..\Assets\Class Abilities\Class Abilities.xlsx">
       <Link>Assets\Class Abilities\Class Abilities.xlsx</Link>
@@ -153,6 +156,11 @@
     <RequiredRuntimePayload Include="..\data\rulesets\**\*">
       <RelativeTargetPath>data\rulesets\%(RecursiveDir)%(Filename)%(Extension)</RelativeTargetPath>
     </RequiredRuntimePayload>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Remove="..\data\rulesets\**\*.bak;..\data\rulesets\**\*.backup;..\data\rulesets\**\*.tmp;..\Assets\**\*.bak;..\Assets\**\*.backup;..\Assets\**\*.tmp" />
+    <RequiredRuntimePayload Remove="..\data\rulesets\**\*.bak;..\data\rulesets\**\*.backup;..\data\rulesets\**\*.tmp;..\Assets\**\*.bak;..\Assets\**\*.backup;..\Assets\**\*.tmp" />
   </ItemGroup>
 
   <Target Name="CopyRequiredRuntimePayload" AfterTargets="Publish">

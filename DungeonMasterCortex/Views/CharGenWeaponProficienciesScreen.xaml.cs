@@ -522,33 +522,13 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
 
     private int GetTotalNwpImprovementCp()
     {
-        var selectedDistinct = _app.CharGen.SelectedNonweaponProficiencyIds
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        return _app.CharGen.SelectedNonweaponProficiencyImprovements
-            .Where(kv => selectedDistinct.Contains(kv.Key))
-            .Sum(kv => Math.Max(0, kv.Value));
+        return GetNwpImprovementCpForState(_app.CharGen.SelectedNonweaponProficiencyIds,
+            _app.CharGen.SelectedNonweaponProficiencyImprovements);
     }
 
     private int GetSelectedNwpPurchaseCp()
     {
-        if (!IsPlayersOptionMode())
-            return 0;
-
-        var proficiencyById = _catalog.NonweaponProficiencies
-            .GroupBy(x => x.Id, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
-
-        int total = 0;
-        foreach (string id in _app.CharGen.SelectedNonweaponProficiencyIds)
-        {
-            if (!proficiencyById.TryGetValue(id, out var proficiency))
-                continue;
-            total += proficiency.CpCost > 0 ? proficiency.CpCost : Math.Max(1, proficiency.Slots);
-        }
-
-        return total;
+        return GetNwpPurchaseCpForIds(_app.CharGen.SelectedNonweaponProficiencyIds);
     }
 
     private int GetSelectedTraitCost()
@@ -713,7 +693,7 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
         {
             if (!proficiencyById.TryGetValue(id, out var proficiency))
                 continue;
-            total += proficiency.CpCost > 0 ? proficiency.CpCost : Math.Max(1, proficiency.Slots);
+            total += NwpGrantRules.GetAcquisitionCost(_app.CharGen, proficiency);
         }
 
         return total;
@@ -721,14 +701,7 @@ public partial class CharGenWeaponProficienciesScreen : UserControl, IScreen
 
     private static int GetNwpImprovementCpForState(IEnumerable<string> proficiencyIds, IReadOnlyDictionary<string, int> improvementById)
     {
-        var selectedDistinct = proficiencyIds
-            .Where(id => !string.IsNullOrWhiteSpace(id))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        return improvementById
-            .Where(kv => selectedDistinct.Contains(kv.Key))
-            .Sum(kv => Math.Max(0, kv.Value));
+        return NwpGrantRules.GetImprovementCost(proficiencyIds, improvementById);
     }
 
     private int GetCarryoverCharacterPointPool()
